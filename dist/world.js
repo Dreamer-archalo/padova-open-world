@@ -1,0 +1,89 @@
+import * as THREE from './vendor/three.module.js';
+import {SpatialIndex,pointInside,clamp,project,dist} from './core.js';
+export const CHUNK=320;
+export const PLACES=[
+  {name:'Prato della Valle',tag:'The island & the open road',x:-115,z:960},
+  {name:'Basilica del Santo',tag:'Piazza del Santo',x:235,z:545},
+  {name:'Piazza delle Erbe',tag:'Palazzo della Ragione',x:-150,z:-49},
+  {name:'Piazza dei Signori',tag:'Under the clock tower',x:-278,z:-137},
+  {name:'Duomo',tag:'Piazza del Duomo',x:-346,z:-12},
+  {name:'Cappella degli Scrovegni',tag:'Giardini dell’Arena',x:169,z:-535},
+  {name:'La Specola',tag:'The observatory',x:-613,z:529},
+  {name:'Stazione',tag:'Piazzale della Stazione',...project(45.4168,11.8805)},
+  {name:'Portello',tag:'The university district',...project(45.4108,11.8918)},
+  {name:'Stadio Euganeo',tag:'Out of the centre',...project(45.4352,11.8564)},
+  {name:'Aeroporto',tag:'Padova ovest',...project(45.3964,11.8494)},
+  {name:'Guizza',tag:'South of the river',...project(45.3822,11.8709)},
+  {name:'Arcella',tag:'North of the station',...project(45.4291,11.8828)}
+];
+const wallColors=['#d7c3a1','#c69c7b','#e3d0ad','#d9b889','#b5b4a1','#cd926f','#d5c5b4'].map(c=>new THREE.Color(c));
+const roofColors=['#995f48','#b07553','#9c694d','#a58166','#7b817a','#b17a58','#a2674d'].map(c=>new THREE.Color(c));
+const col=c=>new THREE.Color(c);
+export class GeometryBatch{
+  constructor(){this.p=[];this.c=[];this.uv=[];}
+  tri(a,b,c,color,uv=[[0,0],[1,0],[1,1]]){this.p.push(...a,...b,...c);for(let i=0;i<3;i++){this.c.push(color.r,color.g,color.b);this.uv.push(...uv[i]);}}
+  quad(a,b,c,d,color,u=1,v=1){this.tri(a,b,c,color,[[0,0],[u,0],[u,v]]);this.tri(a,c,d,color,[[0,0],[u,v],[0,v]]);}
+  mesh(mat){if(!this.p.length)return null;const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.Float32BufferAttribute(this.p,3));g.setAttribute('color',new THREE.Float32BufferAttribute(this.c,3));g.setAttribute('uv',new THREE.Float32BufferAttribute(this.uv,2));g.computeVertexNormals();g.computeBoundingSphere();return new THREE.Mesh(g,mat);}
+}
+function surface(batch,p,y,color){if(p.length<3)return;let pp=p;if(pp[0][0]===pp[pp.length-1][0]&&pp[0][1]===pp[pp.length-1][1])pp=pp.slice(0,-1);const contour=pp.map(v=>new THREE.Vector2(v[0],v[1]));const tris=THREE.ShapeUtils.triangulateShape(contour,[]);for(const t of tris)batch.tri([pp[t[0]][0],y,pp[t[0]][1]],[pp[t[2]][0],y,pp[t[2]][1]],[pp[t[1]][0],y,pp[t[1]][1]],color);}
+function strip(batch,a,b,w,y,color){const dx=b[0]-a[0],dz=b[1]-a[1],d=Math.hypot(dx,dz);if(d<.01)return;const nx=-dz/d*w/2,nz=dx/d*w/2;batch.quad([a[0]+nx,y,a[1]+nz],[b[0]+nx,y,b[1]+nz],[b[0]-nx,y,b[1]-nz],[a[0]-nx,y,a[1]-nz],color);}
+function facadeTexture(){const c=document.createElement('canvas');c.width=128;c.height=128;const t=c.getContext('2d');t.fillStyle='#e5dfce';t.fillRect(0,0,128,128);t.fillStyle='#ddd6c5';for(let i=0;i<20;i++)t.fillRect((i*53)%128,(i*37)%128,24,1);t.fillStyle='#b7b5a3';t.fillRect(0,123,128,5);t.fillStyle='#bdb2a0';t.fillRect(34,20,59,85);t.fillStyle='#edf0d9';t.fillRect(31,101,65,5);t.fillStyle='#485b59';t.fillRect(40,26,47,72);t.fillStyle='#789094';t.fillRect(44,30,18,28);t.fillStyle='#637d82';t.fillRect(66,30,17,28);t.fillStyle='#5c746f';t.fillRect(44,63,18,30);t.fillStyle='#475e5f';t.fillRect(66,63,17,30);t.fillStyle='#44584d';t.fillRect(26,26,11,72);t.fillRect(90,26,11,72);const tex=new THREE.CanvasTexture(c);tex.wrapS=tex.wrapT=THREE.RepeatWrapping;tex.colorSpace=THREE.SRGBColorSpace;tex.anisotropy=4;return tex;}
+const boxGeo=new THREE.BoxGeometry(1,1,1),sphereGeo=new THREE.SphereGeometry(1,12,8),cylinderGeo=new THREE.CylinderGeometry(1,1,1,12),coneGeo=new THREE.ConeGeometry(1,1,12);
+const matCache=new Map();function material(c,rough=1){const k=c+','+rough;if(!matCache.has(k))matCache.set(k,new THREE.MeshStandardMaterial({color:c,roughness:rough}));return matCache.get(k);}
+function primitive(g,geo,c,x,y,z,sx,sy,sz){const m=new THREE.Mesh(geo,material(c));m.position.set(x,y,z);m.scale.set(sx,sy,sz);m.castShadow=true;m.receiveShadow=true;g.add(m);return m;}
+function box(g,c,x,y,z,w,h,d){return primitive(g,boxGeo,c,x,y,z,w,h,d);}
+function dome(g,x,y,z,r,h,color='#bdc0af'){primitive(g,cylinderGeo,'#ceb999',x,y-1.5,z,r*.86,3,r*.86);primitive(g,sphereGeo,color,x,y,z,r,h,r);primitive(g,cylinderGeo,'#d9cdb4',x,y+h+1,z,1.1,3,1.1);box(g,'#6c7262',x,y+h+3.3,z,.3,2,.3);box(g,'#6c7262',x,y+h+3.4,z,1.5,.2,.2);}
+function tower(g,x,z,height,w,color='#b88965'){box(g,color,x,height/2,z,w,height,w);box(g,'#dbc9a6',x,height*.77,z,w+1.6,1.4,w+1.6);for(let a=0;a<4;a++){const rot=a*Math.PI/2;const win=box(g,'#384d4d',x+Math.sin(rot)*(w/2+.05),height-6,z+Math.cos(rot)*(w/2+.05),w*.33,6,.12);win.rotation.y=rot;}primitive(g,coneGeo,'#897464',x,height+4,z,w*.85,8,w*.85);}
+function makeLandmarks(scene,data){const g=new THREE.Group();
+  // Architectural silhouettes are interpretive; footprints below remain OSM geometry.
+  const saint=data.buildings.find(b=>b.n.toLowerCase().includes("basilica di sant'antonio"));
+  if(saint){const minX=saint.minX,maxX=saint.maxX,minZ=saint.minZ,maxZ=saint.maxZ,cx=(minX+maxX)/2,cz=(minZ+maxZ)/2;saint.h=22;for(const [dx,dz,r,h] of [[0,-6,15,13],[0,23,12,10],[0,-34,12,10],[-23,-6,11,10],[23,-6,11,10],[-20,24,10,10],[20,24,10,10],[0,46,10,9]])dome(g,cx+dx,26,cz+dz,r,h);tower(g,cx-26,cz+48,54,5);tower(g,cx+26,cz+48,54,5);}
+  const rag=data.buildings.find(b=>b.n==='Palazzo della Ragione');if(rag){rag.h=24;const cx=(rag.minX+rag.maxX)/2,cz=(rag.minZ+rag.maxZ)/2;const r=new THREE.Mesh(new THREE.CylinderGeometry(17,17,76,20,1,false,0,Math.PI),material('#667779'));r.rotation.z=Math.PI/2;r.rotation.y=.13;r.position.set(cx,24,cz);r.castShadow=true;g.add(r);for(let i=-5;i<=5;i++){box(g,'#d8c8a5',cx+i*6.5,7,cz-20,1.3,14,1.5);box(g,'#d8c8a5',cx+i*6.5,7,cz+20,1.3,14,1.5);} }
+  const spec=data.buildings.find(b=>b.n==='La Specola');if(spec)tower(g,(spec.minX+spec.maxX)/2,(spec.minZ+spec.maxZ)/2,46,11,'#b38a64');
+  const duomo=data.buildings.find(b=>b.n==='Duomo di Padova');if(duomo){duomo.h=21;dome(g,(duomo.minX+duomo.maxX)/2,27,(duomo.minZ+duomo.maxZ)/2,13,10,'#9faa9f');}
+  // Santa Giustina, east of Prato: distinctive clustered copper domes.
+  const sj=project(45.3982,11.88025);for(const [dx,dz,r] of [[0,0,17],[-24,0,11],[24,0,11],[0,-30,12],[0,30,12],[-23,30,10],[23,30,10],[0,53,10]])dome(g,sj.x+dx,29,sj.z+dz,r,r*.85,'#9daba0');tower(g,sj.x+44,sj.z+44,58,8);
+  // Torre dell'Orologio and its clock face at Piazza dei Signori.
+  tower(g,-336,-162,28,8,'#c9af87');const face=new THREE.Mesh(new THREE.CircleGeometry(2.5,24),material('#eee3c5'));face.position.set(-331.9,20,-162);face.rotation.y=Math.PI/2;g.add(face);box(g,'#283d42',-331.7,20.9,-162,.12,2,.15);box(g,'#283d42',-331.7,20,-161.1,.12,.15,2);
+  // Prato's elliptical island, ring canal and statues. It overlays the extract's multipolygon parts.
+  const prato=new THREE.Group();prato.position.set(-35,0,858);prato.rotation.y=-.23;
+  const ellipse=(color,rx,rz,y)=>{const m=new THREE.Mesh(new THREE.CircleGeometry(1,96),material(color));m.rotation.x=-Math.PI/2;m.scale.set(rx,rz,1);m.position.y=y;prato.add(m);};
+  ellipse('#c6b99c',115,163,.12);ellipse('#7bb3b0',90,135,.14);ellipse('#d6c5a2',81,126,.16);ellipse('#899e5c',72,117,.18);
+  box(prato,'#d4c4a4',0,.25,0,11,.2,287);box(prato,'#d4c4a4',0,.26,0,202,.2,9);
+  for(let i=0;i<78;i++){const a=i/78*Math.PI*2,x=Math.cos(a)*95,z=Math.sin(a)*140;box(prato,'#d7d3b9',x,1.5,z,2.2,3,2.2);primitive(prato,cylinderGeo,'#e2dfca',x,3.7,z,.5,1.8,.5);primitive(prato,sphereGeo,'#e2dfca',x,4.9,z,.42,.5,.42);}
+  g.add(prato);scene.add(g);return g;
+}
+export class CityWorld{
+ constructor(scene,data){this.scene=scene;this.data=data;this.chunks=new Map();this.collision=new SpatialIndex(60);this.loaded=new Map();this.queue=[];this.lastKey='';this.radius=1050;
+  this.wallMat=new THREE.MeshStandardMaterial({map:facadeTexture(),vertexColors:true,roughness:1,side:THREE.DoubleSide});this.roofMat=new THREE.MeshStandardMaterial({vertexColors:true,roughness:1,side:THREE.DoubleSide});this.groundMat=new THREE.MeshStandardMaterial({vertexColors:true,roughness:1,side:THREE.DoubleSide});
+  const ground=new THREE.Mesh(new THREE.PlaneGeometry(45000,45000),material('#8c9b73'));ground.rotation.x=-Math.PI/2;ground.position.y=-.05;ground.receiveShadow=true;scene.add(ground);
+  const groundCity=new THREE.Mesh(new THREE.PlaneGeometry(2100,2800),material('#b4aa91'));groundCity.rotation.x=-Math.PI/2;groundCity.position.set(0,-.035,100);groundCity.receiveShadow=true;scene.add(groundCity);
+  for(const b of data.buildings){b.minX=Math.min(...b.p.map(p=>p[0]));b.maxX=Math.max(...b.p.map(p=>p[0]));b.minZ=Math.min(...b.p.map(p=>p[1]));b.maxZ=Math.max(...b.p.map(p=>p[1]));b.cx=(b.minX+b.maxX)/2;b.cz=(b.minZ+b.maxZ)/2;this.collision.add(b,b.minX,b.minZ,b.maxX,b.maxZ);this.chunk(b.cx,b.cz).buildings.push(b);}
+  makeLandmarks(scene,data);
+  for(const r of data.roads)for(let i=1;i<r.p.length;i++)this.addSegments(r.p[i-1],r.p[i],r.w,'road',r);
+  for(const r of data.water)for(let i=1;i<r.p.length;i++)this.addSegments(r.p[i-1],r.p[i],r.w,'water',r);
+  for(const a of data.areas){const xs=a.p.map(p=>p[0]),zs=a.p.map(p=>p[1]);a.cx=(Math.min(...xs)+Math.max(...xs))/2;a.cz=(Math.min(...zs)+Math.max(...zs))/2;this.chunk(a.cx,a.cz).areas.push(a);}
+ }
+ chunk(x,z){const i=Math.floor(x/CHUNK),j=Math.floor(z/CHUNK),key=i+','+j;if(!this.chunks.has(key))this.chunks.set(key,{i,j,buildings:[],roads:[],water:[],areas:[]});return this.chunks.get(key);}
+ addSegments(a,b,w,k,road){const d=Math.hypot(b[0]-a[0],b[1]-a[1]),n=Math.max(1,Math.ceil(d/120));for(let i=0;i<n;i++){const p=[a[0]+(b[0]-a[0])*i/n,a[1]+(b[1]-a[1])*i/n],q=[a[0]+(b[0]-a[0])*(i+1)/n,a[1]+(b[1]-a[1])*(i+1)/n];this.chunk((p[0]+q[0])/2,(p[1]+q[1])/2)[k==='road'?'roads':'water'].push({a:p,b:q,w,road});}}
+ build(key){const ch=this.chunks.get(key);if(!ch)return;const g=new THREE.Group(),walls=new GeometryBatch(),roofs=new GeometryBatch(),surfaces=new GeometryBatch();
+  for(const b of ch.buildings){const p=b.p,h=b.h;for(let i=0;i<p.length;i++){const a=p[i],q=p[(i+1)%p.length],len=Math.hypot(q[0]-a[0],q[1]-a[1]);walls.quad([a[0],.15,a[1]],[q[0],.15,q[1]],[q[0],h,q[1]],[a[0],h,a[1]],wallColors[b.c],Math.max(1,Math.round(len/3.8)),Math.max(1,Math.round(h/3.1)));}surface(roofs,p,h+.08,roofColors[b.c]);
+   if(p.length===4&&b.h<18&&b.t!=='industrial'&&b.t!=='warehouse'){let a=p[0],q=p[1],c=p[2],d=p[3];if(Math.hypot(q[0]-a[0],q[1]-a[1])>Math.hypot(c[0]-q[0],c[1]-q[1]))[a,q,c,d]=[q,c,d,a];const m=[(a[0]+q[0])/2,h+2,(a[1]+q[1])/2],n=[(c[0]+d[0])/2,h+2,(c[1]+d[1])/2];roofs.quad([a[0],h,a[1]],m,n,[d[0],h,d[1]],roofColors[b.c]);roofs.quad(m,[q[0],h,q[1]],[c[0],h,c[1]],n,roofColors[b.c]);roofs.tri([a[0],h,a[1]],[q[0],h,q[1]],m,wallColors[b.c]);roofs.tri([c[0],h,c[1]],[d[0],h,d[1]],n,wallColors[b.c]);}
+  }
+  for(const a of ch.areas)surface(surfaces,a.p,a.k==='water'?.008:.001,col(a.k==='water'?'#639b9c':a.k==='pitch'?'#7d9e72':'#789961'));
+  for(const r of ch.water)strip(surfaces,r.a,r.b,r.w,.012,col('#659b9e'));
+  for(const s of ch.roads){const k=s.road.k,ped=['pedestrian','footway','path','cycleway','steps'].includes(k);const y=s.road.b?.065:.04;strip(surfaces,s.a,s.b,s.w+1.5,y-.009,col(ped?'#c5bca4':'#c3bca8'));strip(surfaces,s.a,s.b,s.w,y,col(ped?'#b7b09a':'#6c7472'));if(s.w>=8&&!ped){const dx=s.b[0]-s.a[0],dz=s.b[1]-s.a[1],d=Math.hypot(dx,dz);for(let t=0;t<d-3;t+=13){const a=[s.a[0]+dx*t/d,s.a[1]+dz*t/d],b=[s.a[0]+dx*(t+4)/d,s.a[1]+dz*(t+4)/d];strip(surfaces,a,b,.14,y+.002,col('#c7c6ae'));}}}
+  for(const [b,m] of [[walls,this.wallMat],[roofs,this.roofMat],[surfaces,this.groundMat]]){const mesh=b.mesh(m);if(mesh){mesh.receiveShadow=true;g.add(mesh);}}
+  // Instanced trees keep parks readable without thousands of draw calls.
+  const trees=[];for(const a of ch.areas){if(a.k==='water'||a.k==='pitch')continue;const xs=a.p.map(p=>p[0]),zs=a.p.map(p=>p[1]),xmin=Math.min(...xs),xmax=Math.max(...xs),zmin=Math.min(...zs),zmax=Math.max(...zs);const n=Math.min(60,Math.floor((xmax-xmin)*(zmax-zmin)/400));for(let i=0;i<n;i++){const x=xmin+((i*73.73+ch.i*13.17)%1+1)%1*(xmax-xmin),z=zmin+((i*39.39+ch.j*21.71)%1+1)%1*(zmax-zmin);if(pointInside(x,z,a.p)&&Math.hypot(x+35,(z-858)*.7)>145)trees.push({x,z,s:4+(i%4)});}}
+  if(trees.length){const trunks=new THREE.InstancedMesh(cylinderGeo,material('#7b7250'),trees.length),tops=new THREE.InstancedMesh(sphereGeo,material('#496e48'),trees.length);const o=new THREE.Object3D();trees.forEach((t,i)=>{o.position.set(t.x,t.s*.4,t.z);o.scale.set(.38,t.s*.8,.38);o.updateMatrix();trunks.setMatrixAt(i,o.matrix);o.position.y=t.s;o.scale.set(t.s*.56,t.s*.7,t.s*.56);o.updateMatrix();tops.setMatrixAt(i,o.matrix);});g.add(trunks,tops);}
+  this.scene.add(g);this.loaded.set(key,g);
+ }
+ update(x,z,force=false){const i=Math.floor(x/CHUNK),j=Math.floor(z/CHUNK),sig=i+','+j+','+this.radius;if(sig!==this.lastKey||force){this.lastKey=sig;const r=Math.ceil(this.radius/CHUNK),keys=[];for(let a=i-r;a<=i+r;a++)for(let b=j-r;b<=j+r;b++){const key=a+','+b;if(this.chunks.has(key))keys.push({key,d:Math.hypot((a+.5)*CHUNK-x,(b+.5)*CHUNK-z)});}keys.sort((a,b)=>a.d-b.d);this.queue=keys.filter(k=>!this.loaded.has(k.key)).map(k=>k.key);for(const [key,g] of this.loaded){const ch=this.chunks.get(key);g.visible=Math.abs(ch.i-i)<=r&&Math.abs(ch.j-j)<=r;if(Math.abs(ch.i-i)>r+2||Math.abs(ch.j-j)>r+2){this.scene.remove(g);g.traverse(o=>{if(o.isMesh&&!o.isInstancedMesh)o.geometry.dispose();if(o.isInstancedMesh)o.dispose();});this.loaded.delete(key);}}}const count=force?12:1;for(let k=0;k<count&&this.queue.length;k++)this.build(this.queue.shift());}
+ setQuality(q){this.radius=q==='low'?680:q==='high'?1450:1050;this.lastKey='';}
+}
+export function createCar(color='#e6c97f',police=false){const g=new THREE.Group();box(g,'#222f32',0,.45,0,1.8,.35,4.05);box(g,color,0,.85,0,1.85,.62,3.95);box(g,color,0,1.33,-.25,1.65,.64,2.18);box(g,'#334e59',0,1.38,.88,1.48,.49,.035).rotation.x=.2;box(g,'#344e59',0,1.38,-1.37,1.45,.44,.035).rotation.x=-.18;for(const side of [-1,1]){box(g,'#3c5860',side*.835,1.38,-.25,.03,.44,1.98);box(g,color,side*.86,1.37,-.23,.05,.58,.085);for(const z of [-1.29,1.25]){const wheel=primitive(g,cylinderGeo,'#20282a',side*.94,.43,z,.37,.19,.37);wheel.rotation.z=Math.PI/2;const hub=primitive(g,cylinderGeo,'#a7b2b0',side*1.045,.43,z,.2,.012,.2);hub.rotation.z=Math.PI/2;}}
+ for(const x of [-.59,.59]){box(g,'#fff6c8',x,.9,1.99,.48,.2,.025);box(g,'#c34436',x,.9,-1.99,.45,.18,.025);}box(g,'#bfc0a8',0,.65,2.01,.54,.18,.025);box(g,'#8a9692',0,.53,2.02,1.65,.12,.05);box(g,'#8a9692',0,.53,-2.02,1.65,.12,.05);
+ if(police){box(g,'#e1e6e3',0,.89,0,1.89,.28,3.3);box(g,'#163946',0,.96,0,1.92,.13,3.35);box(g,'#29383e',0,1.71,-.15,1.1,.1,.3);const blue=box(g,'#348dff',-.36,1.84,-.15,.35,.19,.3),red=box(g,'#e96b54',.36,1.84,-.15,.35,.19,.3);g.userData.lights=[blue,red];}
+ const shadow=new THREE.Mesh(new THREE.PlaneGeometry(2.6,4.6),new THREE.MeshBasicMaterial({color:'#172022',transparent:true,opacity:.21,depthWrite:false}));shadow.rotation.x=-Math.PI/2;shadow.position.y=.075;g.add(shadow);return g;}
+export function createPerson(color='#c6ad82'){const g=new THREE.Group();const hips=new THREE.Group();box(hips,'#394749',-.17,.43,0,.22,.7,.26);box(hips,'#394749',.17,.43,0,.22,.7,.26);g.add(hips);box(g,color,0,1.04,0,.58,.65,.34);primitive(g,sphereGeo,'#ceaa87',0,1.59,0,.2,.25,.2);primitive(g,sphereGeo,'#403d31',0,1.74,-.015,.21,.12,.2);const arms=new THREE.Group();box(arms,color,-.4,1.02,0,.18,.67,.2);box(arms,color,.4,1.02,0,.18,.67,.2);g.add(arms);g.userData.hips=hips;g.userData.arms=arms;return g;}
