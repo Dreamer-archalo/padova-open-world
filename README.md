@@ -4,7 +4,8 @@ A self-contained Three.js browser game using actual OpenStreetMap streets and bu
 
 ## Play
 
-- WASD / arrow keys: accelerate, reverse, turn.
+- On foot: WASD / arrow keys move relative to the camera; drag to turn the view.
+- In a car: WASD / arrow keys accelerate, reverse and steer.
 - E: enter a nearby parked / slow car or exit when slow.
 - Shift: boost / sprint. Space: handbrake / jump.
 - C: three camera modes. Drag the world: orbit camera.
@@ -37,3 +38,9 @@ Three.js 0.170.0 is bundled locally under MIT; see `dist/vendor/THREE-LICENSE.tx
 ## Validation
 
 JavaScript syntax, local asset references, geometry, real map navigation, collision placement and mission destination reachability are checked locally. No browser visual QA or measured MacBook frame-rate claim is made without running on an actual browser / device.
+
+## Stable movement and real-building imports
+
+The game starts in Piazza delle Erbe. Simulation now runs at a fixed 60 Hz with interpolated actors. Walking slides along walls; camera obstruction is checked after smoothing; car collisions include the nose and tail. Hip and shoulder pivots replace ground-level limb rotation. These changes are covered by `node verify-stability.mjs`.
+
+Real building models can replace named OSM buildings through `node tools/add-building.mjs --help`. The game vendors its GLTF loader and serves models locally, without paid map APIs. **No scanned Padua buildings are bundled yet:** the verified Palazzo della Ragione candidate requires an authenticated Sketchfab download. See [the build notes](docs/real-city.md) and [the in-game contributor guide](dist/model-guide.html) for the exact asset path, licensing references and remaining 2.5D collision limitations.

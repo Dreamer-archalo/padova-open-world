@@ -15,3 +15,5 @@
 
 .driving #healthLabel{font-size:10px;margin-top:0}
 @media(max-width:450px){.minimap{width:140px;left:10px}.driving{width:190px;right:10px}.telemetry b{font-size:12px}.location{display:none}}
+
+#modelCredits{display:flex;gap:8px;flex-wrap:wrap;max-width:45vw}#modelCredits:empty{display:none}

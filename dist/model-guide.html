@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="en">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Real buildings · Padova</title>
+<style>body{margin:0;background:#101b22;color:#e9eee9;font:17px/1.65 system-ui,sans-serif}main{max-width:800px;margin:auto;padding:48px 24px 80px}a{color:#ffc56a}h1{font-size:clamp(32px,6vw,52px);line-height:1.1}h2{margin-top:40px;font-size:25px}p{max-width:70ch}code{font-size:14px;overflow-wrap:anywhere}pre{overflow:auto;padding:22px;border:1px solid #42505a;border-radius:8px;background:#17252f;white-space:pre-wrap}li{margin:12px 0}.note{border-left:3px solid #ffc56a;padding:12px 20px;background:#1b2a34}.muted{color:#acbac0}</style></head>
+<body><main><a href="./">← Back to the game</a><h1>Bring the real buildings in.</h1>
+<p>The city’s streets and footprints are mapped. Its façades are still approximate. The game now accepts textured building models stored with the game, so adding a real building does not require a paid map API.</p>
+<p class="note">No scanned Padua buildings are included yet. The importer is working, but it cannot create missing photographs or retrieve a download that requires your login.</p>
+<h2>Start with Palazzo della Ragione</h2>
+<p><a href="https://sketchfab.com/3d-models/palazzo-della-ragione-padova-7099891d795046c39644466d19eb8aca" target="_blank" rel="noopener">Palazzo della Ragione by archeologya</a> is listed as downloadable under CC BY 4.0. Its metadata reports 148,770 triangles. Downloading requires signing in to Sketchfab. Check that the downloaded geometry covers the exterior you want before importing it.</p>
+<ol><li>Download the model through the creator’s download page. Keep its attribution and licence.</li><li>Export a single <strong>GLB</strong> with embedded textures, Y up, triangulated geometry and no Draco or Meshopt compression. Blender can prepare a downloaded model.</li><li>Keep each building below 20 MB and 250,000 triangles. Aim for textures of 2,048 pixels or less; texture memory also matters.</li><li>Supply its real height and review its orientation against the mapped footprint. Scale is uniform; metres are world units.</li><li>Commit the model and its catalogue entry together, then publish the updated game.</li></ol>
+<h2>One import command</h2>
+<p>From the repository directory, replace each value below with the model’s actual metadata. The height is the total model height in metres, including its roof.</p>
+<pre><code>node tools/add-building.mjs /path/to/building.glb \
+  --name "Palazzo della Ragione" \
+  --height MEASURED_TOTAL_HEIGHT \
+  --author "archeologya" \
+  --source "https://sketchfab.com/3d-models/palazzo-della-ragione-padova-7099891d795046c39644466d19eb8aca" \
+  --license "CC BY 4.0"</code></pre>
+<p>Add <code>--rotation</code> in degrees and <code>--offset-x</code> / <code>--offset-z</code> in metres if needed. Add <code>--check-only</code> to validate without changing files. You can also give the downloaded model to the coding assistant and ask it to prepare the import.</p>
+<h2>What becomes more realistic?</h2>
+<p>When you approach an imported building, its model replaces the map extrusion and its old landmark decoration. Distant models unload to limit memory use. Failed downloads leave the mapped building intact. Attribution appears in the game.</p>
+<p>Collision still uses the building’s mapped footprint. This keeps the ground-level controller predictable but does not open porticoes, stairs, roofs or interiors. Those need separately authored collision geometry and a controller with vertical terrain support. A detailed visual model alone cannot supply reliable gameplay collision.</p>
+<h2>How to build out the centre</h2>
+<p>Finish one small walkable area first: Piazza delle Erbe, Palazzo della Ragione and the route into Piazza dei Signori. Obtain reusable models or make overlapping photographic surveys, optimise the meshes and textures, then align and test one block at a time. Aerial imagery helps roofs; street photographs help façades. Neither automatically records hidden courtyards or interiors.</p>
+<p>Google Earth and Street View are not a library of assets to extract into this game. Sentinel-2’s finest bands have 10 m pixels, which cannot resolve windows or porticoes. Open municipal geometry can help with location and dimensions, but should not be assumed to include textured façades.</p>
+<p>Use your own photographs or assets with a licence permitting this reuse. Apple’s Object Capture can reconstruct suitable overlapping photographs on supported Macs. The reconstruction and cleanup happen before publication; the browser receives the optimised result.</p>
+<h2>Hosting and limits</h2>
+<p>This build runs entirely in your browser and is served as static files on ChatGPT Sites. It introduces no paid APIs, accounts or game server. Your existing Site access and service limits still apply. Sharing the link lets friends play independently; online multiplayer is a separate project.</p>
+<p class="muted">Movement and model loading have automated regression checks. No measured MacBook frame-rate or glitch-free claim is made. Test the exported buildings at street level before considering an area finished.</p>
+<p>References: <a href="https://sentiwiki.copernicus.eu/web/s2-mission">Sentinel-2</a> · <a href="https://developers.google.com/maps/comms/eea/map-tiles">Google EEA tile restrictions</a> · <a href="https://cloud.google.com/maps-platform/terms">Google Maps terms</a> · <a href="https://developer.apple.com/documentation/realitykit/capturing-photographs-for-realitykit-object-capture/">Object Capture</a></p>
+</main></body></html>
