@@ -70,7 +70,7 @@ export class BuildingModels {
       root.updateMatrixWorld(true);
       const bounds = new THREE.Box3().setFromObject(root), centre = bounds.getCenter(new THREE.Vector3());
       const b = entry.building;
-      root.position.add(new THREE.Vector3(b.cx - centre.x + (entry.offsetX || 0), -bounds.min.y + (entry.offsetY || 0), b.cz - centre.z + (entry.offsetZ || 0)));
+      root.position.add(new THREE.Vector3(b.cx - centre.x + (entry.offsetX || 0), (b.minY || 0) - bounds.min.y + (entry.offsetY || 0), b.cz - centre.z + (entry.offsetZ || 0)));
       root.traverse(o => { if (o.isMesh) { o.castShadow = true; o.receiveShadow = true; } });
       const originalHeight = b.h;
       b.modelActive = true; b.h = Math.max(b.h, entry.height + (entry.offsetY || 0));

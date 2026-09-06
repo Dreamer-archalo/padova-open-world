@@ -22,7 +22,7 @@
     <p>Take the long way home.</p>
     <div class="intro-actions"><button id="playBtn" class="primary" disabled>Building the city…</button><button id="aboutBtn" class="textbutton">About this world <span>↗</span></button></div>
     <div class="loading"><div id="loadingBar"></div></div><div id="loadingText" class="small">Loading Padua’s streets and buildings</div>
-    <div class="intro-foot">WASD TO MOVE <span> / </span> E TO ENTER A CAR <span> / </span> MADE FOR KEYBOARD + TRACKPAD</div>
+    <div class="intro-foot">WASD TO MOVE <span> / </span> E TO ENTER A VEHICLE <span> / </span> MADE FOR KEYBOARD + TRACKPAD</div>
   </section>
   <div id="playingUI" hidden>
     <aside class="hud mission"><div class="eyebrow" id="missionType">FREE ROAM</div><h2 id="missionTitle">The city is yours.</h2><p id="missionDesc">Explore, borrow a car, or pick an activity.</p><div id="missionTimer"></div><button id="activityBtn">Choose an activity <span>J</span></button></aside>
@@ -32,17 +32,18 @@
       <div class="speed"><span id="speed">00</span><small>KM/H</small></div>
       <div class="tach"><span>RPM</span><div><i id="rpm"></i></div><b id="rpmValue">0.0</b></div>
       <div class="telemetry"><span><small>TRIP</small><b id="odometer">0.0 KM</b></span><span><small>HEADING</small><b id="heading">N</b></span><span><small>TRAFFIC</small><b id="trafficLevel">LOW</b></span></div>
+      <div class="terrain-telemetry"><span>ALTITUDE <b id="altitude">0 M</b></span><span>GRADE <b id="gradient">0.0%</b></span><button id="vehicleMenuBtn">VEHICLES <kbd>V</kbd></button></div>
       <div class="health-row"><span id="healthLabel">VEHICLE CONDITION</span><b id="healthValue">100%</b></div><div class="healthtrack"><i id="health"></i></div>
     </div>
-    <div class="hud keybar"><span><kbd>W A S D</kbd> move</span><span><kbd>E</kbd> car</span><span><kbd>SPACE</kbd> brake / jump</span><span><kbd>SHIFT</kbd> boost / sprint</span><span><kbd>C</kbd> camera</span><span><kbd>ESC</kbd> pause</span></div>
+    <div class="hud keybar"><span><kbd>W A S D</kbd> move</span><span><kbd>E</kbd> vehicle</span><span><kbd>V</kbd> vehicles</span><span><kbd>SPACE</kbd> brake / jump</span><span><kbd>SHIFT</kbd> boost / sprint</span><span><kbd>C</kbd> camera</span><span><kbd>ESC</kbd> pause</span></div>
     <div id="interact" class="interaction" hidden></div>
     <div id="toast" class="toast" role="status" hidden></div>
     <div id="targetDistance" class="target-distance" hidden></div>
-    <div id="touchControls"><div><button data-key="KeyA">←</button><button data-key="KeyW">↑</button><button data-key="KeyD">→</button><button data-key="KeyS">↓</button></div><div><button id="touchCar">E · CAR</button><button data-key="Space">BRAKE</button></div></div>
+    <div id="touchControls"><div><button data-key="KeyA">←</button><button data-key="KeyW">↑</button><button data-key="KeyD">→</button><button data-key="KeyS">↓</button></div><div><button id="touchCar">E · VEHICLE</button><button data-key="Space">BRAKE</button></div></div>
   </div>
   <dialog id="menu"><div class="dialog-head"><div><span class="eyebrow">PADOVA / YOUR CITY</span><h2 id="menuTitle">Take a breather.</h2></div><button class="close" id="closeMenu" aria-label="Close menu">×</button></div><div id="menuContent"></div></dialog>
   <dialog id="mapDialog"><div class="dialog-head"><div><span class="eyebrow">CITY MAP</span><h2>Know your way around.</h2></div><button class="close" id="closeMap" aria-label="Close map">×</button></div><div class="map-layout"><div class="fullmap-wrap"><canvas id="fullmap" width="1000" height="1000" aria-label="Full map; click to set waypoint"></canvas></div><div id="mapPlaces"></div></div><div class="map-legend"><span>● You</span><span>◆ Destination</span><span>Click the map to set a waypoint</span></div></dialog>
-  <footer id="credits"><a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">© OpenStreetMap contributors</a><span id="modelCredits"></span><span id="scaleCredit">Real-world scale · stylised reconstruction</span></footer>
+  <footer id="credits"><a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">© OpenStreetMap contributors</a><a href="https://github.com/tilezen/joerd/blob/master/docs/attribution.md" target="_blank" rel="noopener">Terrain: Copernicus EU-DEM / USGS via Mapzen</a><span id="modelCredits"></span><span id="scaleCredit">Real-world scale · stylised reconstruction</span></footer>
   <script type="module" src="./game.js"></script>
 </body>
 </html>

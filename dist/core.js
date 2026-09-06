@@ -27,9 +27,9 @@ export function roadRoute(from,to,g){if(!g.nodes.length)return [];const a=neares
   const open=new Heap(),came=new Map(),scores=new Map([[start,0]]),closed=new Set();open.push({id:start,f:0});let found=false;while(open.length){const n=open.pop().id;if(closed.has(n))continue;if(n===goal){found=true;break;}closed.add(n);for(const e of g.nodes[n].edges){const s=scores.get(n)+e.d;if(s<(scores.get(e.id)??Infinity)){scores.set(e.id,s);came.set(e.id,n);open.push({id:e.id,f:s+dist(g.nodes[e.id],g.nodes[goal])});}}}if(!found)return [];
   const path=[goal];while(path[0]!==start){const prev=came.get(path[0]);if(prev===undefined)return [];path.unshift(prev);}return [{x:a.x,z:a.z},...path.map(i=>({x:g.nodes[i].x,z:g.nodes[i].z})),{x:b.x,z:b.z}];
 }
-export function safeRoadPoint(pos,g,index,r=1.3){
-  const n=nearestRoad(pos,g,true);if(!n)return null;if(!collides(n.x,n.z,r,index))return n;
+export function safeRoadPoint(pos,g,index,r=1.3,allowed=()=>true){
+  const n=nearestRoad(pos,g,true);if(!n)return null;if(!collides(n.x,n.z,r,index)&&allowed(n))return n;
   let best=null,distance=Infinity;
-  for(const s of g.index.near(pos.x,pos.z,200)){if(!s.connected)continue;const a=g.nodes[s.a],b=g.nodes[s.b],ab=[a.x,a.z],bb=[b.x,b.z];const p=nearestOnSegment(pos.x,pos.z,ab,bb);const length=dist(a,b);for(const offset of [0,-3,3,-7,7]){const t=clamp(p.t+offset/Math.max(length,1),0,1),q={x:a.x+(b.x-a.x)*t,z:a.z+(b.z-a.z)*t,yaw:Math.atan2(b.x-a.x,b.z-a.z)};const d=dist(q,pos);if(d<distance&&!collides(q.x,q.z,r,index)){best=q;distance=d;}}}
+  for(const s of g.index.near(pos.x,pos.z,200)){if(!s.connected)continue;const a=g.nodes[s.a],b=g.nodes[s.b],ab=[a.x,a.z],bb=[b.x,b.z];const p=nearestOnSegment(pos.x,pos.z,ab,bb);const length=dist(a,b);for(const offset of [0,-3,3,-7,7]){const t=clamp(p.t+offset/Math.max(length,1),0,1),q={x:a.x+(b.x-a.x)*t,z:a.z+(b.z-a.z)*t,yaw:Math.atan2(b.x-a.x,b.z-a.z)};const d=dist(q,pos);if(d<distance&&!collides(q.x,q.z,r,index)&&allowed(q)){best=q;distance=d;}}}
   return best;
 }

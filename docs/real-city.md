@@ -30,7 +30,7 @@ The browser renderer and static Sites hosting can support a bounded, textured ci
 
 The full centre needs reusable models or overlapping photographs/scans, followed by reconstruction, cleanup, measured placement and LOD/texture optimisation. A licence for a paper describing a survey is not automatically permission to redistribute its underlying scan.
 
-The current collision world remains 2.5D: solid building footprints and flat ground. It cannot yet support surveyed stairs, walkable roofs, stacked bridges, open porticoes or interiors. Before those are advertised, add simplified authored collision meshes, a capsule character controller with slope/step limits, and appropriate path navigation. Rapier is a candidate for that stage; importing a new physics engine alone does not repair inaccurate collision data. The small arcade missions remain, not GTA's full systems or multiplayer.
+The current collision world remains 2.5D: solid building footprints on a sampled terrain height field. It cannot yet support surveyed stairs, walkable roofs, stacked bridges, open porticoes or interiors. Before those are advertised, add simplified authored collision meshes, a capsule character controller with slope/step limits, and appropriate path navigation. Rapier is a candidate for that stage; importing a new physics engine alone does not repair inaccurate collision data. The small arcade missions remain, not GTA's full systems or multiplayer.
 
 ## Asset pipeline
 
