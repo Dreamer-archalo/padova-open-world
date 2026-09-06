@@ -14,11 +14,19 @@ A self-contained Three.js browser game using actual OpenStreetMap streets and bu
 
 Progress (earned money and completed jobs) is saved to this browser's localStorage. Graphics default to Balanced; Performance reduces rendering distance and disables shadows. Map geometry streams into GPU memory by 320 m chunks and old chunks are disposed. Car meshes are batched to reduce draw calls.
 
+The driving HUD includes speed, gear, RPM, trip distance, heading, vehicle condition and nearby traffic density. Traffic uses five body styles and eight fictional vehicle models; pedestrian and traffic density are selected from graphics quality at startup (reload after changing quality to update population). Gear and RPM are arcade display estimates, not a simulated transmission.
+
 ## Reconstruction fidelity
 
 The map contains 87,881 mapped building footprints, 34,539 road/path ways, 1,080 water/park/pitch polygons and 770 waterway ways. Source bbox: latitude 45.35–45.465, longitude 11.80–11.97. This is a roughly 13 × 13 km rectangular extract, not a municipality boundary guarantee. Projection: local equirectangular around 45.4064, 11.8768; one world unit = one metre. Low local projection distortion; not a survey-grade projection.
 
 Footprints and roads use OSM coordinates. Missing height data is estimated from floors or a deterministic building ID choice. Landmark roofs, domes, facades and Prato decoration are approximate interpretive geometry, not photogrammetry. Terrain, grade separations and bridges are flattened for arcade movement. The Overpass extract uses ways, not fully assembled relations; complex multipolygon courtyards / water / buildings can be incomplete. No enterable interiors, combat weapons, multiplayer or commercial GTA content.
+
+## Urban appearance pass
+
+Facade materials distinguish historic, residential and industrial buildings, using OSM building types and an approximate central-area boundary. Decorative arcade panels are selected procedurally; they are not surveyed or walkable porticoes. Bridge-tagged road segments now have parapets, while their driving surface remains flat for compatibility with movement. Pedestrian paving is warmer in the centre. Scrovegni and Eremitani have additional interpretive volumes.
+
+This is a first visual differentiation pass, not a building-by-building reconstruction. Canals and the mapped street network are unchanged. Landmark proportions, street-facing detail placement and the denser population still need visual/performance review in a real browser before merging.
 
 ## Data and licenses
 
