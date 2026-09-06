@@ -17,3 +17,9 @@
 @media(max-width:450px){.minimap{width:140px;left:10px}.driving{width:190px;right:10px}.telemetry b{font-size:12px}.location{display:none}}
 
 #modelCredits{display:flex;gap:8px;flex-wrap:wrap;max-width:45vw}#modelCredits:empty{display:none}
+
+body.water-fall::after{content:"";position:fixed;inset:0;z-index:15;pointer-events:none;background:rgba(35,100,112,.28);box-shadow:inset 0 0 18vw rgba(9,44,62,.65);animation:water-fall 1.35s ease-in forwards}@keyframes water-fall{from{opacity:0}to{opacity:1}}@media(prefers-reduced-motion:reduce){body.water-fall::after{animation:none}}
+
+.terrain-telemetry{display:flex;align-items:center;gap:12px;margin:10px 0;font-size:9px;letter-spacing:.06em;color:#b3c3c5}.terrain-telemetry b{display:block;margin-top:3px;color:#f4e6c9;font-size:12px}.terrain-telemetry button{margin-left:auto;border:1px solid #597078;background:#20343e;color:#eed6a9;border-radius:5px;padding:7px;cursor:pointer;font:inherit}.terrain-telemetry button:focus-visible{outline:2px solid #ffc56a;outline-offset:3px}
+
+.vehicle-heading>div{min-width:0;max-width:calc(100% - 44px)}.gear{flex-shrink:0}#vehicleName{overflow-wrap:anywhere;letter-spacing:1px}@media(max-width:800px){.terrain-telemetry{gap:7px;font-size:8px}.terrain-telemetry button{padding:5px;font-size:8px}}

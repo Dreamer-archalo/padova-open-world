@@ -48,10 +48,25 @@ export function slideMove(pos, dx, dz, radius, index) {
   return {x, z, hit};
 }
 
-export function vehicleBlocked(x, z, yaw, index, scale = 1) {
-  for (const offset of [-1.15, 0, 1.15]) {
-    if (collides(x + Math.sin(yaw) * offset * scale, z + Math.cos(yaw) * offset * scale, .96 * scale, index)) return true;
+export function vehicleFootprint(x,z,yaw,width,length){
+  const s=Math.sin(yaw),c=Math.cos(yaw);
+  return [[-1,-1],[1,-1],[1,1],[-1,1]].map(([side,end])=>[x+c*side*width/2+s*end*length/2,z-s*side*width/2+c*end*length/2]);
+}
+export function polygonsOverlap(a,b){
+  if(a.some(p=>pointInside(...p,b))||b.some(p=>pointInside(...p,a)))return true;
+  const cross=(p,q,r)=>(q[0]-p[0])*(r[1]-p[1])-(q[1]-p[1])*(r[0]-p[0]);
+  for(let i=0;i<a.length;i++)for(let j=0;j<b.length;j++){
+    const p=a[i],q=a[(i+1)%a.length],r=b[j],s=b[(j+1)%b.length];
+    if(Math.max(p[0],q[0])+1e-8<Math.min(r[0],s[0])||Math.max(r[0],s[0])+1e-8<Math.min(p[0],q[0])||Math.max(p[1],q[1])+1e-8<Math.min(r[1],s[1])||Math.max(r[1],s[1])+1e-8<Math.min(p[1],q[1]))continue;
+    if(cross(p,q,r)*cross(p,q,s)<=1e-8&&cross(r,s,p)*cross(r,s,q)<=1e-8)return true;
   }
+  return false;
+}
+export function vehicleBlocked(x, z, yaw, index, spec = 1) {
+  const width=typeof spec==='number'?1.92*spec:spec.width;
+  const length=typeof spec==='number'?4.22*spec:spec.length;
+  const footprint=vehicleFootprint(x,z,yaw,width,length);
+  for(const b of index.near(x,z,Math.hypot(width,length)/2))if(polygonsOverlap(footprint,b.p))return true;
   return false;
 }
 
@@ -64,7 +79,7 @@ export function cameraBoom(anchor, desired, index, radius = .3) {
   const blocked = t => {
     const x = anchor.x + dx * t, y = anchor.y + dy * t, z = anchor.z + dz * t;
     for (const b of candidates) {
-      if (y - radius > b.h || y + radius < (b.minY || 0)) continue;
+      if (y - radius > b.h + (b.minY || 0) || y + radius < (b.minY || 0)) continue;
       if (pointInside(x, z, b.p)) return true;
       for (let i = 0; i < b.p.length; i++) {
         const n = nearestOnSegment(x, z, b.p[i], b.p[(i + 1) % b.p.length]);
