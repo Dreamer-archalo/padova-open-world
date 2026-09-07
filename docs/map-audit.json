@@ -1,0 +1,291 @@
+{
+  "sourceDate": "2026-05-06T03:25:00Z",
+  "roads": 34639,
+  "sampledNodes": 572955,
+  "waterSamples": 2158,
+  "bridgeSegments": 10992,
+  "inferredBridges": 122,
+  "layeredRoads": 1203,
+  "maxGrade": 0.6500000000000012,
+  "maxVehicleGrade": 0.08510503562285385,
+  "fountains": 1,
+  "counts": {
+    "unsupportedWater": 0,
+    "deadEndsInWater": 10,
+    "steep": 0,
+    "lowDecks": 0,
+    "clearance": 19,
+    "junctionSteps": 0
+  },
+  "areas": {
+    "Sacra Famiglia": {
+      "roads": 939,
+      "issues": {
+        "unsupportedWater": 0,
+        "deadEndsInWater": 0,
+        "steep": 0,
+        "lowDecks": 0,
+        "clearance": 0,
+        "junctionSteps": 0
+      }
+    },
+    "Bassanello": {
+      "roads": 1001,
+      "issues": {
+        "unsupportedWater": 0,
+        "deadEndsInWater": 0,
+        "steep": 0,
+        "lowDecks": 0,
+        "clearance": 0,
+        "junctionSteps": 0
+      }
+    },
+    "Guizza / south": {
+      "roads": 1405,
+      "issues": {
+        "unsupportedWater": 0,
+        "deadEndsInWater": 0,
+        "steep": 0,
+        "lowDecks": 0,
+        "clearance": 0,
+        "junctionSteps": 0
+      }
+    },
+    "Prato": {
+      "roads": 117,
+      "issues": {
+        "unsupportedWater": 0,
+        "deadEndsInWater": 0,
+        "steep": 0,
+        "lowDecks": 0,
+        "clearance": 0,
+        "junctionSteps": 0
+      }
+    },
+    "Via dei Tadi": {
+      "roads": 32,
+      "issues": {
+        "unsupportedWater": 0,
+        "deadEndsInWater": 0,
+        "steep": 0,
+        "lowDecks": 0,
+        "clearance": 0,
+        "junctionSteps": 0
+      }
+    },
+    "Piazza delle Erbe": {
+      "roads": 95,
+      "issues": {
+        "unsupportedWater": 0,
+        "deadEndsInWater": 0,
+        "steep": 0,
+        "lowDecks": 0,
+        "clearance": 0,
+        "junctionSteps": 0
+      }
+    }
+  },
+  "issues": {
+    "unsupportedWater": [],
+    "deadEndsInWater": [
+      {
+        "road": 3194,
+        "name": "Via Argine Sinistro",
+        "x": 7303.7,
+        "z": -3769.4
+      },
+      {
+        "road": 8238,
+        "name": "",
+        "x": 7487.7,
+        "z": -3656.7
+      },
+      {
+        "road": 9217,
+        "name": "",
+        "x": 5197.2,
+        "z": -85.3
+      },
+      {
+        "road": 12864,
+        "name": "",
+        "x": 1332.2,
+        "z": -384.6
+      },
+      {
+        "road": 14811,
+        "name": "",
+        "x": 96.7,
+        "z": -697
+      },
+      {
+        "road": 14811,
+        "name": "",
+        "x": 89.1,
+        "z": -701.5
+      },
+      {
+        "road": 19860,
+        "name": "",
+        "x": -3861,
+        "z": -1154.2
+      },
+      {
+        "road": 21180,
+        "name": "",
+        "x": 4500.6,
+        "z": -6161.4
+      },
+      {
+        "road": 21181,
+        "name": "",
+        "x": 4443.3,
+        "z": -7281.8
+      },
+      {
+        "road": 23278,
+        "name": "",
+        "x": 2832.2,
+        "z": -26.5
+      }
+    ],
+    "steep": [],
+    "lowDecks": [],
+    "clearance": [
+      {
+        "upper": 303,
+        "lower": 14206,
+        "x": 137.91138627187078,
+        "z": -1393.6082368775235,
+        "clearance": -0.07276429919857608
+      },
+      {
+        "upper": 303,
+        "lower": 11374,
+        "x": 137.235084202085,
+        "z": -1388.2593023255815,
+        "clearance": 0.35605868439336985
+      },
+      {
+        "upper": 303,
+        "lower": 8306,
+        "x": 135.1244128113879,
+        "z": -1378.7804270462634,
+        "clearance": 1.2811381574195644
+      },
+      {
+        "upper": 303,
+        "lower": 14205,
+        "x": 134.49395865031775,
+        "z": -1376.2192070169158,
+        "clearance": 1.431588599534225
+      },
+      {
+        "upper": 6731,
+        "lower": 6719,
+        "x": -4250.22326751839,
+        "z": 998.6547038327527,
+        "clearance": -0.28575367876272184
+      },
+      {
+        "upper": 7937,
+        "lower": 14206,
+        "x": 151.24528352593387,
+        "z": -1390.5558989518945,
+        "clearance": 0.019183981935177008
+      },
+      {
+        "upper": 7937,
+        "lower": 11374,
+        "x": 150.31789883268482,
+        "z": -1385.571206225681,
+        "clearance": 0.37504876894090555
+      },
+      {
+        "upper": 7937,
+        "lower": 8306,
+        "x": 148.45367709213863,
+        "z": -1376.0799661876586,
+        "clearance": 1.4552021262622135
+      },
+      {
+        "upper": 7937,
+        "lower": 14205,
+        "x": 147.9994974874372,
+        "z": -1373.9226130653267,
+        "clearance": 1.5575719851259238
+      },
+      {
+        "upper": 9442,
+        "lower": 4441,
+        "x": 1807.7592928377153,
+        "z": -517.5054397098821,
+        "clearance": 2.7053091420345976
+      },
+      {
+        "upper": 9538,
+        "lower": 14206,
+        "x": 132.89516971279375,
+        "z": -1394.7565274151436,
+        "clearance": 0.6184077340179271
+      },
+      {
+        "upper": 9538,
+        "lower": 11374,
+        "x": 132.28053079619428,
+        "z": -1389.288052078117,
+        "clearance": 0.9970208948556717
+      },
+      {
+        "upper": 9538,
+        "lower": 8306,
+        "x": 130.38840645601272,
+        "z": -1379.3442373266653,
+        "clearance": 1.6762019071236858
+      },
+      {
+        "upper": 9538,
+        "lower": 14205,
+        "x": 129.8610220899622,
+        "z": -1377.0054023120063,
+        "clearance": 1.9299026765733118
+      },
+      {
+        "upper": 12520,
+        "lower": 15642,
+        "x": 774.9261264407965,
+        "z": 457.9653510303877,
+        "clearance": 2.546691377961578
+      },
+      {
+        "upper": 23797,
+        "lower": 8306,
+        "x": 143.90504648074366,
+        "z": -1377.0201859229746,
+        "clearance": 1.0753107347431574
+      },
+      {
+        "upper": 23797,
+        "lower": 14205,
+        "x": 143.32951251646907,
+        "z": -1374.7180500658762,
+        "clearance": 1.2810614254398467
+      },
+      {
+        "upper": 23797,
+        "lower": 11374,
+        "x": 145.73286800276432,
+        "z": -1386.5046855563235,
+        "clearance": 0.01775716093865609
+      },
+      {
+        "upper": 23797,
+        "lower": 14206,
+        "x": 146.52699819919656,
+        "z": -1391.6359883640393,
+        "clearance": -0.4395605967502526
+      }
+    ],
+    "junctionSteps": []
+  }
+}

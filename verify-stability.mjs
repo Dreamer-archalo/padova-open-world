@@ -1,3 +1,8 @@
+import * as cameraModule from './dist/camera-rig.js';
+import * as districtModule from './dist/districts.js';
+import * as trafficModule from './dist/traffic.js';
+import * as tramModule from './dist/tram.js';
+import * as incidentModule from './dist/incidents.js';
 import fs from 'node:fs';
 import vm from 'node:vm';
 import assert from 'node:assert/strict';
@@ -37,13 +42,14 @@ const element=()=>({style:{},dataset:{},hidden:false,open:false,textContent:'',w
 ids.forEach(id=>els.set(id,element()));
 const document={body:{classList:{add(){},remove(){}}},getElementById(id){assert(els.has(id),'missing DOM id '+id);return els.get(id);},querySelectorAll:()=>[],addEventListener(){},createElement:element};
 globalThis.document=document;
-const ctx=vm.createContext({THREE,...core,...worldModule,...movement,...terrainModule,...vehicles,BuildingModels,document,window:{addEventListener(){}},localStorage:{getItem:()=>null,setItem(){}},console,Math,JSON,Set,Map,Number,Array,Float32Array,Uint8Array,devicePixelRatio:1,innerWidth:1440,innerHeight:900,requestAnimationFrame(){},location:{reload(){}}});
+const ctx=vm.createContext({THREE,...cameraModule,...districtModule,...trafficModule,...tramModule,...incidentModule,...core,...worldModule,...movement,...terrainModule,...vehicles,BuildingModels,document,window:{addEventListener(){}},localStorage:{getItem:()=>null,setItem(){}},console,Math,JSON,Set,Map,Number,Array,Float32Array,Uint8Array,devicePixelRatio:1,innerWidth:1440,innerHeight:900,requestAnimationFrame(){},location:{reload(){}}});
 let code=fs.readFileSync(new URL('./dist/game.js',import.meta.url),'utf8').replace(/^import .*;\n/gm,'').replace(/init\(\);\s*$/,'');vm.runInContext(code,ctx);
 ctx.testData=JSON.parse(fs.readFileSync(new URL('./dist/data/padova.json',import.meta.url)));
+ctx.cityData=JSON.parse(fs.readFileSync(new URL('./dist/data/city.json',import.meta.url)));
 ctx.terrainData=JSON.parse(fs.readFileSync(new URL('./dist/data/terrain.json',import.meta.url)));
-vm.runInContext(`data=testData;terrain=new Terrain(terrainData,data);scene=new THREE.Scene();world=new CityWorld(scene,data,terrain);graph=makeRoadGraph(data.roads);player=createPerson();camera=new THREE.PerspectiveCamera();sun=new THREE.DirectionalLight();marker=new THREE.Group();state.ready=true;state.started=true;createPopulation();followYaw=state.yaw;`,ctx);
+vm.runInContext(`data=testData;applyCityData(data,cityData);districts=new Districts(data);terrain=new Terrain(terrainData,data);terrain.districts=districts;scene=new THREE.Scene();world=new CityWorld(scene,data,terrain);graph=makeRoadGraph(data.roads);signals=new TrafficSignals(graph,data.signals);trams=new Trams(scene,data,terrain);incidents=new Incidents(scene);player=createPerson();camera=new THREE.PerspectiveCamera();sun=new THREE.DirectionalLight();marker=new THREE.Group();state.ready=true;state.started=true;createPopulation();followYaw=state.yaw;cameraRig.reset(state.yaw);`,ctx);
 const t=vm.runInContext('({terrain,waterRecovery,recover,dryRoad,addCar,travel,falling,state,keys,cars,people,world,scene,player,camera,clock,movePlayer,updateCamera,updateUI,toggleVehicle,beginMission,cancelMission,updateMission,clearPolice,simulate})',ctx);
-assert.equal(t.cars.length,19);assert.equal(t.people.length,48);
+assert.equal(t.cars.length,31);assert.equal(t.people.length,72);
 assert(t.player.userData.hips.children[0].position.y>.7,'leg pivots must be at the hips');
 assert(!core.collides(t.state.x,t.state.z,.36,t.world.collision),'centre spawn must be clear');
 t.toggleVehicle();assert.equal(t.state.mode,'car');assert.equal(t.state.y,t.terrain.height(t.state.x,t.state.z));
@@ -99,3 +105,5 @@ assert(t.world.landmarks.children.find(o=>o.userData.buildingName===entry.name).
 layer.loader.loadAsync=async()=>{throw new Error('expected missing asset')};const warn=console.warn;console.warn=()=>{};await layer.load(layer.entries[0]);console.warn=warn;assert.equal(building.modelActive,false);assert.equal(layer.active.size,0);
 console.log('PASS: swept movement, camera obstruction, car extent, 30/60/120/144 Hz clock, actual controller across frame rates, jump, delivery, missions, mapped-water falls/respawn in all vehicle modes, dry teleport, strict HUD IDs, GLB parsing/replacement/unload/failure fallback.');
 console.log('No browser rendering or device FPS benchmark is claimed by this test.');
+
+export {t,ctx,els};

@@ -3,6 +3,7 @@ import * as THREE from './vendor/three.module.js';
 
 // Arcade handling, SI units; dimensions include mirrors/bumper clearance.
 export const VEHICLES={
+  cinquecento:{name:'Cinquecento Turbo',width:1.9,length:3.6,height:1.55,wheelbase:2.3,accel:10,brake:23,max:38,boost:48,reverse:8,steer:1.2,turboAccel:65,turboMax:110,critical:97.22},
   mito:{name:'Milano 955 · MiTo inspired',width:2.0,length:4.08,height:1.46,wheelbase:2.51,accel:10.2,brake:20,max:39,boost:48,reverse:8,steer:1.15},
   motorcycle:{name:'Euganea 650 · Motorcycle',width:.98,length:2.2,height:1.3,wheelbase:1.45,accel:14,brake:22,max:43,boost:53,reverse:3,steer:1.65},
   scooter:{name:'Portello 125 · Scooter',width:.82,length:1.9,height:1.3,wheelbase:1.3,accel:7,brake:16,max:24,boost:29,reverse:2,steer:1.85},
@@ -21,7 +22,7 @@ const box=(g,c,x,y,z,w,h,d)=>mesh(g,cube,c,x,y,z,w,h,d);
 function wheel(g,x,z,r=.31,y=r,width=.19){mesh(g,cylinder,'#202527',x,y,z,r,width,r).rotation.z=Math.PI/2;mesh(g,cylinder,'#bcc2c2',x+(x<0?-.01:.01),y,z,r*.61,width+.012,r*.61).rotation.z=Math.PI/2;mesh(g,cylinder,'#353c40',x,y,z,r*.2,width+.024,r*.2).rotation.z=Math.PI/2;}
 function body(g,color,sections){const p=[];for(let i=1;i<sections.length;i++){const [za,wa,ya,ha]=sections[i-1],[zb,wb,yb,hb]=sections[i],a=[[-wa,ya,za],[wa,ya,za],[wa*.88,ya+ha,za],[-wa*.88,ya+ha,za]],b=[[-wb,yb,zb],[wb,yb,zb],[wb*.88,yb+hb,zb],[-wb*.88,yb+hb,zb]];for(let j=0;j<4;j++){const k=(j+1)%4;p.push(...a[j],...b[j],...b[k],...a[j],...b[k],...a[k]);}if(i===1)p.push(...a[0],...a[1],...a[2],...a[0],...a[2],...a[3]);if(i===sections.length-1)p.push(...b[2],...b[1],...b[0],...b[3],...b[2],...b[0]);}const geometry=new THREE.BufferGeometry();geometry.setAttribute('position',new THREE.Float32BufferAttribute(p,3));geometry.computeVertexNormals();const m=new THREE.Mesh(geometry,material(color));m.material.side=THREE.DoubleSide;g.add(m);}
 export function createVehicle(type,color){const g=new THREE.Group();
- if(type==='mito'){
+ if(type==='mito'||type==='cinquecento'){
   body(g,color,[[-2.03,.68,.4,.43],[-1.65,.86,.39,.55],[.95,.86,.4,.52],[1.76,.76,.43,.37],[2.03,.60,.43,.30]]);
   body(g,color,[[-1.56,.70,.9,.13],[-1.1,.72,.92,.5],[.37,.68,.92,.52],[1.04,.68,.91,.03]]);
   const windshield=box(g,'#304951',0,1.21,.69,1.27,.55,.035);windshield.rotation.x=.88;
@@ -32,7 +33,7 @@ export function createVehicle(type,color){const g=new THREE.Group();
     mesh(g,cylinder,'#941f24',side*.58,.85,-1.98,.17,.045,.17).rotation.x=Math.PI/2;
     mesh(g,cylinder,'#e6534a',side*.58,.85,-2.008,.105,.015,.105).rotation.x=Math.PI/2;
   }
-  const shape=new THREE.Shape();shape.moveTo(-.23,0);shape.lineTo(.23,0);shape.lineTo(0,-.44);shape.closePath();const grille=new THREE.Mesh(new THREE.ShapeGeometry(shape),material('#20292d'));grille.position.set(0,.88,2.035);g.add(grille);
+  const shape=new THREE.Shape();shape.moveTo(-.23,0);shape.lineTo(.23,0);shape.lineTo(0,-.44);shape.closePath();const grille=new THREE.Mesh(new THREE.ShapeGeometry(shape),material('#20292d'));grille.position.set(0,.88,2.035);if(type==='mito')g.add(grille);else{box(g,'#d3d6c9',0,.77,2.035,.86,.06,.02);mesh(g,sphere,'#fff2c8',-.55,.89,1.84,.20,.20,.09);mesh(g,sphere,'#fff2c8',.55,.89,1.84,.20,.20,.09);box(g,'#e5e0cc',0,1.46,-.36,1.2,.06,1.1);g.scale.set(.93,1.055,.875);}
   box(g,'#303b3c',-.43,.52,1.96,.3,.12,.08);box(g,'#303b3c',.43,.52,1.96,.3,.12,.08);
   box(g,'#ede7cf',-.43,.68,2.00,.28,.11,.02);
  }else if(type==='truck'){

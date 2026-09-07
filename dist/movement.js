@@ -16,19 +16,19 @@ export class FixedClock {
 
 // Conservative substeps prevent crossing even thin walls; contact projection allows
 // walking along angled façades without the old axis-dependent stopping/stuttering.
-export function slideMove(pos, dx, dz, radius, index) {
+export function slideMove(pos, dx, dz, radius, index, y=undefined) {
   let x = pos.x, z = pos.z, hit = false;
   const count = Math.max(1, Math.ceil(Math.hypot(dx, dz) / (radius * .45)));
   for (let step = 0; step < count; step++) {
     let vx = dx / count, vz = dz / count;
     for (let contact = 0; contact < 3; contact++) {
-      const obstacle = collides(x + vx, z + vz, radius, index);
+      const obstacle = collides(x + vx, z + vz, radius, index, y);
       if (!obstacle) { x += vx; z += vz; break; }
       hit = true;
       let lo = 0, hi = 1;
       for (let k = 0; k < 10; k++) {
         const t = (lo + hi) / 2;
-        if (collides(x + vx * t, z + vz * t, radius, index)) hi = t; else lo = t;
+        if (collides(x + vx * t, z + vz * t, radius, index, y)) hi = t; else lo = t;
       }
       x += vx * lo; z += vz * lo;
       let best = null, distance = Infinity;
@@ -62,11 +62,11 @@ export function polygonsOverlap(a,b){
   }
   return false;
 }
-export function vehicleBlocked(x, z, yaw, index, spec = 1) {
+export function vehicleBlocked(x, z, yaw, index, spec = 1, y=undefined) {
   const width=typeof spec==='number'?1.92*spec:spec.width;
   const length=typeof spec==='number'?4.22*spec:spec.length;
   const footprint=vehicleFootprint(x,z,yaw,width,length);
-  for(const b of index.near(x,z,Math.hypot(width,length)/2))if(polygonsOverlap(footprint,b.p))return true;
+  for(const b of index.near(x,z,Math.hypot(width,length)/2))if((y===undefined||y+(spec.height||1.6)>(b.minY||0)&&y<(b.minY||0)+b.h)&&polygonsOverlap(footprint,b.p))return true;
   return false;
 }
 

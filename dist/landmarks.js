@@ -51,3 +51,5 @@ export function detailedLandmarks(root,data){
   bake(g);
  }
 }
+
+export {box,arch,windowArch,bake};
