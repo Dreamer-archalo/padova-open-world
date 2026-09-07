@@ -1,0 +1,19 @@
+import * as THREE from './vendor/three.module.js';
+import {dist,angleDiff} from './core.js';
+export class TrafficSignals{
+ constructor(graph,mapped=[]){this.graph=graph;this.junctions=new Map();const occupied=new Set();for(const [id,n] of graph.nodes.entries()){
+  if(n.edges.length<3||!n.edges.some(e=>['primary','secondary','tertiary'].includes(e.road?.k)))continue;const key=Math.round(n.x/30)+','+Math.round(n.z/30);if(occupied.has(key))continue;occupied.add(key);this.junctions.set(id,{id,x:n.x,z:n.z,offset:(id%7)*3});
+ }for(const [x,z] of mapped){let best=null,d=18;for(const s of graph.index.near(x,z,18))for(const id of [s.a,s.b]){const n=graph.nodes[id],dd=Math.hypot(n.x-x,n.z-z);if(dd<d){best=id;d=dd;}}if(best!==null){const n=graph.nodes[best];this.junctions.set(best,{id:best,x:n.x,z:n.z,offset:(best%7)*3,mapped:true});}}this.group=new THREE.Group();this.visible=[];this.lastCell='';}
+ phase(id,time,heading){const j=this.junctions.get(id);if(!j)return 'green';const phase=(time+j.offset)%30,axis=Math.abs(Math.sin(heading))>.707?1:0;if(phase<12)return axis===0?'green':'red';if(phase<14)return axis===0?'amber':'red';if(phase<15)return 'red';if(phase<27)return axis===1?'green':'red';if(phase<29)return axis===1?'amber':'red';return 'red';}
+ allowed(id,time,heading){return this.phase(id,time,heading)==='green';}
+ update(scene,terrain,x,z,time){const key=Math.floor(x/200)+','+Math.floor(z/200);if(key!==this.lastCell){this.lastCell=key;for(const o of this.group.children)o.traverse(m=>{if(m.isMesh){m.geometry.dispose();m.material.dispose();}});this.group.clear();this.visible=[];
+  for(const j of this.junctions.values())if(Math.hypot(j.x-x,j.z-z)<350)for(let axis=0;axis<2;axis++){
+   const g=new THREE.Group(),pole=new THREE.Mesh(new THREE.CylinderGeometry(.09,.09,4,6),new THREE.MeshStandardMaterial({color:'#606862'}));pole.position.y=2;g.add(pole);const housing=new THREE.Mesh(new THREE.BoxGeometry(.38,1.05,.3),new THREE.MeshStandardMaterial({color:'#293436'}));housing.position.y=3.45;g.add(housing);const bulbs=[];for(let i=0;i<3;i++){const m=new THREE.Mesh(new THREE.SphereGeometry(.12,6,4),new THREE.MeshBasicMaterial({color:'#26312c'}));m.position.set(0,3.76-i*.3,.18);g.add(m);bulbs.push(m);}g.position.set(j.x+(axis?0:5),terrain.height(j.x,j.z),j.z+(axis?5:0));g.rotation.y=axis*Math.PI/2;this.group.add(g);this.visible.push({j,axis,bulbs});
+  }if(!this.group.parent)scene.add(this.group);
+ }for(const {j,axis,bulbs} of this.visible){const p=this.phase(j.id,time,axis*Math.PI/2);bulbs.forEach((b,i)=>b.material.color.set(i===(p==='red'?0:p==='amber'?1:2)?['#ff4234','#ffc547','#5cff8a'][i]:'#26312c'));}}
+}
+export function lanePoint(node,from,road){const yaw=Math.atan2(node.x-from.x,node.z-from.z),offset=(road?.oneway??road?.one)?0:Math.min(1.55,(road?.w||6)/4);return {x:node.x-Math.cos(yaw)*offset,z:node.z+Math.sin(yaw)*offset,yaw};}
+export function trafficSpeed(car,target,actors,signals,time){const yaw=Math.atan2(target.x-car.x,target.z-car.z),turn=Math.abs(angleDiff(yaw,car.yaw)),limit=car.road?.k?.includes('motorway')?24:['primary','secondary'].includes(car.road?.k)?14:car.road?.k==='pedestrian'?3:9;let speed=Math.min(car.spec.max*.7,turn>.7?4:limit);
+ const stop=Math.max(7,car.speed*car.speed/(2*car.spec.brake)+4);if(!signals.allowed(car.target,time,yaw)&&dist(car,target)<stop)speed=0;
+ for(const other of actors){if(other===car||!other.mesh?.visible||Math.abs((other.y||0)-(car.y||0))>3)continue;const dx=other.x-car.x,dz=other.z-car.z,ahead=dx*Math.sin(car.yaw)+dz*Math.cos(car.yaw),side=Math.abs(dx*Math.cos(car.yaw)-dz*Math.sin(car.yaw)),gap=ahead-(car.spec.length+(other.spec?.length||1))/2;if(ahead>0&&side<(car.spec.width+(other.spec?.width||1))/2+.35&&gap<Math.max(4,car.speed*1.3))speed=Math.min(speed,Math.max(0,(gap-2)*.6));}return speed;
+}
