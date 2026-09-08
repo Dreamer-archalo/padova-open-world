@@ -1,5 +1,15 @@
 # PADOVA / Open World
 
+## Dreamer-archalo edition
+
+- Public game: https://padova-open-world.tfyudartuuyikgfdsgafrdyu.chatgpt.site
+- Source and Pull Requests: https://github.com/Dreamer-archalo/padova-open-world
+- Target branch for new Pull Requests: `Dreamer-archalo/padova-open-world:main`.
+- Publication uses the complete `dist/` directory from this repository. The Site identity is recorded in `.openai/hosting.json`.
+- Merging a Pull Request updates the source; publishing the Site is a separate operation. See [contribution and publication instructions](CONTRIBUTING.md).
+
+This edition continues the project from [scandolo/padova-open-world](https://github.com/scandolo/padova-open-world), retaining its history and credits.
+
 A self-contained Three.js browser game using actual OpenStreetMap streets and building footprints across Padua and its surroundings. Static files in `dist/` are the entire deployed app. No API key, build step, server-side state or live map service is needed while playing.
 
 ## Play
