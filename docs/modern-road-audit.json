@@ -1,0 +1,4679 @@
+{
+  "samples": 2195555,
+  "maxGrade": 0.08140000000000315,
+  "maxGradeChangePerSample": 0.09777777777777866,
+  "bridgeCount": 467,
+  "bridges": [
+    {
+      "id": 26,
+      "name": "Ponte Silvio Omizzolo",
+      "kind": "tertiary",
+      "width": 8,
+      "samples": 48,
+      "blocked": 0,
+      "wet": 0,
+      "maxStep": 0.013907088302445914
+    },
+    {
+      "id": 303,
+      "name": "Cavalcavia Borgomagno",
+      "kind": "tertiary",
+      "width": 8,
+      "samples": 129,
+      "blocked": 0,
+      "wet": 0,
+      "maxStep": 0.06479818318441488
+    },
+    {
+      "id": 475,
+      "name": "Ponte San Leonardo",
+      "kind": "residential",
+      "width": 6.5,
+      "samples": 12,
+      "blocked": 0,
+      "wet": 0,
+      "maxStep": 0.010312922194493979
+    },
+    {
+      "id": 495,
+      "name": "Corso Milano",
+      "kind": "tertiary",
+      "width": 8,
+      "samples": 26,
+      "blocked": 0,
+      "wet": 0,
+      "maxStep": 0.01800817463571036
+    },
+    {
+      "id": 600,
+      "name": "Corso Tredici Giugno",
+      "kind": "trunk",
+      "width": 12,
+      "samples": 228,
+      "blocked": 0,
+      "wet": 0,
+      "maxStep": 0.0037666780779197495
+    },
+    {
+      "id": 632,
+      "name": "Corso Tredici Giugno",
+      "kind": "trunk_link",
+      "width": 7,
+      "samples": 258,
+      "blocked": 0,
+      "wet": 0,
+      "maxStep": 0.004118326165301056
+    },
+    {
+      "id": 637,
+      "name": "Autostrada Serenissima",
+      "kind": "motorway",
+      "width": 13,
+      "samples": 198,
+      "blocked": 0,
+      "wet": 0,
+      "maxStep": 0.044384430485356674
+    },
+    {
+      "id": 639,
+      "name": "Autostrada Serenissima",
+      "kind": "motorway",
+      "width": 13,
+      "samples": 186,
+      "blocked": 0,
+      "wet": 0,
+      "maxStep": 0.055256954141318815
+    },
+    {
+      "id": 760,
+      "name": "Corso Tredici Giugno",
+      "kind": "trunk",
+      "width": 12,
+      "samples": 204,
+      "blocked": 0,
+      "wet": 0,
+      "maxStep": 0.0049379841205983155
+    },
+    {
+      "id": 761,
+      "name": "Corso Tredici Giugno",
+      "kind": "trunk",
+      "width": 12,
+      "samples": 264,
+      "blocked": 0,
+      "wet": 0,
+      "maxStep": 0.0055982922557724635
+    },
+    {
+      "id": 762,
+      "name": "Corso Tredici Giugno",
+      "kind": "trunk",
+      "width": 12,
+      "samples": 487,
+      "blocked": 0,
+      "wet": 0,
+      "maxStep": 0.005742079829420987
+    },
+    {
+      "id": 785,
+      "name": "motorway_link",
+      "kind": "motorway_link",
+      "width": 7,
+      "samples": 159,
+      "blocked": 0,
+      "wet": 0,
+      "maxStep": 0.005836073479086323
+    },
+    {
+      "id": 846,
+      "name": "Ponte Antonio Milani",
+      "kind": "tertiary",
+      "width": 8,
+      "samples": 42,
+      "blocked": 0,
+      "wet": 0,
+      "maxStep": 0.009037082144374153
+    },
+    {
+      "id": 848,
+      "name": "Corso Giuseppe Garibaldi",
+      "kind": "residential",
+      "width": 6.5,
+      "samples": 54,
+      "blocked": 0,
+      "wet": 0,
+      "maxStep": 0.0032118412348225434
+    },
+    {
+      "id": 881,
+      "name": "Via Rudena",
+      "kind": "residential",
+      "width": 6.5,
+      "samples": 7,
+      "blocked": 0,
+      "wet": 0,
+      "maxStep": 0.07271566004213526
+    },
+    {
+      "id": 896,
+      "name": "Ponte dell'Osservatorio",
+      "kind": "residential",
+      "width": 6.5,
+      "samples": 19,
+      "blocked": 0,
+      "wet": 0,
+      "maxStep": 0.05025473996440155
+    },
+    {
+      "id": 898,
+      "name": "Ponte Sant'Agostino",
+      "kind": "residential",
+      "width": 6.5,
+      "samples": 24,
+      "blocked": 0,
+      "wet": 0,
+      "maxStep": 0.01698420695567293
+    },
+    {
+      "id": 1091,
+      "name": "trunk_link",
+      "kind": "trunk_link",
+      "width": 7,
+      "samples": 168,
+      "blocked": 0,
+      "wet": 0,
+      "maxStep": 0.0025055573120482677
+    },
+    {
+      "id": 1098,
+      "name": "Autostrada Serenissima",
+      "kind": "motorway",
+      "width": 13,
+      "samples": 42,
+      "blocked": 0,
+      "wet": 0,
+      "maxStep": 0.003602445736220261
+    },
+    {
+      "id": 1099,
+      "name": "Autostrada Serenissima",
+      "kind": "motorway",
+      "width": 13,
+      "samples": 48,
+      "blocked": 0,
+      "wet": 0,
+      "maxStep": 0.003209725512348882
+    },
+    {
+      "id": 1103,
+      "name": "Autostrada Serenissima",
+      "kind": "motorway",
+      "width": 13,
+      "samples": 60,
+      "blocked": 0,
+      "wet": 0,
+      "maxStep": 0.004077383015797409
+    },
+    {
+      "id": 1104,
+      "name": "Autostrada Serenissima",
+      "kind": "motorway",
+      "width": 13,
+      "samples": 48,
+      "blocked": 0,
+      "wet": 0,
+      "maxStep": 0.0022262216863957462
+    },
+    {
+      "id": 1164,
+      "name": "Via Arrigoni",
+      "kind": "secondary",
+      "width": 9,
+      "samples": 206,
+      "blocked": 0,
+      "wet": 0,
+      "maxStep": 0.06685421122764978
+    },
+    {
+      "id": 1223,
+      "name": "Riviera del Businello",
+      "kind": "residential",
+      "width": 6.5,
+      "samples": 2,
+      "blocked": 0,
+      "wet": 0,
+      "maxStep": 0.005213109236258617
+    },
+    {
+      "id": 1266,
+      "name": "Via Orto Botanico",
+      "kind": "residential",
+      "width": 6.5,
+      "samples": 8,
+      "blocked": 0,
+      "wet": 0,
+      "maxStep": 0.06551369885400149
+    },
+    {
+      "id": 1274,
+      "name": "Via Giotto",
+      "kind": "residential",
+      "width": 6.5,
+      "samples": 36,
+      "blocked": 0,
+      "wet": 0,
+      "maxStep": 0.010666428199129996
+    },
+    {
+      "id": 1286,
+      "name": "Ponte del Sostegno",
+      "kind": "secondary",
+      "width": 9,
+      "samples": 48,
+      "blocked": 0,
+      "wet": 0,
+      "maxStep": 0.0008228733266726351
+    },
+    {
+      "id": 1354,
+      "name": "Vicolo Santonini",
+      "kind": "residential",
+      "width": 6.5,
+      "samples": 68,
+      "blocked": 0,
+      "wet": 0,
+      "maxStep": 0.06527893939457385
+    },
+    {
+      "id": 1552,
+      "name": "Corso Primo Maggio",
+      "kind": "trunk",
+      "width": 12,
+      "samples": 90,
+      "blocked": 0,
+      "wet": 0,
+      "maxStep": 0.007890507297819482
+    },
+    {
+      "id": 1555,
+      "name": "Corso John e Robert Kennedy",
+      "kind": "trunk",
+      "width": 12,
+      "samples": 15,
+      "blocked": 0,
+      "wet": 0,
+      "maxStep": 0.02816892113106384
+    },
+    {
+      "id": 1558,
+      "name": "Corso John e Robert Kennedy",
+      "kind": "trunk",
+      "width": 12,
+      "samples": 54,
+      "blocked": 0,
+      "wet": 0,
+      "maxStep": 0.009021363265665272
+    },
+    {
+      "id": 1564,
+      "name": "Corso John e Robert Kennedy",
+      "kind": "trunk",
+      "width": 12,
+      "samples": 54,
+      "blocked": 0,
+      "wet": 0,
+      "maxStep": 0.0005635281605389508
+    },
+    {
+      "id": 1565,
+      "name": "Corso Argentina",
+      "kind": "trunk",
+      "width": 12,
+      "samples": 42,
+      "blocked": 0,
+      "wet": 0,
+      "maxStep": 0.0019370667738645153
+    },
+    {
+      "id": 1568,
+      "name": "Corso Argentina",
+      "kind": "trunk",
+      "width": 12,
+      "samples": 42,
+      "blocked": 0,
+      "wet": 0,
+      "maxStep": 0.00014615969716480492
+    },
+    {
+      "id": 1571,
+      "name": "Corso Argentina",
+      "kind": "trunk",
+      "width": 12,
+      "samples": 72,
+      "blocked": 0,
+      "wet": 0,
+      "maxStep": 0.0009524957234248177
+    },
+    {
+      "id": 1576,
+      "name": "Corso Argentina",
+      "kind": "trunk",
+      "width": 12,
+      "samples": 66,
+      "blocked": 0,
+      "wet": 0,
+      "maxStep": 0.011695732560541572
+    },
+    {
+      "id": 1577,
+      "name": "Cavalcavia Charles Darwin",
+      "kind": "trunk",
+      "width": 12,
+      "samples": 326,
+      "blocked": 0,
+      "wet": 0,
+      "maxStep": 0.06772257417683036
+    },
+    {
+      "id": 1578,
+      "name": "Nuova Strada del Santo",
+      "kind": "trunk",
+      "width": 12,
+      "samples": 360,
+      "blocked": 0,
+      "wet": 0,
+      "maxStep": 0.020739179761388726
+    },
+    {
+      "id": 1582,
+      "name": "Cavalcavia Stati Uniti",
+      "kind": "primary",
+      "width": 10,
+      "samples": 48,
+      "blocked": 0,
+      "wet": 0,
+      "maxStep": 0.002124553618584102
+    },
+    {
+      "id": 1587,
+      "name": "Autostrada Bologna-Padova",
+      "kind": "motorway",
+      "width": 13,
+      "samples": 90,
+      "blocked": 0,
+      "wet": 0,
+      "maxStep": 0.008517092007281235
+    },
+    {
+      "id": 1590,
+      "name": "Autostrada Bologna-Padova",
+      "kind": "motorway",
+      "width": 13,
+      "samples": 36,
+      "blocked": 0,
+      "wet": 0,
+      "maxStep": 0.0004609155479844418
+    },
+    {
+      "id": 1597,
+      "name": "Via Venezia",
+      "kind": "secondary",
+      "width": 9,
+      "samples": 360,
+      "blocked": 0,
+      "wet": 0,
+      "maxStep": 0.013231498292835653
+    },
+    {
+      "id": 1604,
+      "name": "Autostrada Serenissima",
+      "kind": "motorway",
+      "width": 13,
+      "samples": 168,
+      "blocked": 0,
+      "wet": 0,
+      "maxStep": 0.006286712408225981
+    },
+    {
+      "id": 1605,
+      "name": "Autostrada Serenissima",
+      "kind": "motorway",
+      "width": 13,
+      "samples": 276,
+      "blocked": 0,
+      "wet": 0,
+      "maxStep": 0.008460948243364186
+    },
+    {
+      "id": 1694,
+      "name": "Corso John e Robert Kennedy",
+      "kind": "trunk",
+      "width": 12,
+      "samples": 78,
+      "blocked": 0,
+      "wet": 0,
+      "maxStep": 0.053856707096388234
+    },
+    {
+      "id": 1696,
+      "name": "Corso John e Robert Kennedy",
+      "kind": "trunk",
+      "width": 12,
+      "samples": 54,
+      "blocked": 0,
+      "wet": 0,
+      "maxStep": 0.00042049537708876983
+    },
+    {
+      "id": 1713,
+      "name": "Via Carlo Giorato",
+      "kind": "tertiary",
+      "width": 8,
+      "samples": 24,
+      "blocked": 0,
+      "wet": 0,
+      "maxStep": 0.0033285927547499483
+    },
+    {
+      "id": 1718,
+      "name": "Via Roma",
+      "kind": "primary",
+      "width": 10,
+      "samples": 36,
+      "blocked": 0,
+      "wet": 0,
+      "maxStep": 0.004772636736083413
+    },
+    {
+      "id": 1860,
+      "name": "Autostrada Bologna-Padova",
+      "kind": "motorway_link",
+      "width": 7,
+      "samples": 312,
+      "blocked": 0,
+      "wet": 0,
+      "maxStep": 0.06777621178851945
+    },
+    {
+      "id": 1861,
+      "name": "Autostrada Bologna-Padova",
+      "kind": "motorway_link",
+      "width": 7,
+      "samples": 93,
+      "blocked": 0,
+      "wet": 0,
+      "maxStep": 0.005910787750911695
+    },
+    {
+      "id": 1963,
+      "name": "Cavalcavia Antonio Grassi",
+      "kind": "tertiary",
+      "width": 8,
+      "samples": 119,
+      "blocked": 0,
+      "wet": 0,
+      "maxStep": 0.000846257151369656
+    },
+    {
+      "id": 1993,
+      "name": "Cavalcavia Pietro Maroncelli",
+      "kind": "secondary",
+      "width": 9,
+      "samples": 54,
+      "blocked": 0,
+      "wet": 0,
+      "maxStep": 0.004711379195679655
+    },
+    {
+      "id": 2007,
+      "name": "Cavalcavia Antonio Grassi",
+      "kind": "secondary",
+      "width": 9,
+      "samples": 36,
+      "blocked": 0,
+      "wet": 0,
+      "maxStep": 0.0005643102287677948
+    },
+    {
+      "id": 2009,
+      "name": "Cavalcavia Antonio Grassi",
+      "kind": "tertiary",
+      "width": 8,
+      "samples": 115,
+      "blocked": 0,
+      "wet": 0,
+      "maxStep": 0.000726927618334372
+    },
+    {
+      "id": 2113,
+      "name": "motorway_link",
+      "kind": "motorway_link",
+      "width": 7,
+      "samples": 244,
+      "blocked": 0,
+      "wet": 0,
+      "maxStep": 0.07041635778557165
+    },
+    {
+      "id": 2114,
+      "name": "motorway_link",
+      "kind": "motorway_link",
+      "width": 7,
+      "samples": 132,
+      "blocked": 0,
+      "wet": 0,
+      "maxStep": 0.007323853221823384
+    },
+    {
+      "id": 2197,
+      "name": "Ponte di Brentelle di Sopra",
+      "kind": "primary",
+      "width": 10,
+      "samples": 42,
+      "blocked": 0,
+      "wet": 0,
+      "maxStep": 0.004374355703113508
+    },
+    {
+      "id": 2277,
+      "name": "Corso Primo Maggio",
+      "kind": "trunk",
+      "width": 12,
+      "samples": 186,
+      "blocked": 0,
+      "wet": 0,
+      "maxStep": 0.015551134990476001
+    },
+    {
+      "id": 2278,
+      "name": "Corso Esperanto",
+      "kind": "trunk",
+      "width": 12,
+      "samples": 174,
+      "blocked": 0,
+      "wet": 0,
+      "maxStep": 0.026204010015645096
+    },
+    {
+      "id": 2280,
+      "name": "Corso Primo Maggio",
+      "kind": "motorway_link",
+      "width": 7,
+      "samples": 246,
+      "blocked": 0,
+      "wet": 0,
+      "maxStep": 0.007953541818562115
+    },
+    {
+      "id": 2281,
+      "name": "Corso Primo Maggio",
+      "kind": "trunk",
+      "width": 12,
+      "samples": 378,
+      "blocked": 0,
+      "wet": 0,
+      "maxStep": 0.005169809983948781
+    },
+    {
+      "id": 2283,
+      "name": "Corso Primo Maggio",
+      "kind": "trunk",
+      "width": 12,
+      "samples": 378,
+      "blocked": 0,
+      "wet": 0,
+      "maxStep": 0.0063342179791714415
+    },
+    {
+      "id": 2285,
+      "name": "Corso Boston",
+      "kind": "trunk",
+      "width": 12,
+      "samples": 438,
+      "blocked": 0,
+      "wet": 0,
+      "maxStep": 0.006033911822068916
+    },
+    {
+      "id": 2286,
+      "name": "Corso Boston",
+      "kind": "trunk",
+      "width": 12,
+      "samples": 252,
+      "blocked": 0,
+      "wet": 0,
+      "maxStep": 0.004795271217609809
+    },
+    {
+      "id": 2301,
+      "name": "Cavalcavia Brusegana",
+      "kind": "secondary",
+      "width": 9,
+      "samples": 44,
+      "blocked": 0,
+      "wet": 0,
+      "maxStep": 0.00015449369307773964
+    },
+    {
+      "id": 2302,
+      "name": "Cavalcavia Brusegana",
+      "kind": "secondary",
+      "width": 9,
+      "samples": 29,
+      "blocked": 0,
+      "wet": 0,
+      "maxStep": 0.013353299653250161
+    },
+    {
+      "id": 2317,
+      "name": "Autostrada Bologna-Padova",
+      "kind": "motorway",
+      "width": 13,
+      "samples": 90,
+      "blocked": 0,
+      "wet": 0,
+      "maxStep": 0.00931437717881245
+    },
+    {
+      "id": 2318,
+      "name": "Tangenziale di Limena",
+      "kind": "trunk",
+      "width": 12,
+      "samples": 108,
+      "blocked": 0,
+      "wet": 0,
+      "maxStep": 0.0033093881907042544
+    },
+    {
+      "id": 2320,
+      "name": "Tangenziale di Limena",
+      "kind": "trunk",
+      "width": 12,
+      "samples": 114,
+      "blocked": 0,
+      "wet": 0,
+      "maxStep": 0.00236000411098658
+    },
+    {
+      "id": 2330,
+      "name": "Corso Tredici Giugno",
+      "kind": "trunk",
+      "width": 12,
+      "samples": 78,
+      "blocked": 0,
+      "wet": 0,
+      "maxStep": 0.025711087492741314
+    },
+    {
+      "id": 2333,
+      "name": "Corso Tredici Giugno",
+      "kind": "trunk_link",
+      "width": 7,
+      "samples": 184,
+      "blocked": 0,
+      "wet": 0,
+      "maxStep": 0.03459504891388221
+    },
+    {
+      "id": 2352,
+      "name": "Corso Australia",
+      "kind": "trunk",
+      "width": 12,
+      "samples": 138,
+      "blocked": 0,
+      "wet": 0,
+      "maxStep": 0.002556646214745939
+    },
+    {
+      "id": 2354,
+      "name": "Corso Australia",
+      "kind": "trunk",
+      "width": 12,
+      "samples": 90,
+      "blocked": 0,
+      "wet": 0,
+      "maxStep": 0.0015975465548745404
+    },
+    {
+      "id": 2374,
+      "name": "Via Boves",
+      "kind": "trunk_link",
+      "width": 7,
+      "samples": 288,
+      "blocked": 0,
+      "wet": 0,
+      "maxStep": 0.008334564773530673
+    },
+    {
+      "id": 2379,
+      "name": "Via Boves",
+      "kind": "trunk",
+      "width": 12,
+      "samples": 360,
+      "blocked": 0,
+      "wet": 0,
+      "maxStep": 0.00602261504242918
+    },
+    {
+      "id": 2384,
+      "name": "Via Boves",
+      "kind": "trunk",
+      "width": 12,
+      "samples": 156,
+      "blocked": 0,
+      "wet": 0,
+      "maxStep": 0.013033965510153678
+    },
+    {
+      "id": 2385,
+      "name": "Via del Commercio",
+      "kind": "trunk",
+      "width": 12,
+      "samples": 198,
+      "blocked": 0,
+      "wet": 0,
+      "maxStep": 0.009962138377831664
+    },
+    {
+      "id": 2390,
+      "name": "Via del Commercio",
+      "kind": "trunk",
+      "width": 12,
+      "samples": 348,
+      "blocked": 0,
+      "wet": 0,
+      "maxStep": 0.003689104274226196
+    },
+    {
+      "id": 2395,
+      "name": "Via Salboro",
+      "kind": "tertiary",
+      "width": 8,
+      "samples": 84,
+      "blocked": 0,
+      "wet": 0,
+      "maxStep": 0.003375520234728313
+    },
+    {
+      "id": 2431,
+      "name": "Via Boves",
+      "kind": "trunk",
+      "width": 12,
+      "samples": 96,
+      "blocked": 0,
+      "wet": 0,
+      "maxStep": 0.003129495798019022
+    },
+    {
+      "id": 2484,
+      "name": "Via Papa Paolo VI",
+      "kind": "residential",
+      "width": 6.5,
+      "samples": 173,
+      "blocked": 0,
+      "wet": 0,
+      "maxStep": 0.07147680229068598
+    },
+    {
+      "id": 2485,
+      "name": "Via Papa Paolo VI",
+      "kind": "unclassified",
+      "width": 6.5,
+      "samples": 20,
+      "blocked": 0,
+      "wet": 0,
+      "maxStep": 0.00001582267352162603
+    },
+    {
+      "id": 2629,
+      "name": "Via Boves",
+      "kind": "trunk_link",
+      "width": 7,
+      "samples": 241,
+      "blocked": 0,
+      "wet": 0,
+      "maxStep": 0.003057790836596297
+    },
+    {
+      "id": 2645,
+      "name": "Autostrada Bologna-Padova",
+      "kind": "motorway",
+      "width": 13,
+      "samples": 210,
+      "blocked": 0,
+      "wet": 0,
+      "maxStep": 0.01954397051180834
+    },
+    {
+      "id": 2710,
+      "name": "Cavalcavia Montà",
+      "kind": "secondary",
+      "width": 9,
+      "samples": 393,
+      "blocked": 0,
+      "wet": 0,
+      "maxStep": 0.007605209480662012
+    },
+    {
+      "id": 2768,
+      "name": "Via Pontevigodarzere",
+      "kind": "secondary",
+      "width": 9,
+      "samples": 33,
+      "blocked": 0,
+      "wet": 0,
+      "maxStep": 0.0007637914664719858
+    },
+    {
+      "id": 2805,
+      "name": "Via Messico",
+      "kind": "tertiary",
+      "width": 8,
+      "samples": 90,
+      "blocked": 0,
+      "wet": 0,
+      "maxStep": 0.0028623052343341726
+    },
+    {
+      "id": 2809,
+      "name": "Corso Tredici Giugno",
+      "kind": "trunk_link",
+      "width": 7,
+      "samples": 208,
+      "blocked": 0,
+      "wet": 0,
+      "maxStep": 0.046093501975452256
+    },
+    {
+      "id": 2830,
+      "name": "Via Fornace",
+      "kind": "secondary",
+      "width": 9,
+      "samples": 18,
+      "blocked": 0,
+      "wet": 0,
+      "maxStep": 0.002102234864739927
+    },
+    {
+      "id": 2832,
+      "name": "Via Ponterotto",
+      "kind": "secondary",
+      "width": 9,
+      "samples": 35,
+      "blocked": 0,
+      "wet": 0,
+      "maxStep": 0.06585559829756349
+    },
+    {
+      "id": 3194,
+      "name": "Via Argine Sinistro",
+      "kind": "residential",
+      "width": 3,
+      "samples": 285,
+      "blocked": 0,
+      "wet": 0,
+      "maxStep": 0.07001073631319699
+    },
+    {
+      "id": 3380,
+      "name": "Via Boves",
+      "kind": "trunk_link",
+      "width": 7,
+      "samples": 264,
+      "blocked": 0,
+      "wet": 0,
+      "maxStep": 0.007832725637221927
+    },
+    {
+      "id": 3410,
+      "name": "Ponte del Maglio",
+      "kind": "residential",
+      "width": 6.5,
+      "samples": 15,
+      "blocked": 0,
+      "wet": 0,
+      "maxStep": 0.010272533175793797
+    },
+    {
+      "id": 3413,
+      "name": "Ponte Corvo",
+      "kind": "residential",
+      "width": 6.5,
+      "samples": 48,
+      "blocked": 0,
+      "wet": 0,
+      "maxStep": 0.04392441393083146
+    },
+    {
+      "id": 3645,
+      "name": "Autostrada Serenissima",
+      "kind": "motorway",
+      "width": 13,
+      "samples": 72,
+      "blocked": 0,
+      "wet": 0,
+      "maxStep": 0.00233514721669259
+    },
+    {
+      "id": 3646,
+      "name": "Autostrada Serenissima",
+      "kind": "motorway",
+      "width": 13,
+      "samples": 72,
+      "blocked": 0,
+      "wet": 0,
+      "maxStep": 0.00163460870986043
+    },
+    {
+      "id": 3672,
+      "name": "Ponte San Gregorio Barbarigo",
+      "kind": "residential",
+      "width": 6.5,
+      "samples": 19,
+      "blocked": 0,
+      "wet": 0,
+      "maxStep": 0.06783610055977718
+    },
+    {
+      "id": 3753,
+      "name": "Autostrada Serenissima",
+      "kind": "motorway",
+      "width": 13,
+      "samples": 3360,
+      "blocked": 0,
+      "wet": 0,
+      "maxStep": 0.0032774113602425103
+    },
+    {
+      "id": 3770,
+      "name": "Via Roma",
+      "kind": "primary",
+      "width": 10,
+      "samples": 72,
+      "blocked": 0,
+      "wet": 0,
+      "maxStep": 0.04432855368595234
+    },
+    {
+      "id": 3772,
+      "name": "Via Lauro",
+      "kind": "tertiary",
+      "width": 8,
+      "samples": 102,
+      "blocked": 0,
+      "wet": 0,
+      "maxStep": 0.0039256446796755995
+    },
+    {
+      "id": 3780,
+      "name": "Via Arrigoni",
+      "kind": "secondary",
+      "width": 9,
+      "samples": 10,
+      "blocked": 0,
+      "wet": 0,
+      "maxStep": 0.07115170398520476
+    },
+    {
+      "id": 3783,
+      "name": "Via Ponterotto",
+      "kind": "secondary",
+      "width": 9,
+      "samples": 15,
+      "blocked": 0,
+      "wet": 0,
+      "maxStep": 0.004913255379538128
+    },
+    {
+      "id": 3791,
+      "name": "Via Giuseppe Garibaldi",
+      "kind": "primary",
+      "width": 10,
+      "samples": 8,
+      "blocked": 0,
+      "wet": 0,
+      "maxStep": 0.0215404327179769
+    },
+    {
+      "id": 3821,
+      "name": "Via Arrigoni",
+      "kind": "secondary",
+      "width": 9,
+      "samples": 10,
+      "blocked": 0,
+      "wet": 0,
+      "maxStep": 0.021408632272303052
+    },
+    {
+      "id": 3824,
+      "name": "Via Paolo VI",
+      "kind": "unclassified",
+      "width": 6.5,
+      "samples": 15,
+      "blocked": 0,
+      "wet": 0,
+      "maxStep": 0.008491977079479796
+    },
+    {
+      "id": 3854,
+      "name": "Cavalcavia Chiesanuova",
+      "kind": "secondary",
+      "width": 9,
+      "samples": 96,
+      "blocked": 0,
+      "wet": 0,
+      "maxStep": 0.003272006649403636
+    },
+    {
+      "id": 3857,
+      "name": "trunk_link",
+      "kind": "trunk_link",
+      "width": 7,
+      "samples": 12,
+      "blocked": 0,
+      "wet": 0,
+      "maxStep": 0.0022994081285290235
+    },
+    {
+      "id": 3913,
+      "name": "Ponte Paleocapa",
+      "kind": "residential",
+      "width": 3.5,
+      "samples": 36,
+      "blocked": 0,
+      "wet": 0,
+      "maxStep": 0.04336961332037603
+    },
+    {
+      "id": 3917,
+      "name": "trunk_link",
+      "kind": "trunk_link",
+      "width": 7,
+      "samples": 10,
+      "blocked": 0,
+      "wet": 0,
+      "maxStep": 0.0020219959116367647
+    },
+    {
+      "id": 3950,
+      "name": "Viale della Repubblica",
+      "kind": "secondary",
+      "width": 9,
+      "samples": 16,
+      "blocked": 0,
+      "wet": 0,
+      "maxStep": 0.061584547775026977
+    },
+    {
+      "id": 3961,
+      "name": "Cavalcavia Chiesanuova",
+      "kind": "primary",
+      "width": 10,
+      "samples": 20,
+      "blocked": 0,
+      "wet": 0,
+      "maxStep": 0.001171232132659128
+    },
+    {
+      "id": 4169,
+      "name": "Cavalcavia Dalmazia",
+      "kind": "secondary",
+      "width": 9,
+      "samples": 66,
+      "blocked": 0,
+      "wet": 0,
+      "maxStep": 0.004087208655402463
+    },
+    {
+      "id": 4182,
+      "name": "Cavalcavia Dalmazia",
+      "kind": "secondary_link",
+      "width": 7,
+      "samples": 112,
+      "blocked": 0,
+      "wet": 0,
+      "maxStep": 0.003759085988550126
+    },
+    {
+      "id": 4372,
+      "name": "Ponte del Sostegno",
+      "kind": "secondary_link",
+      "width": 7,
+      "samples": 10,
+      "blocked": 0,
+      "wet": 0,
+      "maxStep": 0.004152406976444922
+    },
+    {
+      "id": 4414,
+      "name": "Lungargine Brusegana",
+      "kind": "unclassified",
+      "width": 3.5,
+      "samples": 24,
+      "blocked": 0,
+      "wet": 0,
+      "maxStep": 0.067574521709588
+    },
+    {
+      "id": 4493,
+      "name": "Via Primo Levi",
+      "kind": "residential",
+      "width": 6.5,
+      "samples": 4,
+      "blocked": 0,
+      "wet": 0,
+      "maxStep": 0.0017471498515160278
+    },
+    {
+      "id": 4581,
+      "name": "Cavalcavia Dalmazia",
+      "kind": "secondary_link",
+      "width": 7,
+      "samples": 169,
+      "blocked": 0,
+      "wet": 0,
+      "maxStep": 0.004059170087302277
+    },
+    {
+      "id": 4586,
+      "name": "motorway_link",
+      "kind": "motorway_link",
+      "width": 7,
+      "samples": 54,
+      "blocked": 0,
+      "wet": 0,
+      "maxStep": 0.000294691529340696
+    },
+    {
+      "id": 4662,
+      "name": "Via Trieste",
+      "kind": "unclassified",
+      "width": 6.5,
+      "samples": 15,
+      "blocked": 0,
+      "wet": 0,
+      "maxStep": 0.0011703602107111521
+    },
+    {
+      "id": 4783,
+      "name": "Via Cairo",
+      "kind": "residential",
+      "width": 6.5,
+      "samples": 12,
+      "blocked": 0,
+      "wet": 0,
+      "maxStep": 0.007668234877606039
+    },
+    {
+      "id": 4820,
+      "name": "Via Caselle",
+      "kind": "unclassified",
+      "width": 6.5,
+      "samples": 12,
+      "blocked": 0,
+      "wet": 0,
+      "maxStep": 0.0031404040301339364
+    },
+    {
+      "id": 5151,
+      "name": "residential",
+      "kind": "residential",
+      "width": 6.5,
+      "samples": 15,
+      "blocked": 0,
+      "wet": 0,
+      "maxStep": 0.013992661870119605
+    },
+    {
+      "id": 5157,
+      "name": "Via Ceresina",
+      "kind": "unclassified",
+      "width": 6.5,
+      "samples": 15,
+      "blocked": 0,
+      "wet": 0,
+      "maxStep": 0.004096125000000228
+    },
+    {
+      "id": 5165,
+      "name": "unclassified",
+      "kind": "unclassified",
+      "width": 6.5,
+      "samples": 12,
+      "blocked": 0,
+      "wet": 0,
+      "maxStep": 0.0013241221110043
+    },
+    {
+      "id": 5171,
+      "name": "Via Santa Barbara",
+      "kind": "residential",
+      "width": 6.5,
+      "samples": 10,
+      "blocked": 0,
+      "wet": 0,
+      "maxStep": 0.06463031254762086
+    },
+    {
+      "id": 5188,
+      "name": "Via Italo Svevo",
+      "kind": "residential",
+      "width": 6.5,
+      "samples": 12,
+      "blocked": 0,
+      "wet": 0,
+      "maxStep": 0.001795032642508687
+    },
+    {
+      "id": 5195,
+      "name": "Via dei Campolongo",
+      "kind": "unclassified",
+      "width": 6.5,
+      "samples": 15,
+      "blocked": 0,
+      "wet": 0,
+      "maxStep": 0.009030540235890783
+    },
+    {
+      "id": 5200,
+      "name": "Via Caselle",
+      "kind": "residential",
+      "width": 4,
+      "samples": 18,
+      "blocked": 0,
+      "wet": 0,
+      "maxStep": 0.006152470862396342
+    },
+    {
+      "id": 5209,
+      "name": "Via Brentella",
+      "kind": "secondary",
+      "width": 9,
+      "samples": 12,
+      "blocked": 0,
+      "wet": 0,
+      "maxStep": 0.0034201123386132792
+    },
+    {
+      "id": 5217,
+      "name": "Via Santa Maria Ausiliatrice",
+      "kind": "unclassified",
+      "width": 6.5,
+      "samples": 12,
+      "blocked": 0,
+      "wet": 0,
+      "maxStep": 0.0009813340928843672
+    },
+    {
+      "id": 5240,
+      "name": "Ponte Azzurro",
+      "kind": "secondary",
+      "width": 9,
+      "samples": 78,
+      "blocked": 0,
+      "wet": 0,
+      "maxStep": 0.05064502510901292
+    },
+    {
+      "id": 5345,
+      "name": "Ponte di Brentelle di Sotto",
+      "kind": "secondary",
+      "width": 9,
+      "samples": 30,
+      "blocked": 0,
+      "wet": 0,
+      "maxStep": 0.0007567999962425631
+    },
+    {
+      "id": 5474,
+      "name": "Via Pontevigodarzere",
+      "kind": "secondary",
+      "width": 9,
+      "samples": 36,
+      "blocked": 0,
+      "wet": 0,
+      "maxStep": 0.0006332225617811105
+    },
+    {
+      "id": 5888,
+      "name": "Ponte San Giovanni delle Navi",
+      "kind": "residential",
+      "width": 6.5,
+      "samples": 24,
+      "blocked": 0,
+      "wet": 0,
+      "maxStep": 0.019386804736381436
+    },
+    {
+      "id": 5889,
+      "name": "Ponte dei Tadi",
+      "kind": "residential",
+      "width": 6.5,
+      "samples": 36,
+      "blocked": 0,
+      "wet": 0,
+      "maxStep": 0.05965798652123411
+    },
+    {
+      "id": 5913,
+      "name": "Via Bosco",
+      "kind": "tertiary",
+      "width": 8,
+      "samples": 5,
+      "blocked": 0,
+      "wet": 0,
+      "maxStep": 0.0069100254521927695
+    },
+    {
+      "id": 5930,
+      "name": "Corso Argentina",
+      "kind": "trunk",
+      "width": 12,
+      "samples": 24,
+      "blocked": 0,
+      "wet": 0,
+      "maxStep": 0.009681285670671613
+    },
+    {
+      "id": 5959,
+      "name": "Corso Irlanda",
+      "kind": "trunk",
+      "width": 12,
+      "samples": 66,
+      "blocked": 0,
+      "wet": 0,
+      "maxStep": 0.005464786332982641
+    },
+    {
+      "id": 5961,
+      "name": "Corso Argentina",
+      "kind": "trunk",
+      "width": 12,
+      "samples": 48,
+      "blocked": 0,
+      "wet": 0,
+      "maxStep": 0.012385924368032875
+    },
+    {
+      "id": 5962,
+      "name": "Cavalcavia Charles Darwin",
+      "kind": "trunk",
+      "width": 12,
+      "samples": 321,
+      "blocked": 0,
+      "wet": 0,
+      "maxStep": 0.030101890504335316
+    },
+    {
+      "id": 6332,
+      "name": "Ponte Voltabarozzo",
+      "kind": "secondary",
+      "width": 9,
+      "samples": 66,
+      "blocked": 0,
+      "wet": 0,
+      "maxStep": 0.0026872063710001726
+    },
+    {
+      "id": 6600,
+      "name": "service",
+      "kind": "service",
+      "width": 4.5,
+      "samples": 10,
+      "blocked": 0,
+      "wet": 0,
+      "maxStep": 0.060415240626859656
+    },
+    {
+      "id": 6694,
+      "name": "Via Pelosa",
+      "kind": "secondary",
+      "width": 9,
+      "samples": 18,
+      "blocked": 0,
+      "wet": 0,
+      "maxStep": 0.07162027394071302
+    },
+    {
+      "id": 6696,
+      "name": "service",
+      "kind": "service",
+      "width": 4.5,
+      "samples": 18,
+      "blocked": 0,
+      "wet": 0,
+      "maxStep": 0.00007939672960333155
+    },
+    {
+      "id": 6698,
+      "name": "Via Galileo Galilei",
+      "kind": "unclassified",
+      "width": 6.5,
+      "samples": 15,
+      "blocked": 0,
+      "wet": 0,
+      "maxStep": 0.001706825974601145
+    },
+    {
+      "id": 6716,
+      "name": "service",
+      "kind": "service",
+      "width": 4.5,
+      "samples": 18,
+      "blocked": 0,
+      "wet": 0,
+      "maxStep": 0.00009137472967069016
+    },
+    {
+      "id": 6731,
+      "name": "Via Monte Cero",
+      "kind": "unclassified",
+      "width": 6.5,
+      "samples": 24,
+      "blocked": 0,
+      "wet": 0,
+      "maxStep": 0.06620145117251042
+    },
+    {
+      "id": 6737,
+      "name": "Via Pelosa",
+      "kind": "residential",
+      "width": 6.5,
+      "samples": 10,
+      "blocked": 0,
+      "wet": 0,
+      "maxStep": 0.004938707779199802
+    },
+    {
+      "id": 6740,
+      "name": "Via dei Colli",
+      "kind": "residential",
+      "width": 6.5,
+      "samples": 12,
+      "blocked": 0,
+      "wet": 0,
+      "maxStep": 0.00762902037430635
+    },
+    {
+      "id": 6743,
+      "name": "Vicolo Forno",
+      "kind": "residential",
+      "width": 6.5,
+      "samples": 8,
+      "blocked": 0,
+      "wet": 0,
+      "maxStep": 0.06681000898836231
+    },
+    {
+      "id": 6948,
+      "name": "Ponte San Gregorio",
+      "kind": "secondary",
+      "width": 9,
+      "samples": 54,
+      "blocked": 0,
+      "wet": 0,
+      "maxStep": 0.018776239834828345
+    },
+    {
+      "id": 6982,
+      "name": "Ponte Saracinesca",
+      "kind": "tertiary",
+      "width": 8,
+      "samples": 36,
+      "blocked": 0,
+      "wet": 0,
+      "maxStep": 0.0017119321880230132
+    },
+    {
+      "id": 7058,
+      "name": "Ponte dell'Unità d'Italia",
+      "kind": "tertiary",
+      "width": 8,
+      "samples": 154,
+      "blocked": 0,
+      "wet": 0,
+      "maxStep": 0.0128772304669873
+    },
+    {
+      "id": 7126,
+      "name": "Ponte Scaricatore",
+      "kind": "secondary",
+      "width": 9,
+      "samples": 11,
+      "blocked": 0,
+      "wet": 0,
+      "maxStep": 0.0037240999135335073
+    },
+    {
+      "id": 7131,
+      "name": "Ponte Quattro Martiri",
+      "kind": "secondary",
+      "width": 9,
+      "samples": 54,
+      "blocked": 0,
+      "wet": 0,
+      "maxStep": 0.002806307402059005
+    },
+    {
+      "id": 7147,
+      "name": "Corso Irlanda",
+      "kind": "trunk",
+      "width": 12,
+      "samples": 1434,
+      "blocked": 0,
+      "wet": 0,
+      "maxStep": 0.0665658363143784
+    },
+    {
+      "id": 7148,
+      "name": "Nuova Strada del Santo",
+      "kind": "trunk",
+      "width": 12,
+      "samples": 180,
+      "blocked": 0,
+      "wet": 0,
+      "maxStep": 0.007417149013452473
+    },
+    {
+      "id": 7475,
+      "name": "Via Murano",
+      "kind": "unclassified",
+      "width": 3,
+      "samples": 475,
+      "blocked": 0,
+      "wet": 0,
+      "maxStep": 0.0788001235078184
+    },
+    {
+      "id": 7919,
+      "name": "Via Romea",
+      "kind": "primary",
+      "width": 10,
+      "samples": 66,
+      "blocked": 0,
+      "wet": 0,
+      "maxStep": 0.0022987067765694036
+    },
+    {
+      "id": 7943,
+      "name": "Tangenziale di Limena",
+      "kind": "trunk",
+      "width": 12,
+      "samples": 24,
+      "blocked": 0,
+      "wet": 0,
+      "maxStep": 0.005016424229140171
+    },
+    {
+      "id": 7944,
+      "name": "Tangenziale di Limena",
+      "kind": "trunk",
+      "width": 12,
+      "samples": 20,
+      "blocked": 0,
+      "wet": 0,
+      "maxStep": 0.008183979091022309
+    },
+    {
+      "id": 7974,
+      "name": "Autostrada Bologna-Padova",
+      "kind": "motorway",
+      "width": 13,
+      "samples": 130,
+      "blocked": 0,
+      "wet": 0,
+      "maxStep": 0.03702523676617808
+    },
+    {
+      "id": 7976,
+      "name": "Autostrada Bologna-Padova",
+      "kind": "motorway",
+      "width": 13,
+      "samples": 138,
+      "blocked": 0,
+      "wet": 0,
+      "maxStep": 0.0030261827454829415
+    },
+    {
+      "id": 7979,
+      "name": "Autostrada Bologna-Padova",
+      "kind": "motorway",
+      "width": 13,
+      "samples": 144,
+      "blocked": 0,
+      "wet": 0,
+      "maxStep": 0.0032127218399775614
+    },
+    {
+      "id": 7980,
+      "name": "Autostrada Bologna-Padova",
+      "kind": "motorway",
+      "width": 13,
+      "samples": 132,
+      "blocked": 0,
+      "wet": 0,
+      "maxStep": 0.04126597665389298
+    },
+    {
+      "id": 7994,
+      "name": "trunk_link",
+      "kind": "trunk_link",
+      "width": 7,
+      "samples": 108,
+      "blocked": 0,
+      "wet": 0,
+      "maxStep": 0.0020329409320289926
+    },
+    {
+      "id": 8040,
+      "name": "Ponte dei Graissi",
+      "kind": "secondary",
+      "width": 9,
+      "samples": 18,
+      "blocked": 0,
+      "wet": 0,
+      "maxStep": 0.01143492878657959
+    },
+    {
+      "id": 8050,
+      "name": "Via Ponte Molino",
+      "kind": "tertiary",
+      "width": 8,
+      "samples": 54,
+      "blocked": 0,
+      "wet": 0,
+      "maxStep": 0.058741636856154855
+    },
+    {
+      "id": 8056,
+      "name": "Via del Carmine",
+      "kind": "residential",
+      "width": 6.5,
+      "samples": 24,
+      "blocked": 0,
+      "wet": 0,
+      "maxStep": 0.047093595604836835
+    },
+    {
+      "id": 8058,
+      "name": "Via Giotto",
+      "kind": "residential",
+      "width": 6.5,
+      "samples": 24,
+      "blocked": 0,
+      "wet": 0,
+      "maxStep": 0.001867981183430345
+    },
+    {
+      "id": 8063,
+      "name": "Cavalcavia San Marco",
+      "kind": "secondary",
+      "width": 9,
+      "samples": 96,
+      "blocked": 0,
+      "wet": 0,
+      "maxStep": 0.0013600982107337956
+    },
+    {
+      "id": 8069,
+      "name": "motorway_link",
+      "kind": "motorway_link",
+      "width": 7,
+      "samples": 60,
+      "blocked": 0,
+      "wet": 0,
+      "maxStep": 0.0018268027483312466
+    },
+    {
+      "id": 8070,
+      "name": "motorway_link",
+      "kind": "motorway_link",
+      "width": 7,
+      "samples": 66,
+      "blocked": 0,
+      "wet": 0,
+      "maxStep": 0.0016603749088517361
+    },
+    {
+      "id": 8142,
+      "name": "Via Ponte della Fabbrica",
+      "kind": "tertiary",
+      "width": 8,
+      "samples": 30,
+      "blocked": 0,
+      "wet": 0,
+      "maxStep": 0.06925711078843833
+    },
+    {
+      "id": 8237,
+      "name": "Via Paolo VI",
+      "kind": "unclassified",
+      "width": 6.5,
+      "samples": 8,
+      "blocked": 0,
+      "wet": 0,
+      "maxStep": 0.007692556927247907
+    },
+    {
+      "id": 8250,
+      "name": "Ponte delle Frassine",
+      "kind": "unclassified",
+      "width": 3,
+      "samples": 15,
+      "blocked": 0,
+      "wet": 0,
+      "maxStep": 0.07219554002843154
+    },
+    {
+      "id": 8313,
+      "name": "Via Guazzi",
+      "kind": "unclassified",
+      "width": 4,
+      "samples": 12,
+      "blocked": 0,
+      "wet": 0,
+      "maxStep": 0.0008066331651512826
+    },
+    {
+      "id": 8315,
+      "name": "Via Ponte della Fabbrica",
+      "kind": "tertiary",
+      "width": 8,
+      "samples": 10,
+      "blocked": 0,
+      "wet": 0,
+      "maxStep": 0.060166086527239315
+    },
+    {
+      "id": 8317,
+      "name": "Via Santa Maria d'Abano",
+      "kind": "tertiary",
+      "width": 8,
+      "samples": 8,
+      "blocked": 0,
+      "wet": 0,
+      "maxStep": 0.07084978799615271
+    },
+    {
+      "id": 8406,
+      "name": "Via Carlo Giorato",
+      "kind": "tertiary",
+      "width": 8,
+      "samples": 54,
+      "blocked": 0,
+      "wet": 0,
+      "maxStep": 0.0013034985478714844
+    },
+    {
+      "id": 8421,
+      "name": "Via Carlo Giorato",
+      "kind": "tertiary",
+      "width": 8,
+      "samples": 10,
+      "blocked": 0,
+      "wet": 0,
+      "maxStep": 0.07091054251661966
+    },
+    {
+      "id": 8426,
+      "name": "Cavalcavia Stati Uniti",
+      "kind": "primary",
+      "width": 10,
+      "samples": 48,
+      "blocked": 0,
+      "wet": 0,
+      "maxStep": 0.003129038046285615
+    },
+    {
+      "id": 8460,
+      "name": "Ponte Asconio Pediano",
+      "kind": "unclassified",
+      "width": 4,
+      "samples": 15,
+      "blocked": 0,
+      "wet": 0,
+      "maxStep": 0.07227337191524619
+    },
+    {
+      "id": 8462,
+      "name": "Ponte Sabbionari",
+      "kind": "unclassified",
+      "width": 3.5,
+      "samples": 54,
+      "blocked": 0,
+      "wet": 0,
+      "maxStep": 0.05588209757135232
+    },
+    {
+      "id": 8468,
+      "name": "Via Trieste",
+      "kind": "unclassified",
+      "width": 6.5,
+      "samples": 18,
+      "blocked": 0,
+      "wet": 0,
+      "maxStep": 0.002115510621058192
+    },
+    {
+      "id": 8486,
+      "name": "Corso Australia",
+      "kind": "trunk",
+      "width": 12,
+      "samples": 36,
+      "blocked": 0,
+      "wet": 0,
+      "maxStep": 0.0009986331749658461
+    },
+    {
+      "id": 8487,
+      "name": "Corso Australia",
+      "kind": "trunk",
+      "width": 12,
+      "samples": 30,
+      "blocked": 0,
+      "wet": 0,
+      "maxStep": 0.0005509913687156143
+    },
+    {
+      "id": 8488,
+      "name": "Corso Australia",
+      "kind": "trunk",
+      "width": 12,
+      "samples": 36,
+      "blocked": 0,
+      "wet": 0,
+      "maxStep": 0.0016122913903657832
+    },
+    {
+      "id": 8490,
+      "name": "Corso Australia",
+      "kind": "trunk",
+      "width": 12,
+      "samples": 36,
+      "blocked": 0,
+      "wet": 0,
+      "maxStep": 0.000691688853432737
+    },
+    {
+      "id": 8505,
+      "name": "Corso John e Robert Kennedy",
+      "kind": "trunk",
+      "width": 12,
+      "samples": 54,
+      "blocked": 0,
+      "wet": 0,
+      "maxStep": 0.008119051929918797
+    },
+    {
+      "id": 8506,
+      "name": "Corso John e Robert Kennedy",
+      "kind": "trunk",
+      "width": 12,
+      "samples": 96,
+      "blocked": 0,
+      "wet": 0,
+      "maxStep": 0.0063454353333067814
+    },
+    {
+      "id": 8507,
+      "name": "Corso John e Robert Kennedy",
+      "kind": "trunk",
+      "width": 12,
+      "samples": 96,
+      "blocked": 0,
+      "wet": 0,
+      "maxStep": 0.006388167325861005
+    },
+    {
+      "id": 8512,
+      "name": "Corso John e Robert Kennedy",
+      "kind": "trunk",
+      "width": 12,
+      "samples": 50,
+      "blocked": 0,
+      "wet": 0,
+      "maxStep": 0.010408173149603073
+    },
+    {
+      "id": 8514,
+      "name": "Corso John e Robert Kennedy",
+      "kind": "trunk",
+      "width": 12,
+      "samples": 48,
+      "blocked": 0,
+      "wet": 0,
+      "maxStep": 0.010795861917905825
+    },
+    {
+      "id": 8531,
+      "name": "Corso John e Robert Kennedy",
+      "kind": "trunk",
+      "width": 12,
+      "samples": 75,
+      "blocked": 0,
+      "wet": 0,
+      "maxStep": 0.0686286239621765
+    },
+    {
+      "id": 8532,
+      "name": "Corso John e Robert Kennedy",
+      "kind": "trunk",
+      "width": 12,
+      "samples": 15,
+      "blocked": 0,
+      "wet": 0,
+      "maxStep": 0.0572555311443228
+    },
+    {
+      "id": 8549,
+      "name": "Ponte Giovanni Boccaccio",
+      "kind": "tertiary",
+      "width": 8,
+      "samples": 60,
+      "blocked": 0,
+      "wet": 0,
+      "maxStep": 0.04113421630263758
+    },
+    {
+      "id": 8557,
+      "name": "Ponte di Terranegra",
+      "kind": "unclassified",
+      "width": 4,
+      "samples": 54,
+      "blocked": 0,
+      "wet": 0,
+      "maxStep": 0.06818468447770698
+    },
+    {
+      "id": 8578,
+      "name": "Via San Martino e Solferino",
+      "kind": "unclassified",
+      "width": 6.5,
+      "samples": 10,
+      "blocked": 0,
+      "wet": 0,
+      "maxStep": 0.046829639438175974
+    },
+    {
+      "id": 8592,
+      "name": "Via Antonio Loschi",
+      "kind": "residential",
+      "width": 6.5,
+      "samples": 20,
+      "blocked": 0,
+      "wet": 0,
+      "maxStep": 0.0004695432710093428
+    },
+    {
+      "id": 8597,
+      "name": "service",
+      "kind": "service",
+      "width": 4.5,
+      "samples": 8,
+      "blocked": 0,
+      "wet": 0,
+      "maxStep": 0.0068536924838475954
+    },
+    {
+      "id": 8620,
+      "name": "Via Alteniero Azzoni",
+      "kind": "service",
+      "width": 4.5,
+      "samples": 8,
+      "blocked": 0,
+      "wet": 0,
+      "maxStep": 0.05495414195396364
+    },
+    {
+      "id": 8632,
+      "name": "Corso Argentina",
+      "kind": "trunk",
+      "width": 12,
+      "samples": 42,
+      "blocked": 0,
+      "wet": 0,
+      "maxStep": 0.0003133331476004031
+    },
+    {
+      "id": 8633,
+      "name": "Corso Argentina",
+      "kind": "trunk",
+      "width": 12,
+      "samples": 42,
+      "blocked": 0,
+      "wet": 0,
+      "maxStep": 0.0017058405445826708
+    },
+    {
+      "id": 8634,
+      "name": "Corso Argentina",
+      "kind": "trunk",
+      "width": 12,
+      "samples": 72,
+      "blocked": 0,
+      "wet": 0,
+      "maxStep": 0.001028605339861599
+    },
+    {
+      "id": 8651,
+      "name": "Autostrada Bologna-Padova",
+      "kind": "motorway",
+      "width": 13,
+      "samples": 36,
+      "blocked": 0,
+      "wet": 0,
+      "maxStep": 0.00032030006706484926
+    },
+    {
+      "id": 8672,
+      "name": "Autostrada Bologna-Padova",
+      "kind": "motorway",
+      "width": 13,
+      "samples": 204,
+      "blocked": 0,
+      "wet": 0,
+      "maxStep": 0.021920699783683162
+    },
+    {
+      "id": 8707,
+      "name": "Ponte Scaricatore",
+      "kind": "secondary",
+      "width": 9,
+      "samples": 66,
+      "blocked": 0,
+      "wet": 0,
+      "maxStep": 0.00744493920004885
+    },
+    {
+      "id": 8714,
+      "name": "Via Vittorio Veneto",
+      "kind": "tertiary",
+      "width": 8,
+      "samples": 30,
+      "blocked": 0,
+      "wet": 0,
+      "maxStep": 0.00019304728875724209
+    },
+    {
+      "id": 8779,
+      "name": "Via Alessandro Volta",
+      "kind": "secondary",
+      "width": 9,
+      "samples": 1166,
+      "blocked": 0,
+      "wet": 0,
+      "maxStep": 0.06896677630442305
+    },
+    {
+      "id": 8867,
+      "name": "Via Padova",
+      "kind": "secondary",
+      "width": 9,
+      "samples": 48,
+      "blocked": 0,
+      "wet": 0,
+      "maxStep": 0.010194690858753575
+    },
+    {
+      "id": 8915,
+      "name": "Corso Boston",
+      "kind": "trunk",
+      "width": 12,
+      "samples": 60,
+      "blocked": 0,
+      "wet": 0,
+      "maxStep": 0.0022946892219337656
+    },
+    {
+      "id": 8916,
+      "name": "Corso Boston",
+      "kind": "trunk",
+      "width": 12,
+      "samples": 60,
+      "blocked": 0,
+      "wet": 0,
+      "maxStep": 0.001878275534828333
+    },
+    {
+      "id": 8918,
+      "name": "Corso Boston",
+      "kind": "trunk",
+      "width": 12,
+      "samples": 32,
+      "blocked": 0,
+      "wet": 0,
+      "maxStep": 0.01228625479014056
+    },
+    {
+      "id": 8921,
+      "name": "Corso Boston",
+      "kind": "trunk",
+      "width": 12,
+      "samples": 36,
+      "blocked": 0,
+      "wet": 0,
+      "maxStep": 0.06949051566967057
+    },
+    {
+      "id": 8922,
+      "name": "SR47dir",
+      "kind": "trunk",
+      "width": 12,
+      "samples": 30,
+      "blocked": 0,
+      "wet": 0,
+      "maxStep": 0.00024005827238937627
+    },
+    {
+      "id": 8923,
+      "name": "Corso Boston",
+      "kind": "trunk",
+      "width": 12,
+      "samples": 18,
+      "blocked": 0,
+      "wet": 0,
+      "maxStep": 0.06302553366104036
+    },
+    {
+      "id": 8924,
+      "name": "SR47dir",
+      "kind": "trunk",
+      "width": 12,
+      "samples": 30,
+      "blocked": 0,
+      "wet": 0,
+      "maxStep": 0.00024839182431435347
+    },
+    {
+      "id": 8930,
+      "name": "Corso Boston",
+      "kind": "trunk",
+      "width": 12,
+      "samples": 42,
+      "blocked": 0,
+      "wet": 0,
+      "maxStep": 0.06807139635265358
+    },
+    {
+      "id": 8937,
+      "name": "SR47dir",
+      "kind": "trunk",
+      "width": 12,
+      "samples": 110,
+      "blocked": 0,
+      "wet": 0,
+      "maxStep": 0.001341099685966185
+    },
+    {
+      "id": 8971,
+      "name": "Corso Australia",
+      "kind": "trunk",
+      "width": 12,
+      "samples": 90,
+      "blocked": 0,
+      "wet": 0,
+      "maxStep": 0.05959384976030435
+    },
+    {
+      "id": 8973,
+      "name": "Corso Australia",
+      "kind": "trunk",
+      "width": 12,
+      "samples": 20,
+      "blocked": 0,
+      "wet": 0,
+      "maxStep": 0.0001560377334435259
+    },
+    {
+      "id": 8974,
+      "name": "Corso Australia",
+      "kind": "trunk",
+      "width": 12,
+      "samples": 90,
+      "blocked": 0,
+      "wet": 0,
+      "maxStep": 0.06005839414970637
+    },
+    {
+      "id": 8975,
+      "name": "Corso Australia",
+      "kind": "trunk",
+      "width": 12,
+      "samples": 18,
+      "blocked": 0,
+      "wet": 0,
+      "maxStep": 0.00020504600087889457
+    },
+    {
+      "id": 9029,
+      "name": "Corso Primo Maggio",
+      "kind": "trunk",
+      "width": 12,
+      "samples": 366,
+      "blocked": 0,
+      "wet": 0,
+      "maxStep": 0.0017046386806800484
+    },
+    {
+      "id": 9030,
+      "name": "Corso Primo Maggio",
+      "kind": "trunk",
+      "width": 12,
+      "samples": 366,
+      "blocked": 0,
+      "wet": 0,
+      "maxStep": 0.0016857877033960023
+    },
+    {
+      "id": 9047,
+      "name": "Direttissima per Abano",
+      "kind": "trunk",
+      "width": 12,
+      "samples": 42,
+      "blocked": 0,
+      "wet": 0,
+      "maxStep": 0.048844955169496274
+    },
+    {
+      "id": 9053,
+      "name": "Ponte dell'Unità d'Italia",
+      "kind": "tertiary",
+      "width": 8,
+      "samples": 97,
+      "blocked": 0,
+      "wet": 0,
+      "maxStep": 0.0024344492838093146
+    },
+    {
+      "id": 9054,
+      "name": "Ponte dell'Unità d'Italia",
+      "kind": "tertiary",
+      "width": 8,
+      "samples": 74,
+      "blocked": 0,
+      "wet": 0,
+      "maxStep": 0.008227659823846878
+    },
+    {
+      "id": 9074,
+      "name": "Cavalcavia San Ignazio di Loyola",
+      "kind": "trunk",
+      "width": 12,
+      "samples": 25,
+      "blocked": 0,
+      "wet": 0,
+      "maxStep": 0.0015871320755458385
+    },
+    {
+      "id": 9075,
+      "name": "Cavalcavia San Ignazio di Loyola",
+      "kind": "trunk",
+      "width": 12,
+      "samples": 25,
+      "blocked": 0,
+      "wet": 0,
+      "maxStep": 0.0007666739687550717
+    },
+    {
+      "id": 9081,
+      "name": "Corso Primo Maggio",
+      "kind": "trunk_link",
+      "width": 7,
+      "samples": 246,
+      "blocked": 0,
+      "wet": 0,
+      "maxStep": 0.008095245240868465
+    },
+    {
+      "id": 9082,
+      "name": "Via Alessandro Volta",
+      "kind": "tertiary",
+      "width": 8,
+      "samples": 60,
+      "blocked": 0,
+      "wet": 0,
+      "maxStep": 0.004457648069749354
+    },
+    {
+      "id": 9118,
+      "name": "Corso Tredici Giugno",
+      "kind": "trunk_link",
+      "width": 7,
+      "samples": 205,
+      "blocked": 0,
+      "wet": 0,
+      "maxStep": 0.06730629609006655
+    },
+    {
+      "id": 9122,
+      "name": "Cavalcavia Tevere",
+      "kind": "unclassified",
+      "width": 6.5,
+      "samples": 108,
+      "blocked": 0,
+      "wet": 0,
+      "maxStep": 0.004308248402928427
+    },
+    {
+      "id": 9124,
+      "name": "Corso Tredici Giugno",
+      "kind": "trunk_link",
+      "width": 7,
+      "samples": 154,
+      "blocked": 0,
+      "wet": 0,
+      "maxStep": 0.06740247183816095
+    },
+    {
+      "id": 9130,
+      "name": "Via Friburgo",
+      "kind": "secondary",
+      "width": 9,
+      "samples": 24,
+      "blocked": 0,
+      "wet": 0,
+      "maxStep": 0.0005949451075046852
+    },
+    {
+      "id": 9146,
+      "name": "Cavalcavia Antonio Grassi",
+      "kind": "secondary",
+      "width": 9,
+      "samples": 36,
+      "blocked": 0,
+      "wet": 0,
+      "maxStep": 0.0010202515347064178
+    },
+    {
+      "id": 9156,
+      "name": "trunk_link",
+      "kind": "trunk_link",
+      "width": 7,
+      "samples": 129,
+      "blocked": 0,
+      "wet": 0,
+      "maxStep": 0.012517469611092125
+    },
+    {
+      "id": 9157,
+      "name": "Corso Irlanda",
+      "kind": "trunk",
+      "width": 12,
+      "samples": 126,
+      "blocked": 0,
+      "wet": 0,
+      "maxStep": 0.00352482225672901
+    },
+    {
+      "id": 9158,
+      "name": "Corso Irlanda",
+      "kind": "trunk",
+      "width": 12,
+      "samples": 138,
+      "blocked": 0,
+      "wet": 0,
+      "maxStep": 0.005060841348768719
+    },
+    {
+      "id": 9164,
+      "name": "Via Boves",
+      "kind": "trunk_link",
+      "width": 7,
+      "samples": 72,
+      "blocked": 0,
+      "wet": 0,
+      "maxStep": 0.007549729115018167
+    },
+    {
+      "id": 9165,
+      "name": "Via Boves",
+      "kind": "trunk_link",
+      "width": 7,
+      "samples": 72,
+      "blocked": 0,
+      "wet": 0,
+      "maxStep": 0.006260686110504565
+    },
+    {
+      "id": 9188,
+      "name": "Via Orto Botanico",
+      "kind": "residential",
+      "width": 6.5,
+      "samples": 5,
+      "blocked": 0,
+      "wet": 0,
+      "maxStep": 0.010400424867032854
+    },
+    {
+      "id": 9258,
+      "name": "Autostrada Serenissima",
+      "kind": "motorway",
+      "width": 13,
+      "samples": 48,
+      "blocked": 0,
+      "wet": 0,
+      "maxStep": 0.0030494501312272604
+    },
+    {
+      "id": 9259,
+      "name": "Autostrada Serenissima",
+      "kind": "motorway",
+      "width": 13,
+      "samples": 48,
+      "blocked": 0,
+      "wet": 0,
+      "maxStep": 0.0033452633700257195
+    },
+    {
+      "id": 9290,
+      "name": "Cavalcavia Mortise",
+      "kind": "tertiary",
+      "width": 8,
+      "samples": 102,
+      "blocked": 0,
+      "wet": 0,
+      "maxStep": 0.002883812099204519
+    },
+    {
+      "id": 9328,
+      "name": "service",
+      "kind": "service",
+      "width": 4.5,
+      "samples": 15,
+      "blocked": 0,
+      "wet": 0,
+      "maxStep": 0.000003449554579759706
+    },
+    {
+      "id": 9329,
+      "name": "service",
+      "kind": "service",
+      "width": 4.5,
+      "samples": 12,
+      "blocked": 0,
+      "wet": 0,
+      "maxStep": 0.06115486654529789
+    },
+    {
+      "id": 9505,
+      "name": "Tangenziale Limena",
+      "kind": "trunk_link",
+      "width": 7,
+      "samples": 78,
+      "blocked": 0,
+      "wet": 0,
+      "maxStep": 0.003856702050264005
+    },
+    {
+      "id": 9522,
+      "name": "Cavalcavia Camerini",
+      "kind": "secondary",
+      "width": 9,
+      "samples": 20,
+      "blocked": 0,
+      "wet": 0,
+      "maxStep": 0.005365364098414815
+    },
+    {
+      "id": 9524,
+      "name": "Cavalcavia Dalmazia",
+      "kind": "secondary",
+      "width": 9,
+      "samples": 72,
+      "blocked": 0,
+      "wet": 0,
+      "maxStep": 0.0026559312961076387
+    },
+    {
+      "id": 9599,
+      "name": "secondary",
+      "kind": "secondary",
+      "width": 9,
+      "samples": 54,
+      "blocked": 0,
+      "wet": 0,
+      "maxStep": 0.01338583340659838
+    },
+    {
+      "id": 9603,
+      "name": "Via Ludovico Ariosto",
+      "kind": "secondary",
+      "width": 9,
+      "samples": 34,
+      "blocked": 0,
+      "wet": 0,
+      "maxStep": 0.006184705357348719
+    },
+    {
+      "id": 9604,
+      "name": "Via Ludovico Ariosto",
+      "kind": "secondary",
+      "width": 9,
+      "samples": 34,
+      "blocked": 0,
+      "wet": 0,
+      "maxStep": 0.007236319261611612
+    },
+    {
+      "id": 9623,
+      "name": "Via Risorgimento",
+      "kind": "residential",
+      "width": 3.5,
+      "samples": 5,
+      "blocked": 0,
+      "wet": 0,
+      "maxStep": 0.0012508720789004002
+    },
+    {
+      "id": 9668,
+      "name": "Nuova Strada del Santo",
+      "kind": "trunk",
+      "width": 12,
+      "samples": 722,
+      "blocked": 0,
+      "wet": 0,
+      "maxStep": 0.004276466073831031
+    },
+    {
+      "id": 9721,
+      "name": "trunk_link",
+      "kind": "trunk_link",
+      "width": 7,
+      "samples": 108,
+      "blocked": 0,
+      "wet": 0,
+      "maxStep": 0.002332049512034473
+    },
+    {
+      "id": 9722,
+      "name": "trunk_link",
+      "kind": "trunk_link",
+      "width": 7,
+      "samples": 144,
+      "blocked": 0,
+      "wet": 0,
+      "maxStep": 0.0015233395031017949
+    },
+    {
+      "id": 9783,
+      "name": "Ponte Ognissanti",
+      "kind": "unclassified",
+      "width": 6.5,
+      "samples": 62,
+      "blocked": 0,
+      "wet": 0,
+      "maxStep": 0.005732157053447651
+    },
+    {
+      "id": 9794,
+      "name": "Ponte sul Brenta",
+      "kind": "secondary",
+      "width": 9,
+      "samples": 102,
+      "blocked": 0,
+      "wet": 0,
+      "maxStep": 0.0701395770739417
+    },
+    {
+      "id": 9820,
+      "name": "Cavalcavia Torre",
+      "kind": "residential",
+      "width": 6,
+      "samples": 114,
+      "blocked": 0,
+      "wet": 0,
+      "maxStep": 0.00045315453709449116
+    },
+    {
+      "id": 9832,
+      "name": "Via Bosco",
+      "kind": "tertiary",
+      "width": 8,
+      "samples": 15,
+      "blocked": 0,
+      "wet": 0,
+      "maxStep": 0.00018308789663734615
+    },
+    {
+      "id": 9847,
+      "name": "Via Bosco",
+      "kind": "tertiary",
+      "width": 4,
+      "samples": 1470,
+      "blocked": 0,
+      "wet": 0,
+      "maxStep": 0.06393787551288455
+    },
+    {
+      "id": 9905,
+      "name": "Corso Tredici Giugno",
+      "kind": "trunk",
+      "width": 12,
+      "samples": 294,
+      "blocked": 0,
+      "wet": 0,
+      "maxStep": 0.0032973228582626746
+    },
+    {
+      "id": 9910,
+      "name": "Direttissima per Abano",
+      "kind": "trunk",
+      "width": 12,
+      "samples": 18,
+      "blocked": 0,
+      "wet": 0,
+      "maxStep": 0.004155312274788159
+    },
+    {
+      "id": 9915,
+      "name": "Via Madonnina",
+      "kind": "unclassified",
+      "width": 6.5,
+      "samples": 18,
+      "blocked": 0,
+      "wet": 0,
+      "maxStep": 0.0008902774276684511
+    },
+    {
+      "id": 9916,
+      "name": "Via Madonnina",
+      "kind": "unclassified",
+      "width": 6.5,
+      "samples": 18,
+      "blocked": 0,
+      "wet": 0,
+      "maxStep": 0.001685425333686652
+    },
+    {
+      "id": 9929,
+      "name": "Cavalcavia Chiesanuova",
+      "kind": "secondary",
+      "width": 9,
+      "samples": 102,
+      "blocked": 0,
+      "wet": 0,
+      "maxStep": 0.002485863655113718
+    },
+    {
+      "id": 10134,
+      "name": "Corso Argentina",
+      "kind": "trunk",
+      "width": 12,
+      "samples": 98,
+      "blocked": 0,
+      "wet": 0,
+      "maxStep": 0.010516869577649857
+    },
+    {
+      "id": 10135,
+      "name": "Corso Argentina",
+      "kind": "trunk",
+      "width": 12,
+      "samples": 32,
+      "blocked": 0,
+      "wet": 0,
+      "maxStep": 0.008428399855382906
+    },
+    {
+      "id": 10213,
+      "name": "Via Palla Strozzi",
+      "kind": "residential",
+      "width": 5,
+      "samples": 10,
+      "blocked": 0,
+      "wet": 0,
+      "maxStep": 0.002840032699179318
+    },
+    {
+      "id": 10238,
+      "name": "Corso Esperanto",
+      "kind": "trunk",
+      "width": 12,
+      "samples": 180,
+      "blocked": 0,
+      "wet": 0,
+      "maxStep": 0.025115502389079225
+    },
+    {
+      "id": 10239,
+      "name": "Corso Primo Maggio",
+      "kind": "trunk",
+      "width": 12,
+      "samples": 90,
+      "blocked": 0,
+      "wet": 0,
+      "maxStep": 0.010452176709147665
+    },
+    {
+      "id": 10240,
+      "name": "Corso Primo Maggio",
+      "kind": "trunk",
+      "width": 12,
+      "samples": 192,
+      "blocked": 0,
+      "wet": 0,
+      "maxStep": 0.008209812827805862
+    },
+    {
+      "id": 10362,
+      "name": "secondary",
+      "kind": "secondary",
+      "width": 9,
+      "samples": 61,
+      "blocked": 0,
+      "wet": 0,
+      "maxStep": 0.06458476140895186
+    },
+    {
+      "id": 10571,
+      "name": "Ponte Voltabarozzo",
+      "kind": "secondary",
+      "width": 3.5,
+      "samples": 66,
+      "blocked": 0,
+      "wet": 0,
+      "maxStep": 0.0031140242278429042
+    },
+    {
+      "id": 10583,
+      "name": "Via Messico",
+      "kind": "tertiary",
+      "width": 8,
+      "samples": 96,
+      "blocked": 0,
+      "wet": 0,
+      "maxStep": 0.002932290427489548
+    },
+    {
+      "id": 10624,
+      "name": "service",
+      "kind": "service",
+      "width": 4.5,
+      "samples": 8,
+      "blocked": 0,
+      "wet": 0,
+      "maxStep": 0.058115421022700176
+    },
+    {
+      "id": 10691,
+      "name": "Via del Commercio",
+      "kind": "trunk",
+      "width": 12,
+      "samples": 78,
+      "blocked": 0,
+      "wet": 0,
+      "maxStep": 0.0014753866531478366
+    },
+    {
+      "id": 10728,
+      "name": "Via Camin",
+      "kind": "tertiary",
+      "width": 8,
+      "samples": 48,
+      "blocked": 0,
+      "wet": 0,
+      "maxStep": 0.06871114105369891
+    },
+    {
+      "id": 10777,
+      "name": "Direttissima per Abano",
+      "kind": "trunk",
+      "width": 12,
+      "samples": 15,
+      "blocked": 0,
+      "wet": 0,
+      "maxStep": 0.0018007945313680551
+    },
+    {
+      "id": 10778,
+      "name": "Via Chioggia",
+      "kind": "unclassified",
+      "width": 6.5,
+      "samples": 12,
+      "blocked": 0,
+      "wet": 0,
+      "maxStep": 0.0029815844971032845
+    },
+    {
+      "id": 11523,
+      "name": "residential",
+      "kind": "residential",
+      "width": 6.5,
+      "samples": 8,
+      "blocked": 0,
+      "wet": 0,
+      "maxStep": 0.06829854090015886
+    },
+    {
+      "id": 11531,
+      "name": "Viale Veneto",
+      "kind": "unclassified",
+      "width": 6.5,
+      "samples": 15,
+      "blocked": 0,
+      "wet": 0,
+      "maxStep": 0.0016039723274463569
+    },
+    {
+      "id": 11561,
+      "name": "Corso Argentina",
+      "kind": "trunk",
+      "width": 12,
+      "samples": 36,
+      "blocked": 0,
+      "wet": 0,
+      "maxStep": 0.0018371772659850905
+    },
+    {
+      "id": 11562,
+      "name": "Corso Argentina",
+      "kind": "trunk",
+      "width": 12,
+      "samples": 48,
+      "blocked": 0,
+      "wet": 0,
+      "maxStep": 0.003956200157755774
+    },
+    {
+      "id": 11564,
+      "name": "Corso Argentina",
+      "kind": "trunk",
+      "width": 12,
+      "samples": 54,
+      "blocked": 0,
+      "wet": 0,
+      "maxStep": 0.0024192865295145083
+    },
+    {
+      "id": 11566,
+      "name": "Corso Argentina",
+      "kind": "trunk",
+      "width": 12,
+      "samples": 36,
+      "blocked": 0,
+      "wet": 0,
+      "maxStep": 0.0024496908654487726
+    },
+    {
+      "id": 11572,
+      "name": "Corso Argentina",
+      "kind": "trunk",
+      "width": 12,
+      "samples": 35,
+      "blocked": 0,
+      "wet": 0,
+      "maxStep": 0.0076363156872041316
+    },
+    {
+      "id": 11588,
+      "name": "Autostrada Bologna-Padova",
+      "kind": "motorway_link",
+      "width": 7,
+      "samples": 92,
+      "blocked": 0,
+      "wet": 0,
+      "maxStep": 0.0087576363611781
+    },
+    {
+      "id": 11636,
+      "name": "Piazzale Pontecorvo",
+      "kind": "residential",
+      "width": 6.5,
+      "samples": 41,
+      "blocked": 0,
+      "wet": 0,
+      "maxStep": 0.02954170672899714
+    },
+    {
+      "id": 11805,
+      "name": "Via Augusta",
+      "kind": "tertiary",
+      "width": 8,
+      "samples": 8,
+      "blocked": 0,
+      "wet": 0,
+      "maxStep": 0.00019713935851939368
+    },
+    {
+      "id": 11808,
+      "name": "Via Bagnoli",
+      "kind": "tertiary",
+      "width": 4,
+      "samples": 12,
+      "blocked": 0,
+      "wet": 0,
+      "maxStep": 0.07011518257313654
+    },
+    {
+      "id": 11810,
+      "name": "Via Papa Paolo VI",
+      "kind": "unclassified",
+      "width": 6.5,
+      "samples": 8,
+      "blocked": 0,
+      "wet": 0,
+      "maxStep": 0.05906692728544982
+    },
+    {
+      "id": 11811,
+      "name": "Via Papa Paolo VI",
+      "kind": "unclassified",
+      "width": 6.5,
+      "samples": 170,
+      "blocked": 0,
+      "wet": 0,
+      "maxStep": 0.06707852254959334
+    },
+    {
+      "id": 11813,
+      "name": "residential",
+      "kind": "residential",
+      "width": 3.5,
+      "samples": 6,
+      "blocked": 0,
+      "wet": 0,
+      "maxStep": 0.0034950872415233647
+    },
+    {
+      "id": 11816,
+      "name": "Via Negrisia",
+      "kind": "tertiary",
+      "width": 8,
+      "samples": 12,
+      "blocked": 0,
+      "wet": 0,
+      "maxStep": 0.005661886225752255
+    },
+    {
+      "id": 11823,
+      "name": "Via Silvestri",
+      "kind": "tertiary",
+      "width": 4,
+      "samples": 10,
+      "blocked": 0,
+      "wet": 0,
+      "maxStep": 0.00022639482422093238
+    },
+    {
+      "id": 11831,
+      "name": "Via Trieste",
+      "kind": "unclassified",
+      "width": 6.5,
+      "samples": 8,
+      "blocked": 0,
+      "wet": 0,
+      "maxStep": 0.06335712681934069
+    },
+    {
+      "id": 11834,
+      "name": "service",
+      "kind": "service",
+      "width": 4.5,
+      "samples": 6,
+      "blocked": 0,
+      "wet": 0,
+      "maxStep": 0.012836668884459002
+    },
+    {
+      "id": 11843,
+      "name": "service",
+      "kind": "service",
+      "width": 4.5,
+      "samples": 10,
+      "blocked": 0,
+      "wet": 0,
+      "maxStep": 0.0037606639361946748
+    },
+    {
+      "id": 11844,
+      "name": "service",
+      "kind": "service",
+      "width": 4.5,
+      "samples": 8,
+      "blocked": 0,
+      "wet": 0,
+      "maxStep": 0.05681900319564548
+    },
+    {
+      "id": 11845,
+      "name": "service",
+      "kind": "service",
+      "width": 4.5,
+      "samples": 5,
+      "blocked": 0,
+      "wet": 0,
+      "maxStep": 0.007619862407805655
+    },
+    {
+      "id": 11847,
+      "name": "service",
+      "kind": "service",
+      "width": 4.5,
+      "samples": 10,
+      "blocked": 0,
+      "wet": 0,
+      "maxStep": 0.058125357289222634
+    },
+    {
+      "id": 11848,
+      "name": "service",
+      "kind": "service",
+      "width": 4.5,
+      "samples": 8,
+      "blocked": 0,
+      "wet": 0,
+      "maxStep": 0.0005237921313447913
+    },
+    {
+      "id": 11855,
+      "name": "service",
+      "kind": "service",
+      "width": 4.5,
+      "samples": 8,
+      "blocked": 0,
+      "wet": 0,
+      "maxStep": 0.05612693155232762
+    },
+    {
+      "id": 11892,
+      "name": "Ponte Asconio Pediano",
+      "kind": "unclassified",
+      "width": 4,
+      "samples": 12,
+      "blocked": 0,
+      "wet": 0,
+      "maxStep": 0.0672151710758957
+    },
+    {
+      "id": 11893,
+      "name": "Ponte Asconio Pediano",
+      "kind": "unclassified",
+      "width": 4,
+      "samples": 6,
+      "blocked": 0,
+      "wet": 0,
+      "maxStep": 0.0005081348482818271
+    },
+    {
+      "id": 11998,
+      "name": "Autostrada Serenissima",
+      "kind": "motorway",
+      "width": 13,
+      "samples": 612,
+      "blocked": 0,
+      "wet": 0,
+      "maxStep": 0.06278086876753619
+    },
+    {
+      "id": 12087,
+      "name": "service",
+      "kind": "service",
+      "width": 3,
+      "samples": 4,
+      "blocked": 0,
+      "wet": 0,
+      "maxStep": 0.00016861342837337645
+    },
+    {
+      "id": 12089,
+      "name": "Via Sant'Antonio",
+      "kind": "unclassified",
+      "width": 6.5,
+      "samples": 8,
+      "blocked": 0,
+      "wet": 0,
+      "maxStep": 0.058846373772516
+    },
+    {
+      "id": 12124,
+      "name": "Via Stazione",
+      "kind": "residential",
+      "width": 6.5,
+      "samples": 12,
+      "blocked": 0,
+      "wet": 0,
+      "maxStep": 0.0038293712989343476
+    },
+    {
+      "id": 12176,
+      "name": "service",
+      "kind": "service",
+      "width": 6,
+      "samples": 8,
+      "blocked": 0,
+      "wet": 0,
+      "maxStep": 0.07023226085703271
+    },
+    {
+      "id": 12202,
+      "name": "residential",
+      "kind": "residential",
+      "width": 6.5,
+      "samples": 8,
+      "blocked": 0,
+      "wet": 0,
+      "maxStep": 0.06793995315345924
+    },
+    {
+      "id": 12213,
+      "name": "Via Tre Ponti",
+      "kind": "unclassified",
+      "width": 6.5,
+      "samples": 8,
+      "blocked": 0,
+      "wet": 0,
+      "maxStep": 0.002421701850412461
+    },
+    {
+      "id": 12218,
+      "name": "Via Roncon",
+      "kind": "unclassified",
+      "width": 6.5,
+      "samples": 8,
+      "blocked": 0,
+      "wet": 0,
+      "maxStep": 0.06907498870750217
+    },
+    {
+      "id": 12220,
+      "name": "service",
+      "kind": "service",
+      "width": 4.5,
+      "samples": 8,
+      "blocked": 0,
+      "wet": 0,
+      "maxStep": 0.07196686573886524
+    },
+    {
+      "id": 12303,
+      "name": "trunk_link",
+      "kind": "trunk_link",
+      "width": 7,
+      "samples": 144,
+      "blocked": 0,
+      "wet": 0,
+      "maxStep": 0.0016300501734196615
+    },
+    {
+      "id": 12314,
+      "name": "service",
+      "kind": "service",
+      "width": 4.5,
+      "samples": 6,
+      "blocked": 0,
+      "wet": 0,
+      "maxStep": 0.006062266401801963
+    },
+    {
+      "id": 12500,
+      "name": "Via Palestro",
+      "kind": "unclassified",
+      "width": 3.5,
+      "samples": 6,
+      "blocked": 0,
+      "wet": 0,
+      "maxStep": 0.004386792636585923
+    },
+    {
+      "id": 12636,
+      "name": "Via Francesco Petrarca",
+      "kind": "tertiary",
+      "width": 8,
+      "samples": 60,
+      "blocked": 0,
+      "wet": 0,
+      "maxStep": 0.003188564923847892
+    },
+    {
+      "id": 12643,
+      "name": "Via San Tommaso",
+      "kind": "tertiary",
+      "width": 8,
+      "samples": 48,
+      "blocked": 0,
+      "wet": 0,
+      "maxStep": 0.0025781037614436286
+    },
+    {
+      "id": 12761,
+      "name": "Viale della Repubblica",
+      "kind": "secondary",
+      "width": 9,
+      "samples": 8,
+      "blocked": 0,
+      "wet": 0,
+      "maxStep": 0.00447416386687749
+    },
+    {
+      "id": 12763,
+      "name": "Viale della Repubblica",
+      "kind": "secondary",
+      "width": 9,
+      "samples": 12,
+      "blocked": 0,
+      "wet": 0,
+      "maxStep": 0.02462118717909334
+    },
+    {
+      "id": 12774,
+      "name": "service",
+      "kind": "service",
+      "width": 4.5,
+      "samples": 15,
+      "blocked": 0,
+      "wet": 0,
+      "maxStep": 0.008806648330690336
+    },
+    {
+      "id": 13330,
+      "name": "Via Ugo Foscolo",
+      "kind": "unclassified",
+      "width": 6.5,
+      "samples": 54,
+      "blocked": 0,
+      "wet": 0,
+      "maxStep": 0.0018181450157968015
+    },
+    {
+      "id": 13412,
+      "name": "Corso Irlanda",
+      "kind": "trunk",
+      "width": 12,
+      "samples": 132,
+      "blocked": 0,
+      "wet": 0,
+      "maxStep": 0.006280116050049855
+    },
+    {
+      "id": 13435,
+      "name": "service",
+      "kind": "service",
+      "width": 4.5,
+      "samples": 15,
+      "blocked": 0,
+      "wet": 0,
+      "maxStep": 0.006269909419966524
+    },
+    {
+      "id": 13436,
+      "name": "service",
+      "kind": "service",
+      "width": 4.5,
+      "samples": 18,
+      "blocked": 0,
+      "wet": 0,
+      "maxStep": 0.015127506943130697
+    },
+    {
+      "id": 13437,
+      "name": "service",
+      "kind": "service",
+      "width": 4.5,
+      "samples": 5,
+      "blocked": 0,
+      "wet": 0,
+      "maxStep": 0.06930013115063005
+    },
+    {
+      "id": 13438,
+      "name": "service",
+      "kind": "service",
+      "width": 4.5,
+      "samples": 8,
+      "blocked": 0,
+      "wet": 0,
+      "maxStep": 0.006826917431741464
+    },
+    {
+      "id": 13439,
+      "name": "service",
+      "kind": "service",
+      "width": 4.5,
+      "samples": 8,
+      "blocked": 0,
+      "wet": 0,
+      "maxStep": 0.0000019951774454796123
+    },
+    {
+      "id": 13440,
+      "name": "service",
+      "kind": "service",
+      "width": 1.5,
+      "samples": 6,
+      "blocked": 0,
+      "wet": 0,
+      "maxStep": 0.015063075199524434
+    },
+    {
+      "id": 13509,
+      "name": "Ponte San Gregorio Barbarigo",
+      "kind": "residential",
+      "width": 6.5,
+      "samples": 18,
+      "blocked": 0,
+      "wet": 0,
+      "maxStep": 0.013352072829743378
+    },
+    {
+      "id": 13751,
+      "name": "service",
+      "kind": "service",
+      "width": 4.5,
+      "samples": 8,
+      "blocked": 0,
+      "wet": 0,
+      "maxStep": 0.005058002801346717
+    },
+    {
+      "id": 13781,
+      "name": "service",
+      "kind": "service",
+      "width": 4.5,
+      "samples": 15,
+      "blocked": 0,
+      "wet": 0,
+      "maxStep": 0.002803773152978195
+    },
+    {
+      "id": 13945,
+      "name": "Via Lauro",
+      "kind": "residential",
+      "width": 6.5,
+      "samples": 36,
+      "blocked": 0,
+      "wet": 0,
+      "maxStep": 0.06769388026833845
+    },
+    {
+      "id": 14131,
+      "name": "Corso Tredici Giugno",
+      "kind": "trunk",
+      "width": 12,
+      "samples": 567,
+      "blocked": 0,
+      "wet": 0,
+      "maxStep": 0.010272928544335258
+    },
+    {
+      "id": 14134,
+      "name": "Corso Tredici Giugno",
+      "kind": "trunk",
+      "width": 12,
+      "samples": 529,
+      "blocked": 0,
+      "wet": 0,
+      "maxStep": 0.06792688753026965
+    },
+    {
+      "id": 14421,
+      "name": "Corso Boston",
+      "kind": "trunk",
+      "width": 12,
+      "samples": 180,
+      "blocked": 0,
+      "wet": 0,
+      "maxStep": 0.007958011782813301
+    },
+    {
+      "id": 14572,
+      "name": "Corso Boston",
+      "kind": "trunk",
+      "width": 12,
+      "samples": 42,
+      "blocked": 0,
+      "wet": 0,
+      "maxStep": 0.06337752985739442
+    },
+    {
+      "id": 14573,
+      "name": "Corso Boston",
+      "kind": "trunk",
+      "width": 12,
+      "samples": 24,
+      "blocked": 0,
+      "wet": 0,
+      "maxStep": 0.0539831012716121
+    },
+    {
+      "id": 14574,
+      "name": "Corso Boston",
+      "kind": "trunk_link",
+      "width": 7,
+      "samples": 24,
+      "blocked": 0,
+      "wet": 0,
+      "maxStep": 0.06867563150190392
+    },
+    {
+      "id": 14967,
+      "name": "Ponte della morte",
+      "kind": "residential",
+      "width": 6.5,
+      "samples": 10,
+      "blocked": 0,
+      "wet": 0,
+      "maxStep": 0.010569623592822097
+    },
+    {
+      "id": 14970,
+      "name": "Via Beato Luca Belludi",
+      "kind": "residential",
+      "width": 6.5,
+      "samples": 15,
+      "blocked": 0,
+      "wet": 0,
+      "maxStep": 0.008808648404254882
+    },
+    {
+      "id": 15410,
+      "name": "Via Alvise Cornaro",
+      "kind": "residential",
+      "width": 6.5,
+      "samples": 8,
+      "blocked": 0,
+      "wet": 0,
+      "maxStep": 0.003216279781010911
+    },
+    {
+      "id": 15416,
+      "name": "Via Alvise Cornaro",
+      "kind": "residential",
+      "width": 6.5,
+      "samples": 24,
+      "blocked": 0,
+      "wet": 0,
+      "maxStep": 0.0008907696759230532
+    },
+    {
+      "id": 15723,
+      "name": "Ponte San Leonardo",
+      "kind": "residential",
+      "width": 6.5,
+      "samples": 15,
+      "blocked": 0,
+      "wet": 0,
+      "maxStep": 0.06183467014548327
+    },
+    {
+      "id": 15724,
+      "name": "Ponte San Leonardo",
+      "kind": "residential",
+      "width": 6.5,
+      "samples": 18,
+      "blocked": 0,
+      "wet": 0,
+      "maxStep": 0.07053776637617659
+    },
+    {
+      "id": 16191,
+      "name": "service",
+      "kind": "service",
+      "width": 4.5,
+      "samples": 8,
+      "blocked": 0,
+      "wet": 0,
+      "maxStep": 0.0030037927588466573
+    },
+    {
+      "id": 17048,
+      "name": "service",
+      "kind": "service",
+      "width": 4.5,
+      "samples": 12,
+      "blocked": 0,
+      "wet": 0,
+      "maxStep": 0.004260357745934584
+    },
+    {
+      "id": 17313,
+      "name": "service",
+      "kind": "service",
+      "width": 4.5,
+      "samples": 8,
+      "blocked": 0,
+      "wet": 0,
+      "maxStep": 0.06258129600462148
+    },
+    {
+      "id": 19451,
+      "name": "Corso Irlanda",
+      "kind": "trunk",
+      "width": 12,
+      "samples": 78,
+      "blocked": 0,
+      "wet": 0,
+      "maxStep": 0.006309715342833755
+    },
+    {
+      "id": 19456,
+      "name": "Ponte delle Torricelle",
+      "kind": "residential",
+      "width": 6.5,
+      "samples": 26,
+      "blocked": 0,
+      "wet": 0,
+      "maxStep": 0.0667441769463828
+    },
+    {
+      "id": 19578,
+      "name": "Via Giuseppe Peano",
+      "kind": "residential",
+      "width": 5,
+      "samples": 20,
+      "blocked": 0,
+      "wet": 0,
+      "maxStep": 0.0004602598558136606
+    },
+    {
+      "id": 19894,
+      "name": "Autostrada Serenissima",
+      "kind": "motorway",
+      "width": 13,
+      "samples": 30,
+      "blocked": 0,
+      "wet": 0,
+      "maxStep": 0.010199085973532362
+    },
+    {
+      "id": 19895,
+      "name": "Autostrada Serenissima",
+      "kind": "motorway",
+      "width": 13,
+      "samples": 42,
+      "blocked": 0,
+      "wet": 0,
+      "maxStep": 0.00685602107867922
+    },
+    {
+      "id": 20116,
+      "name": "Via San Bortolo",
+      "kind": "service",
+      "width": 4.5,
+      "samples": 8,
+      "blocked": 0,
+      "wet": 0,
+      "maxStep": 0.05651006531305924
+    },
+    {
+      "id": 20727,
+      "name": "Piazza Accademia Delia",
+      "kind": "residential",
+      "width": 6.5,
+      "samples": 58,
+      "blocked": 0,
+      "wet": 0,
+      "maxStep": 0.0721197924659478
+    },
+    {
+      "id": 20806,
+      "name": "Cavalcavia Dalmazia",
+      "kind": "secondary",
+      "width": 9,
+      "samples": 101,
+      "blocked": 0,
+      "wet": 0,
+      "maxStep": 0.005007949708076609
+    },
+    {
+      "id": 20883,
+      "name": "Nuova Strada del Santo",
+      "kind": "trunk",
+      "width": 12,
+      "samples": 96,
+      "blocked": 0,
+      "wet": 0,
+      "maxStep": 0.00870617063266721
+    },
+    {
+      "id": 20884,
+      "name": "Nuova Strada del Santo",
+      "kind": "trunk",
+      "width": 12,
+      "samples": 84,
+      "blocked": 0,
+      "wet": 0,
+      "maxStep": 0.01899232811783058
+    },
+    {
+      "id": 20885,
+      "name": "Corso Irlanda",
+      "kind": "trunk",
+      "width": 12,
+      "samples": 162,
+      "blocked": 0,
+      "wet": 0,
+      "maxStep": 0.020214440941115797
+    },
+    {
+      "id": 20938,
+      "name": "SR47dir",
+      "kind": "trunk",
+      "width": 12,
+      "samples": 18,
+      "blocked": 0,
+      "wet": 0,
+      "maxStep": 0.0005672990213554385
+    },
+    {
+      "id": 21008,
+      "name": "service",
+      "kind": "service",
+      "width": 4.5,
+      "samples": 10,
+      "blocked": 0,
+      "wet": 0,
+      "maxStep": 0.003968693214774888
+    },
+    {
+      "id": 21009,
+      "name": "service",
+      "kind": "service",
+      "width": 4.5,
+      "samples": 3,
+      "blocked": 0,
+      "wet": 0,
+      "maxStep": 0.07624643507376838
+    },
+    {
+      "id": 21011,
+      "name": "service",
+      "kind": "service",
+      "width": 4.5,
+      "samples": 6,
+      "blocked": 0,
+      "wet": 0,
+      "maxStep": 0.06126893153337498
+    },
+    {
+      "id": 21013,
+      "name": "service",
+      "kind": "service",
+      "width": 4.5,
+      "samples": 28,
+      "blocked": 0,
+      "wet": 0,
+      "maxStep": 0.06522289295106987
+    },
+    {
+      "id": 21160,
+      "name": "Corso Boston",
+      "kind": "trunk_link",
+      "width": 7,
+      "samples": 30,
+      "blocked": 0,
+      "wet": 0,
+      "maxStep": 0.00009474967583500415
+    },
+    {
+      "id": 21361,
+      "name": "Cavalcavia Brusegana",
+      "kind": "secondary",
+      "width": 9,
+      "samples": 33,
+      "blocked": 0,
+      "wet": 0,
+      "maxStep": 0.00874406387954707
+    },
+    {
+      "id": 21369,
+      "name": "Cavalcavia Brusegana",
+      "kind": "secondary",
+      "width": 9,
+      "samples": 25,
+      "blocked": 0,
+      "wet": 0,
+      "maxStep": 0.008359539470792043
+    },
+    {
+      "id": 21371,
+      "name": "Cavalcavia Brusegana",
+      "kind": "secondary",
+      "width": 9,
+      "samples": 27,
+      "blocked": 0,
+      "wet": 0,
+      "maxStep": 0.010942307556970121
+    },
+    {
+      "id": 21428,
+      "name": "Corso Irlanda",
+      "kind": "trunk",
+      "width": 12,
+      "samples": 30,
+      "blocked": 0,
+      "wet": 0,
+      "maxStep": 0.0027691807089098575
+    },
+    {
+      "id": 21429,
+      "name": "trunk_link",
+      "kind": "trunk_link",
+      "width": 7,
+      "samples": 108,
+      "blocked": 0,
+      "wet": 0,
+      "maxStep": 0.0026410568552286406
+    },
+    {
+      "id": 21430,
+      "name": "trunk_link",
+      "kind": "trunk_link",
+      "width": 7,
+      "samples": 63,
+      "blocked": 0,
+      "wet": 0,
+      "maxStep": 0.0013579906976524114
+    },
+    {
+      "id": 21669,
+      "name": "service",
+      "kind": "service",
+      "width": 4.5,
+      "samples": 10,
+      "blocked": 0,
+      "wet": 0,
+      "maxStep": 0.0034251938670060156
+    },
+    {
+      "id": 21824,
+      "name": "service",
+      "kind": "service",
+      "width": 4.5,
+      "samples": 6,
+      "blocked": 0,
+      "wet": 0,
+      "maxStep": 0.0000839658670219734
+    },
+    {
+      "id": 22243,
+      "name": "Ponte dell'Unità d'Italia",
+      "kind": "tertiary",
+      "width": 8,
+      "samples": 135,
+      "blocked": 0,
+      "wet": 0,
+      "maxStep": 0.018174943637603747
+    },
+    {
+      "id": 22386,
+      "name": "service",
+      "kind": "service",
+      "width": 4.5,
+      "samples": 6,
+      "blocked": 0,
+      "wet": 0,
+      "maxStep": 0.00448629757413066
+    },
+    {
+      "id": 22408,
+      "name": "service",
+      "kind": "service",
+      "width": 4.5,
+      "samples": 15,
+      "blocked": 0,
+      "wet": 0,
+      "maxStep": 0.010632046905381998
+    },
+    {
+      "id": 22504,
+      "name": "Via Beato Luca Belludi",
+      "kind": "residential",
+      "width": 6.5,
+      "samples": 3,
+      "blocked": 0,
+      "wet": 0,
+      "maxStep": 0.01698355393659412
+    },
+    {
+      "id": 22506,
+      "name": "Riviera del Businello",
+      "kind": "residential",
+      "width": 6.5,
+      "samples": 13,
+      "blocked": 0,
+      "wet": 0,
+      "maxStep": 0.008309760656342036
+    },
+    {
+      "id": 22791,
+      "name": "service",
+      "kind": "service",
+      "width": 4.5,
+      "samples": 8,
+      "blocked": 0,
+      "wet": 0,
+      "maxStep": 0.00011019717167926046
+    },
+    {
+      "id": 22794,
+      "name": "service",
+      "kind": "service",
+      "width": 4.5,
+      "samples": 6,
+      "blocked": 0,
+      "wet": 0,
+      "maxStep": 0.0001717810077295212
+    },
+    {
+      "id": 22796,
+      "name": "service",
+      "kind": "service",
+      "width": 4.5,
+      "samples": 8,
+      "blocked": 0,
+      "wet": 0,
+      "maxStep": 0.0001486816406277569
+    },
+    {
+      "id": 22799,
+      "name": "Via Enrico Fermi",
+      "kind": "residential",
+      "width": 6.5,
+      "samples": 11,
+      "blocked": 0,
+      "wet": 0,
+      "maxStep": 0.061748423332094404
+    },
+    {
+      "id": 23038,
+      "name": "Viale Felice Cavallotti",
+      "kind": "residential",
+      "width": 6.5,
+      "samples": 10,
+      "blocked": 0,
+      "wet": 0,
+      "maxStep": 0.0012397609666585652
+    },
+    {
+      "id": 23075,
+      "name": "service",
+      "kind": "service",
+      "width": 3,
+      "samples": 6,
+      "blocked": 0,
+      "wet": 0,
+      "maxStep": 0.0034889393811550207
+    },
+    {
+      "id": 23497,
+      "name": "Via Giuseppe Giusti",
+      "kind": "tertiary",
+      "width": 8,
+      "samples": 66,
+      "blocked": 0,
+      "wet": 0,
+      "maxStep": 0.0034357739272081744
+    },
+    {
+      "id": 23797,
+      "name": "Cavalcavia Borgomagno",
+      "kind": "service",
+      "width": 4.5,
+      "samples": 132,
+      "blocked": 0,
+      "wet": 0,
+      "maxStep": 0.06171000000000859
+    },
+    {
+      "id": 24114,
+      "name": "service",
+      "kind": "service",
+      "width": 3,
+      "samples": 10,
+      "blocked": 0,
+      "wet": 0,
+      "maxStep": 0.00674517349948367
+    },
+    {
+      "id": 24142,
+      "name": "Via Santa Maria d'Abano",
+      "kind": "tertiary",
+      "width": 8,
+      "samples": 4,
+      "blocked": 0,
+      "wet": 0,
+      "maxStep": 0.00948461068708184
+    },
+    {
+      "id": 24143,
+      "name": "Via Latisana",
+      "kind": "tertiary",
+      "width": 8,
+      "samples": 3,
+      "blocked": 0,
+      "wet": 0,
+      "maxStep": 0.005281924986956454
+    },
+    {
+      "id": 24147,
+      "name": "service",
+      "kind": "service",
+      "width": 4.5,
+      "samples": 8,
+      "blocked": 0,
+      "wet": 0,
+      "maxStep": 2.1045664766461414e-8
+    },
+    {
+      "id": 25105,
+      "name": "residential",
+      "kind": "residential",
+      "width": 6.5,
+      "samples": 8,
+      "blocked": 0,
+      "wet": 0,
+      "maxStep": 0.002868057765258669
+    },
+    {
+      "id": 25110,
+      "name": "service",
+      "kind": "service",
+      "width": 4.5,
+      "samples": 10,
+      "blocked": 0,
+      "wet": 0,
+      "maxStep": 0.046075427290507065
+    },
+    {
+      "id": 25466,
+      "name": "Autostrada Serenissima",
+      "kind": "motorway",
+      "width": 13,
+      "samples": 84,
+      "blocked": 0,
+      "wet": 0,
+      "maxStep": 0.0018789267415328936
+    },
+    {
+      "id": 25529,
+      "name": "Via Bosco",
+      "kind": "tertiary",
+      "width": 8,
+      "samples": 80,
+      "blocked": 0,
+      "wet": 0,
+      "maxStep": 0.07010694473450307
+    },
+    {
+      "id": 25646,
+      "name": "Autostrada Serenissima",
+      "kind": "motorway",
+      "width": 13,
+      "samples": 36,
+      "blocked": 0,
+      "wet": 0,
+      "maxStep": 0.0050531219124962945
+    },
+    {
+      "id": 25918,
+      "name": "residential",
+      "kind": "residential",
+      "width": 6.5,
+      "samples": 6,
+      "blocked": 0,
+      "wet": 0,
+      "maxStep": 0.0015960712542835154
+    },
+    {
+      "id": 25965,
+      "name": "service",
+      "kind": "service",
+      "width": 4.5,
+      "samples": 8,
+      "blocked": 0,
+      "wet": 0,
+      "maxStep": 0.0009896479231539246
+    },
+    {
+      "id": 25968,
+      "name": "service",
+      "kind": "service",
+      "width": 4.5,
+      "samples": 8,
+      "blocked": 0,
+      "wet": 0,
+      "maxStep": 0.04975839530902881
+    },
+    {
+      "id": 26259,
+      "name": "service",
+      "kind": "service",
+      "width": 4.5,
+      "samples": 8,
+      "blocked": 0,
+      "wet": 0,
+      "maxStep": 0.06499381027093953
+    },
+    {
+      "id": 26265,
+      "name": "Corso Tredici Giugno",
+      "kind": "trunk_link",
+      "width": 7,
+      "samples": 91,
+      "blocked": 0,
+      "wet": 0,
+      "maxStep": 0.011500769992483839
+    },
+    {
+      "id": 27077,
+      "name": "service",
+      "kind": "service",
+      "width": 4.5,
+      "samples": 6,
+      "blocked": 0,
+      "wet": 0,
+      "maxStep": 0.0006174862155496896
+    },
+    {
+      "id": 27079,
+      "name": "Autostrada Serenissima",
+      "kind": "motorway",
+      "width": 13,
+      "samples": 42,
+      "blocked": 0,
+      "wet": 0,
+      "maxStep": 0.0037048386927303056
+    },
+    {
+      "id": 27086,
+      "name": "Corso Tredici Giugno",
+      "kind": "trunk",
+      "width": 12,
+      "samples": 176,
+      "blocked": 0,
+      "wet": 0,
+      "maxStep": 0.003211989476323396
+    },
+    {
+      "id": 27340,
+      "name": "Via Guglielmo Marconi",
+      "kind": "residential",
+      "width": 6.5,
+      "samples": 18,
+      "blocked": 0,
+      "wet": 0,
+      "maxStep": 0.002765617968410794
+    },
+    {
+      "id": 27787,
+      "name": "service",
+      "kind": "service",
+      "width": 3,
+      "samples": 8,
+      "blocked": 0,
+      "wet": 0,
+      "maxStep": 0.05681900319567745
+    },
+    {
+      "id": 27789,
+      "name": "Via Conche",
+      "kind": "residential",
+      "width": 6.5,
+      "samples": 8,
+      "blocked": 0,
+      "wet": 0,
+      "maxStep": 0.0018929995174232772
+    },
+    {
+      "id": 28802,
+      "name": "secondary_link",
+      "kind": "secondary_link",
+      "width": 7,
+      "samples": 20,
+      "blocked": 0,
+      "wet": 0,
+      "maxStep": 0.0013554294362290165
+    },
+    {
+      "id": 29049,
+      "name": "unclassified",
+      "kind": "unclassified",
+      "width": 6.5,
+      "samples": 6,
+      "blocked": 0,
+      "wet": 0,
+      "maxStep": 0.003900376710042508
+    },
+    {
+      "id": 29052,
+      "name": "unclassified",
+      "kind": "unclassified",
+      "width": 6.5,
+      "samples": 8,
+      "blocked": 0,
+      "wet": 0,
+      "maxStep": 0.0027055173974463997
+    },
+    {
+      "id": 29120,
+      "name": "unclassified",
+      "kind": "unclassified",
+      "width": 6.5,
+      "samples": 6,
+      "blocked": 0,
+      "wet": 0,
+      "maxStep": 0.0015050565202159305
+    },
+    {
+      "id": 29791,
+      "name": "Via Ponterotto",
+      "kind": "secondary",
+      "width": 9,
+      "samples": 2,
+      "blocked": 0,
+      "wet": 0,
+      "maxStep": 0.0023824115301138704
+    },
+    {
+      "id": 29792,
+      "name": "Via Ponterotto",
+      "kind": "secondary",
+      "width": 9,
+      "samples": 39,
+      "blocked": 0,
+      "wet": 0,
+      "maxStep": 0.06835375571251134
+    },
+    {
+      "id": 30141,
+      "name": "unclassified",
+      "kind": "unclassified",
+      "width": 6.5,
+      "samples": 6,
+      "blocked": 0,
+      "wet": 0,
+      "maxStep": 0.002202158381139796
+    },
+    {
+      "id": 30206,
+      "name": "Via Cesare Battisti",
+      "kind": "unclassified",
+      "width": 6.5,
+      "samples": 24,
+      "blocked": 0,
+      "wet": 0,
+      "maxStep": 0.0012270549563737632
+    },
+    {
+      "id": 30212,
+      "name": "Corso Sandro Pertini",
+      "kind": "tertiary",
+      "width": 8,
+      "samples": 42,
+      "blocked": 0,
+      "wet": 0,
+      "maxStep": 0.003914983554764717
+    },
+    {
+      "id": 30402,
+      "name": "service",
+      "kind": "service",
+      "width": 4.5,
+      "samples": 8,
+      "blocked": 0,
+      "wet": 0,
+      "maxStep": 0.0669560951882584
+    },
+    {
+      "id": 30403,
+      "name": "service",
+      "kind": "service",
+      "width": 4.5,
+      "samples": 8,
+      "blocked": 0,
+      "wet": 0,
+      "maxStep": 0.06695609518826018
+    },
+    {
+      "id": 30490,
+      "name": "Via della Provvidenza",
+      "kind": "unclassified",
+      "width": 6.5,
+      "samples": 8,
+      "blocked": 0,
+      "wet": 0,
+      "maxStep": 0.0022151537486259087
+    },
+    {
+      "id": 31059,
+      "name": "Tangenziale di Limena",
+      "kind": "trunk",
+      "width": 12,
+      "samples": 15,
+      "blocked": 0,
+      "wet": 0,
+      "maxStep": 0.004303217126850001
+    },
+    {
+      "id": 31062,
+      "name": "Tangenziale di Limena",
+      "kind": "trunk",
+      "width": 12,
+      "samples": 18,
+      "blocked": 0,
+      "wet": 0,
+      "maxStep": 0.0031791326080075066
+    },
+    {
+      "id": 31070,
+      "name": "Via Concetto Marchesi",
+      "kind": "unclassified",
+      "width": 6.5,
+      "samples": 18,
+      "blocked": 0,
+      "wet": 0,
+      "maxStep": 0.00021491386602079388
+    },
+    {
+      "id": 31071,
+      "name": "Tangenziale di Limena",
+      "kind": "trunk",
+      "width": 12,
+      "samples": 21,
+      "blocked": 0,
+      "wet": 0,
+      "maxStep": 0.0002301789643830432
+    },
+    {
+      "id": 31072,
+      "name": "Tangenziale di Limena",
+      "kind": "trunk",
+      "width": 12,
+      "samples": 20,
+      "blocked": 0,
+      "wet": 0,
+      "maxStep": 0.00015426799129159008
+    },
+    {
+      "id": 31347,
+      "name": "service",
+      "kind": "service",
+      "width": 4.5,
+      "samples": 8,
+      "blocked": 0,
+      "wet": 0,
+      "maxStep": 0.0012166900634724698
+    },
+    {
+      "id": 31390,
+      "name": "service",
+      "kind": "service",
+      "width": 4.5,
+      "samples": 6,
+      "blocked": 0,
+      "wet": 0,
+      "maxStep": 0.026893719799961247
+    },
+    {
+      "id": 31392,
+      "name": "Via Pontealto",
+      "kind": "tertiary",
+      "width": 8,
+      "samples": 125,
+      "blocked": 0,
+      "wet": 0,
+      "maxStep": 0.05344542708800759
+    },
+    {
+      "id": 31394,
+      "name": "service",
+      "kind": "service",
+      "width": 4.5,
+      "samples": 8,
+      "blocked": 0,
+      "wet": 0,
+      "maxStep": 0.050676887177989016
+    },
+    {
+      "id": 31397,
+      "name": "Via Pontealto",
+      "kind": "tertiary",
+      "width": 8,
+      "samples": 66,
+      "blocked": 0,
+      "wet": 0,
+      "maxStep": 0.001761579708226435
+    },
+    {
+      "id": 31778,
+      "name": "Via Padova",
+      "kind": "secondary",
+      "width": 9,
+      "samples": 36,
+      "blocked": 0,
+      "wet": 0,
+      "maxStep": 0.009402329135722809
+    },
+    {
+      "id": 31827,
+      "name": "Via Vincenzo Gioberti",
+      "kind": "residential",
+      "width": 6.5,
+      "samples": 12,
+      "blocked": 0,
+      "wet": 0,
+      "maxStep": 0.0030538190208702076
+    },
+    {
+      "id": 31829,
+      "name": "Via Ponterotto",
+      "kind": "secondary",
+      "width": 9,
+      "samples": 18,
+      "blocked": 0,
+      "wet": 0,
+      "maxStep": 0.004633378059491378
+    },
+    {
+      "id": 31830,
+      "name": "service",
+      "kind": "service",
+      "width": 4.5,
+      "samples": 8,
+      "blocked": 0,
+      "wet": 0,
+      "maxStep": 0.00017742596283554235
+    },
+    {
+      "id": 31833,
+      "name": "service",
+      "kind": "service",
+      "width": 4.5,
+      "samples": 10,
+      "blocked": 0,
+      "wet": 0,
+      "maxStep": 0.00007447902015300656
+    },
+    {
+      "id": 31834,
+      "name": "Via Molini",
+      "kind": "residential",
+      "width": 4,
+      "samples": 10,
+      "blocked": 0,
+      "wet": 0,
+      "maxStep": 0.005166121807036461
+    },
+    {
+      "id": 31839,
+      "name": "service",
+      "kind": "service",
+      "width": 4.5,
+      "samples": 8,
+      "blocked": 0,
+      "wet": 0,
+      "maxStep": 0.07164973030763555
+    },
+    {
+      "id": 31840,
+      "name": "Via Antonio Vivaldi",
+      "kind": "service",
+      "width": 4.5,
+      "samples": 8,
+      "blocked": 0,
+      "wet": 0,
+      "maxStep": 0.003000985376630183
+    },
+    {
+      "id": 32086,
+      "name": "service",
+      "kind": "service",
+      "width": 4.5,
+      "samples": 8,
+      "blocked": 0,
+      "wet": 0,
+      "maxStep": 0.056904919076169236
+    },
+    {
+      "id": 32481,
+      "name": "Cavalcavia Dalmazia",
+      "kind": "secondary_link",
+      "width": 7,
+      "samples": 34,
+      "blocked": 0,
+      "wet": 0,
+      "maxStep": 0.0009051526759016326
+    },
+    {
+      "id": 32993,
+      "name": "Via Chioggia",
+      "kind": "unclassified",
+      "width": 5,
+      "samples": 8,
+      "blocked": 0,
+      "wet": 0,
+      "maxStep": 0.0024066238403328555
+    },
+    {
+      "id": 32995,
+      "name": "Via Romana Aponense",
+      "kind": "service",
+      "width": 4,
+      "samples": 8,
+      "blocked": 0,
+      "wet": 0,
+      "maxStep": 0.00277974987030305
+    },
+    {
+      "id": 33143,
+      "name": "motorway_link",
+      "kind": "motorway_link",
+      "width": 7,
+      "samples": 134,
+      "blocked": 0,
+      "wet": 0,
+      "maxStep": 0.005209458197397154
+    },
+    {
+      "id": 33144,
+      "name": "motorway_link",
+      "kind": "motorway_link",
+      "width": 7,
+      "samples": 84,
+      "blocked": 0,
+      "wet": 0,
+      "maxStep": 0.003409988256320773
+    },
+    {
+      "id": 33219,
+      "name": "Via Giotto",
+      "kind": "residential",
+      "width": 6.5,
+      "samples": 20,
+      "blocked": 0,
+      "wet": 0,
+      "maxStep": 0.0007498360035818052
+    },
+    {
+      "id": 33245,
+      "name": "Ponte Isonzo",
+      "kind": "secondary",
+      "width": 9,
+      "samples": 60,
+      "blocked": 0,
+      "wet": 0,
+      "maxStep": 0.002816582388181388
+    },
+    {
+      "id": 33668,
+      "name": "Via Ponte della Cagna",
+      "kind": "unclassified",
+      "width": 5,
+      "samples": 154,
+      "blocked": 0,
+      "wet": 0,
+      "maxStep": 0.06926217507776045
+    },
+    {
+      "id": 33669,
+      "name": "Via Ponte della Cagna",
+      "kind": "unclassified",
+      "width": 5,
+      "samples": 6,
+      "blocked": 0,
+      "wet": 0,
+      "maxStep": 0.06744457823578998
+    },
+    {
+      "id": 33688,
+      "name": "Via Boves",
+      "kind": "trunk",
+      "width": 12,
+      "samples": 54,
+      "blocked": 0,
+      "wet": 0,
+      "maxStep": 0.0046741551260751635
+    },
+    {
+      "id": 33743,
+      "name": "Via del Commercio",
+      "kind": "trunk",
+      "width": 12,
+      "samples": 72,
+      "blocked": 0,
+      "wet": 0,
+      "maxStep": 0.0016083156314099512
+    },
+    {
+      "id": 33744,
+      "name": "Via del Commercio",
+      "kind": "trunk",
+      "width": 12,
+      "samples": 48,
+      "blocked": 0,
+      "wet": 0,
+      "maxStep": 0.0018850187214543013
+    },
+    {
+      "id": 34112,
+      "name": "service",
+      "kind": "service",
+      "width": 4.5,
+      "samples": 481,
+      "blocked": 0,
+      "wet": 0,
+      "maxStep": 0.07185096964355608
+    },
+    {
+      "id": 34132,
+      "name": "service",
+      "kind": "service",
+      "width": 4.5,
+      "samples": 10,
+      "blocked": 0,
+      "wet": 0,
+      "maxStep": 0.06088885434956204
+    },
+    {
+      "id": 34142,
+      "name": "Via Romea",
+      "kind": "primary",
+      "width": 10,
+      "samples": 24,
+      "blocked": 0,
+      "wet": 0,
+      "maxStep": 0.006000398779889338
+    },
+    {
+      "id": 34300,
+      "name": "service",
+      "kind": "service",
+      "width": 4.5,
+      "samples": 8,
+      "blocked": 0,
+      "wet": 0,
+      "maxStep": 0.0020349996116308944
+    },
+    {
+      "id": 34303,
+      "name": "Via Guazzi",
+      "kind": "unclassified",
+      "width": 4,
+      "samples": 8,
+      "blocked": 0,
+      "wet": 0,
+      "maxStep": 0.0008324329376208084
+    },
+    {
+      "id": 34394,
+      "name": "Via Boves",
+      "kind": "trunk",
+      "width": 12,
+      "samples": 60,
+      "blocked": 0,
+      "wet": 0,
+      "maxStep": 0.0025067819522384127
+    },
+    {
+      "id": 34395,
+      "name": "Via Boves",
+      "kind": "trunk",
+      "width": 12,
+      "samples": 288,
+      "blocked": 0,
+      "wet": 0,
+      "maxStep": 0.004271311132075795
+    },
+    {
+      "id": 34421,
+      "name": "Via Boves",
+      "kind": "trunk_link",
+      "width": 7,
+      "samples": 24,
+      "blocked": 0,
+      "wet": 0,
+      "maxStep": 0.0013392020910494296
+    },
+    {
+      "id": 34431,
+      "name": "service",
+      "kind": "service",
+      "width": 4.5,
+      "samples": 120,
+      "blocked": 0,
+      "wet": 0,
+      "maxStep": 0.018504718114579433
+    },
+    {
+      "id": 34441,
+      "name": "Cavalcavia Borgomagno",
+      "kind": "service",
+      "width": 4.5,
+      "samples": 161,
+      "blocked": 0,
+      "wet": 0,
+      "maxStep": 0.060621845303479915
+    },
+    {
+      "id": 34482,
+      "name": "service",
+      "kind": "service",
+      "width": 4.5,
+      "samples": 5,
+      "blocked": 0,
+      "wet": 0,
+      "maxStep": 0.0010510522147804124
+    },
+    {
+      "id": 34484,
+      "name": "service",
+      "kind": "service",
+      "width": 4.5,
+      "samples": 4,
+      "blocked": 0,
+      "wet": 0,
+      "maxStep": 0.00667135864350854
+    },
+    {
+      "id": 34486,
+      "name": "Via Olmeo",
+      "kind": "unclassified",
+      "width": 6.5,
+      "samples": 10,
+      "blocked": 0,
+      "wet": 0,
+      "maxStep": 0.007895432585094397
+    }
+  ],
+  "faults": []
+}

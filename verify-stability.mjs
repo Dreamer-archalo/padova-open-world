@@ -1,3 +1,5 @@
+import * as modernVehicles from './dist/modern-vehicles.js';
+import * as modernDriving from './dist/modern-driving.js';
 import * as cameraModule from './dist/camera-rig.js';
 import * as districtModule from './dist/districts.js';
 import * as trafficModule from './dist/traffic.js';
@@ -42,14 +44,14 @@ const element=()=>({style:{},dataset:{},hidden:false,open:false,textContent:'',w
 ids.forEach(id=>els.set(id,element()));
 const document={body:{classList:{add(){},remove(){}}},getElementById(id){assert(els.has(id),'missing DOM id '+id);return els.get(id);},querySelectorAll:()=>[],addEventListener(){},createElement:element};
 globalThis.document=document;
-const ctx=vm.createContext({THREE,...cameraModule,...districtModule,...trafficModule,...tramModule,...incidentModule,...core,...worldModule,...movement,...terrainModule,...vehicles,BuildingModels,document,window:{addEventListener(){}},localStorage:{getItem:()=>null,setItem(){}},console,Math,JSON,Set,Map,Number,Array,Float32Array,Uint8Array,devicePixelRatio:1,innerWidth:1440,innerHeight:900,requestAnimationFrame(){},location:{reload(){}}});
+const ctx=vm.createContext({THREE,...modernVehicles,...modernDriving,...cameraModule,...districtModule,...trafficModule,...tramModule,...incidentModule,...core,...worldModule,...movement,...terrainModule,...vehicles,BuildingModels,document,window:{addEventListener(){}},localStorage:{getItem:()=>null,setItem(){}},console,Math,JSON,Set,Map,Number,Array,Float32Array,Uint8Array,devicePixelRatio:1,innerWidth:1440,innerHeight:900,requestAnimationFrame(){},location:{reload(){}}});
 let code=fs.readFileSync(new URL('./dist/game.js',import.meta.url),'utf8').replace(/^import .*;\n/gm,'').replace(/init\(\);\s*$/,'');vm.runInContext(code,ctx);
 ctx.testData=JSON.parse(fs.readFileSync(new URL('./dist/data/padova.json',import.meta.url)));
 ctx.cityData=JSON.parse(fs.readFileSync(new URL('./dist/data/city.json',import.meta.url)));
 ctx.terrainData=JSON.parse(fs.readFileSync(new URL('./dist/data/terrain.json',import.meta.url)));
-vm.runInContext(`data=testData;applyCityData(data,cityData);districts=new Districts(data);terrain=new Terrain(terrainData,data);terrain.districts=districts;scene=new THREE.Scene();world=new CityWorld(scene,data,terrain);graph=makeRoadGraph(data.roads);signals=new TrafficSignals(graph,data.signals);trams=new Trams(scene,data,terrain);incidents=new Incidents(scene);player=createPerson();camera=new THREE.PerspectiveCamera();sun=new THREE.DirectionalLight();marker=new THREE.Group();state.ready=true;state.started=true;createPopulation();followYaw=state.yaw;cameraRig.reset(state.yaw);`,ctx);
+vm.runInContext(`data=testData;applyCityData(data,cityData);districts=new Districts(data);terrain=new Terrain(terrainData,data,{modern:true});terrain.districts=districts;scene=new THREE.Scene();world=new CityWorld(scene,data,terrain);graph=makeRoadGraph(data.roads,{separateLevels:true});signals=new TrafficSignals(graph,data.signals);trams=new Trams(scene,data,terrain);incidents=new Incidents(scene);player=createPerson();camera=new THREE.PerspectiveCamera();sun=new THREE.DirectionalLight();marker=new THREE.Group();state.ready=true;state.started=true;createPopulation();followYaw=state.yaw;cameraRig.reset(state.yaw);`,ctx);
 const t=vm.runInContext('({terrain,waterRecovery,recover,dryRoad,addCar,travel,falling,state,keys,cars,people,world,scene,player,camera,clock,movePlayer,updateCamera,updateUI,toggleVehicle,beginMission,cancelMission,updateMission,clearPolice,simulate})',ctx);
-assert.equal(t.cars.length,31);assert.equal(t.people.length,72);
+assert.equal(t.cars.filter(c=>!c.spec.aircraft).length,31);assert(t.cars.filter(c=>c.spec.aircraft).length>=2);assert.equal(t.people.length,72);
 assert(t.player.userData.hips.children[0].position.y>.7,'leg pivots must be at the hips');
 assert(!core.collides(t.state.x,t.state.z,.36,t.world.collision),'centre spawn must be clear');
 t.toggleVehicle();assert.equal(t.state.mode,'car');assert.equal(t.state.y,t.terrain.height(t.state.x,t.state.z));
@@ -64,7 +66,7 @@ t.state.x=t.cars[0].x;t.state.z=t.cars[0].z;t.state.speed=0;t.toggleVehicle();as
 const start={x:t.state.x,z:t.state.z,yaw:t.state.yaw};let reference;
 for(const hz of [30,60,144]){
   Object.assign(t.state,start,{speed:0,y:t.terrain.height(start.x,start.z),vy:0,elapsed:0});t.clock.reset();t.keys.clear();t.keys.add('KeyW');t.keys.add('KeyA');
-  for(let frame=0;frame<hz*3;frame++)t.clock.advance(1/hz,dt=>{t.state.elapsed+=dt;t.movePlayer(dt);assert(!core.collides(t.state.x,t.state.z,.359,t.world.collision),'walk penetrated a building');});
+  for(let frame=0;frame<hz*3;frame++)t.clock.advance(1/hz,dt=>{t.state.elapsed+=dt;t.movePlayer(dt);{const hit=core.collides(t.state.x,t.state.z,.359,t.world.collision,t.state.y);assert(!hit,'walk penetrated a building at actor height');}});
   const endpoint={x:t.state.x,z:t.state.z};if(reference)assert(core.dist(reference,endpoint)<1e-7,'frame-rate dependent movement');else reference=endpoint;
 }
 t.keys.clear();t.keys.add('Space');t.movePlayer(1/60);assert(t.state.y>t.terrain.height(t.state.x,t.state.z));t.keys.clear();for(let i=0;i<120;i++)t.movePlayer(1/60);assert.equal(t.state.y,t.terrain.height(t.state.x,t.state.z));

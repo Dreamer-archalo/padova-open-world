@@ -23,3 +23,5 @@ body.water-fall::after{content:"";position:fixed;inset:0;z-index:15;pointer-even
 .terrain-telemetry{display:flex;align-items:center;gap:12px;margin:10px 0;font-size:9px;letter-spacing:.06em;color:#b3c3c5}.terrain-telemetry b{display:block;margin-top:3px;color:#f4e6c9;font-size:12px}.terrain-telemetry button{margin-left:auto;border:1px solid #597078;background:#20343e;color:#eed6a9;border-radius:5px;padding:7px;cursor:pointer;font:inherit}.terrain-telemetry button:focus-visible{outline:2px solid #ffc56a;outline-offset:3px}
 
 .vehicle-heading>div{min-width:0;max-width:calc(100% - 44px)}.gear{flex-shrink:0}#vehicleName{overflow-wrap:anywhere;letter-spacing:1px}@media(max-width:800px){.terrain-telemetry{gap:7px;font-size:8px}.terrain-telemetry button{padding:5px;font-size:8px}}
+
+#turboStatus:not([hidden]){display:flex;align-items:center;gap:12px;color:#edbb65;font-size:14px;margin:8px 0}#turboCountdown{font-size:32px;font-variant-numeric:tabular-nums}#turboStatus span{display:none;font-size:12px}#turboStatus[data-critical="true"]{color:#ff745f}#turboStatus[data-critical="true"] span{display:inline}

@@ -1,3 +1,5 @@
+import {modernFootprints} from './modern-map.js';
+import {buildModernRoads} from './modern-roads.js';
 import {cityDetails} from './city-details.js';
 import {roadStructures} from './road-structures.js';
 import {DISTRICTS} from './districts.js';
@@ -74,11 +76,11 @@ function makeLandmarks(scene,data){const g=new THREE.Group(),root=g;
   g.add(prato);scene.add(g);return g;
 }
 export class CityWorld{
- constructor(scene,data,terrain=null){this.terrain=terrain;this.scene=scene;this.data=data;this.chunks=new Map();this.collision=new SpatialIndex(60);this.loaded=new Map();this.queue=[];this.lastKey='';this.radius=1050;
+ constructor(scene,data,terrain=null){if(terrain?.modern)data.buildings=modernFootprints(data.buildings,terrain);this.terrain=terrain;this.scene=scene;this.data=data;this.chunks=new Map();this.collision=new SpatialIndex(60);this.loaded=new Map();this.queue=[];this.lastKey='';this.radius=1050;
   this.wallMats={historic:new THREE.MeshStandardMaterial({map:facadeTexture('historic'),vertexColors:true,roughness:1,side:THREE.DoubleSide}),modern:new THREE.MeshStandardMaterial({map:facadeTexture('modern'),vertexColors:true,roughness:.92,side:THREE.DoubleSide}),industrial:new THREE.MeshStandardMaterial({map:facadeTexture('industrial'),vertexColors:true,roughness:1,side:THREE.DoubleSide})};this.roofMat=new THREE.MeshStandardMaterial({vertexColors:true,roughness:1,side:THREE.DoubleSide});this.groundMat=new THREE.MeshStandardMaterial({vertexColors:true,roughness:1,side:THREE.DoubleSide});
   if(!terrain){const ground=new THREE.Mesh(new THREE.PlaneGeometry(45000,45000),material('#8c9b73'));ground.rotation.x=-Math.PI/2;ground.position.y=-.05;scene.add(ground);}
   else for(let x=-6400;x<7680;x+=CHUNK)for(let z=-7040;z<6720;z+=CHUNK)this.chunk(x,z);
-  for(const b of data.buildings){b.minX=Math.min(...b.p.map(p=>p[0]));b.maxX=Math.max(...b.p.map(p=>p[0]));b.minZ=Math.min(...b.p.map(p=>p[1]));b.maxZ=Math.max(...b.p.map(p=>p[1]));b.cx=(b.minX+b.maxX)/2;b.cz=(b.minZ+b.maxZ)/2;b.minY=terrain?terrain.elevation(b.cx,b.cz):0;this.collision.add(b,b.minX,b.minZ,b.maxX,b.maxZ);this.chunk(b.cx,b.cz).buildings.push(b);}
+  for(const b of data.buildings){b.minX=Math.min(...b.p.map(p=>p[0]));b.maxX=Math.max(...b.p.map(p=>p[0]));b.minZ=Math.min(...b.p.map(p=>p[1]));b.maxZ=Math.max(...b.p.map(p=>p[1]));b.cx=(b.minX+b.maxX)/2;b.cz=(b.minZ+b.maxZ)/2;b.minY=terrain?terrain.elevation(b.cx,b.cz):0;if(terrain?.modern){const bottom=Math.min(b.minY,...b.p.map(p=>terrain.groundHeight(...p)-.25));b.h+=b.minY-bottom;b.minY=bottom;}this.collision.add(b,b.minX,b.minZ,b.maxX,b.maxZ);this.chunk(b.cx,b.cz).buildings.push(b);}
   this.landmarks=makeLandmarks(scene,data);
   if(terrain)for(const o of this.landmarks.children){const b=data.buildings.find(b=>b.n===o.userData.buildingName);o.position.y+=b?b.minY:terrain.elevation(o.position.x,o.position.z);}
 
@@ -104,6 +106,7 @@ export class CityWorld{
   }
   for(const a of ch.areas)surface(surfaces,a.p,a.k==='water'&&!a.fountain?water:(x,z)=>height(x,z)-.02,col(a.k==='water'?'#639b9c':a.k==='pitch'?'#7d9e72':'#789961'));
   for(const r of ch.water)strip(surfaces,r.a,r.b,r.w,water,col('#659b9e'));
+  if(terrain?.modern)buildModernRoads(surfaces,ch.roads,terrain);else {
   const roadJoins=new Set();for(const s of ch.roads){const k=s.road.k,ped=['pedestrian','footway','path','cycleway','steps'].includes(k),mx=(s.a[0]+s.b[0])/2,mz=(s.a[1]+s.b[1])/2,central=Math.hypot(mx*.82,mz)<1550,bridge=s.road.crossing,edge=bridge?'#c2b49a':ped&&central?'#d0c2a4':'#c3bca8',road=ped?(central?'#bdae91':'#b7b09a'):(central?'#696d69':'#6c7472');
    const roadY=(x,z)=>terrain?terrain.roads.sample(s.road,x,z)+.075:.075;
    strip(surfaces,s.a,s.b,s.w+(bridge?3:1.5),(x,z)=>roadY(x,z)-.02,col(edge));strip(surfaces,s.a,s.b,s.w,roadY,col(road));
@@ -111,6 +114,7 @@ export class CityWorld{
    if(bridge&&!terrain){const dx=s.b[0]-s.a[0],dz=s.b[1]-s.a[1],length=Math.hypot(dx,dz),count=Math.max(1,Math.ceil(length/8));if(length>.01)for(const side of [-1,1])for(let i=0;i<count;i++){const nx=-dz/length*(s.w/2+1)*side,nz=dx/length*(s.w/2+1)*side,ax=s.a[0]+dx*i/count+nx,az=s.a[1]+dz*i/count+nz,bx=s.a[0]+dx*(i+1)/count+nx,bz=s.a[1]+dz*(i+1)/count+nz,ay=roadY(ax,az),by=roadY(bx,bz);surfaces.quad([ax,ay,az],[bx,by,bz],[bx,by+1.1,bz],[ax,ay+1.1,az],col(central?'#bbab91':'#a7aaa6'));}}
    if(k==='tram')strip(surfaces,s.a,s.b,.13,(x,z)=>roadY(x,z)+.03,col('#c8cfca'));
    if(s.w>=8&&!ped){const dx=s.b[0]-s.a[0],dz=s.b[1]-s.a[1],d=Math.hypot(dx,dz);for(let t=0;t<d-3;t+=13){const a=[s.a[0]+dx*t/d,s.a[1]+dz*t/d],b=[s.a[0]+dx*Math.min(t+4,d)/d,s.a[1]+dz*Math.min(t+4,d)/d];strip(surfaces,a,b,.14,(x,z)=>roadY(x,z)+.007,col('#c7c6ae'));}}}
+  }
   for(const type of Object.keys(wallBatches)){const mesh=wallBatches[type].mesh(this.wallMats[type]);if(mesh){mesh.receiveShadow=true;g.add(mesh);}}for(const [b,m] of [[roofs,this.roofMat],[surfaces,this.groundMat]]){const mesh=b.mesh(m);if(mesh){mesh.receiveShadow=true;g.add(mesh);}}
   const structureBatch=new GeometryBatch();for(const b of ch.structures){const color=col(b.kind==='parapet'?'#bdb29d':'#a8a79b'),bottom=b.p.map(p=>[p[0],b.y,p[1]]),top=b.p.map(p=>[p[0],b.y+b.h,p[1]]);for(let i=0;i<4;i++){const j=(i+1)%4;structureBatch.quad(bottom[i],bottom[j],top[j],top[i],color);}structureBatch.quad(...top,color);structureBatch.quad(...bottom.slice().reverse(),color);}const structures=structureBatch.mesh(this.roofMat);if(structures)g.add(structures);
   // Deterministic candidates are pooled in chunk-level instances. The same exclusion
