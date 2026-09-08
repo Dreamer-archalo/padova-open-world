@@ -1,0 +1,54 @@
+{
+  "fleet": {
+    "newTypes": 24,
+    "rareShare": 0.031
+  },
+  "turbo": {
+    "seconds": 6,
+    "display": [
+      6,
+      5,
+      4,
+      3,
+      2,
+      1
+    ],
+    "reset": true
+  },
+  "helicopters": {
+    "pads": [
+      "Aeroporto",
+      "Stadio",
+      "Industriale est",
+      "Periferia sud"
+    ],
+    "takeoff": true,
+    "landing": true,
+    "airExitBlocked": true,
+    "ceiling": 180
+  },
+  "ai": {
+    "profiles": 10,
+    "movingTraffic": 23,
+    "patrols": 3
+  },
+  "map": {
+    "samples": 2195555,
+    "bridges": 467,
+    "maxGrade": 0.08140000000000315
+  },
+  "drivenBridges": [
+    "Ponte Silvio Omizzolo",
+    "Cavalcavia Borgomagno",
+    "Corso Milano",
+    "Ponte Antonio Milani",
+    "Corso Giuseppe Garibaldi",
+    "Ponte dell'Osservatorio",
+    "Ponte Sant'Agostino",
+    "Via Arrigoni",
+    "Via Giotto",
+    "Ponte del Sostegno",
+    "Vicolo Santonini",
+    "Cavalcavia Stati Uniti"
+  ]
+}

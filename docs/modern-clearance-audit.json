@@ -1,0 +1,178 @@
+{
+  "roads": 34639,
+  "sampledNodes": 573113,
+  "waterSamples": 2158,
+  "bridgeSegments": 10992,
+  "inferredBridges": 122,
+  "layeredRoads": 1203,
+  "maxGrade": 0.6500000000000008,
+  "maxVehicleGrade": 0.05500000000000506,
+  "fountains": 1,
+  "counts": {
+    "unsupportedWater": 0,
+    "deadEndsInWater": 10,
+    "steep": 0,
+    "lowDecks": 0,
+    "clearance": 3,
+    "junctionSteps": 0
+  },
+  "areas": {
+    "Sacra Famiglia": {
+      "roads": 939,
+      "issues": {
+        "unsupportedWater": 0,
+        "deadEndsInWater": 0,
+        "steep": 0,
+        "lowDecks": 0,
+        "clearance": 0,
+        "junctionSteps": 0
+      }
+    },
+    "Bassanello": {
+      "roads": 1001,
+      "issues": {
+        "unsupportedWater": 0,
+        "deadEndsInWater": 0,
+        "steep": 0,
+        "lowDecks": 0,
+        "clearance": 0,
+        "junctionSteps": 0
+      }
+    },
+    "Guizza / south": {
+      "roads": 1405,
+      "issues": {
+        "unsupportedWater": 0,
+        "deadEndsInWater": 0,
+        "steep": 0,
+        "lowDecks": 0,
+        "clearance": 0,
+        "junctionSteps": 0
+      }
+    },
+    "Prato": {
+      "roads": 117,
+      "issues": {
+        "unsupportedWater": 0,
+        "deadEndsInWater": 0,
+        "steep": 0,
+        "lowDecks": 0,
+        "clearance": 0,
+        "junctionSteps": 0
+      }
+    },
+    "Via dei Tadi": {
+      "roads": 32,
+      "issues": {
+        "unsupportedWater": 0,
+        "deadEndsInWater": 0,
+        "steep": 0,
+        "lowDecks": 0,
+        "clearance": 0,
+        "junctionSteps": 0
+      }
+    },
+    "Piazza delle Erbe": {
+      "roads": 95,
+      "issues": {
+        "unsupportedWater": 0,
+        "deadEndsInWater": 0,
+        "steep": 0,
+        "lowDecks": 0,
+        "clearance": 0,
+        "junctionSteps": 0
+      }
+    }
+  },
+  "issues": {
+    "unsupportedWater": [],
+    "deadEndsInWater": [
+      {
+        "road": 3194,
+        "name": "Via Argine Sinistro",
+        "x": 7303.7,
+        "z": -3769.4
+      },
+      {
+        "road": 8238,
+        "name": "",
+        "x": 7487.7,
+        "z": -3656.7
+      },
+      {
+        "road": 9217,
+        "name": "",
+        "x": 5197.2,
+        "z": -85.3
+      },
+      {
+        "road": 12864,
+        "name": "",
+        "x": 1332.2,
+        "z": -384.6
+      },
+      {
+        "road": 14811,
+        "name": "",
+        "x": 96.7,
+        "z": -697
+      },
+      {
+        "road": 14811,
+        "name": "",
+        "x": 89.1,
+        "z": -701.5
+      },
+      {
+        "road": 19860,
+        "name": "",
+        "x": -3861,
+        "z": -1154.2
+      },
+      {
+        "road": 21180,
+        "name": "",
+        "x": 4500.6,
+        "z": -6161.4
+      },
+      {
+        "road": 21181,
+        "name": "",
+        "x": 4443.3,
+        "z": -7281.8
+      },
+      {
+        "road": 23278,
+        "name": "",
+        "x": 2832.2,
+        "z": -26.5
+      }
+    ],
+    "steep": [],
+    "lowDecks": [],
+    "clearance": [
+      {
+        "upper": 6731,
+        "lower": 6719,
+        "x": -4250.22326751839,
+        "z": 998.6547038327527,
+        "clearance": -0.34421708499031
+      },
+      {
+        "upper": 10725,
+        "lower": 26289,
+        "x": 4700.829173414005,
+        "z": -33.98847050449327,
+        "clearance": 3.983669275806165
+      },
+      {
+        "upper": 32546,
+        "lower": 32545,
+        "x": 916.3475247524752,
+        "z": -671.3237623762376,
+        "clearance": 1.8892793847129945
+      }
+    ],
+    "junctionSteps": []
+  }
+}

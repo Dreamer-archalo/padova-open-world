@@ -9,7 +9,8 @@ export function pratoLocal(x,z){const dx=x-PRATO.x,dz=z-PRATO.z,c=Math.cos(PRATO
 // Heights are metres, without vertical exaggeration. Hydrology is a continuous
 // regional approximation; the source map has no surveyed water levels / locks.
 export class Terrain {
-  constructor(grid, map){
+  constructor(grid, map, {modern=false}={}){
+    this.modern=modern;
     if(!grid||grid.version!==1||grid.width<2||grid.height<2||!(grid.step>0)||grid.heights.length!==grid.width*grid.height||!grid.heights.every(Number.isFinite)||grid.waterPlane?.length!==3||!grid.waterPlane.every(Number.isFinite))throw new Error('Invalid terrain data');
     this.grid=grid;this.fountains=[];this.waterIndex=new SpatialIndex(80);this.bridgeIndex=new SpatialIndex(80);
     const add=(index,item,p,pad=0)=>{const xs=p.map(v=>v[0]),zs=p.map(v=>v[1]);index.add(item,Math.min(...xs)-pad,Math.min(...zs)-pad,Math.max(...xs)+pad,Math.max(...zs)+pad);};
@@ -34,16 +35,17 @@ export class Terrain {
   }return {distance,level};}
   waterDistance(x,z){return this.waterSample(x,z).distance;}
   bridge(x,z,margin=0,referenceY=null){return this.roads?.bridge(x,z,referenceY)||null;}
-  waterAt(x,z,margin=0,referenceY=null){const prato=this.prato(x,z);if(prato)return prato.canal&&!prato.bridge?this.pratoHeight-1.5:null;if(this.bridge(x,z,margin,referenceY))return null;return this.waterDistance(x,z)<margin?this.waterHeight(x,z):null;}
-  groundHeight(x,z){const prato=this.prato(x,z);if(prato)return this.pratoHeight+(prato.canal?-3:0);let raw=this.elevation(x,z);const road=this.roads?.at(x,z,null,4);if(road&&!road.road.crossing){const blend=1-smooth((road.d-road.road.w/2)/4);raw=raw*(1-blend)+(road.height-.05)*blend;}const d=this.waterDistance(x,z);if(d>10)return raw;const channel=this.waterHeight(x,z)-1.5;return channel+(Math.max(raw,this.waterHeight(x,z)+.8)-channel)*smooth((d+1)/11);}
-  height(x,z,referenceY=null){const prato=this.prato(x,z);if(prato)return this.pratoHeight+(prato.bridge?.36:prato.canal?-3:.18);const road=this.roads?.at(x,z,referenceY);return road?road.height+.05:this.groundHeight(x,z)+.05;}
+  waterAt(x,z,margin=0,referenceY=null){if(this.modern){const support=this.roads.at(x,z,referenceY,margin);if(support&&support.height>this.waterHeight(x,z)+.5)return null;}const prato=this.prato(x,z);if(prato)return prato.canal&&!prato.bridge?this.pratoHeight-1.5:null;if(this.modern){const road=this.roads.at(x,z,referenceY,margin);if(road&&road.height>this.waterHeight(x,z)+.5)return null;}if(this.bridge(x,z,margin,referenceY))return null;return this.waterDistance(x,z)<margin?this.waterHeight(x,z):null;}
+  groundHeight(x,z){const prato=this.prato(x,z);if(prato)return this.pratoHeight+(prato.canal?-3:0);let raw=this.elevation(x,z);const road=this.roads?.at(x,z,null,4);if(road&&!road.road.crossing){const blend=1-smooth((road.d-road.road.w/2)/4);raw=raw*(1-blend)+(road.height-.05)*blend;}const d=this.waterDistance(x,z);if(this.modern&&road&&road.d<=road.road.w/2&&!road.road.crossing)return raw;if(d>10)return raw;const channel=this.waterHeight(x,z)-1.5;return channel+(Math.max(raw,this.waterHeight(x,z)+.8)-channel)*smooth((d+1)/11);}
+  height(x,z,referenceY=null){if(this.modern){const support=this.roads.at(x,z,referenceY);if(support)return support.height+.05;}const prato=this.prato(x,z);if(prato)return this.pratoHeight+(prato.bridge?.36:prato.canal?-3:.18);const road=this.roads?.at(x,z,referenceY);return road?road.height+.05:this.groundHeight(x,z)+.05;}
   slope(x,z,yaw,wheelbase=2.5,referenceY=null){const dx=Math.sin(yaw)*wheelbase/2,dz=Math.cos(yaw)*wheelbase/2;return -Math.atan2(this.height(x+dx,z+dz,referenceY)-this.height(x-dx,z-dz,referenceY),wheelbase);}
   dry(x,z,radius=.4,referenceY=null){for(const [dx,dz] of [[0,0],[radius,0],[-radius,0],[0,radius],[0,-radius]])if(this.waterAt(x+dx,z+dz,0,referenceY)!==null)return false;return true;}
 }
 
 export function safeDryRoad(pos,graph,collision,terrain,spec=null,allowed=()=>true){
   const radius=spec?spec.width/2:.4;
-  return safeRoadPoint(pos,graph,collision,radius,p=>allowed(p)&&p.x>-5960&&p.x<7240&&p.z>-6470&&p.z<6220&&terrain.dry(p.x,p.z,spec?spec.length/2+.3:1)&&(!spec||!vehicleBlocked(p.x,p.z,p.yaw,collision,spec,terrain.roads.sample(p.segment.road,p.x,p.z)+.05)),p=>terrain.roads.sample(p.segment.road,p.x,p.z)+.05);
+  const point=safeRoadPoint(pos,graph,collision,radius,p=>allowed(p)&&p.x>-5960&&p.x<7240&&p.z>-6470&&p.z<6220&&terrain.dry(p.x,p.z,spec?spec.length/2+.3:1)&&(!spec||!vehicleBlocked(p.x,p.z,p.yaw,collision,spec,terrain.roads.sample(p.segment.road,p.x,p.z)+.05)),p=>terrain.roads.sample(p.segment.road,p.x,p.z)+.05);
+  if(point&&terrain.modern)point.y=terrain.roads.sample(point.segment.road,point.x,point.z)+.05;return point;
 }
 
 // Independent from rendering, so falling/recovery remains deterministic at 60 Hz.

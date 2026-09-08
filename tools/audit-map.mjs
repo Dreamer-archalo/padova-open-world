@@ -10,7 +10,7 @@ export function auditMap(map,terrain){const r=terrain.roads,issues={unsupportedW
    if(p.wet[i]&&!p.tunnel){waterSamples++;if(!p.road.crossing)issues.unsupportedWater.push({road:p.id,x,z});if(h<terrain.waterHeight(x,z)+1.8)issues.lowDecks.push({road:p.id,x,z,height:h});}
    if(i){const a=p.points[i-1],ah=r.sample(p.road,...a),d=Math.hypot(x-a[0],z-a[1]),grade=d>.01?Math.abs(h-ah)/d:0;maxGrade=Math.max(maxGrade,grade);if(!['steps','footway','path','cycleway','track'].includes(p.road.k))maxVehicleGrade=Math.max(maxVehicleGrade,grade);if(grade>(p.road.k==='steps'?.656:.091))issues.steep.push({road:p.id,x,z,grade});if(p.road.crossing)bridgeSegments++;}
   }
-  for(const point of p.road.p){const key=point.join(','),h=r.sample(p.road,...point);if(sourceVertices.has(key)&&Math.abs(sourceVertices.get(key)-h)>.1)issues.junctionSteps.push({road:p.id,point,height:h,other:sourceVertices.get(key)});sourceVertices.set(key,h);}
+  for(const point of p.road.p){const key=point.join(',')+(terrain.modern?':'+(p.tunnel?-1:p.layer||(p.road.b?1:0)):''),h=r.sample(p.road,...point);if(sourceVertices.has(key)&&Math.abs(sourceVertices.get(key)-h)>.1)issues.junctionSteps.push({road:p.id,point,height:h,other:sourceVertices.get(key)});sourceVertices.set(key,h);}
  }
  // True segment crossings, not just coincident bounding boxes. Distinct OSM
  // vertices preserve separate levels; report insufficient headroom for review.

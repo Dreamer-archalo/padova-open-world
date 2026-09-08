@@ -8,13 +8,21 @@ export function roadStructures(terrain){const boxes=[];
    const yaw=Math.atan2(b[0]-a[0],b[1]-a[1]);
    for(const side of [-1,1]){const px=x+Math.cos(yaw)*(road.w/2+.7)*side,pz=z-Math.sin(yaw)*(road.w/2+.7)*side;
     // Do not put a parapet across a connected approach or a parallel carriageway.
-    if(terrain.roads.candidates(px,pz,.25).some(s=>s.road!==road&&Math.abs(s.height-h)<1.5))continue;
+    if(terrain.roads.candidates(px,pz,terrain.modern?1.5:.25).some(s=>s.road!==road&&Math.abs(s.height-h)<(terrain.modern?3:1.5)))continue;
     add(px,pz,h,.28,1.1,len+.04,yaw,'parapet',road);
-    if(run>=24&&h-base>3&&!terrain.roads.candidates(px,pz,1).some(s=>s.road!==road&&s.height<h-2)){add(px,pz,base-.2,1.0,h-base+.2,1.0,yaw,'pier',road);}
+    if(run>=24&&h-base>3&&!terrain.roads.candidates(px,pz,terrain.modern?2:1).some(s=>s.road!==road&&(terrain.modern||s.height<h-2))){add(px,pz,base-.2,1.0,h-base+.2,1.0,yaw,'pier',road);}
    }run+=len;if(run>=30)run=0;
    // A thin deck has height-aware collision: actors below it can pass underneath.
-   add(x,z,h-.4,road.w+.8,.35,len+.05,yaw,'deck',road);
+   const deckTop=terrain.modern?Math.min(terrain.roads.sample(road,...a),terrain.roads.sample(road,...b),h)-.12:h-.05;
+   add(x,z,deckTop-.35,road.w+.8,.35,len+.05,yaw,'deck',road);if(terrain.modern)boxes.at(-1).driveTopMin=deckTop+.12;
   }
  }
+ if(terrain.modern)return boxes.filter(b=>{
+  const candidates=[];for(const t of [-.5,-.25,0,.25,.5]){const x=b.x+Math.sin(b.yaw)*b.length*t,z=b.z+Math.cos(b.yaw)*b.length*t;for(const s of terrain.roads.candidates(x,z,b.kind==='deck'?0:1.3))if(s.road!==b.road&&!/footway|path|steps|cycleway|tram|pedestrian/.test(s.road.k))candidates.push(s);}
+  if(b.kind!=='deck')return !candidates.some(s=>s.height+2>b.minY&&s.height<b.minY+b.h+.2);
+  const adjacent=candidates.filter(s=>Math.abs(s.height-b.driveTopMin)<2);
+  if(adjacent.length){b.driveTopMin=Math.min(b.driveTopMin,...adjacent.map(s=>s.height));b.minY=b.y=b.driveTopMin-.47;}
+  return true;
+ });
  return boxes;
 }

@@ -1,1 +1,12 @@
-{"name":"padova-open-world","private":true,"type":"module","scripts":{"dev":"node tools/serve.mjs","test":"node verify-city.mjs && node verify-terrain.mjs && node verify.mjs","audit:map":"node tools/audit-map.mjs"}}
+{
+  "name": "padova-open-world",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "node tools/serve.mjs",
+    "test": "node verify-city.mjs && node verify-terrain.mjs && node verify.mjs",
+    "audit:map": "node tools/audit-map.mjs",
+    "test:modern": "node verify-modern.mjs",
+    "audit:modern": "node tools/audit-modern.mjs"
+  }
+}
