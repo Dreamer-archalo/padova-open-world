@@ -21,6 +21,10 @@
     <div class="edition"><span></span> A CITY YOU KNOW. YOUR STREETS.</div>
     <h1>PADOVA<span>AFTER HOURS.</span></h1>
     <p>Take the long way home.</p>
+    <label class="modern-character modern-only" for="characterSelect">IL TUO PERSONAGGIO
+      <select id="characterSelect"><option value="scando">Scando</option><option value="mattia">Mattia</option><option value="marchese">Marchese</option><option value="milo">Milo</option><option value="nico">Nico</option></select>
+      <small>Partenza: villa di Parco Treves</small>
+    </label>
     <div class="intro-actions era-choice">
       <button id="playBtn" class="primary" disabled>Building the city…</button>
       <button id="play1500Btn" class="era-button">Modalità Galileo</button>
@@ -36,6 +40,7 @@
       <div class="vehicle-heading"><div><span class="eyebrow">VEHICLE</span><div id="vehicleName">ON FOOT</div></div><span id="gear" class="gear">N</span></div>
       <div class="speed"><span id="speed">00</span><small>KM/H</small></div>
       <div id="turboStatus" hidden>TURBO <strong id="turboCountdown">READY</strong><span>Slow down to reset</span></div>
+      <div id="cannonStatus" class="modern-only" hidden>TAB · CANNONE PRONTO</div>
       <div class="tach"><span>RPM</span><div><i id="rpm"></i></div><b id="rpmValue">0.0</b></div>
       <div class="telemetry"><span><small>TRIP</small><b id="odometer">0.0 KM</b></span><span><small>HEADING</small><b id="heading">N</b></span><span><small>TRAFFIC</small><b id="trafficLevel">LOW</b></span></div>
       <div class="terrain-telemetry"><span>ALTITUDE <b id="altitude">0 M</b></span><span>GRADE <b id="gradient">0.0%</b></span><button id="vehicleMenuBtn">VEHICLES <kbd>V</kbd></button></div>
@@ -45,7 +50,7 @@
     <div id="interact" class="interaction" hidden></div>
     <div id="toast" class="toast" role="status" hidden></div>
     <div id="targetDistance" class="target-distance" hidden></div>
-    <div id="touchControls"><div><button data-key="KeyA">←</button><button data-key="KeyW">↑</button><button data-key="KeyD">→</button><button data-key="KeyS">↓</button></div><div><button id="touchCar">E · VEHICLE</button><button data-key="Space">BRAKE</button><button id="touchTurbo" data-key="Tab" hidden>TURBO</button></div></div>
+    <div id="touchControls"><div><button data-key="KeyA">←</button><button data-key="KeyW">↑</button><button data-key="KeyD">→</button><button data-key="KeyS">↓</button></div><div><button id="touchCar">E · VEHICLE</button><button data-key="Space">BRAKE / UP</button><button id="touchDescend" class="modern-only" data-key="ShiftLeft" hidden>DOWN</button><button id="touchChute" class="modern-only" hidden>F · PARACADUTE</button><button id="touchTurbo" data-key="Tab" hidden>TURBO</button></div></div>
   </div>
   <dialog id="menu"><div class="dialog-head"><div><span class="eyebrow">PADOVA / YOUR CITY</span><h2 id="menuTitle">Take a breather.</h2></div><button class="close" id="closeMenu" aria-label="Close menu">×</button></div><div id="menuContent"></div></dialog>
   <dialog id="mapDialog"><div class="dialog-head"><div><span class="eyebrow">CITY MAP</span><h2>Know your way around.</h2></div><button class="close" id="closeMap" aria-label="Close map">×</button></div><div class="map-layout"><div class="fullmap-wrap"><canvas id="fullmap" width="1000" height="1000" aria-label="Full map; click to set waypoint"></canvas></div><div id="mapPlaces"></div></div><div class="map-legend"><span>● You</span><span>◆ Destination</span><span>Click the map to set a waypoint</span></div></dialog>

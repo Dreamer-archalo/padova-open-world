@@ -17,10 +17,11 @@
   },
   "helicopters": {
     "pads": [
-      "Aeroporto",
       "Stadio",
       "Industriale est",
-      "Periferia sud"
+      "Periferia sud",
+      "Eliporto civile",
+      "Eliporto utility"
     ],
     "takeoff": true,
     "landing": true,
@@ -29,11 +30,11 @@
   },
   "ai": {
     "profiles": 10,
-    "movingTraffic": 23,
+    "movingTraffic": 24,
     "patrols": 3
   },
   "map": {
-    "samples": 2195555,
+    "samples": 2194777,
     "bridges": 467,
     "maxGrade": 0.08140000000000315
   },

@@ -1,6 +1,7 @@
 import {RoadSurfaces} from './road-surfaces.js';
 import {SpatialIndex, nearestOnSegment, pointInside, clamp, safeRoadPoint} from './core.js';
 import {vehicleBlocked} from './movement.js';
+import {gameplayElevation} from './gameplay-areas.js';
 
 const smooth=t=>{t=clamp(t,0,1);return t*t*(3-2*t);};
 export const PRATO={x:-35,z:858,yaw:-.23,outer:[90,135],inner:[81,126]};
@@ -12,7 +13,7 @@ export class Terrain {
   constructor(grid, map, {modern=false}={}){
     this.modern=modern;
     if(!grid||grid.version!==1||grid.width<2||grid.height<2||!(grid.step>0)||grid.heights.length!==grid.width*grid.height||!grid.heights.every(Number.isFinite)||grid.waterPlane?.length!==3||!grid.waterPlane.every(Number.isFinite))throw new Error('Invalid terrain data');
-    this.grid=grid;this.fountains=[];this.waterIndex=new SpatialIndex(80);this.bridgeIndex=new SpatialIndex(80);
+    this.grid=grid;this.gameplayPatches=modern?(map.gameplay?.areas||[]).map(a=>({...a,height:this.rawElevation(a.x,a.z)})):[];this.fountains=[];this.waterIndex=new SpatialIndex(80);this.bridgeIndex=new SpatialIndex(80);
     const add=(index,item,p,pad=0)=>{const xs=p.map(v=>v[0]),zs=p.map(v=>v[1]);index.add(item,Math.min(...xs)-pad,Math.min(...zs)-pad,Math.max(...xs)+pad,Math.max(...zs)+pad);};
     for(const r of map.water.filter(r=>!r.tunnel&&r.layer>=0||!r.tunnel&&r.layer===undefined))for(let i=1;i<r.p.length;i++){
       const a=r.p[i-1],b=r.p[i],count=Math.max(1,Math.ceil(Math.hypot(b[0]-a[0],b[1]-a[1])/80));
@@ -25,7 +26,8 @@ export class Terrain {
     }
     this.pratoHeight=this.elevation(PRATO.x,PRATO.z);this.roads=new RoadSurfaces(map,this);
   }
-  elevation(x,z){const g=this.grid,u=clamp((x-g.x0)/g.step,0,g.width-1),v=clamp((z-g.z0)/g.step,0,g.height-1),i=Math.min(g.width-2,Math.floor(u)),j=Math.min(g.height-2,Math.floor(v)),a=u-i,b=v-j,h=(i,j)=>g.heights[j*g.width+i];return h(i,j)*(1-a)*(1-b)+h(i+1,j)*a*(1-b)+h(i,j+1)*(1-a)*b+h(i+1,j+1)*a*b;}
+  rawElevation(x,z){const g=this.grid,u=clamp((x-g.x0)/g.step,0,g.width-1),v=clamp((z-g.z0)/g.step,0,g.height-1),i=Math.min(g.width-2,Math.floor(u)),j=Math.min(g.height-2,Math.floor(v)),a=u-i,b=v-j,h=(i,j)=>g.heights[j*g.width+i];return h(i,j)*(1-a)*(1-b)+h(i+1,j)*a*(1-b)+h(i,j+1)*(1-a)*b+h(i+1,j+1)*a*b;}
+  elevation(x,z){const raw=this.rawElevation(x,z);return this.gameplayPatches?.length?gameplayElevation(x,z,raw,this.gameplayPatches):raw;}
   waterHeight(x,z){const p=this.grid.waterPlane;return this.waterSample(x,z).level??(p[0]+p[1]*x+p[2]*z-1.8);}
   prato(x,z){const p=pratoLocal(x,z);if((p.x/115)**2+(p.z/163)**2>1)return null;const canal=(p.x/90)**2+(p.z/135)**2<1&&(p.x/81)**2+(p.z/126)**2>1;return {canal,bridge:Math.abs(p.x)<5.5||Math.abs(p.z)<4.5};}
   waterSample(x,z){let distance=Infinity,level;for(const r of this.waterIndex.near(x,z)){

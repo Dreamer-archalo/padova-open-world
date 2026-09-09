@@ -1,3 +1,7 @@
+import {t,ctx,els} from './tools/controller-harness.mjs';
+import * as gameplayAreas from './dist/gameplay-areas.js';
+import * as specialVehicles from './dist/special-vehicles.js';
+import * as modernGameplay from './dist/modern-gameplay.js';
 import * as modernVehicles from './dist/modern-vehicles.js';
 import * as modernDriving from './dist/modern-driving.js';
 import * as cameraModule from './dist/camera-rig.js';
@@ -37,21 +41,8 @@ for(const hz of [30,60,120,144]){
 }
 const clock=new movement.FixedClock();let ticks=0;clock.advance(60,()=>ticks++);assert.equal(ticks,8,'tab resume must not trigger an unbounded catch-up');
 
-const html=fs.readFileSync(new URL('./dist/index.html',import.meta.url),'utf8');
-const ids=[...html.matchAll(/\bid="([^"]+)"/g)].map(m=>m[1]);assert.equal(ids.length,new Set(ids).size);
-const els=new Map();const context2d=new Proxy({}, {get:(obj,key)=>obj[key]||(()=>{}),set:(obj,key,val)=>(obj[key]=val,true)});
-const element=()=>({style:{},dataset:{},hidden:false,open:false,textContent:'',width:440,height:340,getContext:()=>context2d,addEventListener(){},showModal(){this.open=true;},close(){this.open=false;},querySelectorAll:()=>[],appendChild(){}});
-ids.forEach(id=>els.set(id,element()));
-const document={body:{classList:{add(){},remove(){}}},getElementById(id){assert(els.has(id),'missing DOM id '+id);return els.get(id);},querySelectorAll:()=>[],addEventListener(){},createElement:element};
-globalThis.document=document;
-const ctx=vm.createContext({THREE,...modernVehicles,...modernDriving,...cameraModule,...districtModule,...trafficModule,...tramModule,...incidentModule,...core,...worldModule,...movement,...terrainModule,...vehicles,BuildingModels,document,window:{addEventListener(){}},localStorage:{getItem:()=>null,setItem(){}},console,Math,JSON,Set,Map,Number,Array,Float32Array,Uint8Array,devicePixelRatio:1,innerWidth:1440,innerHeight:900,requestAnimationFrame(){},location:{reload(){}}});
-let code=fs.readFileSync(new URL('./dist/game.js',import.meta.url),'utf8').replace(/^import .*;\n/gm,'').replace(/init\(\);\s*$/,'');vm.runInContext(code,ctx);
-ctx.testData=JSON.parse(fs.readFileSync(new URL('./dist/data/padova.json',import.meta.url)));
-ctx.cityData=JSON.parse(fs.readFileSync(new URL('./dist/data/city.json',import.meta.url)));
-ctx.terrainData=JSON.parse(fs.readFileSync(new URL('./dist/data/terrain.json',import.meta.url)));
-vm.runInContext(`data=testData;applyCityData(data,cityData);districts=new Districts(data);terrain=new Terrain(terrainData,data,{modern:true});terrain.districts=districts;scene=new THREE.Scene();world=new CityWorld(scene,data,terrain);graph=makeRoadGraph(data.roads,{separateLevels:true});signals=new TrafficSignals(graph,data.signals);trams=new Trams(scene,data,terrain);incidents=new Incidents(scene);player=createPerson();camera=new THREE.PerspectiveCamera();sun=new THREE.DirectionalLight();marker=new THREE.Group();state.ready=true;state.started=true;createPopulation();followYaw=state.yaw;cameraRig.reset(state.yaw);`,ctx);
-const t=vm.runInContext('({terrain,waterRecovery,recover,dryRoad,addCar,travel,falling,state,keys,cars,people,world,scene,player,camera,clock,movePlayer,updateCamera,updateUI,toggleVehicle,beginMission,cancelMission,updateMission,clearPolice,simulate})',ctx);
-assert.equal(t.cars.filter(c=>!c.spec.aircraft).length,31);assert(t.cars.filter(c=>c.spec.aircraft).length>=2);assert.equal(t.people.length,72);
+
+assert.equal(t.cars.filter(c=>!c.spec.aircraft&&!c.fixedSpawn).length,31);assert(t.cars.filter(c=>c.spec.aircraft).length>=2);assert.equal(t.people.length,72);
 assert(t.player.userData.hips.children[0].position.y>.7,'leg pivots must be at the hips');
 assert(!core.collides(t.state.x,t.state.z,.36,t.world.collision),'centre spawn must be clear');
 t.toggleVehicle();assert.equal(t.state.mode,'car');assert.equal(t.state.y,t.terrain.height(t.state.x,t.state.z));

@@ -2,6 +2,7 @@ import {modernFootprints} from './modern-map.js';
 import {buildModernRoads} from './modern-roads.js';
 import {cityDetails} from './city-details.js';
 import {roadStructures} from './road-structures.js';
+import {gameplayStructures,insideArea} from './gameplay-areas.js';
 import {DISTRICTS} from './districts.js';
 import {detailedLandmarks} from './landmarks.js';
 import {nearestOnSegment} from './core.js';
@@ -90,7 +91,7 @@ export class CityWorld{
   if(terrain){
    // Stone balustrades of the four Prato bridges use the same local frame as the water mask.
    for(const [x,z,yaw,width] of [[0,130.5,0,11],[0,-130.5,0,11],[85.5,0,Math.PI/2,9],[-85.5,0,Math.PI/2,9]])for(const side of [-1,1]){const px=x+Math.cos(yaw)*(width/2+.2)*side,pz=z-Math.sin(yaw)*(width/2+.2)*side,c=Math.cos(PRATO.yaw),s=Math.sin(PRATO.yaw),wx=PRATO.x+c*px+s*pz,wz=PRATO.z-s*px+c*pz,a=yaw+PRATO.yaw,points=[[-.25,-7],[.25,-7],[.25,7],[-.25,7]].map(([u,v])=>[wx+Math.cos(a)*u+Math.sin(a)*v,wz-Math.sin(a)*u+Math.cos(a)*v]),xs=points.map(p=>p[0]),zs=points.map(p=>p[1]),b={p:points,minX:Math.min(...xs),maxX:Math.max(...xs),minZ:Math.min(...zs),maxZ:Math.max(...zs),minY:terrain.pratoHeight+.3,h:1.2};this.collision.add(b,b.minX,b.minZ,b.maxX,b.maxZ);}
-   this.structures=roadStructures(terrain);for(const b of this.structures){this.collision.add(b,b.minX,b.minZ,b.maxX,b.maxZ);this.chunk(b.x,b.z).structures.push(b);}this.details=cityDetails(scene,data,terrain);}
+   this.structures=[...roadStructures(terrain),...gameplayStructures(terrain)];for(const b of this.structures){if(b.solid!==false)this.collision.add(b,b.minX,b.minZ,b.maxX,b.maxZ);this.chunk(b.x,b.z).structures.push(b);}this.details=cityDetails(scene,data,terrain);}
  }
  chunk(x,z){const i=Math.floor(x/CHUNK),j=Math.floor(z/CHUNK),key=i+','+j;if(!this.chunks.has(key))this.chunks.set(key,{i,j,buildings:[],roads:[],water:[],areas:[],structures:[]});return this.chunks.get(key);}
  addSegments(a,b,w,k,road){const d=Math.hypot(b[0]-a[0],b[1]-a[1]),n=Math.max(1,Math.ceil(d/120));for(let i=0;i<n;i++){const p=[a[0]+(b[0]-a[0])*i/n,a[1]+(b[1]-a[1])*i/n],q=[a[0]+(b[0]-a[0])*(i+1)/n,a[1]+(b[1]-a[1])*(i+1)/n];this.chunk((p[0]+q[0])/2,(p[1]+q[1])/2)[k==='road'?'roads':'water'].push({a:p,b:q,w,road});}}
@@ -116,11 +117,12 @@ export class CityWorld{
    if(s.w>=8&&!ped){const dx=s.b[0]-s.a[0],dz=s.b[1]-s.a[1],d=Math.hypot(dx,dz);for(let t=0;t<d-3;t+=13){const a=[s.a[0]+dx*t/d,s.a[1]+dz*t/d],b=[s.a[0]+dx*Math.min(t+4,d)/d,s.a[1]+dz*Math.min(t+4,d)/d];strip(surfaces,a,b,.14,(x,z)=>roadY(x,z)+.007,col('#c7c6ae'));}}}
   }
   for(const type of Object.keys(wallBatches)){const mesh=wallBatches[type].mesh(this.wallMats[type]);if(mesh){mesh.receiveShadow=true;g.add(mesh);}}for(const [b,m] of [[roofs,this.roofMat],[surfaces,this.groundMat]]){const mesh=b.mesh(m);if(mesh){mesh.receiveShadow=true;g.add(mesh);}}
-  const structureBatch=new GeometryBatch();for(const b of ch.structures){const color=col(b.kind==='parapet'?'#bdb29d':'#a8a79b'),bottom=b.p.map(p=>[p[0],b.y,p[1]]),top=b.p.map(p=>[p[0],b.y+b.h,p[1]]);for(let i=0;i<4;i++){const j=(i+1)%4;structureBatch.quad(bottom[i],bottom[j],top[j],top[i],color);}structureBatch.quad(...top,color);structureBatch.quad(...bottom.slice().reverse(),color);}const structures=structureBatch.mesh(this.roofMat);if(structures)g.add(structures);
+  const structureBatch=new GeometryBatch();for(const b of ch.structures){const color=col(b.color||(b.kind==='parapet'?'#bdb29d':'#a8a79b')),bottom=b.p.map(p=>[p[0],b.y,p[1]]),top=b.p.map(p=>[p[0],b.y+b.h,p[1]]);for(let i=0;i<4;i++){const j=(i+1)%4;structureBatch.quad(bottom[i],bottom[j],top[j],top[i],color);}structureBatch.quad(...top,color);structureBatch.quad(...bottom.slice().reverse(),color);}const structures=structureBatch.mesh(this.roofMat);if(structures)g.add(structures);
   // Deterministic candidates are pooled in chunk-level instances. The same exclusion
   // query checks footprints, all road classes, tram tracks, bridges and water.
   const trees=[],districts=terrain?.districts,hash=n=>{const v=Math.sin(n*127.1+ch.i*311.7+ch.j*74.7)*43758.5453;return v-Math.floor(v);};
   for(let i=0;i<220;i++){const x=(ch.i+hash(i*3+1))*CHUNK,z=(ch.j+hash(i*3+2))*CHUNK,zone=DISTRICTS[districts?.at(x,z)||'residential'],river=terrain&&terrain.waterDistance(x,z)<18;
+   if(terrain?.gameplayPatches?.some(a=>insideArea(a,x,z,3)))continue;
    if(hash(i*3+3)>Math.min(.85,zone.trees*.12+(river?.2:0)))continue;
    if(districts&&!districts.canPlant(x,z,terrain))continue;
    if(!districts&&(!terrain?.dry(x,z,2)||[...this.collision.near(x,z,2)].some(b=>pointInside(x,z,b.p))))continue;
