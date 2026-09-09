@@ -19,20 +19,26 @@ A self-contained Three.js browser game using actual OpenStreetMap streets and bu
 - E: enter a nearby parked / slow vehicle or exit when slow.
 - V or VEHICLES in the HUD: choose a MiTo-inspired compact, motorcycle, scooter or truck.
 - Shift: boost / sprint. Space: handbrake / jump.
+- TAB: Cinquecento special turbo, or fire the tank cannon (1.25 s cooldown).
+- Aircraft: W accelerates, A/D turn, Space climbs and Shift descends. F deploys a parachute above 10 m; E exits after landing.
 - C: three camera modes. Drag the world: orbit camera.
-- J: delivery, checkpoint race or police escape.
+- J: delivery, checkpoint race, police escape or **CATTURA PORTAVALORI — €1,000**.
 - M: map, waypoints and travel to landmarks.
 - R: recover and repair. Escape: pause and graphics settings.
 
-Progress (earned money and completed jobs) is saved to this browser's localStorage. Graphics default to Balanced; Performance reduces rendering distance and disables shadows. Map geometry streams into GPU memory by 320 m chunks and old chunks are disposed. Car meshes are batched to reduce draw calls.
+Modern games start at the original gameplay villa in Parco Treves. Choose **Scando, Mattia, Marchese, Milo or Nico**. The expanded airport has four enterable hangars, two light aircraft, two helipads and three green tanks. Find them through **M → Aeroporto · ingresso**; these vehicles are not in the Vehicles menu. Five stars activate up to two hostile tanks, and defeat during that chase returns the selected character to the villa.
 
-The driving HUD includes speed, gear, RPM, trip distance, heading, altitude, grade, vehicle condition and nearby traffic density. Traffic includes nine vehicle types, with distinct motorcycle, scooter and truck handling; pedestrian and traffic density are selected from graphics quality at startup (reload after changing quality to update population). Gear and RPM are arcade display estimates, not a simulated transmission.
+Progress (character, earned money and completed jobs) is saved to this browser's localStorage. Graphics default to Balanced; Performance reduces rendering distance and disables shadows. Map geometry streams into GPU memory by 320 m chunks and old chunks are disposed. Car meshes are batched to reduce draw calls. Parked aircraft and tanks do not run flight or pursuit simulation.
+
+See [airport gameplay, controls, technical limits and test instructions](docs/airport-gameplay.md). Run `npm run test:airport` for the new controller scenarios. A browser with WebGL is still required for visual gameplay and device performance checks.
+
+The driving HUD includes speed, gear, RPM, trip distance, heading, altitude, grade, vehicle condition and nearby traffic density. Traffic includes 24 original NPC car types in addition to the existing vehicles, with distinct motorcycle, scooter and truck handling; pedestrian and traffic density are selected from graphics quality at startup (reload after changing quality to update population). Gear and RPM are arcade display estimates, not a simulated transmission.
 
 ## Reconstruction fidelity
 
 The map contains 87,881 mapped building footprints, 34,539 road/path ways, 1,080 water/park/pitch polygons and 770 waterway ways. Source bbox: latitude 45.35–45.465, longitude 11.80–11.97. This is a roughly 13 × 13 km rectangular extract, not a municipality boundary guarantee. Projection: local equirectangular around 45.4064, 11.8768; one world unit = one metre. Low local projection distortion; not a survey-grade projection.
 
-Footprints and roads use OSM coordinates. Missing height data is estimated from floors or a deterministic building ID choice. Landmark roofs, domes, facades and Prato decoration are approximate interpretive geometry, not photogrammetry. Terrain uses a bundled, smoothed DEM without vertical exaggeration. Rivers and bridge ramps follow an approximate height model; true stacked grade separations are not supported. The Overpass extract uses ways, not fully assembled relations; complex multipolygon courtyards / water / buildings can be incomplete. No enterable interiors, combat weapons, multiplayer or commercial GTA content.
+Footprints and roads use OSM coordinates, with local replacement inside the authored airport and villa areas. Missing height data is estimated from floors or a deterministic building ID choice. Landmark roofs, domes, facades and Prato decoration are approximate interpretive geometry, not photogrammetry. Terrain uses a bundled, smoothed DEM without vertical exaggeration. Rivers, bridge ramps and layered underpasses follow approximate height models. The Overpass extract uses ways, not fully assembled relations; complex multipolygon courtyards / water / buildings can be incomplete. Hangars have simple open interiors; tank combat is arcade, with no structural building destruction. No multiplayer or commercial GTA content.
 
 ## Urban appearance pass
 

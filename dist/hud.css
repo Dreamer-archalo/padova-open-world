@@ -25,3 +25,10 @@ body.water-fall::after{content:"";position:fixed;inset:0;z-index:15;pointer-even
 .vehicle-heading>div{min-width:0;max-width:calc(100% - 44px)}.gear{flex-shrink:0}#vehicleName{overflow-wrap:anywhere;letter-spacing:1px}@media(max-width:800px){.terrain-telemetry{gap:7px;font-size:8px}.terrain-telemetry button{padding:5px;font-size:8px}}
 
 #turboStatus:not([hidden]){display:flex;align-items:center;gap:12px;color:#edbb65;font-size:14px;margin:8px 0}#turboCountdown{font-size:32px;font-variant-numeric:tabular-nums}#turboStatus span{display:none;font-size:12px}#turboStatus[data-critical="true"]{color:#ff745f}#turboStatus[data-critical="true"] span{display:inline}
+/* Modern gameplay controls; the Galileo screen keeps its original layout. */
+[data-era="1500"] .modern-only{display:none!important}
+.modern-character{display:flex;flex-wrap:wrap;align-items:center;gap:12px;margin:20px 0;color:#edcf9b;font-size:11px;letter-spacing:.12em}
+.modern-character select{max-width:100%;background:#152c36;color:#fff2d5;border:1px solid #74817a;border-radius:6px;padding:10px 14px;font:500 14px system-ui;letter-spacing:normal}
+.modern-character small{color:#c5d0ce;letter-spacing:normal}
+#cannonStatus{margin:8px 0;padding:10px;border:1px solid #acb774;background:#354431;color:#f0e9b9;font:700 15px system-ui;letter-spacing:.06em}
+@media(max-width:700px){.modern-character{gap:8px;margin:12px 0}.modern-character small{display:none}#touchControls>div:last-child{max-width:220px;flex-wrap:wrap}}

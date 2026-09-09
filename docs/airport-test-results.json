@@ -1,0 +1,87 @@
+{
+  "browser": {
+    "rendered": false,
+    "reason": "Cloud Chrome reports GL_RENDERER=Disabled; GPU/device FPS and visual flight QA remain pending."
+  },
+  "airport": {
+    "runwaySamples": 1677,
+    "maxHeightDeltaPer2m": 0,
+    "connectedAccessRoads": 4,
+    "enterableHangars": 4
+  },
+  "tank": {
+    "entryExit": true,
+    "movement": true,
+    "pivot": true,
+    "armor": true
+  },
+  "cannon": {
+    "tab": true,
+    "cooldown": 1.25,
+    "carDestroyed": true,
+    "npcKO": true,
+    "cover": true,
+    "buildingUnchanged": true,
+    "predictiveHit": true,
+    "predictiveHitAt306Kmh": true,
+    "limits": {
+      "shells": 12,
+      "effects": 8,
+      "particlesPerEffect": 12,
+      "playerCooldown": 1.25,
+      "enemyCooldown": 2.4,
+      "shellSpeed": 150
+    }
+  },
+  "flight": {
+    "takeoff": true,
+    "landing": true,
+    "parachute": true,
+    "roofLanding": true,
+    "helicopter": true,
+    "parkedRotorSleeps": true
+  },
+  "wanted": {
+    "fiveStarsThroughTab": true,
+    "militaryCount": 2,
+    "militaryPursuit": true,
+    "actualEnemyProjectileDefeat": true,
+    "respawnAtTreves": true,
+    "healthReset": true,
+    "characterRetained": true,
+    "enemiesAndShellsCleared": true,
+    "graceSeconds": 12
+  },
+  "portavalori": {
+    "startsMoving": true,
+    "routeMetres": 2605.9336264207363,
+    "maxKmh": 158.4,
+    "progressMetres": 511.9249405880741,
+    "crimeEnabled": true,
+    "reward": 1000,
+    "paidOnce": true
+  },
+  "performance": {
+    "interpolation120Frames": {
+      "before": {
+        "milliseconds": 275.33767599999555,
+        "terrainQueries": 13200
+      },
+      "after": {
+        "milliseconds": 10.081323999998858,
+        "terrainQueries": 0
+      }
+    },
+    "parkedAI": false,
+    "parkedRotorUpdates": 0,
+    "maxMilitary": 2,
+    "helicopterMeshes": [
+      3,
+      3,
+      3,
+      3,
+      3
+    ],
+    "airportStructureBoxes": 607
+  }
+}

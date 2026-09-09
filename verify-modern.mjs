@@ -47,7 +47,7 @@ const airborne={x:t.state.x,z:t.state.z,y:t.state.y};t.keys.add('KeyW');for(let 
 Object.assign(t.state,{x:heli.home.x,z:heli.home.z,speed:0});t.keys.add('ShiftLeft');for(let i=0;i<400;i++){t.state.elapsed+=1/60;t.movePlayer(1/60);}t.keys.clear();assert(Math.abs(t.state.y-t.terrain.height(t.state.x,t.state.z))<.1);t.state.speed=0;t.toggleVehicle();assert.equal(t.state.mode,'foot');
 // Altitude cap and solid obstruction checks are independent of the renderer.
 const empty=new SpatialIndex(),flat={height:()=>0,elevation:()=>0,dry:()=>true,waterHeight:()=>-2};const flying={x:0,z:0,y:179.9,yaw:0,speed:0,vy:8,spec:HELICOPTER};for(let i=0;i<120;i++)helicopterStep(flying,{forward:0,turn:0,up:true},1/60,flat,empty);assert.equal(flying.y,180);
-results.helicopters={pads:t.cars.filter(c=>c.spec.aircraft).map(c=>c.home.name),takeoff:true,landing:true,airExitBlocked:true,ceiling:180};
+results.helicopters={pads:t.cars.filter(c=>c.style==='airone').map(c=>c.home.name),takeoff:true,landing:true,airExitBlocked:true,ceiling:180};
 // Every new traffic model can be boarded and left through E.
 const safe=t.dryRoad({x:-400,z:-100},VEHICLES.aurora);assert(safe);
 for(const id of Object.keys(NPC_VEHICLES)){

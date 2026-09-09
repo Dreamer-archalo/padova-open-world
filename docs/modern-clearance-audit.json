@@ -1,10 +1,10 @@
 {
-  "roads": 34639,
-  "sampledNodes": 573113,
-  "waterSamples": 2158,
-  "bridgeSegments": 10992,
-  "inferredBridges": 122,
-  "layeredRoads": 1203,
+  "roads": 34604,
+  "sampledNodes": 572771,
+  "waterSamples": 2152,
+  "bridgeSegments": 10952,
+  "inferredBridges": 120,
+  "layeredRoads": 1201,
   "maxGrade": 0.6500000000000008,
   "maxVehicleGrade": 0.05500000000000506,
   "fountains": 1,
@@ -18,7 +18,7 @@
   },
   "areas": {
     "Sacra Famiglia": {
-      "roads": 939,
+      "roads": 930,
       "issues": {
         "unsupportedWater": 0,
         "deadEndsInWater": 0,
@@ -94,55 +94,55 @@
         "z": -3769.4
       },
       {
-        "road": 8238,
+        "road": 8225,
         "name": "",
         "x": 7487.7,
         "z": -3656.7
       },
       {
-        "road": 9217,
+        "road": 9204,
         "name": "",
         "x": 5197.2,
         "z": -85.3
       },
       {
-        "road": 12864,
+        "road": 12841,
         "name": "",
         "x": 1332.2,
         "z": -384.6
       },
       {
-        "road": 14811,
+        "road": 14788,
         "name": "",
         "x": 96.7,
         "z": -697
       },
       {
-        "road": 14811,
+        "road": 14788,
         "name": "",
         "x": 89.1,
         "z": -701.5
       },
       {
-        "road": 19860,
+        "road": 19837,
         "name": "",
         "x": -3861,
         "z": -1154.2
       },
       {
-        "road": 21180,
+        "road": 21151,
         "name": "",
         "x": 4500.6,
         "z": -6161.4
       },
       {
-        "road": 21181,
+        "road": 21152,
         "name": "",
         "x": 4443.3,
         "z": -7281.8
       },
       {
-        "road": 23278,
+        "road": 23244,
         "name": "",
         "x": 2832.2,
         "z": -26.5
@@ -152,22 +152,22 @@
     "lowDecks": [],
     "clearance": [
       {
-        "upper": 6731,
-        "lower": 6719,
+        "upper": 6718,
+        "lower": 6706,
         "x": -4250.22326751839,
         "z": 998.6547038327527,
         "clearance": -0.34421708499031
       },
       {
-        "upper": 10725,
-        "lower": 26289,
+        "upper": 10712,
+        "lower": 26253,
         "x": 4700.829173414005,
         "z": -33.98847050449327,
         "clearance": 3.983669275806165
       },
       {
-        "upper": 32546,
-        "lower": 32545,
+        "upper": 32507,
+        "lower": 32506,
         "x": 916.3475247524752,
         "z": -671.3237623762376,
         "clearance": 1.8892793847129945
