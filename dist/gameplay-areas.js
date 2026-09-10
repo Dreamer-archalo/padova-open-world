@@ -3,14 +3,15 @@ import {project,clamp,pointInside} from './core.js';
 // Original gameplay layouts. LIPU's published ARP and 04/22, 1122 x 30 m
 // runway fix the airport frame; buildings are deliberately fictional.
 export const AIRPORT={...project(45.3966667,11.8483333),yaw:Math.PI-40*Math.PI/180,minU:-90,maxU:220,minV:-585,maxV:585};
-export const VILLA={...project(45.40208,11.88539),yaw:0,minU:-47,maxU:47,minV:-47,maxV:52};
+export const VILLA={...project(45.40208,11.88539),yaw:0,minU:-47,maxU:47,minV:-47,maxV:52,platform:{minU:-44.35,maxU:44.35,minV:-43.35,maxV:49.35}};
 export const CHARACTERS=[
- {id:'scando',name:'Scando',color:'#d49a54',variant:0},
- {id:'mattia',name:'Mattia',color:'#417d9c',variant:1},
- {id:'marchese',name:'Marchese',color:'#b45c71',variant:2},
- {id:'milo',name:'Milo',color:'#6e9270',variant:3},
- {id:'nico',name:'Nico',color:'#8b75a9',variant:4}
+ {id:'fede',name:'Fede',color:'#444879',variant:0,outfit:'Cappello da Merlino e abito da mago'},
+ {id:'mattia',name:'Mattia',color:'#526144',variant:1,outfit:'Completo militare e mimetica'},
+ {id:'marchese',name:'Marchese',color:'#273745',variant:2,outfit:'Giacca, camicia bianca e cravatta'},
+ {id:'milo',name:'Milo',color:'#f0eee5',variant:3,outfit:'Pantaloni corti rossi e maglietta bianca smanicata'},
+ {id:'nino',name:'Nino',color:'#16191c',variant:4,outfit:'Abbigliamento interamente nero'}
 ];
+export function normalizeCharacter(id){id=({scando:'fede',nico:'nino'})[id]||id;return CHARACTERS.some(c=>c.id===id)?id:'fede';}
 export function areaPoint(area,u,v){const c=Math.cos(area.yaw),s=Math.sin(area.yaw);return {x:area.x+c*u+s*v,z:area.z-s*u+c*v};}
 export function areaLocal(area,x,z){const dx=x-area.x,dz=z-area.z,c=Math.cos(area.yaw),s=Math.sin(area.yaw);return {u:c*dx-s*dz,v:s*dx+c*dz};}
 export function insideArea(area,x,z,margin=0){const p=areaLocal(area,x,z);return p.u>=area.minU-margin&&p.u<=area.maxU+margin&&p.v>=area.minV-margin&&p.v<=area.maxV+margin;}
@@ -57,12 +58,25 @@ export function prepareGameplayMap(map){
 }
 export function gameplaySpawns(){return [
  ...[[-10,22,'tank'],[10,22,'tank'],[0,-15,'tank']].map(([u,v,style])=>({...areaPoint(AIRPORT,149+u,-245+v),yaw:AIRPORT.yaw-Math.PI/2,style,name:'Hangar militari'})),
- ...[[112,120],[114,175]].map(([u,v])=>({...areaPoint(AIRPORT,u,v),yaw:AIRPORT.yaw,style:'libellula',name:'Piazzale aerei'})),
+ ...[[112,120,'libellula'],[114,175,'rondone'],[114,218,'albatros']].map(([u,v,style])=>({...areaPoint(AIRPORT,u,v),yaw:AIRPORT.yaw,style,name:'Piazzale aerei'})),
  {...areaPoint(AIRPORT,125,360),yaw:AIRPORT.yaw,style:'airone',name:'Eliporto civile'},
- {...areaPoint(AIRPORT,115,-345),yaw:AIRPORT.yaw,style:'airone',name:'Eliporto utility'},
+ {...areaPoint(AIRPORT,115,-345),yaw:AIRPORT.yaw,style:'levante',name:'Eliporto utility'},
+ {...areaPoint(AIRPORT,112,305),yaw:AIRPORT.yaw,style:'falco',name:'Piazzale scout'},
+ ...[[-13,17,'falco'],[15,17,'levante'],[-13,35,'saetta'],[-19,35,'fulmine'],[18,35,'tank'],[-12,41,'motorcycle'],[-16,41,'cruiser']].map(([u,v,style])=>({...areaPoint(VILLA,u,v),yaw:Math.PI,style,name:'Villa Treves'})),
  {...areaPoint(AIRPORT,174,310),yaw:AIRPORT.yaw,style:'utility',name:'Servizi aeroporto'},
  {...areaPoint(AIRPORT,180,-185),yaw:AIRPORT.yaw,style:'truck',name:'Deposito aeroporto'}
  ];}
+
+// A fixed, small belt of trees screens the villa without planting in its drive
+// or buildings. It shares the existing chunk-level vegetation instances.
+export function gameplayVegetation(terrain){
+ if(!terrain?.modern||!terrain.gameplayPatches?.length)return [];
+ const trees=[],tree=(u,v,s)=>trees.push({...areaPoint(VILLA,u,v),s,authored:true});
+ for(const u of [-40.5,40.5])for(let v=-35;v<=42;v+=7)tree(u,v,6.4+(v+35)%3*.25);
+ for(let u=-32;u<=32;u+=8)tree(u,-38,6.8);
+ for(const u of [-32,-24,-16,16,24,32])tree(u,44,6.5);
+ return trees;
+}
 
 // Box descriptors enter the world's existing chunk batches, not independent
 // meshes. Floors/paint have no collider; hangar walls and overhead roofs do.
@@ -108,8 +122,20 @@ export function gameplayStructures(terrain){
  floor(VILLA,0,27,61,47,'#b7ada0');building(VILLA,0,-19,44,22,13,'#d4bf96');
  building(VILLA,-29,-10,14,36,9,'#d7c5a5');building(VILLA,29,-10,14,36,9,'#d7c5a5');
  for(let u=-18;u<=18;u+=6)box(VILLA,u,-3,.8,.8,7.5,'#f0e5ce');box(VILLA,0,-3,41,8,.6,'#e7d8b8',7.5);
- for(const u of [-44,44])box(VILLA,u,0,.6,87,1.3,'#bfb497');
- for(const u of [-25,25])box(VILLA,u,49,32,.6,1.3,'#bfb497');
+ // Closed stone-and-timber perimeter, including the previously open back and
+ // corners. The front keeps a 16 m gate, clear of the driveway and respawn.
+ function fence(u,v,w,d){
+  const level=terrain.elevation(VILLA.x,VILLA.z),samples=[areaPoint(VILLA,u-w/2-1,v-d/2-1),areaPoint(VILLA,u+w/2+1,v+d/2+1)],bottom=Math.min(level,...samples.map(p=>terrain.groundHeight(p.x,p.z)));
+  box(VILLA,u,v,w,d,level-bottom+.8,'#bfb497',bottom-level);
+  for(const base of [1.1,1.85])box(VILLA,u,v,w>d?w:w*.65,w>d?d*.65:d,.17,'#72553c',base);
+  const alongU=w>d,length=alongU?w:d,count=Math.ceil(length/4);
+  for(let i=0;i<=count;i++){const offset=(i/count-.5)*length;box(VILLA,u+(alongU?offset:0),v+(alongU?0:offset),.3,.3,2.2,'#634b37');}
+ }
+ for(const u of [-44,44])fence(u,3,.6,92);
+ fence(0,-43,88,.6);for(const u of [-26,26])fence(u,49,36,.6);
+ for(const u of [-8,8]){box(VILLA,u,49,1.4,1.4,2.8,'#c8b99c');box(VILLA,u,49,1.65,1.65,.18,'#e2d5bb',2.8);}
+ for(const u of [-42,42])box(VILLA,u,2,1.2,84,1.8,'#3c5e40');
+ box(VILLA,0,-41,82,1.2,1.8,'#3c5e40');for(const u of [-27,27])box(VILLA,u,47,30,1.2,1.8,'#3c5e40');
  // Small reflective ornamental basin outside the driving line; no water hazard.
  floor(VILLA,-27,29,9,16,'#496f79');box(VILLA,-27,29,1.3,1.3,2.2,'#c8c3ad');
  return result;

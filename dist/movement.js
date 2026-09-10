@@ -72,6 +72,38 @@ export function vehicleBlocked(x, z, yaw, index, spec = 1, y=undefined) {
 
 // Sweep from the character's shoulder, including interpolated positions. Height
 // testing permits a camera above a roof. The radius protects the near clip plane.
+export function cameraBoomContinuous(anchor, desired, index, radius = .3) {
+  const dx=desired.x-anchor.x,dy=desired.y-anchor.y,dz=desired.z-anchor.z,length=Math.hypot(dx,dy,dz);
+  if(length<1e-8)return {...desired};
+  let safe=1;
+  // Clip a moving point to a slab. A polygon expanded by the camera radius is
+  // the union of its interior and finite edge capsules; no ray-length sampling.
+  const clip=(start,delta,min,max,range)=>{
+    if(Math.abs(delta)<1e-10)return start>=min&&start<=max;
+    const a=(min-start)/delta,b=(max-start)/delta;
+    range[0]=Math.max(range[0],Math.min(a,b));range[1]=Math.min(range[1],Math.max(a,b));return range[0]<=range[1];
+  };
+  const hitCircle=(x,z,range)=>{
+    const ox=anchor.x-x,oz=anchor.z-z,a=dx*dx+dz*dz,b=2*(ox*dx+oz*dz),c=ox*ox+oz*oz-radius*radius;
+    if(a<1e-12)return c<=0?range[0]:Infinity;
+    const disc=b*b-4*a*c;if(disc<0)return Infinity;
+    const root=Math.sqrt(disc),lo=Math.max(range[0],(-b-root)/(2*a)),hi=Math.min(range[1],(-b+root)/(2*a));return lo<=hi?lo:Infinity;
+  };
+  for(const b of index.near((anchor.x+desired.x)/2,(anchor.z+desired.z)/2,Math.hypot(dx,dz)/2+radius)){
+    const vertical=[0,safe];if(!clip(anchor.y,dy,(b.minY||0)-radius,(b.minY||0)+b.h+radius,vertical))continue;
+    if(pointInside(anchor.x+dx*vertical[0],anchor.z+dz*vertical[0],b.p)){safe=Math.min(safe,vertical[0]);continue;}
+    for(let i=0;i<b.p.length;i++){
+      const a=b.p[i],q=b.p[(i+1)%b.p.length],ex=q[0]-a[0],ez=q[1]-a[1],len=Math.hypot(ex,ez);
+      safe=Math.min(safe,hitCircle(...a,vertical));if(len<1e-8)continue;
+      const ux=ex/len,uz=ez/len,ox=anchor.x-a[0],oz=anchor.z-a[1],range=[vertical[0],Math.min(safe,vertical[1])];
+      if(clip(ox*ux+oz*uz,dx*ux+dz*uz,0,len,range)&&clip(-ox*uz+oz*ux,-dx*uz+dz*ux,-radius,radius,range))safe=Math.min(safe,range[0]);
+    }
+  }
+  if(safe<1)safe=Math.max(0,safe-.01/length);
+  return {x:anchor.x+dx*safe,y:anchor.y+dy*safe,z:anchor.z+dz*safe};
+}
+
+// Retained for the independently loaded Padova 1500 controller.
 export function cameraBoom(anchor, desired, index, radius = .3) {
   const dx = desired.x - anchor.x, dy = desired.y - anchor.y, dz = desired.z - anchor.z;
   const length = Math.hypot(dx, dy, dz);

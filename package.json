@@ -8,6 +8,8 @@
     "audit:map": "node tools/audit-map.mjs",
     "test:modern": "node verify-modern.mjs",
     "audit:modern": "node tools/audit-modern.mjs",
-    "test:airport": "node --max-old-space-size=3072 verify-airport.mjs"
+    "test:airport": "node --max-old-space-size=3072 verify-airport.mjs",
+    "test:performance": "node --max-old-space-size=3072 verify-performance.mjs",
+    "test:fullscreen": "node verify-fullscreen.mjs"
   }
 }

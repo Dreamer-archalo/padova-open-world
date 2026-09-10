@@ -42,7 +42,7 @@ for(const hz of [30,60,120,144]){
 const clock=new movement.FixedClock();let ticks=0;clock.advance(60,()=>ticks++);assert.equal(ticks,8,'tab resume must not trigger an unbounded catch-up');
 
 
-assert.equal(t.cars.filter(c=>!c.spec.aircraft&&!c.fixedSpawn).length,31);assert(t.cars.filter(c=>c.spec.aircraft).length>=2);assert.equal(t.people.length,72);
+assert.equal(t.cars.filter(c=>!c.spec.aircraft&&!c.fixedSpawn).length,17);assert(t.cars.filter(c=>c.spec.aircraft).length>=2);assert.equal(t.people.length,32);
 assert(t.player.userData.hips.children[0].position.y>.7,'leg pivots must be at the hips');
 assert(!core.collides(t.state.x,t.state.z,.36,t.world.collision),'centre spawn must be clear');
 t.toggleVehicle();assert.equal(t.state.mode,'car');assert.equal(t.state.y,t.terrain.height(t.state.x,t.state.z));

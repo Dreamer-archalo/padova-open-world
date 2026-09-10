@@ -1,0 +1,58 @@
+{
+  "cameraSamples": 24000,
+  "newAircraftFlight": [
+    "falco",
+    "levante",
+    "rondone",
+    "albatros"
+  ],
+  "additionalCityVehicles": [
+    "tir",
+    "autotreno",
+    "cantiere",
+    "betoniera",
+    "soccorso",
+    "trail",
+    "cruiser"
+  ],
+  "characters": [
+    "Fede",
+    "Mattia",
+    "Marchese",
+    "Milo",
+    "Nino"
+  ],
+  "quality": {
+    "medium": {
+      "people": 72,
+      "traffic": 30,
+      "calls": 956,
+      "triangles": 175452
+    },
+    "hyper": {
+      "people": 12,
+      "traffic": 8,
+      "calls": 79,
+      "triangles": 97727
+    },
+    "low": {
+      "people": 32,
+      "traffic": 16,
+      "calls": 222,
+      "triangles": 118742
+    }
+  },
+  "adaptivePixelRatioFloor": 0.45,
+  "updatePeople120TicksMs": 22.536638000001403,
+  "updateTraffic120TicksMs": 28.739605000002484,
+  "updateCamera120TicksMs": 17.479763000003004,
+  "chunkStreaming": {
+    "yieldPoints": 483,
+    "maxSliceMs": 22.609615999997914
+  },
+  "browser": {
+    "initialQualitySelector": "passed",
+    "threeD": "not runnable: cloud Chrome reports GL_RENDERER Disabled",
+    "fps": "not measured; controller CPU and draw submissions are not end-user FPS"
+  }
+}

@@ -19,9 +19,16 @@
   </header>
   <section id="intro" class="intro">
     <div class="edition"><span></span> A CITY YOU KNOW. YOUR STREETS.</div>
-    <h1>PADOVA<span>AFTER HOURS.</span></h1>
+    <div class="intro-title">
+      <h1>PADOVA<span>AFTER HOURS.</span></h1>
+      <div class="production-credit modern-only">
+        <span class="production-label">UNA PRODUZIONE DI</span>
+        <strong>Federico Scandolara</strong><span class="production-and">e</span><strong>Ricardo Roza Rui</strong>
+      </div>
+    </div>
     <p>Take the long way home.</p>
-    <label class="modern-character modern-only" for="characterSelect">IL TUO PERSONAGGIO
+    <label class="modern-character modern-only" for="initialQuality">GRAFICA<select id="initialQuality"></select></label>
+    <label hidden class="modern-character modern-only" for="characterSelect">IL TUO PERSONAGGIO
       <select id="characterSelect"><option value="scando">Scando</option><option value="mattia">Mattia</option><option value="marchese">Marchese</option><option value="milo">Milo</option><option value="nico">Nico</option></select>
       <small>Partenza: villa di Parco Treves</small>
     </label>
@@ -30,8 +37,12 @@
       <button id="play1500Btn" class="era-button">Modalità Galileo</button>
       <button id="aboutBtn" class="textbutton">About this world <span>↗</span></button>
     </div>
-    <div class="loading"><div id="loadingBar"></div></div><div id="loadingText" class="small">Loading Padua’s streets and buildings</div>
+    <div class="loading"><div id="loadingBar"></div></div><div id="loadingText" class="small">Scegli la grafica prima di caricare. Iper Performance per PC meno potenti.</div>
     <div class="intro-foot">WASD TO MOVE <span> / </span> E TO ENTER A VEHICLE <span> / </span> CHOOSE PRESENT DAY OR GALILEO</div>
+  </section>
+  <section id="characterPicker" class="character-picker modern-only" hidden aria-label="Scegli il personaggio">
+    <div class="character-heading"><span class="eyebrow">PADOVA / AFTER HOURS</span><h2>La tua città. Il tuo personaggio.</h2><p>Scegli chi sarai. Ti aspetta la villa di Parco Treves.</p></div>
+    <div class="character-panel"><div id="characterChoices" class="character-choices" aria-label="Personaggi"></div><p id="characterOutfit" aria-live="polite"></p><button id="confirmCharacter" class="primary">Entra nella villa →</button></div>
   </section>
   <div id="playingUI" hidden>
     <aside class="hud mission"><div class="eyebrow" id="missionType">FREE ROAM</div><h2 id="missionTitle">The city is yours.</h2><p id="missionDesc">Explore, borrow a car, or pick an activity.</p><div id="missionTimer"></div><button id="activityBtn">Choose an activity <span>J</span></button></aside>

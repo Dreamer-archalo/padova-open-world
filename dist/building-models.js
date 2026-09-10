@@ -45,15 +45,15 @@ export class BuildingModels {
       }
     } catch (error) { console.warn('Building models unavailable; keeping the mapped city.', error); }
   }
-  update(x, z) {
+  update(x, z, enabled=true) {
     for (const [name, item] of this.active) {
-      if (Math.hypot(item.building.cx - x, item.building.cz - z) > 800) {
+      if (!enabled || Math.hypot(item.building.cx - x, item.building.cz - z) > 800) {
         this.scene.remove(item.root); disposeModel(item.root);
         item.building.modelActive = false; item.building.h = item.originalHeight;
-        item.hidden.forEach(o => o.visible = true); this.world.refreshBuilding(item.building); this.active.delete(name);
+        item.hidden.forEach(o => {o.userData.modelHidden=false;o.visible=true;}); this.world.refreshBuilding(item.building); this.active.delete(name);
       }
     }
-    if (this.pending || this.active.size >= 6) return;
+    if (!enabled || this.pending || this.active.size >= 6) return;
     const entry = this.entries.filter(e => !this.active.has(e.name) && !this.failed.has(e.name))
       .map(e => ({entry:e, distance:Math.hypot(e.building.cx - x, e.building.cz - z)}))
       .filter(e => e.distance < 550).sort((a,b) => a.distance - b.distance)[0]?.entry;
@@ -75,7 +75,7 @@ export class BuildingModels {
       const originalHeight = b.h;
       b.modelActive = true; b.h = Math.max(b.h, entry.height + (entry.offsetY || 0));
       const hidden = this.world.landmarks.children.filter(o => o.userData.buildingName === b.n);
-      hidden.forEach(o => o.visible = false);
+      hidden.forEach(o => {o.userData.modelHidden=true;o.visible=false;});
       this.scene.add(root); this.world.refreshBuilding(b);
       this.active.set(entry.name, {root, building:b, originalHeight, hidden});
     } catch (error) {

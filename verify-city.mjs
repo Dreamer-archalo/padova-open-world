@@ -1,3 +1,4 @@
+import {VILLA,insideArea} from './dist/gameplay-areas.js';
 import assert from 'node:assert/strict';
 import vm from 'node:vm';
 import * as THREE from './dist/vendor/three.module.js';
@@ -45,7 +46,7 @@ reset();t.state.speed=100;t.keys.add('Tab');const highStart={x:t.state.x,z:t.sta
 reset();t.keys.add('Tab');let maximum=0;for(let i=0;i<480&&!city.incidents.recovery;i++){t.state.x=runway.x;t.state.z=runway.z;t.state.elapsed+=1/60;t.movePlayer(1/60);maximum=Math.max(maximum,t.state.speed);}assert(maximum*3.6>340);assert(city.incidents.recovery);assert.equal(t.state.health,0);assert(!turbo.mesh.visible);const explosion={x:t.state.x,z:t.state.z};for(let i=0;i<125;i++){t.state.elapsed+=1/60;t.movePlayer(1/60);city.incidents.update(t.state.elapsed);}assert(!city.incidents.recovery);assert.equal(t.state.health,100);assert(turbo.mesh.visible);assert(dist(t.state,explosion)<220,'local respawn');
 assert(impactResponse(2).damage<impactResponse(15).damage);assert(!impactResponse(15).destroy);assert(impactResponse(40).destroy);
 // Local detail and vegetation use the same exclusion system at every loaded chunk.
-assert(t.world.details.tadi.userData.facades>5);t.world.update(-565,-55,true);for(let i=0;i<15;i++)t.world.update(-565,-55);let plants=0;for(const group of t.world.loaded.values())for(const plant of group.userData.vegetation||[]){assert(city.districts.canPlant(plant.x,plant.z,t.terrain));plants++;}assert(plants>100);
+assert(t.world.details.tadi.userData.facades>5);t.world.update(-565,-55,true);for(let i=0;i<2000&&(t.world.queue.length||t.world.pendingBuild);i++)t.world.update(-565,-55);assert(!t.world.pendingBuild&&!t.world.queue.length,'visual streaming completes');let plants=0;for(const group of t.world.loaded.values())for(const plant of group.userData.vegetation||[]){assert(plant.authored?insideArea(VILLA,plant.x,plant.z):city.districts.canPlant(plant.x,plant.z,t.terrain));plants++;}assert(plants>100);
 const fountain=t.world.details.root.children.find(g=>g.userData.poi==='erbe-fountain');assert(fountain);assert(Math.abs(t.terrain.groundHeight(-77.6,-41.7)-t.terrain.elevation(-77.6,-41.7))<.3);
 const report=auditMap(t.world.data,t.terrain);assert.equal(report.counts.unsupportedWater,0);assert.equal(report.counts.steep,0);assert.equal(report.counts.junctionSteps,0);assert.equal(report.counts.lowDecks,0);
 console.log('PASS: touch camera math/hold/recenter, lateral walking basis, layered underpass and deck collision, one-way traffic, red/green/following, mapped tram progress/impact/terminal, actual controller Shift/Tab critical explosion/local respawn, impact severity, Via dei Tadi facades, vegetation exclusions, Erbe fountain and whole-map road scan.');
