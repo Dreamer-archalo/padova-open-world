@@ -1,7 +1,7 @@
 {
   "fleet": {
     "newTypes": 24,
-    "rareShare": 0.031
+    "rareShare": 0.027
   },
   "turbo": {
     "seconds": 6,
@@ -20,8 +20,7 @@
       "Stadio",
       "Industriale est",
       "Periferia sud",
-      "Eliporto civile",
-      "Eliporto utility"
+      "Eliporto civile"
     ],
     "takeoff": true,
     "landing": true,
@@ -30,7 +29,7 @@
   },
   "ai": {
     "profiles": 10,
-    "movingTraffic": 24,
+    "movingTraffic": 11,
     "patrols": 3
   },
   "map": {

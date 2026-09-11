@@ -5,7 +5,7 @@ import vm from 'node:vm';
 import crypto from 'node:crypto';
 import * as THREE from './dist/vendor/three.module.js';
 import {t,ctx,els} from './verify-stability.mjs';
-import {NPC_VEHICLES,createNPCCar,chooseTrafficStyle,HELICOPTER} from './dist/modern-vehicles.js';
+import {NPC_VEHICLES,TRAFFIC_VEHICLES,createNPCCar,chooseTrafficStyle,HELICOPTER} from './dist/modern-vehicles.js';
 import {updateTurbo,helicopterStep,pedestrianIntent,pursuitTarget} from './dist/modern-driving.js';
 import {VEHICLES} from './dist/vehicles.js';
 import {vehicleBlocked} from './dist/movement.js';
@@ -27,8 +27,8 @@ for(const [id,spec] of Object.entries(NPC_VEHICLES)){
 const menuSource=fs.readFileSync('dist/game.js','utf8').split('function vehiclesMenu()')[1].split('function goodNearbyNode')[0];
 assert(menuSource.includes("['mito','cinquecento','motorcycle','scooter','truck'].map"));
 for(const id of [...Object.keys(NPC_VEHICLES),'airone'])assert(!menuSource.includes("'"+id+"'"));
-for(let i=0;i<100;i++)assert(['van','pickup','mpv','classic'].includes(NPC_VEHICLES[chooseTrafficStyle('industrial',()=>i/100)].family));
-let expensive=0;for(let i=0;i<1000;i++)if(['luxury','sport','supercar'].includes(NPC_VEHICLES[chooseTrafficStyle('urban',()=>i/1000)].family))expensive++;assert(expensive>0&&expensive<100);
+for(let i=0;i<100;i++)assert(['van','pickup','mpv','classic','freight','work','motorcycle'].includes(TRAFFIC_VEHICLES[chooseTrafficStyle('industrial',()=>i/100)].family));
+let expensive=0;for(let i=0;i<1000;i++)if(['luxury','sport','supercar'].includes(TRAFFIC_VEHICLES[chooseTrafficStyle('urban',()=>i/1000)].family))expensive++;assert(expensive>0&&expensive<100);
 results.fleet={newTypes:Object.keys(NPC_VEHICLES).length,rareShare:expensive/1000};
 // Six continuous seconds, exact 6→1 display, reset, and non-special vehicles.
 const turbo={style:'cinquecento',spec:VEHICLES.cinquecento};let display=[];

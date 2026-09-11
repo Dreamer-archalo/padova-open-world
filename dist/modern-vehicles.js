@@ -1,3 +1,4 @@
+import {EXTRA_TRAFFIC} from './special-vehicles.js';
 import * as THREE from './vendor/three.module.js';
 import {VEHICLES} from './vehicles.js';
 
@@ -21,8 +22,9 @@ export const NPC_VEHICLES=Object.fromEntries(catalogue.map(([id,name,family,widt
 Object.assign(VEHICLES,NPC_VEHICLES);
 export const HELICOPTER={name:'Airone H2',width:2.8,length:7.8,height:3.2,wheelbase:3,max:48,boost:48,reverse:16,accel:8,brake:9,steer:1,aircraft:true};
 VEHICLES.airone=HELICOPTER;
-export function fleetFor(zone){return Object.keys(NPC_VEHICLES).filter(id=>{const f=NPC_VEHICLES[id].family;return zone==='industrial'?['van','pickup','mpv','classic'].includes(f):zone==='historic'?['city','compact','classic','luxury','convertible'].includes(f):zone==='green'||zone==='wild'?['suv','pickup','classic'].includes(f):true;});}
-export function chooseTrafficStyle(zone,random=Math.random){const pool=fleetFor(zone),weights=pool.map(id=>['supercar','luxury','sport'].includes(NPC_VEHICLES[id].family)?zone==='historic'?.2:.08:1);let n=random()*weights.reduce((a,b)=>a+b,0);return pool.find((_,i)=>(n-=weights[i])<=0)||pool.at(-1);}
+export const TRAFFIC_VEHICLES={...NPC_VEHICLES,...EXTRA_TRAFFIC};
+export function fleetFor(zone,road=null){return Object.keys(TRAFFIC_VEHICLES).filter(id=>{const s=TRAFFIC_VEHICLES[id],f=s.family;if(s.length>12&&road&&(!/^(motorway|trunk|primary|secondary)$/.test(road.k)||road.w<8.5))return false;return zone==='industrial'?['van','pickup','mpv','classic','freight','work','motorcycle'].includes(f):zone==='historic'?['city','compact','classic','luxury','convertible','motorcycle'].includes(f):zone==='green'||zone==='wild'?['suv','pickup','classic','motorcycle'].includes(f):zone==='residential'?f!=='freight':true;});}
+export function chooseTrafficStyle(zone,random=Math.random,road=null){const pool=fleetFor(zone,road),weights=pool.map(id=>{const f=TRAFFIC_VEHICLES[id].family;return ['supercar','luxury','sport'].includes(f)?zone==='historic'?.2:.08:['freight','work'].includes(f)?zone==='industrial'?1.4:.25:1;});let n=random()*weights.reduce((a,b)=>a+b,0);return pool.find((_,i)=>(n-=weights[i])<=0)||pool.at(-1);}
 const cube=new THREE.BoxGeometry(),wheelGeo=new THREE.CylinderGeometry(1,1,1,10),materials=new Map();
 function mat(color){if(!materials.has(color))materials.set(color,new THREE.MeshStandardMaterial({color,roughness:.55}));return materials.get(color);}
 function box(g,c,x,y,z,w,h,d){const m=new THREE.Mesh(cube,mat(c));m.position.set(x,y,z);m.scale.set(w,h,d);g.add(m);return m;}
