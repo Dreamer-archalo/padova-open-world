@@ -47,7 +47,7 @@ export function createVehicle(type,color){const g=new THREE.Group();
   box(g,'#333c40',0,.48,-.05,.3,.17,1.35);mesh(g,sphere,color,0,.79,.13,.24,.22,.39);box(g,'#202c30',0,.86,-.34,.42,.13,.68);
   for(const s of [-1,1]){const fork=box(g,'#b6bcba',s*.11,.60,base-.1,.035,.69,.035);fork.rotation.x=-.23;box(g,'#6d7779',s*.28,.47,-.49,.1,.1,.68);box(g,'#26353a',s*.39,1.16,.51,.17,.065,.07);box(g,'#71868b',s*.38,1.35,.49,.15,.11,.04);}
   box(g,'#a7b4b5',0,1.14,.5,.74,.045,.05);mesh(g,sphere,'#fff3c7',0,.99,.69,.16,.13,.065);box(g,'#d84636',0,.81,-.91,.16,.08,.04);
-  if(scooter){box(g,color,0,.66,.5,.5,.58,.16);mesh(g,sphere,color,0,.48,-.60,.31,.28,.36);}else box(g,'#525956',0,.57,.02,.38,.33,.46);
+  if(scooter){mesh(g,sphere,color,0,.71,.49,.32,.43,.145);box(g,color,0,.39,-.05,.58,.07,.9);mesh(g,sphere,color,0,.55,-.56,.35,.35,.43);mesh(g,sphere,color,0,.43,.68,.25,.16,.34);box(g,'#20292d',0,.93,-.36,.51,.16,.78);box(g,'#ced7cf',0,.92,.64,.06,.17,.03);}else box(g,'#525956',0,.57,.02,.38,.33,.46);
  }
  if(type==='scooter')g.scale.x=.85;g.userData.vehicleType=type;return g;
 }

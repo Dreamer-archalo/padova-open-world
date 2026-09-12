@@ -1,6 +1,6 @@
 import * as THREE from './vendor/three.module.js';
 import {CHARACTERS,normalizeCharacter} from './gameplay-areas.js';
-const cube=new THREE.BoxGeometry(),head=new THREE.SphereGeometry(1,10,8),hat=new THREE.ConeGeometry(.38,.9,9),brim=new THREE.CylinderGeometry(.46,.46,.045,12),materials=new Map();
+const cube=new THREE.BoxGeometry(),head=new THREE.SphereGeometry(1,10,8),hat=new THREE.ConeGeometry(.36,1.45,12),brim=new THREE.CylinderGeometry(.53,.53,.06,16),materials=new Map();
 const mat=c=>{if(!materials.has(c))materials.set(c,new THREE.MeshStandardMaterial({color:c,roughness:.9}));return materials.get(c);};
 function part(g,name,c,x,y,z,w,h,d,geometry=cube){const m=new THREE.Mesh(geometry,mat(c));m.name=name;m.position.set(x,y,z);m.scale.set(w,h,d);g.add(m);return m;}
 export function createCharacter(id){
@@ -10,7 +10,7 @@ export function createCharacter(id){
  for(const side of [-1,1]){const arm=new THREE.Group();arm.position.set(side*.37,1.37,0);part(arm,'sleeve',milo?skin:choice.color,0,-.25,0,.17,.49,.2);part(arm,'hand',skin,0,-.56,0,.09,.12,.1,head);arms.add(arm);}g.add(arms);
  if(choice.id==='marchese'){part(g,'white shirt','#eeeae0',0,1.25,.187,.25,.5,.025);part(g,'tie','#923c37',0,1.22,.211,.055,.37,.025);part(g,'tie knot','#aa4c43',0,1.43,.215,.085,.085,.035);}
  if(military){for(const [x,y,z] of [[-.13,1.25,.19],[.17,1.0,.19],[.15,1.4,-.19],[-.1,1.08,-.19]])part(g,'camouflage','#77744b',x,y,z,.17,.14,.025);part(g,'belt','#30382b',0,.86,0,.59,.09,.37);part(g,'field cap','#4d5940',0,1.91,.02,.42,.12,.46);}
- if(wizard){part(g,'robe','#444879',0,.85,-.01,.62,.58,.38);part(g,'hat brim','#39456c',0,1.95,0,1,1,1,brim);part(g,'wizard hat','#495986',0,2.38,0,1,1,1,hat).rotation.z=-.14;part(g,'gold charm','#dbbc64',-.035,2.21,.26,.12,.16,.04).rotation.z=.7;}
+ if(wizard){part(g,'robe','#444879',0,.85,-.01,.62,.58,.38);part(g,'hat brim','#39456c',0,1.97,0,1,1,1,brim);part(g,'wizard hat','#495986',0,2.725,0,1,1,1,hat);part(g,'gold charm','#dbbc64',-.035,2.21,.26,.12,.16,.04).rotation.z=.7;}
  g.userData.hips=hips;g.userData.arms=arms;g.userData.character=choice.id;return g;
 }
 

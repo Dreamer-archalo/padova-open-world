@@ -1,3 +1,6 @@
+import {createWedgeCar} from './sport-models.js';
+import {motorwayBarriers} from './motorways.js';
+import {surfaceBatch} from './surface-layers.js';
 import {batchStatic} from './render-batch.js';
 import {qualityFor} from './quality.js';
 import {modernFootprints} from './modern-map.js';
@@ -99,7 +102,7 @@ export class CityWorld{
   if(terrain){
    // Stone balustrades of the four Prato bridges use the same local frame as the water mask.
    for(const [x,z,yaw,width] of [[0,130.5,0,11],[0,-130.5,0,11],[85.5,0,Math.PI/2,9],[-85.5,0,Math.PI/2,9]])for(const side of [-1,1]){const px=x+Math.cos(yaw)*(width/2+.2)*side,pz=z-Math.sin(yaw)*(width/2+.2)*side,c=Math.cos(PRATO.yaw),s=Math.sin(PRATO.yaw),wx=PRATO.x+c*px+s*pz,wz=PRATO.z-s*px+c*pz,a=yaw+PRATO.yaw,points=[[-.25,-7],[.25,-7],[.25,7],[-.25,7]].map(([u,v])=>[wx+Math.cos(a)*u+Math.sin(a)*v,wz-Math.sin(a)*u+Math.cos(a)*v]),xs=points.map(p=>p[0]),zs=points.map(p=>p[1]),b={p:points,minX:Math.min(...xs),maxX:Math.max(...xs),minZ:Math.min(...zs),maxZ:Math.max(...zs),minY:terrain.pratoHeight+.3,h:1.2};this.collision.add(b,b.minX,b.minZ,b.maxX,b.maxZ);}
-   this.structures=[...roadStructures(terrain),...gameplayStructures(terrain)];for(const b of this.structures){if(b.solid!==false)this.collision.add(b,b.minX,b.minZ,b.maxX,b.maxZ);this.chunk(b.x,b.z).structures.push(b);}this.details=cityDetails(scene,data,terrain);}
+   this.structures=[...roadStructures(terrain),...(terrain.modern?motorwayBarriers(terrain):[]),...gameplayStructures(terrain)];for(const b of this.structures){if(b.solid!==false)this.collision.add(b,b.minX,b.minZ,b.maxX,b.maxZ);this.chunk(b.x,b.z).structures.push(b);}this.details=cityDetails(scene,data,terrain);}
   for(const tree of gameplayVegetation(terrain))this.chunk(tree.x,tree.z).trees.push(tree);
  }
  chunk(x,z){const i=Math.floor(x/CHUNK),j=Math.floor(z/CHUNK),key=i+','+j;if(!this.chunks.has(key))this.chunks.set(key,{i,j,buildings:[],roads:[],water:[],areas:[],structures:[],trees:[]});return this.chunks.get(key);}
@@ -111,11 +114,12 @@ export class CityWorld{
   }
   const terrain=this.terrain,memo=fn=>{const cache=new Map();return (x,z)=>{const key=x+','+z;if(!cache.has(key))cache.set(key,fn(x,z));return cache.get(key);};},height=memo((x,z)=>terrain?terrain.height(x,z):0),groundHeight=memo((x,z)=>terrain.groundHeight(x,z)),water=memo((x,z)=>terrain?terrain.waterHeight(x,z):.012);
   if(terrain){const ground=new GeometryBatch(),color=col(Math.hypot(ch.i*CHUNK*.82,ch.j*CHUNK)<1550?'#b4aa91':'#8c9b73');
-   const tile=(x,z,size)=>{const half=size/2;if(size>4&&terrain.waterDistance(x+half,z+half)<size){for(const dx of [0,half])for(const dz of [0,half])tile(x+dx,z+dz,half);return;}ground.quad([x,groundHeight(x,z)-.08,z],[x,groundHeight(x,z+size)-.08,z+size],[x+size,groundHeight(x+size,z+size)-.08,z+size],[x+size,groundHeight(x+size,z)-.08,z],color);};
-   for(let x=ch.i*CHUNK;x<(ch.i+1)*CHUNK;x+=16){for(let z=ch.j*CHUNK;z<(ch.j+1)*CHUNK;z+=16)tile(x,z,16);yield;}
+   const groundWriter=terrain.modern?surfaceBatch(ground,terrain,{height:(x,z)=>groundHeight(x,z)-.08}):ground;
+   const tile=(x,z,size)=>{const half=size/2;if(size>4&&terrain.waterDistance(x+half,z+half)<size){for(const dx of [0,half])for(const dz of [0,half])tile(x+dx,z+dz,half);return;}groundWriter.quad([x,groundHeight(x,z)-.08,z],[x,groundHeight(x,z+size)-.08,z+size],[x+size,groundHeight(x+size,z+size)-.08,z+size],[x+size,groundHeight(x+size,z)-.08,z],color);};
+   for(let x=ch.i*CHUNK;x<(ch.i+1)*CHUNK;x+=16){for(let z=ch.j*CHUNK;z<(ch.j+1)*CHUNK;z+=16){tile(x,z,16);yield;}}
    const mesh=ground.mesh(this.groundMat);mesh.receiveShadow=true;g.add(mesh);
   }
-  for(const a of ch.areas)surface(surfaces,a.p,a.k==='water'&&!a.fountain?water:(x,z)=>height(x,z)-.02,col(a.k==='water'?'#639b9c':a.k==='pitch'?'#7d9e72':'#789961'));
+  for(const a of ch.areas)surface(terrain?.modern&&a.k!=='water'?surfaceBatch(surfaces,terrain,{height:(x,z)=>height(x,z)-.02}):surfaces,a.p,a.k==='water'&&!a.fountain?water:(x,z)=>height(x,z)-.02,col(a.k==='water'?'#639b9c':a.k==='pitch'?'#7d9e72':'#789961'));
   for(const r of ch.water)strip(surfaces,r.a,r.b,r.w,water,col('#659b9e'));
   if(terrain?.modern)yield* modernRoadSteps(surfaces,ch.roads,terrain);else {
   const roadJoins=new Set();for(const s of ch.roads){const k=s.road.k,ped=['pedestrian','footway','path','cycleway','steps'].includes(k),mx=(s.a[0]+s.b[0])/2,mz=(s.a[1]+s.b[1])/2,central=Math.hypot(mx*.82,mz)<1550,bridge=s.road.crossing,edge=bridge?'#c2b49a':ped&&central?'#d0c2a4':'#c3bca8',road=ped?(central?'#bdae91':'#b7b09a'):(central?'#696d69':'#6c7472');
@@ -163,7 +167,7 @@ export class CityWorld{
  setQuality(q){if(!this.terrain?.modern){this.radius=q==='low'?680:q==='high'?1450:1050;this.lastKey='';return;}this.quality=q;this.profile=qualityFor(q);this.radius=this.profile.radius;this.lastKey='';for(const g of this.loaded.values())this.applyChunkQuality(g);}
 
 }
-export function createCar(color='#e6c97f',police=false,style='sedan'){const g=new THREE.Group();box(g,'#222f32',0,.45,0,1.8,.35,4.05);box(g,color,0,.85,0,1.85,.62,3.95);box(g,color,0,1.33,-.25,1.65,.64,2.18);box(g,'#334e59',0,1.38,.88,1.48,.49,.035).rotation.x=.2;box(g,'#344e59',0,1.38,-1.37,1.45,.44,.035).rotation.x=-.18;for(const side of [-1,1]){box(g,'#3c5860',side*.835,1.38,-.25,.03,.44,1.98);box(g,color,side*.86,1.37,-.23,.05,.58,.085);for(const z of [-1.29,1.25]){const wheel=primitive(g,cylinderGeo,'#20282a',side*.94,.43,z,.37,.19,.37);wheel.rotation.z=Math.PI/2;const hub=primitive(g,cylinderGeo,'#a7b2b0',side*1.045,.43,z,.2,.012,.2);hub.rotation.z=Math.PI/2;}}
+export function createCar(color='#e6c97f',police=false,style='sedan'){if(style==='sport'&&!police)return createWedgeCar(color,1.98,4.55,1.2,true);const g=new THREE.Group();box(g,'#222f32',0,.45,0,1.8,.35,4.05);box(g,color,0,.85,0,1.85,.62,3.95);box(g,color,0,1.33,-.25,1.65,.64,2.18);box(g,'#334e59',0,1.38,.88,1.48,.49,.035).rotation.x=.2;box(g,'#344e59',0,1.38,-1.37,1.45,.44,.035).rotation.x=-.18;for(const side of [-1,1]){box(g,'#3c5860',side*.835,1.38,-.25,.03,.44,1.98);box(g,color,side*.86,1.37,-.23,.05,.58,.085);for(const z of [-1.29,1.25]){const wheel=primitive(g,cylinderGeo,'#20282a',side*.94,.43,z,.37,.19,.37);wheel.rotation.z=Math.PI/2;const hub=primitive(g,cylinderGeo,'#a7b2b0',side*1.045,.43,z,.2,.012,.2);hub.rotation.z=Math.PI/2;}}
  for(const x of [-.59,.59]){box(g,'#fff6c8',x,.9,1.99,.48,.2,.025);box(g,'#c34436',x,.9,-1.99,.45,.18,.025);}box(g,'#bfc0a8',0,.65,2.01,.54,.18,.025);box(g,'#8a9692',0,.53,2.02,1.65,.12,.05);box(g,'#8a9692',0,.53,-2.02,1.65,.12,.05);
  if(style==='sport'){g.scale.set(1.03,.88,1.08);box(g,color,0,1.15,-2.02,1.6,.08,.3);box(g,'#252d30',0,1.28,-2.02,1.25,.08,.12);}else if(style==='compact'){g.scale.set(.93,1.02,.88);}else if(style==='wagon'){box(g,color,0,1.36,-1.05,1.64,.68,1.25);box(g,'#344e59',0,1.42,-1.69,1.45,.5,.035).rotation.x=-.08;}else if(style==='utility'){g.scale.set(1.04,1.06,1.1);box(g,color,0,1.42,-.85,1.7,.88,1.5);box(g,'#2e454d',0,1.46,-1.62,1.48,.62,.035);}
  if(police){box(g,'#e1e6e3',0,.89,0,1.89,.28,3.3);box(g,'#163946',0,.96,0,1.92,.13,3.35);box(g,'#29383e',0,1.71,-.15,1.1,.1,.3);const blue=box(g,'#348dff',-.36,1.84,-.15,.35,.19,.3),red=box(g,'#e96b54',.36,1.84,-.15,.35,.19,.3);g.userData.lights=[blue,red];}

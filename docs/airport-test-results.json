@@ -56,7 +56,7 @@
     "startsMoving": true,
     "routeMetres": 2605.9336264207363,
     "maxKmh": 158.4,
-    "progressMetres": 466.0721327535863,
+    "progressMetres": 419.41807794271733,
     "crimeEnabled": true,
     "reward": 1000,
     "paidOnce": true
@@ -64,11 +64,11 @@
   "performance": {
     "interpolation120Frames": {
       "before": {
-        "milliseconds": 174.84035799999765,
-        "terrainQueries": 7320
+        "milliseconds": 189.8069770000002,
+        "terrainQueries": 10680
       },
       "after": {
-        "milliseconds": 4.505310000000463,
+        "milliseconds": 4.322915000004286,
         "terrainQueries": 0
       }
     },
