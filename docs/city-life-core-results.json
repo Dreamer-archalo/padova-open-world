@@ -1,0 +1,17 @@
+{
+  "guardrails": 19505,
+  "guardrailCollisionSamples": 314,
+  "gaps": 21,
+  "velox": 12,
+  "fine": 25,
+  "singleCharge": true,
+  "heldRotationSeconds": 20,
+  "trams": {
+    "hyper": 2,
+    "low": 3,
+    "medium": 4,
+    "high": 4
+  },
+  "runningAnimation": true,
+  "hatClearance": true
+}

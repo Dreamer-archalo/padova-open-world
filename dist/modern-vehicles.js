@@ -1,3 +1,4 @@
+import {createWedgeCar} from './sport-models.js';
 import {EXTRA_TRAFFIC} from './special-vehicles.js';
 import * as THREE from './vendor/three.module.js';
 import {VEHICLES} from './vehicles.js';
@@ -30,6 +31,7 @@ function mat(color){if(!materials.has(color))materials.set(color,new THREE.MeshS
 function box(g,c,x,y,z,w,h,d){const m=new THREE.Mesh(cube,mat(c));m.position.set(x,y,z);m.scale.set(w,h,d);g.add(m);return m;}
 export function createNPCCar(type,color='#76828c'){
  const s=NPC_VEHICLES[type],g=new THREE.Group(),{width:w,length:l,height:h,family:f,variant:v}=s;
+ if(['sport','supercar'].includes(f))return createWedgeCar(color,w,l,h,f==='supercar'||type==='vortice');
  const low=['sport','supercar','convertible'].includes(f),tall=['van','mpv','suv'].includes(f),bodyY=low?.43:.63,trim=['classic','luxury'].includes(f)?'#c2c3b4':'#30393e';
  box(g,color,0,bodyY,0,w*.89,low?.43:.58,l*.97);
  const roofLength=l*(f==='van'?.72:f==='wagon'?.65:f==='pickup'?.36:tall?.57:.45),roofZ=f==='pickup'?l*.13:-l*.08;

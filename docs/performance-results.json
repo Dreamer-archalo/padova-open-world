@@ -24,31 +24,31 @@
   ],
   "quality": {
     "medium": {
-      "people": 72,
-      "traffic": 30,
-      "calls": 956,
-      "triangles": 175452
+      "people": 80,
+      "traffic": 52,
+      "calls": 1053,
+      "triangles": 268114
     },
     "hyper": {
-      "people": 12,
-      "traffic": 8,
-      "calls": 79,
-      "triangles": 97727
+      "people": 24,
+      "traffic": 24,
+      "calls": 124,
+      "triangles": 195845
     },
     "low": {
-      "people": 32,
-      "traffic": 16,
-      "calls": 222,
-      "triangles": 118742
+      "people": 40,
+      "traffic": 36,
+      "calls": 205,
+      "triangles": 203434
     }
   },
   "adaptivePixelRatioFloor": 0.45,
-  "updatePeople120TicksMs": 22.536638000001403,
-  "updateTraffic120TicksMs": 28.739605000002484,
-  "updateCamera120TicksMs": 17.479763000003004,
+  "updatePeople120TicksMs": 62.16623700000491,
+  "updateTraffic120TicksMs": 37.206240999999864,
+  "updateCamera120TicksMs": 19.81432300000597,
   "chunkStreaming": {
-    "yieldPoints": 483,
-    "maxSliceMs": 22.609615999997914
+    "yieldPoints": 1940,
+    "maxSliceMs": 193.5371210000012
   },
   "browser": {
     "initialQualitySelector": "passed",
