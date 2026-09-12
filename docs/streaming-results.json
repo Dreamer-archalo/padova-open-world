@@ -1,0 +1,65 @@
+{
+  "scenarios": [
+    {
+      "name": "teletrasporto",
+      "coreReadyMs": 6069.2,
+      "maxUpdateMs": 5.1,
+      "peakQueue": 14,
+      "loaded": 4,
+      "prefetch": 0
+    },
+    {
+      "name": "auto massima velocità",
+      "coreReadyMs": 1222.2,
+      "maxUpdateMs": 1.9,
+      "peakQueue": 15,
+      "loaded": 5,
+      "prefetch": 300
+    },
+    {
+      "name": "Cinquecento Turbo",
+      "coreReadyMs": 175.9,
+      "maxUpdateMs": 1.3,
+      "peakQueue": 14,
+      "loaded": 2,
+      "prefetch": 389
+    },
+    {
+      "name": "moto",
+      "coreReadyMs": 667.5,
+      "maxUpdateMs": 6.2,
+      "peakQueue": 15,
+      "loaded": 4,
+      "prefetch": 288
+    },
+    {
+      "name": "elicottero",
+      "coreReadyMs": 122.9,
+      "maxUpdateMs": 0.8,
+      "peakQueue": 19,
+      "loaded": 5,
+      "prefetch": 590
+    },
+    {
+      "name": "aereo",
+      "coreReadyMs": 1955,
+      "maxUpdateMs": 5.2,
+      "peakQueue": 29,
+      "loaded": 4,
+      "prefetch": 1260
+    },
+    {
+      "name": "cambio rapido direzione",
+      "coreReadyMs": 3576.8,
+      "maxUpdateMs": 7.7,
+      "peakQueue": 15,
+      "loaded": 3,
+      "prefetch": 388
+    }
+  ],
+  "measurement": "Node controller + actual geometry worker; CPU timings, not GPU FPS",
+  "initialSnapshotMs": 363.5099279999995,
+  "destinationPrefetchMs": 2357.395046000005,
+  "detailAndRefreshMs": 839.050000999996,
+  "cancelledStaleJobs": 8
+}

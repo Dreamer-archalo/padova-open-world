@@ -12,6 +12,7 @@
     "test:performance": "node --max-old-space-size=3072 verify-performance.mjs",
     "test:fullscreen": "node verify-fullscreen.mjs",
     "test:city-life": "node --max-old-space-size=3072 verify-city-life-core.mjs",
-    "audit:surfaces": "node --max-old-space-size=3072 verify-surface-layers.mjs"
+    "audit:surfaces": "node --max-old-space-size=3072 verify-surface-layers.mjs",
+    "test:streaming": "node --max-old-space-size=3072 verify-streaming.mjs"
   }
 }
