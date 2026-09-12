@@ -26,33 +26,32 @@
     "medium": {
       "people": 80,
       "traffic": 52,
-      "calls": 1053,
-      "triangles": 268114
+      "calls": 1052,
+      "triangles": 264101
     },
     "hyper": {
       "people": 24,
       "traffic": 24,
-      "calls": 124,
-      "triangles": 195845
+      "calls": 122,
+      "triangles": 195821
     },
     "low": {
       "people": 40,
       "traffic": 36,
-      "calls": 205,
-      "triangles": 203434
+      "calls": 172,
+      "triangles": 201310
     }
   },
   "adaptivePixelRatioFloor": 0.45,
-  "updatePeople120TicksMs": 62.16623700000491,
-  "updateTraffic120TicksMs": 37.206240999999864,
-  "updateCamera120TicksMs": 19.81432300000597,
+  "updatePeople120TicksMs": 82.79460900000413,
+  "updateTraffic120TicksMs": 45.15240400000039,
+  "updateCamera120TicksMs": 24.84947000000102,
   "chunkStreaming": {
-    "yieldPoints": 1940,
-    "maxSliceMs": 193.5371210000012
+    "yieldPoints": 3701,
+    "maxSliceMs": 220.75752899999497
   },
   "browser": {
-    "initialQualitySelector": "passed",
-    "threeD": "not runnable: cloud Chrome reports GL_RENDERER Disabled",
+    "threeD": "not performed in this run",
     "fps": "not measured; controller CPU and draw submissions are not end-user FPS"
   }
 }

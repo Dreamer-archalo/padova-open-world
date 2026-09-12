@@ -1,3 +1,4 @@
+import {CityStream} from './streaming.js';
 import {createWedgeCar} from './sport-models.js';
 import {motorwayBarriers} from './motorways.js';
 import {surfaceBatch} from './surface-layers.js';
@@ -108,11 +109,10 @@ export class CityWorld{
  chunk(x,z){const i=Math.floor(x/CHUNK),j=Math.floor(z/CHUNK),key=i+','+j;if(!this.chunks.has(key))this.chunks.set(key,{i,j,buildings:[],roads:[],water:[],areas:[],structures:[],trees:[]});return this.chunks.get(key);}
  addSegments(a,b,w,k,road){const d=Math.hypot(b[0]-a[0],b[1]-a[1]),n=Math.max(1,Math.ceil(d/120));for(let i=0;i<n;i++){const p=[a[0]+(b[0]-a[0])*i/n,a[1]+(b[1]-a[1])*i/n],q=[a[0]+(b[0]-a[0])*(i+1)/n,a[1]+(b[1]-a[1])*(i+1)/n];this.chunk((p[0]+q[0])/2,(p[1]+q[1])/2)[k==='road'?'roads':'water'].push({a:p,b:q,w,road});}}
  build(key){for(const _ of this.buildSteps(key)){} }
- *buildSteps(key){const ch=this.chunks.get(key);if(!ch)return;const g=new THREE.Group(),wallBatches={historic:new GeometryBatch(),modern:new GeometryBatch(),industrial:new GeometryBatch()},roofs=new GeometryBatch(),surfaces=new GeometryBatch();
-  for(const b of ch.buildings){yield;if(b.modelActive||b.authoredLandmark)continue;const p=b.p,h=b.h,zone=this.terrain?.districts?.at(b.cx,b.cz),central=zone?zone==='historic':Math.hypot(b.cx*.82,b.cz)<1550,historic=central||['church','chapel','basilica','historic','civic','museum','theatre'].includes(b.t),industrial=zone==='industrial'||['industrial','warehouse','hangar','commercial','retail','supermarket','mall'].includes(b.t),walls=industrial?wallBatches.industrial:historic?wallBatches.historic:wallBatches.modern,color=zone==='wild'?col(['#777965','#909080','#726d61'][b.c%3]):industrial?col(['#aaaba3','#969b99','#b2afa4'][b.c%3]):wallColors[b.c];walls.baseY=roofs.baseY=b.minY;for(let i=0;i<p.length;i++){const a=p[i],q=p[(i+1)%p.length],len=Math.hypot(q[0]-a[0],q[1]-a[1]);walls.quad([a[0],this.terrain?Math.min(.15,this.terrain.groundHeight(a[0],a[1])-b.minY-.15):.15,a[1]],[q[0],this.terrain?Math.min(.15,this.terrain.groundHeight(q[0],q[1])-b.minY-.15):.15,q[1]],[q[0],h,q[1]],[a[0],h,a[1]],color,Math.max(1,Math.round(len/(industrial?7:historic?6.6:13.8))),Math.max(1,Math.round(h/(industrial?5:historic?6.2:9.3))));}surface(roofs,p,h+.08,industrial?col('#8b8c86'):roofColors[b.c]);if(central&&b.c===0&&h>8)portico(roofs,p);
-   if(p.length===4&&b.h<18&&b.t!=='industrial'&&b.t!=='warehouse'){let a=p[0],q=p[1],c=p[2],d=p[3];if(Math.hypot(q[0]-a[0],q[1]-a[1])>Math.hypot(c[0]-q[0],c[1]-q[1]))[a,q,c,d]=[q,c,d,a];const m=[(a[0]+q[0])/2,h+2,(a[1]+q[1])/2],n=[(c[0]+d[0])/2,h+2,(c[1]+d[1])/2];roofs.quad([a[0],h,a[1]],m,n,[d[0],h,d[1]],roofColors[b.c]);roofs.quad(m,[q[0],h,q[1]],[c[0],h,c[1]],n,roofColors[b.c]);roofs.tri([a[0],h,a[1]],[q[0],h,q[1]],m,wallColors[b.c]);roofs.tri([c[0],h,c[1]],[d[0],h,d[1]],n,wallColors[b.c]);}
-  }
+ *buildSteps(key){yield* this.buildStageSteps(key,'core');yield* this.buildStageSteps(key,'detail');}
+ *buildStageSteps(key,stage){const ch=this.chunks.get(key);if(!ch)return;const g=new THREE.Group(),wallBatches={historic:new GeometryBatch(),modern:new GeometryBatch(),industrial:new GeometryBatch()},roofs=new GeometryBatch(),surfaces=new GeometryBatch();
   const terrain=this.terrain,memo=fn=>{const cache=new Map();return (x,z)=>{const key=x+','+z;if(!cache.has(key))cache.set(key,fn(x,z));return cache.get(key);};},height=memo((x,z)=>terrain?terrain.height(x,z):0),groundHeight=memo((x,z)=>terrain.groundHeight(x,z)),water=memo((x,z)=>terrain?terrain.waterHeight(x,z):.012);
+  if(stage==='core'){
   if(terrain){const ground=new GeometryBatch(),color=col(Math.hypot(ch.i*CHUNK*.82,ch.j*CHUNK)<1550?'#b4aa91':'#8c9b73');
    const groundWriter=terrain.modern?surfaceBatch(ground,terrain,{height:(x,z)=>groundHeight(x,z)-.08}):ground;
    const tile=(x,z,size)=>{const half=size/2;if(size>4&&terrain.waterDistance(x+half,z+half)<size){for(const dx of [0,half])for(const dz of [0,half])tile(x+dx,z+dz,half);return;}groundWriter.quad([x,groundHeight(x,z)-.08,z],[x,groundHeight(x,z+size)-.08,z+size],[x+size,groundHeight(x+size,z+size)-.08,z+size],[x+size,groundHeight(x+size,z)-.08,z],color);};
@@ -121,7 +121,7 @@ export class CityWorld{
   }
   for(const a of ch.areas)surface(terrain?.modern&&a.k!=='water'?surfaceBatch(surfaces,terrain,{height:(x,z)=>height(x,z)-.02}):surfaces,a.p,a.k==='water'&&!a.fountain?water:(x,z)=>height(x,z)-.02,col(a.k==='water'?'#639b9c':a.k==='pitch'?'#7d9e72':'#789961'));
   for(const r of ch.water)strip(surfaces,r.a,r.b,r.w,water,col('#659b9e'));
-  if(terrain?.modern)yield* modernRoadSteps(surfaces,ch.roads,terrain);else {
+  if(terrain?.modern){const roads=new GeometryBatch();yield* modernRoadSteps(roads,ch.roads,terrain,{coarse:true});const mesh=roads.mesh(this.groundMat);if(mesh){mesh.userData.streamRoads=true;g.add(mesh);}}else {
   const roadJoins=new Set();for(const s of ch.roads){const k=s.road.k,ped=['pedestrian','footway','path','cycleway','steps'].includes(k),mx=(s.a[0]+s.b[0])/2,mz=(s.a[1]+s.b[1])/2,central=Math.hypot(mx*.82,mz)<1550,bridge=s.road.crossing,edge=bridge?'#c2b49a':ped&&central?'#d0c2a4':'#c3bca8',road=ped?(central?'#bdae91':'#b7b09a'):(central?'#696d69':'#6c7472');
    const roadY=(x,z)=>terrain?terrain.roads.sample(s.road,x,z)+.075:.075;
    strip(surfaces,s.a,s.b,s.w+(bridge?3:1.5),(x,z)=>roadY(x,z)-.02,col(edge));strip(surfaces,s.a,s.b,s.w,roadY,col(road));
@@ -130,8 +130,17 @@ export class CityWorld{
    if(k==='tram')strip(surfaces,s.a,s.b,.13,(x,z)=>roadY(x,z)+.03,col('#c8cfca'));
    if(s.w>=8&&!ped){const dx=s.b[0]-s.a[0],dz=s.b[1]-s.a[1],d=Math.hypot(dx,dz);for(let t=0;t<d-3;t+=13){const a=[s.a[0]+dx*t/d,s.a[1]+dz*t/d],b=[s.a[0]+dx*Math.min(t+4,d)/d,s.a[1]+dz*Math.min(t+4,d)/d];strip(surfaces,a,b,.14,(x,z)=>roadY(x,z)+.007,col('#c7c6ae'));}}}
   }
-  for(const type of Object.keys(wallBatches)){const mesh=wallBatches[type].mesh(this.wallMats[type]);if(mesh){mesh.receiveShadow=true;g.add(mesh);}}for(const [b,m] of [[roofs,this.roofMat],[surfaces,this.groundMat]]){const mesh=b.mesh(m);if(mesh){mesh.receiveShadow=true;g.add(mesh);}}
-  const structureBatch=new GeometryBatch();for(const b of ch.structures){const color=col(b.color||(b.kind==='parapet'?'#bdb29d':'#a8a79b')),bottom=b.p.map(p=>[p[0],b.y,p[1]]),top=b.p.map(p=>[p[0],b.y+b.h,p[1]]);for(let i=0;i<4;i++){const j=(i+1)%4;structureBatch.quad(bottom[i],bottom[j],top[j],top[i],color);}structureBatch.quad(...top,color);structureBatch.quad(...bottom.slice().reverse(),color);}const structures=structureBatch.mesh(this.roofMat);if(structures)g.add(structures);
+   const mesh=surfaces.mesh(this.groundMat);if(mesh){mesh.receiveShadow=true;g.add(mesh);}
+  const structureBatch=new GeometryBatch();let count=0;for(const b of ch.structures){if(count++%24===0)yield;const color=col(b.color||(b.kind==='parapet'?'#bdb29d':'#a8a79b')),bottom=b.p.map(p=>[p[0],b.y,p[1]]),top=b.p.map(p=>[p[0],b.y+b.h,p[1]]);for(let i=0;i<4;i++){const j=(i+1)%4;structureBatch.quad(bottom[i],bottom[j],top[j],top[i],color);}structureBatch.quad(...top,color);structureBatch.quad(...bottom.slice().reverse(),color);}const structures=structureBatch.mesh(this.roofMat);if(structures)g.add(structures);
+  }
+  for(const b of ch.buildings){yield;if(b.modelActive||b.authoredLandmark)continue;const p=b.p,h=b.h,zone=this.terrain?.districts?.at(b.cx,b.cz),central=zone?zone==='historic':Math.hypot(b.cx*.82,b.cz)<1550,historic=central||['church','chapel','basilica','historic','civic','museum','theatre'].includes(b.t),industrial=zone==='industrial'||['industrial','warehouse','hangar','commercial','retail','supermarket','mall'].includes(b.t),walls=industrial?wallBatches.industrial:historic?wallBatches.historic:wallBatches.modern,color=zone==='wild'?col(['#777965','#909080','#726d61'][b.c%3]):industrial?col(['#aaaba3','#969b99','#b2afa4'][b.c%3]):wallColors[b.c];walls.baseY=roofs.baseY=b.minY;for(let i=0;i<p.length;i++){const a=p[i],q=p[(i+1)%p.length],len=Math.hypot(q[0]-a[0],q[1]-a[1]);walls.quad([a[0],this.terrain?Math.min(.15,this.terrain.groundHeight(a[0],a[1])-b.minY-.15):.15,a[1]],[q[0],this.terrain?Math.min(.15,this.terrain.groundHeight(q[0],q[1])-b.minY-.15):.15,q[1]],[q[0],h,q[1]],[a[0],h,a[1]],color,Math.max(1,Math.round(len/(industrial?7:historic?6.6:13.8))),Math.max(1,Math.round(h/(industrial?5:historic?6.2:9.3))));}surface(roofs,p,h+.08,industrial?col('#8b8c86'):roofColors[b.c]);if(stage!=='core'&&central&&b.c===0&&h>8)portico(roofs,p);
+   if(stage!=='core'&&p.length===4&&b.h<18&&b.t!=='industrial'&&b.t!=='warehouse'){let a=p[0],q=p[1],c=p[2],d=p[3];if(Math.hypot(q[0]-a[0],q[1]-a[1])>Math.hypot(c[0]-q[0],c[1]-q[1]))[a,q,c,d]=[q,c,d,a];const m=[(a[0]+q[0])/2,h+2,(a[1]+q[1])/2],n=[(c[0]+d[0])/2,h+2,(c[1]+d[1])/2];roofs.quad([a[0],h,a[1]],m,n,[d[0],h,d[1]],roofColors[b.c]);roofs.quad(m,[q[0],h,q[1]],[c[0],h,c[1]],n,roofColors[b.c]);roofs.tri([a[0],h,a[1]],[q[0],h,q[1]],m,wallColors[b.c]);roofs.tri([c[0],h,c[1]],[d[0],h,d[1]],n,wallColors[b.c]);}
+  }
+
+  for(const type of Object.keys(wallBatches)){const mesh=wallBatches[type].mesh(stage==='core'?this.groundMat:this.wallMats[type]);if(mesh){mesh.userData.streamBuildings=true;mesh.receiveShadow=true;g.add(mesh);}yield;}
+  const roof=roofs.mesh(this.roofMat);if(roof){roof.userData.streamBuildings=true;roof.receiveShadow=true;g.add(roof);}yield;
+  if(stage==='detail'){
+  if(terrain?.modern){const roads=new GeometryBatch();yield* modernRoadSteps(roads,ch.roads,terrain);const mesh=roads.mesh(this.groundMat);if(mesh){mesh.userData.streamRoads=true;g.add(mesh);}}
   // Deterministic candidates are pooled in chunk-level instances. The same exclusion
   // query checks footprints, all road classes, tram tracks, bridges and water.
   const trees=[...ch.trees],districts=terrain?.districts,hash=n=>{const v=Math.sin(n*127.1+ch.i*311.7+ch.j*74.7)*43758.5453;return v-Math.floor(v);};
@@ -144,25 +153,29 @@ export class CityWorld{
   }
   g.userData.vegetation=trees;
   if(trees.length){const trunks=new THREE.InstancedMesh(cylinderGeo,material('#7b7250'),trees.length),tops=new THREE.InstancedMesh(sphereGeo,material('#496e48'),trees.length);trunks.userData.treeCount=tops.userData.treeCount=trees.length;trunks.userData.authoredTrees=tops.userData.authoredTrees=ch.trees.length;const o=new THREE.Object3D();trees.forEach((t,i)=>{const y=height(t.x,t.z);o.position.set(t.x,t.s*.4+y,t.z);o.scale.set(.38,t.s*.8,.38);o.updateMatrix();trunks.setMatrixAt(i,o.matrix);o.position.y=t.s+y;o.scale.set(t.s*.56,t.s*.7,t.s*.56);o.updateMatrix();tops.setMatrixAt(i,o.matrix);});g.add(trunks,tops);}
-  g.traverse(o=>{o.updateMatrix();o.matrixAutoUpdate=false;});this.applyChunkQuality(g);this.scene.add(g);this.loaded.set(key,g);
- }
- update(x,z,force=false){
-  if(!this.terrain?.modern)return this.updateLegacy(x,z,force);
-  this.details?.update(x,z);if(this.details)this.details.root.visible=!this.profile.simple;
-  for(const o of this.landmarks.children){o.visible=!o.userData.modelHidden&&Math.hypot((o.userData.lodCentre?.x??o.position.x)-x,(o.userData.lodCentre?.z??o.position.z)-z)<this.radius+180;}
-  const i=Math.floor(x/CHUNK),j=Math.floor(z/CHUNK),sig=i+','+j+','+this.radius;
-  if(sig!==this.lastKey||force){this.lastKey=sig;const r=Math.ceil(this.radius/CHUNK),keys=[];for(let a=i-r;a<=i+r;a++)for(let b=j-r;b<=j+r;b++){const key=a+','+b;if(this.chunks.has(key))keys.push({key,d:Math.hypot((a+.5)*CHUNK-x,(b+.5)*CHUNK-z)});}keys.sort((a,b)=>a.d-b.d);this.queue=keys.filter(k=>!this.loaded.has(k.key)&&k.key!==this.pendingBuild?.key).map(k=>k.key);
-   for(const [key,g] of this.loaded){const ch=this.chunks.get(key);g.visible=Math.abs(ch.i-i)<=r&&Math.abs(ch.j-j)<=r;if(Math.abs(ch.i-i)>r+1||Math.abs(ch.j-j)>r+1){this.scene.remove(g);g.traverse(o=>{if(o.isMesh&&!o.isInstancedMesh)o.geometry.dispose();if(o.isInstancedMesh)o.dispose();});this.loaded.delete(key);}}
+
   }
-  // Cooperative chunk construction keeps a long ground/road batch out of one
-  // frame. Physics uses the complete map, independently of visual streaming.
-  const deadline=performance.now()+(force?18:5);
-  do{if(!this.pendingBuild){const key=this.queue.shift();if(!key)break;this.pendingBuild={key,steps:this.buildSteps(key)};}
-   if(this.pendingBuild.steps.next().done)this.pendingBuild=null;
-  }while(performance.now()<deadline);
+  g.traverse(o=>{o.updateMatrix();o.matrixAutoUpdate=false;});this.applyChunkQuality(g);this.installStage(key,g,stage);
  }
+ installStage(key,g,stage){
+  let root=this.loaded.get(key);if(!root){root=new THREE.Group();this.loaded.set(key,root);this.scene.add(root);}
+  if(stage==='core'){for(const child of [...root.children])this.disposePart(child);root.add(g);root.userData.coreReady=true;root.userData.detailReady=false;}
+  else{const replaced=[];root.traverse(o=>{if(o.userData.streamBuildings||o.userData.streamRoads)replaced.push(o);});for(const o of replaced)this.disposePart(o);root.add(g);root.userData.detailReady=true;}
+  root.userData[stage]=g;if(stage==='detail')root.userData.vegetation=g.userData.vegetation||[];this.applyChunkQuality(root);
+ }
+ disposePart(g){g.parent?.remove(g);g.traverse(o=>{if(o.isMesh&&!o.isInstancedMesh)o.geometry.dispose();if(o.isInstancedMesh)o.dispose();});}
+ update(x,z,force=false,motion={}){
+  if(!this.terrain?.modern)return this.updateLegacy(x,z,force);
+  this.streaming??=new CityStream(this);
+  this.streaming.update({x,z,...motion},force);
+  if(!this.streaming.metrics.pressure){this.details?.update(x,z);}
+  if(this.details)this.details.root.visible=!this.profile.simple&&!this.streaming.metrics.pressure;
+  for(const o of this.landmarks.children)o.visible=!o.userData.modelHidden&&Math.hypot((o.userData.lodCentre?.x??o.position.x)-x,(o.userData.lodCentre?.z??o.position.z)-z)<this.radius+180;
+ }
+ coreReady(x,z,radius=160){return this.streaming?.coreReady(x,z,radius)||false;}
+ prefetch(x,z,radius=480){this.streaming??=new CityStream(this);return this.streaming.prefetch(x,z,radius);}
  updateLegacy(x,z,force=false){this.details?.update(x,z);const i=Math.floor(x/CHUNK),j=Math.floor(z/CHUNK),sig=i+','+j+','+this.radius;if(sig!==this.lastKey||force){this.lastKey=sig;const r=Math.ceil(this.radius/CHUNK),keys=[];for(let a=i-r;a<=i+r;a++)for(let b=j-r;b<=j+r;b++){const key=a+','+b;if(this.chunks.has(key))keys.push({key,d:Math.hypot((a+.5)*CHUNK-x,(b+.5)*CHUNK-z)});}keys.sort((a,b)=>a.d-b.d);this.queue=keys.filter(k=>!this.loaded.has(k.key)).map(k=>k.key);for(const [key,g] of this.loaded){const ch=this.chunks.get(key);g.visible=Math.abs(ch.i-i)<=r&&Math.abs(ch.j-j)<=r;if(Math.abs(ch.i-i)>r+2||Math.abs(ch.j-j)>r+2){this.scene.remove(g);g.traverse(o=>{if(o.isMesh&&!o.isInstancedMesh)o.geometry.dispose();if(o.isInstancedMesh)o.dispose();});this.loaded.delete(key);}}}const count=force?12:1;for(let k=0;k<count&&this.queue.length;k++)this.build(this.queue.shift());}
- refreshBuilding(b){const key=Math.floor(b.cx/CHUNK)+','+Math.floor(b.cz/CHUNK),g=this.loaded.get(key);if(!g)return;this.scene.remove(g);g.traverse(o=>{if(o.isMesh&&!o.isInstancedMesh)o.geometry.dispose();if(o.isInstancedMesh)o.dispose();});this.loaded.delete(key);this.build(key);}
+ refreshBuilding(b){const key=Math.floor(b.cx/CHUNK)+','+Math.floor(b.cz/CHUNK),g=this.loaded.get(key);if(!g)return;if(this.terrain?.modern){this.streaming??=new CityStream(this);this.streaming.invalidate(key);return;}this.disposePart(g);this.loaded.delete(key);this.build(key);}
  applyChunkQuality(g){g.traverse(o=>{if(!o.isMesh)return;if(this.detailMats.has(o.material))o.userData.detailedMaterial=o.material;if(o.userData.detailedMaterial)o.material=this.profile.simple?this.flatMat:o.userData.detailedMaterial;if(o.isInstancedMesh&&o.userData.treeCount){o.count=Math.max(o.userData.authoredTrees,Math.floor(o.userData.treeCount*this.profile.trees));}});}
  setQuality(q){if(!this.terrain?.modern){this.radius=q==='low'?680:q==='high'?1450:1050;this.lastKey='';return;}this.quality=q;this.profile=qualityFor(q);this.radius=this.profile.radius;this.lastKey='';for(const g of this.loaded.values())this.applyChunkQuality(g);}
 
