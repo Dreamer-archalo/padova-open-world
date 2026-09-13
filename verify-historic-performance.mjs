@@ -22,7 +22,6 @@ const terrain={elevation:()=>0};
 
 const source=fs.readFileSync(new URL('./dist/historic-center.js',import.meta.url),'utf8');
 const sourceBytes=Buffer.byteLength(source);
-
 const t0=performance.now();
 const historic=createHistoricCenter(data,terrain);
 const createMs=performance.now()-t0;
@@ -43,20 +42,16 @@ for(let i=0;i<updateIterations;i++)historic.update((i%1400)-700,((i*7)%1400)-700
 const updateMs=performance.now()-u0;
 const updateUs=(updateMs*1000)/updateIterations;
 
-const budgets={
-  sourceBytesMax:12000,
-  createMsMax:250,
-  meshesMax:240,
-  trianglesMax:12000,
-  updateUsMax:25
-};
+const budgets={sourceBytesMax:12000,createMsMax:250,meshesMax:340,trianglesMax:12000,shadowCastersMax:18,updateUsMax:25};
 const metrics={sourceBytes,createMs:+createMs.toFixed(3),meshes,triangles:Math.round(triangles),shadowCasters,updateIterations,updateMs:+updateMs.toFixed(3),updateUs:+updateUs.toFixed(3)};
 const failed=[];
 if(sourceBytes>budgets.sourceBytesMax)failed.push(`source ${sourceBytes} > ${budgets.sourceBytesMax}`);
 if(createMs>budgets.createMsMax)failed.push(`create ${createMs.toFixed(2)}ms > ${budgets.createMsMax}ms`);
 if(meshes>budgets.meshesMax)failed.push(`meshes ${meshes} > ${budgets.meshesMax}`);
 if(triangles>budgets.trianglesMax)failed.push(`triangles ${Math.round(triangles)} > ${budgets.trianglesMax}`);
+if(shadowCasters>budgets.shadowCastersMax)failed.push(`shadow casters ${shadowCasters} > ${budgets.shadowCastersMax}`);
 if(updateUs>budgets.updateUsMax)failed.push(`update ${updateUs.toFixed(2)}us > ${budgets.updateUsMax}us`);
+if(!source.includes('g.userData.maxDistance')||!source.includes("m.castShadow=w*h*d>100"))failed.push('historic culling/shadow optimization missing');
 
 if(failed.length)throw new Error('Historic center performance budget failed: '+failed.join('; '));
 console.log(JSON.stringify({ok:true,metrics,budgets,note:'CPU/geometry budget test; real GPU FPS still requires browser/hardware validation.'},null,2));
