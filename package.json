@@ -22,6 +22,7 @@
     "test:phase2-polish": "node --check dist/modern-gameplay.js && node --check dist/cruise-control.js && node verify-phase2-polish.mjs",
     "test:churches": "node --check dist/churches.js && node --check dist/city-details.js && node verify-churches.mjs",
     "test:historic-center": "node --check dist/historic-center.js && node --check dist/city-details.js && node verify-historic-center.mjs",
-    "test:historic-performance": "node --check dist/historic-center.js && node verify-historic-performance.mjs"
+    "test:historic-performance": "node --check dist/historic-center.js && node verify-historic-performance.mjs",
+    "test:street-life": "node --check dist/taxi-map-ui.js && node --check dist/cruise-control.js && node --check dist/traffic.js && node --check dist/ambient-pursuits.js && node --check dist/stadium.js && node --check dist/city-details.js && node verify-street-life.mjs && node verify-historic-performance.mjs"
   }
 }
