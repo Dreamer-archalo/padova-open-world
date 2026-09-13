@@ -21,7 +21,10 @@ const cube=new THREE.BoxGeometry(),sphere=new THREE.SphereGeometry(1,12,8),cylin
 function mesh(g,geo,color,x,y,z,w,h,d){const o=new THREE.Mesh(geo,material(color));o.position.set(x,y,z);o.scale.set(w,h,d);o.castShadow=o.receiveShadow=true;g.add(o);return o;}
 const box=(g,c,x,y,z,w,h,d)=>mesh(g,cube,c,x,y,z,w,h,d);
 function wheel(g,x,z,r=.31,y=r,width=.19){mesh(g,cylinder,'#202527',x,y,z,r,width,r).rotation.z=Math.PI/2;mesh(g,cylinder,'#bcc2c2',x+(x<0?-.01:.01),y,z,r*.61,width+.012,r*.61).rotation.z=Math.PI/2;mesh(g,cylinder,'#353c40',x,y,z,r*.2,width+.024,r*.2).rotation.z=Math.PI/2;}
-function body(g,color,sections){const p=[];for(let i=1;i<sections.length;i++){const [za,wa,ya,ha]=sections[i-1],[zb,wb,yb,hb]=sections[i],a=[[-wa,ya,za],[wa,ya,za],[wa*.88,ya+ha,za],[-wa*.88,ya+ha,za]],b=[[-wb,yb,zb],[wb,yb,zb],[wb*.88,yb+hb,zb],[-wb*.88,yb+hb,zb]];for(let j=0;j<4;j++){const k=(j+1)%4;p.push(...a[j],...b[j],...b[k],...a[j],...b[k],...a[k]);}if(i===1)p.push(...a[0],...a[1],...a[2],...a[0],...a[2],...a[3]);if(i===sections.length-1)p.push(...b[2],...b[1],...b[0],...b[3],...b[2],...b[0]);}const geometry=new THREE.BufferGeometry();geometry.setAttribute('position',new THREE.Float32BufferAttribute(p,3));geometry.computeVertexNormals();const m=new THREE.Mesh(geometry,material(color));m.material.side=THREE.DoubleSide;g.add(m);}
+// Build a closed, outward-facing shell. The previous winding pointed several body
+// panels inward; once cars were compacted into a single FrontSide mesh those faces
+// were culled, producing visible holes through the taxi/MiTo/Cinquecento bodywork.
+function body(g,color,sections){const p=[];for(let i=1;i<sections.length;i++){const [za,wa,ya,ha]=sections[i-1],[zb,wb,yb,hb]=sections[i],a=[[-wa,ya,za],[wa,ya,za],[wa*.88,ya+ha,za],[-wa*.88,ya+ha,za]],b=[[-wb,yb,zb],[wb,yb,zb],[wb*.88,yb+hb,zb],[-wb*.88,yb+hb,zb]];for(let j=0;j<4;j++){const k=(j+1)%4;p.push(...a[j],...b[k],...b[j],...a[j],...a[k],...b[k]);}if(i===1)p.push(...a[0],...a[2],...a[1],...a[0],...a[3],...a[2]);if(i===sections.length-1)p.push(...b[2],...b[0],...b[1],...b[3],...b[0],...b[2]);}const geometry=new THREE.BufferGeometry();geometry.setAttribute('position',new THREE.Float32BufferAttribute(p,3));geometry.computeVertexNormals();const m=new THREE.Mesh(geometry,material(color));g.add(m);}
 export function createVehicle(type,color){const g=new THREE.Group();
  if(type==='mito'||type==='cinquecento'){
   body(g,color,[[-2.03,.68,.4,.43],[-1.65,.86,.39,.55],[.95,.86,.4,.52],[1.76,.76,.43,.37],[2.03,.60,.43,.30]]);
@@ -39,8 +42,17 @@ export function createVehicle(type,color){const g=new THREE.Group();
   box(g,'#ede7cf',-.43,.68,2.00,.28,.11,.02);
  }else if(type==='taxi'){
   body(g,color,[[-2.2,.74,.42,.38],[-1.65,.98,.4,.55],[.7,.99,.4,.62],[1.75,.82,.43,.42],[2.2,.62,.45,.25]]);body(g,color,[[-1.42,.73,.92,.12],[-.92,.76,.94,.55],[.48,.72,.94,.5],[1.08,.67,.92,.05]]);
+  // Opaque inner cabin and side glass close the silhouette from oblique camera angles.
+  // This keeps the stylised low-poly shape but prevents seeing straight through the car.
+  box(g,'#1d292e',0,1.16,-.18,1.34,.44,1.72);
   box(g,'#284551',0,1.24,.66,1.38,.52,.04).rotation.x=.86;box(g,'#284551',0,1.2,-1.25,1.3,.43,.04).rotation.x=-.65;
-  for(const side of [-1,1]){for(const z of [-1.35,1.35])wheel(g,side*.87,z,.34,.35,.22);box(g,'#222b2d',side*.92,.72,-.05,.05,.13,1.95);box(g,'#fff1b5',side*.65,.82,2.13,.22,.18,.05);box(g,'#d84d38',side*.63,.81,-2.15,.22,.16,.05);}
+  for(const side of [-1,1]){
+   for(const z of [-1.35,1.35])wheel(g,side*.87,z,.34,.35,.22);
+   box(g,'#222b2d',side*.92,.72,-.05,.05,.13,1.95);
+   box(g,'#2d4b55',side*.755,1.23,.43,.035,.38,.66);box(g,'#2d4b55',side*.755,1.23,-.50,.035,.38,.72);
+   box(g,color,side*.78,1.22,-.05,.045,.46,.08);
+   box(g,'#fff1b5',side*.65,.82,2.13,.22,.18,.05);box(g,'#d84d38',side*.63,.81,-2.15,.22,.16,.05);
+  }
   box(g,'#232d30',0,.65,2.2,1.1,.16,.13);box(g,'#232d30',0,.65,-2.2,1.35,.16,.13);box(g,'#f4d65c',0,1.72,-.15,.82,.28,.46);box(g,'#263438',0,1.73,.09,.56,.06,.03);
   for(const side of [-1,1]){box(g,'#dfe6dc',side*.2,1.73,-.39,.12,.15,.02);box(g,'#dfe6dc',side*.2,1.73,-.39+side*.01,.04,.25,.021);}
   box(g,'#b24b31',-.78,1.02,-1.72,.24,.14,.24);box(g,'#547e83',.8,1.12,-1.7,.18,.38,.18);g.rotation.z=.015;
