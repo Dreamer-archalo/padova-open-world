@@ -2,6 +2,7 @@ import * as THREE from './vendor/three.module.js';
 import {nearestOnSegment,pointInside} from './core.js';
 import {box,arch,windowArch,bake} from './landmarks.js';
 import {createPortelloDetails,PORTELLO_GATE} from './portello.js';
+import {createChurchLayer} from './churches.js';
 
 // Modular exterior additions. Geometry is authored, never a copied photograph.
 export const POI_REGISTRY=[
@@ -62,6 +63,6 @@ export function cityDetails(scene,data,terrain){const root=new THREE.Group();roo
  const f=new THREE.Group();f.userData.poi='erbe-fountain';f.position.set(-77.6,terrain.elevation(-77.6,-41.7),-41.7);
  box(f,'#92918a',0,.55,0,1.1,1.1,.7);box(f,'#afaba0',0,1.16,0,1.3,.16,.85);
  for(const side of [-1,1]){box(f,'#77776e',side*.66,.65,0,.25,.14,.1);box(f,'#969389',side*.92,.28,0,.6,.38,.7);box(f,'#75a3a0',side*.92,.48,0,.45,.035,.54);box(f,'#adc9c0',side*.76,.57,0,.025,.16,.025);}bake(f);root.add(f);
- const tadi=streetDetail(data);root.add(tadi);const portello=createPortelloDetails(terrain);portello.userData.poi='portello';root.add(portello);const squares=centralSquares(terrain);root.add(squares);const walls=venetianWalls(terrain);root.add(walls);const hill=padovaHill(terrain);root.add(hill);scene.add(root);
- return {root,tadi,portello,squares,walls,hill,update(x,z){tadi.visible=Math.hypot(x+570,z+60)<550;portello.visible=Math.hypot(x-PORTELLO_GATE.x,z-PORTELLO_GATE.z)<650;squares.visible=Math.hypot(x+180,z+80)<850;walls.visible=Math.hypot(x+958,z+650)<850;hill.visible=Math.hypot(x+4050,z-3220)<1500;for(const g of root.children)if(![tadi,portello,squares,walls,hill].includes(g)){if(g.userData.poi==='erbe-fountain')g.visible=Math.hypot(x+77.6,z+41.7)<600;}}};
+ const tadi=streetDetail(data);root.add(tadi);const portello=createPortelloDetails(terrain);portello.userData.poi='portello';root.add(portello);const squares=centralSquares(terrain);root.add(squares);const walls=venetianWalls(terrain);root.add(walls);const hill=padovaHill(terrain);root.add(hill);const churches=createChurchLayer(data,terrain);root.add(churches.root);scene.add(root);
+ return {root,tadi,portello,squares,walls,hill,churches,update(x,z){tadi.visible=Math.hypot(x+570,z+60)<550;portello.visible=Math.hypot(x-PORTELLO_GATE.x,z-PORTELLO_GATE.z)<650;squares.visible=Math.hypot(x+180,z+80)<850;walls.visible=Math.hypot(x+958,z+650)<850;hill.visible=Math.hypot(x+4050,z-3220)<1500;churches.update(x,z);for(const g of root.children)if(![tadi,portello,squares,walls,hill,churches.root].includes(g)){if(g.userData.poi==='erbe-fountain')g.visible=Math.hypot(x+77.6,z+41.7)<600;}}};
 }
