@@ -27,14 +27,25 @@ Limiti: sono misure CPU/worker del controller effettivo, non FPS GPU. L'avvio in
 - Il reset della telecamera azzera anche la rotazione continua del personaggio dopo respawn/teletrasporto. Sagoma dello scooter riportata entro il suo ingombro di collisione.
 - Aggiornati i test ereditati per i budget della Fase 1 e per il completamento differito dei dettagli grafici.
 
-Test del blocco 2: `npm test`, `test:city-life`, `test:guardrails` e `git diff --check`: PASS.
+Test del blocco 2: `npm test`, `test:city-life`, `test:guardrails` e `git diff --check`: PASS. Pubblicato sul Site esistente come versione 6.
 
-Il primo blocco streaming è pubblicato sul Site esistente, versione 5. Nessun merge della PR #6.
+## Blocco 3 — rampe, salto e sterzo veloce
+
+- Quattro rampe arcade distribuite sulle tangenziali e autostrade periferiche, selezionate automaticamente solo con avvicinamento e atterraggio liberi.
+- Il guardrail viene interrotto soltanto in corrispondenza della rampa; gli svincoli e le aperture centrali del blocco precedente restano indipendenti.
+- Stato fisico airborne per le auto: inerzia orizzontale, gravità, assetto in volo, controllo ridotto, collisioni spazzolate e atterraggio sul terreno effettivo.
+- I mezzi non vengono più incollati alla strada quando lasciano una rampa o un dislivello ad alta velocità.
+- Sterzo progressivamente più morbido con la velocità, ma ancora efficace con Cinquecento Turbo; moto e scooter mantengono maggiore agilità.
+- Teletrasporto, recupero, respawn ed entrata nel veicolo azzerano qualsiasi inerzia di salto residua.
+
+Test del blocco 3: `test:jumps`, `test:guardrails`, `test:airport`, `npm test` e `git diff --check`: PASS. Quattro lanci e quattro atterraggi verificati sulla mappa reale; risultati in `vehicle-jump-results.json`.
+
+I primi due blocchi sono pubblicati progressivamente sul Site esistente. Nessun merge della PR #6.
 
 ## Blocchi ancora in lavorazione
 
 - [x] Audit completo guardrail/accessi e aperture centrali.
-- [ ] Rampe e salto dei veicoli.
+- [x] Rampe, salto dei veicoli e sterzo ad alta velocità.
 - [ ] Multicorsia, cambi corsia, accelerazione NPC, sorpassi e sterzo ad alta velocità.
 - [ ] Taxi fisico, tassista, scelta destinazione su mappa, conferma/prezzo e loading meme con attesa del nucleo.
 - [ ] Portello: porta e ponte percorribili, gradinate, studenti, attività occasionali, bici e monopattini.

@@ -37,6 +37,9 @@ export function clearRailAccess(a,b,profile,terrain,{margin=1.35,gaps=[],side=1}
   }
  }
  for(const gap of gaps){
+  if(gap.road&&gap.road!==profile.road)continue;
+  if(!gap.road&&gap.profileId!==undefined&&gap.profileId!==profile.id)continue;
+  if(gap.side!==undefined&&gap.side!==side)continue;
   const dx=b[0]-a[0],dz=b[1]-a[1];if(Math.abs((dx*Math.sin(gap.yaw)+dz*Math.cos(gap.yaw))/length)<.85)continue;
   if(Math.abs(terrain.roads.sample(profile.road,x,z)-gap.y)>2.1)continue;
   const u=(x-gap.x)*Math.cos(gap.yaw)-(z-gap.z)*Math.sin(gap.yaw);if(Math.abs(u)>35)continue;
