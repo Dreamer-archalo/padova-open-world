@@ -42,7 +42,10 @@ export function createWorkerWorld(snapshot){
 export function installWorkerHandler(port){
  let world,job;const send=(message,transfer=[])=>port.postMessage(message,transfer);
  const run=()=>{const current=job;if(!current)return;try{
-  const deadline=performance.now()+7;let next;
+  // Essential taxi-destination chunks may use a larger worker slice. This is
+  // off the renderer thread, so it shortens the black loading screen without
+  // creating an equivalent main-thread hitch.
+  const deadline=performance.now()+(current.urgent?18:7);let next;
   do{next=current.steps.next();}while(!next.done&&performance.now()<deadline);
   if(next.done){const {meshes,transfer}=geometryPacket(world,current.key,current.stage);send({type:'stage',key:current.key,stage:current.stage,id:current.id,ms:performance.now()-current.start,meshes,vegetation:world.loaded.get(current.key).userData.vegetation},transfer);world.disposePart(world.loaded.get(current.key));world.loaded.clear();world.chunks.clear();job=null;}
   else setTimeout(run,0);
