@@ -20,6 +20,7 @@
     "test:taxi": "node verify-taxi.mjs",
     "test:portello": "node --max-old-space-size=3072 verify-portello.mjs",
     "test:phase2-polish": "node --check dist/modern-gameplay.js && node --check dist/cruise-control.js && node verify-phase2-polish.mjs",
-    "test:churches": "node --check dist/churches.js && node --check dist/city-details.js && node verify-churches.mjs"
+    "test:churches": "node --check dist/churches.js && node --check dist/city-details.js && node verify-churches.mjs",
+    "test:historic-center": "node --check dist/historic-center.js && node --check dist/city-details.js && node verify-historic-center.mjs"
   }
 }
