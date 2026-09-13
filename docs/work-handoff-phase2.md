@@ -20,14 +20,17 @@ Questo file serve a coordinare modifiche concorrenti sul branch `feat/modern-pad
 | Audio | FATTO | Audio motore esistente + ambience procedurale leggera per distretto, collegata al toggle Sound e senza asset esterni. |
 | Danno visivo veicoli | PARZIALE | Danno numerico esistente + feedback visivo HUD/vignetta in base alla salute; deformazione della mesh non ancora implementata. |
 | Camere veicolo | FATTO | Recentraggio dinamico in base a velocità/retromarcia, mantenimento più lungo del free-look e feedback della modalità camera. |
+| Velocità automatica / cruise | FATTO | `K` attiva/disattiva il mantenimento automatico; se quasi fermi parte da 70 km/h, altrimenti blocca la velocità corrente arrotondata. Pulsanti `−10/+10` nel HUD. W/S/SPACE tornano subito alla guida manuale. |
 | Interni selezionati | MANCANTE | Nessun blocco dedicato. |
 | Missioni brevi/random | PARZIALE | Delivery/race/escape/Portavalori esistono; manca generazione/randomizzazione nuova. |
 | TRASPORTO STUPEFACENTI (€3,50) | MANCANTE | Da mantenere astratto/ironico, senza dettagli operativi realistici. |
-| Posti di blocco polizia | FATTO | A 3–4 stelle compaiono posti di blocco dinamici a due vetture con lampeggianti; vengono riposizionati/ritirati senza interferire con Wanted 5 e carri armati. |
+| Posti di blocco polizia | FATTO | A 3–4 stelle compaiono posti di blocco dinamici; a 4 stelle la frequenza aumenta. A zero stelle possono comparire controlli stradali passabili lentamente senza fermarsi. |
+| Progressione Wanted | FATTO | Salita delle stelle cadenzata: non può saltare più livelli nello stesso momento. Le richieste successive vengono accettate solo dopo una breve finestra crescente. La missione Escape mantiene l'avvio dedicato. |
+| Wanted 5 / sopravvivenza | FATTO | 8 s di grazia all'ingresso nelle 5 stelle, un solo carro iniziale e secondo carro ritardato, colpi non più one-shot e breve cooldown tra impatti. Uno/due elicotteri di Polizia orbitano senza sparare. |
 | Eventi urbani random | PARZIALE | Incidenti + posti di blocco presenti; manca un pacchetto più ampio di eventi civili casuali. |
 | Nuova villa SW / Treves pubblico | MANCANTE | HOME è ancora l'area villa di Parco Treves; richiesta di ripristinare Treves pubblico e spostare la grande proprietà non ancora chiusa. |
 | Sicurezza / mercenari | MANCANTE | Nessun blocco dedicato. |
-| Polizia | PARZIALE | Wanted, pattuglie, posti di blocco e carri armati esistono; resta possibile una rifinitura finale. |
+| Polizia | FATTO | Wanted, pattuglie, controlli stradali, posti di blocco, pacing delle stelle, elicotteri alle 5 stelle e carri armati con ingresso più graduale. |
 | Aeroporto vivo | PARZIALE | Aeroporto strutturato + distretto dedicato con traffico/people/veicoli di servizio più coerenti; mancano lavoratori aeroportuali animati dedicati. |
 | Area militare / UFO | PARZIALE | Easter egg e mezzi militari esistono; nessun nuovo blocco Phase 2 completo. |
 | Barche | MANCANTE | Nessun sistema dedicato. |
@@ -42,7 +45,7 @@ Questo file serve a coordinare modifiche concorrenti sul branch `feat/modern-pad
 | Militari rari fuori aeroporto | MANCANTE | Nessun blocco dedicato. |
 | Preservazione sistemi esistenti | IN CORSO | Non rompere Wanted5, carri, Portavalori1000, Cinquecento Turbo, aerei, paracadute, aeroporto, tram, acqua, respawn, fullscreen, Performance/Hyper, personaggi e salvataggi. |
 | Audit finale strade/terreno | IN CORSO | Audit intermedi esistono; quello finale va fatto solo dopo gli ultimi blocchi strutturali. |
-| Test globali finali | IN CORSO | Suite parziali presenti; aggiunto `npm run test:phase2-polish` per controllare il wiring degli ultimi micro-blocchi. Rieseguire tutto a chiusura Phase 2. |
+| Test globali finali | IN CORSO | Suite parziali presenti; `npm run test:phase2-polish` ora include anche syntax check di `modern-gameplay.js` e `cruise-control.js` e verifica wiring Wanted/cruise. Rieseguire tutto a chiusura Phase 2. |
 
 ## Regole di coordinamento
 
@@ -57,11 +60,12 @@ Questo file serve a coordinare modifiche concorrenti sul branch `feat/modern-pad
 
 - `taxi-affordability.js`: impedisce una corsa senza saldo sufficiente.
 - `zone-indicator.js`: banner ingresso zona.
-- `modern-gameplay.js`: smart spawn direzionale + posti di blocco dinamici a 3–4 stelle.
+- `modern-gameplay.js`: smart spawn direzionale, controlli stradali normali, posti di blocco 3–4 stelle, pacing Wanted, grazia 5 stelle, danno carri ridotto e elicotteri di Polizia orbitanti.
 - `modern-driving.js`: reazioni pedoni più vive a traffico e inseguimenti.
 - `camera-rig.js`: rifinitura free-look/recentraggio/retromarcia.
+- `cruise-control.js`: modalità velocità automatica con target regolabile e ritorno immediato alla guida manuale.
 - `ambient-audio.js`: ambience procedurale per distretto legata al toggle Sound.
-- `phase2-runtime.js` + `phase2-ui.css`: feedback camera, danno e rifinitura minimap.
+- `phase2-runtime.js` + `phase2-ui.css`: feedback camera, danno, rifinitura minimap e UI cruise.
 - `districts.js`: distretto aeroporto dedicato.
 - `city-details.js`: Piazza dei Signori, mercati Erbe/Frutta, spalle di Porta Savonarola e collina PADOVA.
 - `verify-phase2-polish.mjs`: verifica statica del wiring dei nuovi sistemi.
