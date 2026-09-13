@@ -4,6 +4,7 @@ import {box,arch,windowArch,bake} from './landmarks.js';
 import {createPortelloDetails,PORTELLO_GATE} from './portello.js';
 import {createChurchLayer} from './churches.js';
 import {createHistoricCenter} from './historic-center.js';
+import {createStadium} from './stadium.js';
 
 // Modular exterior additions. Geometry is authored, never a copied photograph.
 export const POI_REGISTRY=[
@@ -67,6 +68,7 @@ export function cityDetails(scene,data,terrain){const root=new THREE.Group();roo
  const walls=venetianWalls(terrain);root.add(walls);
  const hill=padovaHill(terrain);root.add(hill);
  const churches=createChurchLayer(data,terrain);root.add(churches.root);
+ const stadium=createStadium(terrain);root.add(stadium.root);
  scene.add(root);
- return {root,tadi,portello,squares,historic,walls,hill,churches,update(x,z){tadi.visible=Math.hypot(x+570,z+60)<550;portello.visible=Math.hypot(x-PORTELLO_GATE.x,z-PORTELLO_GATE.z)<650;squares.visible=Math.hypot(x+180,z+80)<850;historic.update(x,z);walls.visible=Math.hypot(x+958,z+650)<850;hill.visible=Math.hypot(x+4050,z-3220)<1500;churches.update(x,z);for(const g of root.children)if(![tadi,portello,squares,historic.root,walls,hill,churches.root].includes(g)){if(g.userData.poi==='erbe-fountain')g.visible=Math.hypot(x+77.6,z+41.7)<600;}}};
+ return {root,tadi,portello,squares,historic,walls,hill,churches,stadium,update(x,z){tadi.visible=Math.hypot(x+570,z+60)<550;portello.visible=Math.hypot(x-PORTELLO_GATE.x,z-PORTELLO_GATE.z)<650;squares.visible=Math.hypot(x+180,z+80)<850;historic.update(x,z);walls.visible=Math.hypot(x+958,z+650)<850;hill.visible=Math.hypot(x+4050,z-3220)<1500;churches.update(x,z);stadium.update(x,z);for(const g of root.children)if(![tadi,portello,squares,historic.root,walls,hill,churches.root,stadium.root].includes(g)){if(g.userData.poi==='erbe-fountain')g.visible=Math.hypot(x+77.6,z+41.7)<600;}}};
 }
