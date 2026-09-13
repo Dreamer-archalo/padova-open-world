@@ -49,14 +49,23 @@ export class CityStream{
  prefetch(x,z,radius=480){const pin={x,z,radius,until:this.now()+15000};this.pins=[...this.pins.slice(-2),pin];this.lastPlan='';return pin;}
  invalidate(key){const g=this.world.loaded.get(key);if(g){g.userData.coreReady=false;g.userData.detailReady=false;}if(this.active?.key===key)this.cancel();this.ready=this.ready.filter(p=>p.key!==key);this.lastPlan='';}
  coreReady(x,z,radius=160){
-  const plan=streamingPlan({x,z,speed:0},radius,k=>this.world.chunks.has(k));
-  const ready=plan.keys.length>0&&plan.keys.every(k=>this.world.loaded.get(k.key)?.userData.coreReady);
+  const now=this.now(),same=this.coreTarget&&Math.hypot(this.coreTarget.x-x,this.coreTarget.z-z)<1,startedAt=same?this.coreTarget.startedAt:now;
+  // The taxi normally waits for the full requested neighbourhood. If a dense
+  // destination still is not ready after a few seconds, accept the immediate
+  // landing area and let the surrounding chunks continue progressively. Physics,
+  // terrain queries and collisions are already available globally.
+  const waited=now-startedAt,effectiveRadius=waited>3200?Math.min(radius,96):radius;
+  const plan=streamingPlan({x,z,speed:0},effectiveRadius,k=>this.world.chunks.has(k)),keys=plan.keys.map(k=>k.key);
+  const ready=keys.length>0&&keys.every(key=>this.world.loaded.get(key)?.userData.coreReady);
   if(!ready){
-   const now=this.now();
-   this.coreTarget={x,z,radius,until:now+1200};
-   const pin=this.pins.find(pin=>Math.hypot(pin.x-x,pin.z-z)<1&&pin.radius>=radius);
-   if(pin)pin.until=now+15000;else this.prefetch(x,z,Math.max(320,radius+80));
-  }else if(this.coreTarget&&Math.hypot(this.coreTarget.x-x,this.coreTarget.z-z)<1)this.coreTarget=null;
+   this.coreTarget={x,z,radius:effectiveRadius,requestedRadius:radius,startedAt,until:now+1200,keys};
+   const pin=this.pins.find(pin=>Math.hypot(pin.x-x,pin.z-z)<1&&pin.radius>=effectiveRadius);
+   if(pin)pin.until=now+15000;else this.prefetch(x,z,Math.max(320,effectiveRadius+80));
+   // Re-plan immediately and pre-empt unrelated geometry. During a taxi loading
+   // screen there is no reason to finish a distant chunk before the destination.
+   this.lastPlan='';
+   if(this.active&&!keys.includes(this.active.key))this.cancel();
+  }else if(same)this.coreTarget=null;
   return ready;
  }
  cancel(){if(!this.active)return;this.worker?.postMessage({type:'cancel',id:this.active.id});this.active.steps?.return();this.active=null;this.metrics.cancelled++;}
@@ -80,22 +89,26 @@ export class CityStream{
   // At most one completed geometry upload per frame. Transfers own their typed
   // arrays; no expensive JSON parse or normal generation occurs during upload.
   const packet=this.ready.shift();if(packet){this.install(packet);m.workerMs=packet.ms;}
-  const wanted=[...this.desired.values()].sort((a,b)=>a.score-b.score);
-  const core=wanted.filter(v=>!w.loaded.get(v.key)?.userData.coreReady);
-  const detail=wanted.filter(v=>!v.predictive&&!v.pinned&&w.loaded.get(v.key)?.userData.coreReady&&!w.loaded.get(v.key)?.userData.detailReady);
-  m.pressure=core.some(v=>!v.predictive);m.coreQueued=core.length;m.detailQueued=detail.length;m.queued=core.length+detail.length;m.loaded=w.loaded.size;
+  const wanted=[...this.desired.values()].sort((a,b)=>a.score-b.score),allCore=wanted.filter(v=>!w.loaded.get(v.key)?.userData.coreReady);
+  // A coreReady request is a loading gate (currently the taxi). While it is
+  // active, spend the whole streaming budget on those essential destination
+  // chunks: no origin chunks and no cosmetic detail compete for the worker.
+  const core=this.coreTarget?allCore.filter(v=>v.requiredCore):allCore;
+  const detail=this.coreTarget?[]:wanted.filter(v=>!v.predictive&&!v.pinned&&w.loaded.get(v.key)?.userData.coreReady&&!w.loaded.get(v.key)?.userData.detailReady);
+  m.pressure=core.length>0;m.coreQueued=core.length;m.detailQueued=detail.length;m.queued=core.length+detail.length;m.loaded=w.loaded.size;
   w.queue=[...core,...detail].map(v=>v.key);
   if(core.length&&this.active?.stage==='detail')this.cancel();
+  if(this.coreTarget&&this.active&&!this.coreTarget.keys?.includes(this.active.key))this.cancel();
   const candidate=core[0]||detail[0];
   if(!this.active&&candidate&&!this.ready.length&&(!this.worker||this.workerReady)){
    const stage=core.length?'core':'detail',id=++this.serial,key=candidate.key;
    if(!this.requested.has(key))this.requested.set(key,start);
    this.active={key,stage,id};
-   if(this.worker){const chunk=w.chunks.get(key),trees=stage==='detail'?[...w.collision.near((chunk.i+.5)*SIZE,(chunk.j+.5)*SIZE,SIZE*.75)].map(b=>({p:b.p,minX:b.minX,minZ:b.minZ,maxX:b.maxX,maxZ:b.maxZ})):[];this.worker.postMessage({type:'build',id,key,stage,chunk,treeBuildings:trees,quality:w.quality});}
+   if(this.worker){const chunk=w.chunks.get(key),trees=stage==='detail'?[...w.collision.near((chunk.i+.5)*SIZE,(chunk.j+.5)*SIZE,SIZE*.75)].map(b=>({p:b.p,minX:b.minX,minZ:b.minZ,maxX:b.maxX,maxZ:b.maxZ})):[];this.worker.postMessage({type:'build',id,key,stage,chunk,treeBuildings:trees,quality:w.quality,urgent:!!candidate.requiredCore});}
    else this.active.steps=w.buildStageSteps(key,stage);
   }
   if(!this.worker&&this.active){
-   const budget=force?10:m.pressure?6:3,deadline=start+budget;
+   const budget=force?10:this.coreTarget?14:m.pressure?6:3,deadline=start+budget;
    do{if(this.active.steps.next().done){this.record(this.active.key,this.active.stage);this.active=null;break;}}while(this.now()<deadline);
   }
   w.pendingBuild=this.active;m.streamMs=this.now()-start;m.maxStreamMs=Math.max(m.maxStreamMs,m.streamMs);
