@@ -31,7 +31,7 @@ export function streamingSnapshot(t){
 
 export class CityStream{
  constructor(world,{workerFactory=typeof Worker==='function'?()=>new Worker(new URL('./streaming-worker.js',import.meta.url),{type:'module'}):null,now=()=>performance.now()}={}){
-  this.world=world;this.now=now;this.desired=new Map();this.requested=new Map();this.ready=[];this.pins=[];this.serial=0;this.active=null;this.lastPlan='';this.lastReplan=-Infinity;
+  this.world=world;this.now=now;this.desired=new Map();this.requested=new Map();this.ready=[];this.pins=[];this.coreTarget=null;this.serial=0;this.active=null;this.lastPlan='';this.lastReplan=-Infinity;
   this.metrics={loaded:0,queued:0,coreQueued:0,detailQueued:0,streamMs:0,maxStreamMs:0,workerMs:0,coreLoadMs:0,maxCoreLoadMs:0,pressure:true,prefetch:0,backend:'cooperative',cancelled:0,longFrames:0};
   if(workerFactory)try{
    this.worker=workerFactory();this.metrics.backend='worker';
@@ -50,18 +50,27 @@ export class CityStream{
  invalidate(key){const g=this.world.loaded.get(key);if(g){g.userData.coreReady=false;g.userData.detailReady=false;}if(this.active?.key===key)this.cancel();this.ready=this.ready.filter(p=>p.key!==key);this.lastPlan='';}
  coreReady(x,z,radius=160){
   const plan=streamingPlan({x,z,speed:0},radius,k=>this.world.chunks.has(k));
-  return plan.keys.length>0&&plan.keys.every(k=>this.world.loaded.get(k.key)?.userData.coreReady);
+  const ready=plan.keys.length>0&&plan.keys.every(k=>this.world.loaded.get(k.key)?.userData.coreReady);
+  if(!ready){
+   const now=this.now();
+   this.coreTarget={x,z,radius,until:now+1200};
+   const pin=this.pins.find(pin=>Math.hypot(pin.x-x,pin.z-z)<1&&pin.radius>=radius);
+   if(pin)pin.until=now+15000;else this.prefetch(x,z,Math.max(320,radius+80));
+  }else if(this.coreTarget&&Math.hypot(this.coreTarget.x-x,this.coreTarget.z-z)<1)this.coreTarget=null;
+  return ready;
  }
  cancel(){if(!this.active)return;this.worker?.postMessage({type:'cancel',id:this.active.id});this.active.steps?.return();this.active=null;this.metrics.cancelled++;}
  update(p,force=false){
   const start=this.now(),w=this.world,m=this.metrics;
   this.pins=this.pins.filter(pin=>pin.until>start);
+  if(this.coreTarget&&this.coreTarget.until<=start)this.coreTarget=null;
   const signature=keyAt(p.x,p.z)+','+Math.round((p.yaw||0)*6)+','+Math.floor(Math.abs(p.speed||0)/15)+','+Math.floor((p.altitude||0)/80)+','+w.radius;
   if(force||signature!==this.lastPlan||start-this.lastReplan>350){
    this.lastPlan=signature;this.lastReplan=start;
    const plan=streamingPlan(p,w.radius,k=>w.chunks.has(k));m.prefetch=Math.round(plan.look);
    this.desired=new Map(plan.keys.map(v=>[v.key,v]));
    for(const pin of this.pins)for(const v of streamingPlan(pin,pin.radius,k=>w.chunks.has(k)).keys)this.desired.set(v.key,{...v,score:v.score-10000,pinned:true});
+   if(this.coreTarget)for(const v of streamingPlan(this.coreTarget,this.coreTarget.radius,k=>w.chunks.has(k)).keys)this.desired.set(v.key,{...v,score:v.score-20000,pinned:true,requiredCore:true});
    for(const [key,g] of w.loaded){const ch=w.chunks.get(key),d=Math.hypot((ch.i+.5)*SIZE-p.x,(ch.j+.5)*SIZE-p.z);g.visible=this.desired.has(key)||d<w.radius+SIZE;
     if(!this.desired.has(key)&&d>w.radius+SIZE*1.5){w.disposePart(g);w.loaded.delete(key);this.requested.delete(key);}
    }
