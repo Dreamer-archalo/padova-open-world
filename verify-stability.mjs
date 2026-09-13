@@ -56,7 +56,7 @@ t.state.x=t.cars[0].x;t.state.z=t.cars[0].z;t.state.speed=0;t.toggleVehicle();as
 // Exercise the real controller in the centre across frame rates.
 const start={x:t.state.x,z:t.state.z,yaw:t.state.yaw};let reference;
 for(const hz of [30,60,144]){
-  Object.assign(t.state,start,{speed:0,y:t.terrain.height(start.x,start.z),vy:0,elapsed:0});t.clock.reset();t.keys.clear();t.keys.add('KeyW');t.keys.add('KeyA');
+  Object.assign(t.state,start,{speed:0,y:t.terrain.height(start.x,start.z),vy:0,elapsed:0});t.clock.reset();vm.runInContext('cameraRig.reset(state.yaw)',ctx);t.keys.clear();t.keys.add('KeyW');t.keys.add('KeyA');
   for(let frame=0;frame<hz*3;frame++)t.clock.advance(1/hz,dt=>{t.state.elapsed+=dt;t.movePlayer(dt);{const hit=core.collides(t.state.x,t.state.z,.359,t.world.collision,t.state.y);assert(!hit,'walk penetrated a building at actor height');}});
   const endpoint={x:t.state.x,z:t.state.z};if(reference)assert(core.dist(reference,endpoint)<1e-7,'frame-rate dependent movement');else reference=endpoint;
 }

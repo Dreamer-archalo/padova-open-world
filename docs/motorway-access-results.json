@@ -1,0 +1,9 @@
+{
+  "barriers": 13564,
+  "accessCuts": 10028,
+  "periodicOpenings": 51,
+  "minimumSpacing": 850,
+  "edgeSamples": 260024,
+  "blockedAccessSamples": 0,
+  "issues": []
+}

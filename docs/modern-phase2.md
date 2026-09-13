@@ -18,9 +18,23 @@ Verifiche: `npm run test:streaming`, `npm run test:city-life`, `npm run test:air
 
 Limiti: sono misure CPU/worker del controller effettivo, non FPS GPU. L'avvio iniziale del worker e una destinazione molto densa possono superare cinque secondi. Il percorso cooperativo di compatibilità, usato quando Worker non è disponibile, può ancora avere singole operazioni lunghe. La prova grafica su un browser con WebGL non è stata eseguita in questo blocco.
 
+## Blocco 2 — accessi e guardrail
+
+- Interruzioni calcolate sull'intero segmento del guardrail, comprese immissioni quasi parallele, estremità e raccordi altimetrici.
+- Aperture da 12 metri allineate sulle carreggiate parallele: 51, distanziate di almeno 850 metri sulla rete completa.
+- Profilo visivo dei guardrail raccordato alla pendenza. 13.564 elementi rispetto ai 19.505 precedenti.
+- Audit indipendente: 260.024 campioni sui bordi, zero campioni di accessi bloccati. Risultati in `motorway-access-results.json`.
+- Il reset della telecamera azzera anche la rotazione continua del personaggio dopo respawn/teletrasporto. Sagoma dello scooter riportata entro il suo ingombro di collisione.
+- Aggiornati i test ereditati per i budget della Fase 1 e per il completamento differito dei dettagli grafici.
+
+Test del blocco 2: `npm test`, `test:city-life`, `test:guardrails` e `git diff --check`: PASS.
+
+Il primo blocco streaming è pubblicato sul Site esistente, versione 5. Nessun merge della PR #6.
+
 ## Blocchi ancora in lavorazione
 
-- [ ] Audit completo guardrail/accessi, aperture centrali, rampe e salto dei veicoli.
+- [x] Audit completo guardrail/accessi e aperture centrali.
+- [ ] Rampe e salto dei veicoli.
 - [ ] Multicorsia, cambi corsia, accelerazione NPC, sorpassi e sterzo ad alta velocità.
 - [ ] Taxi fisico, tassista, scelta destinazione su mappa, conferma/prezzo e loading meme con attesa del nucleo.
 - [ ] Portello: porta e ponte percorribili, gradinate, studenti, attività occasionali, bici e monopattini.

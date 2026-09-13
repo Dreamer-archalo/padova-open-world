@@ -1,3 +1,4 @@
+import {clearRailAccess,roadAccessIndex} from './guardrail-access.js';
 import {vehicleFootprint} from './movement.js';
 import {nearestOnSegment} from './core.js';
 export const motorway=road=>/^(motorway|trunk)(?:_link)?$/.test(road.k);
@@ -14,29 +15,30 @@ function railPoints(profile){
  if(out.at(-1)!==points.at(-1))out.push(points.at(-1));return out;
 }
 export function motorwayBarriers(terrain){
- const result=[],gaps=[];
- for(const profile of terrain.roads.profiles.values()){
-  const road=profile.road;if(!motorway(road))continue;
-  const points=railPoints(profile),lengths=points.slice(1).map((b,i)=>Math.hypot(b[0]-points[i][0],b[1]-points[i][1])),total=lengths.reduce((a,b)=>a+b,0);
-  const gap=total>50&&profile.id%13===0&&!road.crossing&&!road.k.endsWith('_link')?[total/2-6,total/2+6]:null;
-  let travelled=0;
-  for(let i=1;i<points.length;i++){
-   const a=points[i-1],b=points[i],len=lengths[i-1];if(!len)continue;
-   const intervals=[[0,len]];
-   if(gap&&travelled<gap[1]&&travelled+len>gap[0]){intervals.length=0;if(gap[0]>travelled)intervals.push([0,gap[0]-travelled]);if(gap[1]<travelled+len)intervals.push([gap[1]-travelled,len]);}
-   const yaw=Math.atan2(b[0]-a[0],b[1]-a[1]);
-   for(const [start,end] of intervals){if(end-start<.1)continue;const t=(start+end)/2/len,x=a[0]+(b[0]-a[0])*t,z=a[1]+(b[1]-a[1])*t,y=terrain.roads.sample(road,x,z);
-    const sides=[-1,1];if(!road.oneway&&!road.one&&road.w>=12)sides.push(0);
-    for(const side of sides){const offset=side*(road.w/2+.65),px=x+Math.cos(yaw)*offset,pz=z-Math.sin(yaw)*offset;
-     const junction=[...terrain.roads.index.near(px,pz,8)].some(s=>{if(s.profile===profile)return false;const q=nearestOnSegment(px,pz,s.a,s.b),otherYaw=Math.atan2(s.b[0]-s.a[0],s.b[1]-s.a[1]);return Math.abs(Math.sin(yaw-otherYaw))>.25&&Math.hypot(px-q.x,pz-q.z)<s.profile.road.w/2+3&&Math.abs(terrain.roads.segmentHeight(s,q.t)-y)<2;});
-     if(junction)continue;
-     const p=vehicleFootprint(px,pz,yaw,side===0?.65:.3,end-start+.035),xs=p.map(p=>p[0]),zs=p.map(p=>p[1]);
-     result.push({x:px,z:pz,p,y,minY:y,h:side===0?1.05:.85,kind:side===0?'median':'guardrail',color:side===0?'#abb0a8':'#a1afb0',road,solid:true,minX:Math.min(...xs),maxX:Math.max(...xs),minZ:Math.min(...zs),maxZ:Math.max(...zs)});
-    }
-   }
-   if(gap&&travelled<=gap[0]&&travelled+len>gap[0])gaps.push({road:road.n||road.k,roadId:profile.id,length:12,start:gap[0],end:gap[1]});
-   travelled+=len;
+ const result=[],gaps=[],profiles=[...terrain.roads.profiles.values()].filter(p=>motorway(p.road)),index=roadAccessIndex(terrain);
+ const paths=profiles.map(profile=>{const points=railPoints(profile),lengths=points.slice(1).map((b,i)=>Math.hypot(b[0]-points[i][0],b[1]-points[i][1]));return {profile,points,lengths,total:lengths.reduce((a,b)=>a+b,0)};});
+ // Shared world-space openings line up across the parallel carriageways. Their
+ // separation is measured in metres, independent of OSM way fragmentation.
+ for(const path of [...paths].sort((a,b)=>b.total-a.total)){
+  const {profile,points,lengths,total}=path,road=profile.road;if(road.crossing||road.k.endsWith('_link')||total<35)continue;
+  for(let at=Math.min(total/2,150);at<total-12;at+=650){let travelled=0,i=0;while(i<lengths.length-1&&travelled+lengths[i]<at)travelled+=lengths[i++];
+   const a=points[i],b=points[i+1],t=(at-travelled)/lengths[i],x=a[0]+(b[0]-a[0])*t,z=a[1]+(b[1]-a[1])*t,yaw=Math.atan2(b[0]-a[0],b[1]-a[1]),y=terrain.roads.sample(road,x,z);
+   if(gaps.some(g=>Math.hypot(g.x-x,g.z-z)<850)||terrain.waterDistance(x,z)<25)continue;
+   const junction=[...index.near(x,z,35)].some(s=>{if(s.profile===profile)return false;const q=nearestOnSegment(x,z,s.a,s.b),angle=Math.atan2(s.b[0]-s.a[0],s.b[1]-s.a[1]);return Math.abs(Math.sin(yaw-angle))>.2&&Math.hypot(q.x-x,q.z-z)<road.w/2+s.profile.road.w/2+15&&Math.abs(terrain.roads.sample(s.profile.road,q.x,q.z)-y)<2.1;});
+   if(!junction)gaps.push({x,z,y,yaw,length:12,road:road.n||road.k,roadId:profile.id,start:at-6,end:at+6});
   }
  }
- terrain.motorwayAudit={barriers:result.length,gaps};return result;
+ let accessCuts=0;
+ for(const {profile,points,lengths} of paths){const road=profile.road;
+  for(let i=1;i<points.length;i++){
+   const a=points[i-1],b=points[i],len=lengths[i-1];if(!len)continue;const yaw=Math.atan2(b[0]-a[0],b[1]-a[1]),sides=[-1,1];if(!road.oneway&&!road.one&&road.w>=12)sides.push(0);
+   for(const side of sides){const offset=side*(road.w/2+.65),dx=Math.cos(yaw)*offset,dz=-Math.sin(yaw)*offset,p0=[a[0]+dx,a[1]+dz],p1=[b[0]+dx,b[1]+dz],parts=clearRailAccess(p0,p1,profile,terrain,{gaps,side});
+    if(parts.length!==1||Math.abs((parts[0]?.[1]||0)-len)>.01||(parts[0]?.[0]||0)>.01)accessCuts++;
+    for(const [start,end] of parts){if(end-start<1)continue;const t=(start+end)/2/len,x=p0[0]+(p1[0]-p0[0])*t,z=p0[1]+(p1[1]-p0[1])*t,p=vehicleFootprint(x,z,yaw,side===0?.65:.3,end-start),cornerY=p.map(q=>terrain.roads.sample(road,...q)),y=Math.min(...cornerY),drawHeight=side===0?.9:.85,xs=p.map(p=>p[0]),zs=p.map(p=>p[1]);
+     result.push({x,z,p,y,minY:y,h:Math.max(...cornerY)-y+drawHeight,cornerY,drawHeight,kind:side===0?'median':'guardrail',color:side===0?'#abb0a8':'#a1afb0',road,side,solid:true,minX:Math.min(...xs),maxX:Math.max(...xs),minZ:Math.min(...zs),maxZ:Math.max(...zs)});
+    }
+   }
+  }
+ }
+ terrain.motorwayAudit={barriers:result.length,gaps,accessCuts};return result;
 }

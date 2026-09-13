@@ -1,7 +1,7 @@
 import {angleDiff,clamp} from './core.js';
 export class CameraRig{
  constructor(){this.yaw=0;this.pitch=.38;this.dragging=false;this.holdUntil=0;this.signature='';this.movementYaw=0;}
- reset(yaw){this.yaw=yaw;this.movementYaw=yaw;this.signature='';this.dragging=false;this.holdUntil=0;}
+ reset(yaw){this.footYaw=yaw;this.footActive=false;this.yaw=yaw;this.movementYaw=yaw;this.signature='';this.dragging=false;this.holdUntil=0;}
  begin(){this.dragging=true;}
  drag(dx,dy){this.yaw-=dx*.006;this.pitch=clamp(this.pitch+dy*.006,-.3,1.3);this.movementYaw=this.yaw;}
  end(time){this.dragging=false;this.holdUntil=time+1.25;this.signature='';}
