@@ -42,9 +42,18 @@ try{
  stream.prefetch(1250,-500,80);const started=performance.now();
  while(!stream.coreReady(1250,-500,80)){stream.update({x:5000,z:1000,speed:0});await delay();assert(performance.now()-started<25000);}
  report.destinationPrefetchMs=performance.now()-started;
+ // Regression: a taxi-like readiness check must recreate/renew its destination
+ // priority even if the original 15-second prefetch pin has disappeared.
+ const readinessPlan=streamingPlan({x:1250,z:-500,speed:0},80,k=>t.world.chunks.has(k)),readinessKey=readinessPlan.keys[0]?.key;
+ assert(readinessKey,'readiness regression point has a mapped chunk');stream.invalidate(readinessKey);stream.pins=[];stream.coreTarget=null;
+ assert.equal(stream.coreReady(1250,-500,80),false,'invalidated destination is not falsely ready');
+ assert(stream.coreTarget&&stream.pins.length>0,'coreReady recreates a sticky essential destination');
+ const renewedUntil=stream.pins[0].until;stream.coreReady(1250,-500,80);assert(stream.pins[0].until>=renewedUntil,'readiness polling renews the destination pin');
+ const recoverStart=performance.now();while(!stream.coreReady(1250,-500,80)){stream.update({x:5000,z:1000,speed:0});await delay();assert(performance.now()-recoverStart<25000,'renewed destination timed out');}
+ report.destinationRecoveryMs=performance.now()-recoverStart;
  // Give one dense tile the detail budget, then refresh its buildings while
  // keeping the old, complete terrain visible until replacement arrives.
- stream.pins=[];t.world.radius=1;const centre={x:160,z:160,speed:0},detailStart=performance.now();
+ stream.pins=[];stream.coreTarget=null;t.world.radius=1;const centre={x:160,z:160,speed:0},detailStart=performance.now();
  while(!t.world.loaded.get('0,0')?.userData.detailReady){stream.update(centre);await delay();assert(performance.now()-detailStart<25000,'detail timed out');}
  const detailed=t.world.loaded.get('0,0');assert(detailed.userData.coreReady);assert(detailed.userData.detail.children.length>0);
  const coreCount=detailed.userData.core.children.length;assert(coreCount>0);assert(!detailed.userData.core.children.some(o=>o.userData.streamBuildings||o.userData.streamRoads));
@@ -58,4 +67,4 @@ try{
  const key=[...t.world.loaded.keys()][0];assert(t.world.loaded.get(key).userData.coreReady);
 }finally{stream.dispose();}
 fs.writeFileSync('docs/streaming-results.json',JSON.stringify(report,null,2)+'\n');
-console.log('PASS predictive streaming, terrain snapshot, cancellation, destination readiness, bounded queue, hidden F3 overlay');
+console.log('PASS predictive streaming, terrain snapshot, cancellation, destination readiness/recovery, bounded queue, hidden F3 overlay');
