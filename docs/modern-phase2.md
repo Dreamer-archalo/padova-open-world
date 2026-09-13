@@ -51,14 +51,26 @@ Test del blocco 3: `test:jumps`, `test:guardrails`, `test:airport`, `npm test` e
 
 Test del blocco 4: `test:multilane`, `test:city-life`, `test:airport`, `npm test` e `git diff --check`: PASS. Risultati in `multilane-results.json`.
 
-I primi tre blocchi sono pubblicati progressivamente sul Site esistente. Nessun merge della PR #6.
+## Blocco 5 — Taxi abusivo e caricamento pixel-art
+
+- Il vecchio teletrasporto diretto è rimosso dalla mappa: i luoghi impostano un indicatore, mentre **CHIAMA TAXI ABUSIVO** fa arrivare fisicamente il mezzo sulla rete stradale.
+- Taxi giallo originale, tassista visibile con occhiali da sole e interazione **E · PARLA**.
+- Dieci destinazioni compatte, prezzo proporzionale alla distanza e tetto assoluto di €100; il denaro viene sottratto solo dopo la conferma.
+- **SCEGLI TU** permette di indicare un punto direttamente sulla mappa e confermare il prezzo calcolato.
+- Schermata nera con inseguimento 2D pixel-art animato su otto fotogrammi. Le curiosità su Padova avanzano con clic/tap.
+- Il loading ha funzione reale: prefetch di 650 metri e trasferimento soltanto quando terreno, acqua, strade, ponti e collisioni essenziali risultano pronti.
+- Durante il caricamento vengono sospesi traffico, pedoni e sistemi ambientali secondari.
+
+Test del blocco 5: `test:taxi`, `test:streaming`, `test:multilane`, `test:jumps`, `test:city-life`, `test:airport`, `npm test` e `git diff --check`: PASS. Risultati in `taxi-results.json`.
+
+I primi quattro blocchi sono pubblicati progressivamente sul Site esistente. Il blocco 5 è pronto per la pubblicazione. Nessun merge della PR #6.
 
 ## Blocchi ancora in lavorazione
 
 - [x] Audit completo guardrail/accessi e aperture centrali.
 - [x] Rampe, salto dei veicoli e sterzo ad alta velocità.
 - [x] Multicorsia, cambi corsia, accelerazione NPC, sorpassi e sterzo ad alta velocità.
-- [ ] Taxi fisico, tassista, scelta destinazione su mappa, conferma/prezzo e loading meme con attesa del nucleo.
+- [x] Taxi fisico, tassista, scelta destinazione su mappa, conferma/prezzo e loading pixel-art con attesa del nucleo.
 - [ ] Portello: porta e ponte percorribili, gradinate, studenti, attività occasionali, bici e monopattini.
 - [ ] Distribuzione/socialità NPC, cani, spawn fuori visuale e lavoratori aeroportuali.
 - [ ] Minimap, ingresso nei quartieri, audio, danni visivi e telecamere per mezzo.

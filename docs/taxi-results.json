@@ -1,0 +1,34 @@
+{
+  "fare": {
+    "minimum": 10,
+    "maximum": 100
+  },
+  "destinations": [
+    "Albignasego",
+    "Sacro Cuore",
+    "Vigonza",
+    "Ponte San Nicolò",
+    "Portello",
+    "Prato della Valle",
+    "Stazione",
+    "Zona Industriale",
+    "Aeroporto",
+    "Villa"
+  ],
+  "route": {
+    "arrived": true,
+    "blocked": false,
+    "finalZ": 116.09483446553838,
+    "maxStep": 0.36914358333333297
+  },
+  "live": {
+    "arrived": true,
+    "driverSunglasses": true,
+    "talkRange": true
+  },
+  "loading": {
+    "pixelFrames": 8,
+    "factsClickable": true,
+    "coreReadyGate": true
+  }
+}

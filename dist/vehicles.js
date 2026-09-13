@@ -12,7 +12,8 @@ export const VEHICLES={
   sport:{name:'Riviera GT',width:1.98,length:4.55,height:1.5,wheelbase:2.74,accel:12,brake:21,max:43,boost:53,reverse:9,steer:1.1},
   compact:{name:'Centro Compact',width:1.8,length:3.72,height:1.7,wheelbase:2.24,accel:8,brake:18,max:32,boost:40,reverse:8,steer:1.25},
   wagon:{name:'Laguna Wagon',width:1.92,length:4.22,height:1.75,wheelbase:2.54,accel:8.5,brake:18,max:35,boost:43,reverse:8,steer:1},
-  utility:{name:'Euganea Utility',width:2,length:4.64,height:1.95,wheelbase:2.8,accel:7.2,brake:17,max:31,boost:38,reverse:7,steer:.9}
+  utility:{name:'Euganea Utility',width:2,length:4.64,height:1.95,wheelbase:2.8,accel:7.2,brake:17,max:31,boost:38,reverse:7,steer:.9},
+  taxi:{name:'Taxi abusivo',family:'taxi',width:2.05,length:4.5,height:1.75,wheelbase:2.65,accel:9,brake:19,max:37,boost:43,reverse:8,steer:1.08}
 };
 export const isBike=type=>type==='motorcycle'||type==='scooter';
 const cache=new Map();const material=color=>{if(!cache.has(color))cache.set(color,new THREE.MeshStandardMaterial({color,roughness:.55}));return cache.get(color);};
@@ -36,6 +37,13 @@ export function createVehicle(type,color){const g=new THREE.Group();
   const shape=new THREE.Shape();shape.moveTo(-.23,0);shape.lineTo(.23,0);shape.lineTo(0,-.44);shape.closePath();const grille=new THREE.Mesh(new THREE.ShapeGeometry(shape),material('#20292d'));grille.position.set(0,.88,2.035);if(type==='mito')g.add(grille);else{box(g,'#d3d6c9',0,.77,2.035,.86,.06,.02);mesh(g,sphere,'#fff2c8',-.55,.89,1.84,.20,.20,.09);mesh(g,sphere,'#fff2c8',.55,.89,1.84,.20,.20,.09);box(g,'#e5e0cc',0,1.46,-.36,1.2,.06,1.1);g.scale.set(.93,1.055,.875);}
   box(g,'#303b3c',-.43,.52,1.96,.3,.12,.08);box(g,'#303b3c',.43,.52,1.96,.3,.12,.08);
   box(g,'#ede7cf',-.43,.68,2.00,.28,.11,.02);
+ }else if(type==='taxi'){
+  body(g,color,[[-2.2,.74,.42,.38],[-1.65,.98,.4,.55],[.7,.99,.4,.62],[1.75,.82,.43,.42],[2.2,.62,.45,.25]]);body(g,color,[[-1.42,.73,.92,.12],[-.92,.76,.94,.55],[.48,.72,.94,.5],[1.08,.67,.92,.05]]);
+  box(g,'#284551',0,1.24,.66,1.38,.52,.04).rotation.x=.86;box(g,'#284551',0,1.2,-1.25,1.3,.43,.04).rotation.x=-.65;
+  for(const side of [-1,1]){for(const z of [-1.35,1.35])wheel(g,side*.87,z,.34,.35,.22);box(g,'#222b2d',side*.92,.72,-.05,.05,.13,1.95);box(g,'#fff1b5',side*.65,.82,2.13,.22,.18,.05);box(g,'#d84d38',side*.63,.81,-2.15,.22,.16,.05);}
+  box(g,'#232d30',0,.65,2.2,1.1,.16,.13);box(g,'#232d30',0,.65,-2.2,1.35,.16,.13);box(g,'#f4d65c',0,1.72,-.15,.82,.28,.46);box(g,'#263438',0,1.73,.09,.56,.06,.03);
+  for(const side of [-1,1]){box(g,'#dfe6dc',side*.2,1.73,-.39,.12,.15,.02);box(g,'#dfe6dc',side*.2,1.73,-.39+side*.01,.04,.25,.021);}
+  box(g,'#b24b31',-.78,1.02,-1.72,.24,.14,.24);box(g,'#547e83',.8,1.12,-1.7,.18,.38,.18);g.rotation.z=.015;
  }else if(type==='truck'){
   box(g,'#313b3e',0,.67,0,2.05,.33,6.8);box(g,color,0,1.55,2.40,2.30,1.98,2.1);box(g,'#ece7d8',0,2.12,-1.08,2.40,2.7,4.84);
   box(g,'#314b56',0,2.10,3.47,2.03,.78,.04);box(g,'#313b40',0,1.12,3.48,1.32,.38,.04);box(g,'#b2b4a6',0,.72,3.52,2.3,.17,.13);
