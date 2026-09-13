@@ -14,7 +14,7 @@ const main=control.querySelector('[data-cruise="toggle"]'),label=main?.querySele
 function kmh(){return Number(speedEl?.textContent)||0;}
 function carEligible(){return vehicleName?.textContent!=='ON FOOT'&&chute?.hidden!==false&&cannon?.hidden!==false;}
 function emit(code,down){window.dispatchEvent(new KeyboardEvent(down?'keydown':'keyup',{code,bubbles:true,cancelable:true}));}
-function hold(code,on){if(code==='KeyW'){if(on===wHeld)return;wHeld=on;}else{if(on===sHeld)return;sHeld=on;}emit(code,on);}
+function hold(code,on){if(code==='KeyW'){if(on){wHeld=true;emit(code,true);return;}if(!wHeld)return;wHeld=false;}else{if(on){sHeld=true;emit(code,true);return;}if(!sHeld)return;sHeld=false;}emit(code,false);}
 function release(){hold('KeyW',false);hold('KeyS',false);}
 function paint(){if(!label)return;label.textContent=enabled?'CRUISE '+target+' KM/H':'CRUISE OFF';control.dataset.active=enabled?'true':'false';}
 function disable(message=''){if(!enabled&&!wHeld&&!sHeld)return;enabled=false;release();paint();if(message){const toast=document.getElementById('toast');if(toast){toast.textContent=message;toast.hidden=false;}}}
@@ -24,7 +24,7 @@ function adjust(delta){target=Math.max(30,Math.min(160,target+delta));if(!enable
 control.querySelector('[data-cruise="down"]')?.addEventListener('click',()=>adjust(-10));
 control.querySelector('[data-cruise="up"]')?.addEventListener('click',()=>adjust(10));
 main?.addEventListener('click',toggle);
-window.addEventListener('keydown',e=>{if(!e.isTrusted||e.repeat)return;if(e.code==='KeyK'){e.preventDefault();toggle();return;}if(enabled&&['KeyW','KeyS','Space'].includes(e.code))disable('Controllo manuale · cruise disattivato.');});
+window.addEventListener('keydown',e=>{if(!e.isTrusted||e.repeat)return;if(e.code==='KeyK'){e.preventDefault();toggle();return;}if(enabled&&['KeyW','KeyS','Space','Escape'].includes(e.code))disable(e.code==='Escape'?'':'Controllo manuale · cruise disattivato.');});
 window.addEventListener('blur',()=>disable());
 document.addEventListener('visibilitychange',()=>{if(document.hidden)disable();});
 
