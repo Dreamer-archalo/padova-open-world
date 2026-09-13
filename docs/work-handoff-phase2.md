@@ -10,39 +10,39 @@ Questo file serve a coordinare modifiche concorrenti sul branch `feat/modern-pad
 | Guardrail / svincoli / aperture tangenziale | FATTO | Accessi verificati, aperture centrali e collisioni già trattati. |
 | Rampe / salti / fisica in aria | FATTO | Rampe periferiche e dinamica airborne presenti. |
 | Traffico multicorsia / accelerazione progressiva | FATTO | Corsie, cambi corsia, frenata/accelerazione e curve già presenti. |
-| Taxi abusivo | FATTO | Taxi fisico, autista, destinazioni, caricamento, curiosità, spawn vicino, layout e blocco UI/runtime con fondi insufficienti collegati al gioco. |
+| Taxi abusivo | FATTO | Taxi fisico, autista, destinazioni, caricamento, curiosità, spawn vicino, layout e blocco fondi insufficienti. `CityStream.coreReady()` mantiene inoltre vivo il prefetch finché la destinazione non è pronta. |
 | Portello | FATTO | Porta passabile ad arco, ponte, parapetti, argini, scalinate, spalle delle mura veneziane, studenti, bici/scooter, bar e wayfinding universitario. |
-| Bici / monopattini per zone | PARZIALE | Sistema dinamico presente soprattutto a Portello; manca distribuzione coerente nel resto della città. |
-| NPC / città viva | PARZIALE | Pedoni con intenti, gruppi e distretti esistono; mancano ancora reazioni più ricche, cani e lavoratori aeroportuali dedicati. |
-| Smart spawn | PARZIALE | Spawn già filtrato per strada/densità/distanza; manca un blocco finale dedicato e testato. |
-| Minimap | PARZIALE | Minimap esistente e funzionante; nessun grande redesign Phase 2 ancora dedicato. |
-| Indicatore zona | FATTO | Banner transitorio collegato a distretto/località esistenti; Portello mostra esplicitamente `QUARTIERE UNIVERSITARIO`. |
-| Audio | PARZIALE | Motore/audio base esistente; manca un blocco ambientale completo. |
-| Danno visivo veicoli | MANCANTE | Danno numerico esiste, deformazione/segni visivi no. |
-| Camere veicolo | PARZIALE | Più modalità camera esistono; manca rifinitura dedicata Phase 2. |
+| Bici / monopattini per zone | PARZIALE | Sistema dinamico forte a Portello; traffico per distretto usa già scooter, ma manca una distribuzione micromobilità dedicata in più quartieri. |
+| NPC / città viva | PARZIALE | Reazioni a veicoli veloci, inseguimenti con ricercato alto e profilo `avoid` migliorati. Mancano cani e lavoratori aeroportuali animati dedicati. |
+| Smart spawn | PARZIALE | Spawn missioni/polizia/militari evita meglio punti dietro al giocatore; distretto aeroporto separato con traffico/people budget coerenti. Manca audit globale di ogni categoria di spawn. |
+| Minimap | FATTO | Minimap esistente mantenuta e rifinita per contrasto/leggibilità senza aumentare il costo di rendering. |
+| Indicatore zona | FATTO | Banner transitorio collegato a distretto/località; Portello mostra `QUARTIERE UNIVERSITARIO`, aeroporto ora ha profilo distretto dedicato. |
+| Audio | FATTO | Audio motore esistente + ambience procedurale leggera per distretto, collegata al toggle Sound e senza asset esterni. |
+| Danno visivo veicoli | PARZIALE | Danno numerico esistente + feedback visivo HUD/vignetta in base alla salute; deformazione della mesh non ancora implementata. |
+| Camere veicolo | FATTO | Recentraggio dinamico in base a velocità/retromarcia, mantenimento più lungo del free-look e feedback della modalità camera. |
 | Interni selezionati | MANCANTE | Nessun blocco dedicato. |
 | Missioni brevi/random | PARZIALE | Delivery/race/escape/Portavalori esistono; manca generazione/randomizzazione nuova. |
 | TRASPORTO STUPEFACENTI (€3,50) | MANCANTE | Da mantenere astratto/ironico, senza dettagli operativi realistici. |
-| Posti di blocco polizia | MANCANTE | Nessun blocco dedicato. |
-| Eventi urbani random | PARZIALE | Sistema incidenti già presente; manca pacchetto eventi cittadini dedicato. |
+| Posti di blocco polizia | FATTO | A 3–4 stelle compaiono posti di blocco dinamici a due vetture con lampeggianti; vengono riposizionati/ritirati senza interferire con Wanted 5 e carri armati. |
+| Eventi urbani random | PARZIALE | Incidenti + posti di blocco presenti; manca un pacchetto più ampio di eventi civili casuali. |
 | Nuova villa SW / Treves pubblico | MANCANTE | HOME è ancora l'area villa di Parco Treves; richiesta di ripristinare Treves pubblico e spostare la grande proprietà non ancora chiusa. |
 | Sicurezza / mercenari | MANCANTE | Nessun blocco dedicato. |
-| Polizia | PARZIALE | Wanted, pattuglie e carri armati esistono; richieste extra non ancora chiuse come blocco. |
-| Aeroporto vivo | PARZIALE | Aeroporto strutturato già esiste; mancano lavoratori/attività ambientali dedicati. |
+| Polizia | PARZIALE | Wanted, pattuglie, posti di blocco e carri armati esistono; resta possibile una rifinitura finale. |
+| Aeroporto vivo | PARZIALE | Aeroporto strutturato + distretto dedicato con traffico/people/veicoli di servizio più coerenti; mancano lavoratori aeroportuali animati dedicati. |
 | Area militare / UFO | PARZIALE | Easter egg e mezzi militari esistono; nessun nuovo blocco Phase 2 completo. |
 | Barche | MANCANTE | Nessun sistema dedicato. |
 | Vegetazione | PARZIALE | Vegetazione e streaming esistono; manca rifinitura/variazione dedicata. |
-| Mura veneziane | PARZIALE | Portello è collegato visivamente alle mura; manca un trattamento più ampio del circuito cittadino. |
-| Chiese | PARZIALE | Basilica del Santo, Duomo e Santa Giustina già esistono; manca passata finale dedicata. |
-| Piazza dei Signori | PARZIALE | Torre dell'Orologio e piazza esistono; manca rifinitura dedicata. |
-| Palazzo Ragione / Erbe-Frutta | PARZIALE | Palazzo della Ragione e fontana Erbe già modellati; manca passata finale piazze/mercati. |
-| Università / Riviera | PARZIALE | Portello universitario ora è forte; manca estensione alle altre aree universitarie/Riviera. |
-| Collina + scritta PADOVA | MANCANTE | Nessun blocco dedicato. |
+| Mura veneziane | PARZIALE | Portello più spalle visuali dedicate anche a Porta Savonarola; manca ancora un circuito cittadino più esteso. |
+| Chiese | PARZIALE | Basilica del Santo, Duomo e Santa Giustina già esistono; manca eventuale passata finale. |
+| Piazza dei Signori | FATTO | Torre dell'Orologio già presente; aggiunti ritmo di lampioni e arredo leggero della piazza. |
+| Palazzo Ragione / Erbe-Frutta | FATTO | Palazzo/fontana esistenti; aggiunte isole mercato stilizzate Erbe/Frutta per rendere le piazze meno vuote. |
+| Università / Riviera | PARZIALE | Portello universitario è forte; manca estensione dedicata a Riviera/Bo oltre alla città esistente. |
+| Collina + scritta PADOVA | FATTO | Aggiunta collina arcade periferica con grande scritta PADOVA e culling per distanza. |
 | Gara tangenziale dedicata | MANCANTE | Mancano conferma, snapshot stato, turbo x3, premi e ripristino esatto. |
 | Militari rari fuori aeroporto | MANCANTE | Nessun blocco dedicato. |
 | Preservazione sistemi esistenti | IN CORSO | Non rompere Wanted5, carri, Portavalori1000, Cinquecento Turbo, aerei, paracadute, aeroporto, tram, acqua, respawn, fullscreen, Performance/Hyper, personaggi e salvataggi. |
-| Audit finale strade/terreno | IN CORSO | Audit intermedi esistono; quello finale va fatto solo dopo gli ultimi blocchi. |
-| Test globali finali | IN CORSO | Suite parziali presenti; rieseguire tutto a chiusura Phase 2. |
+| Audit finale strade/terreno | IN CORSO | Audit intermedi esistono; quello finale va fatto solo dopo gli ultimi blocchi strutturali. |
+| Test globali finali | IN CORSO | Suite parziali presenti; aggiunto `npm run test:phase2-polish` per controllare il wiring degli ultimi micro-blocchi. Rieseguire tutto a chiusura Phase 2. |
 
 ## Regole di coordinamento
 
@@ -55,13 +55,26 @@ Questo file serve a coordinare modifiche concorrenti sul branch `feat/modern-pad
 
 ## Modifiche aggiunte da ChatGPT dopo l'audit
 
-- `taxi-affordability.js`: impedisce la conferma di una corsa quando il saldo è inferiore alla tariffa e mostra il saldo richiesto/disponibile.
-- `zone-indicator.js`: mostra un banner breve quando cambia distretto/località; Portello viene identificato come quartiere universitario.
-- `phase2-ui.css`: stile isolato per i due sistemi sopra, senza modificare la logica principale del controller.
+- `taxi-affordability.js`: impedisce una corsa senza saldo sufficiente.
+- `zone-indicator.js`: banner ingresso zona.
+- `modern-gameplay.js`: smart spawn direzionale + posti di blocco dinamici a 3–4 stelle.
+- `modern-driving.js`: reazioni pedoni più vive a traffico e inseguimenti.
+- `camera-rig.js`: rifinitura free-look/recentraggio/retromarcia.
+- `ambient-audio.js`: ambience procedurale per distretto legata al toggle Sound.
+- `phase2-runtime.js` + `phase2-ui.css`: feedback camera, danno e rifinitura minimap.
+- `districts.js`: distretto aeroporto dedicato.
+- `city-details.js`: Piazza dei Signori, mercati Erbe/Frutta, spalle di Porta Savonarola e collina PADOVA.
+- `verify-phase2-polish.mjs`: verifica statica del wiring dei nuovi sistemi.
 
-## Prossimi blocchi a basso conflitto
+## Blocchi che richiedono ancora lavoro strutturale
 
-1. Estendere micromobilità e vita studentesca per zona senza aumentare troppo il budget attori.
-2. Rifinire progressivamente mura veneziane e identità urbana senza duplicare i landmark già esistenti.
-3. Valutare un pacchetto separato per lavoratori aeroportuali e reazioni NPC, mantenendo i budget di performance.
-4. Lasciare a un blocco strutturale dedicato villa SW/Treves, missioni, barche e gara tangenziale perché toccano più sistemi contemporaneamente.
+1. Nuova villa SW e restituzione di Parco Treves a parco pubblico.
+2. Gara tangenziale dedicata con snapshot/ripristino esatto dello stato e turbo x3.
+3. Barche e navigazione sull'acqua.
+4. Interni selezionati.
+5. Missioni brevi/random, incluso `TRASPORTO STUPEFACENTI` da €3,50 in forma puramente arcade/ironica.
+6. Sicurezza/mercenari.
+7. Lavoratori aeroporto animati, cani/NPC speciali e micromobilità multi-zona.
+8. Militari rari fuori aeroporto.
+9. Deformazione/segni di danno direttamente sulle mesh dei veicoli.
+10. Audit finale globale e suite completa prima del merge.
