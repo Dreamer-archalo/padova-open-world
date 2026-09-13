@@ -3,10 +3,11 @@ import {nearestOnSegment,pointInside} from './core.js';
 import {box,arch,windowArch,bake} from './landmarks.js';
 import {createPortelloDetails,PORTELLO_GATE} from './portello.js';
 import {createChurchLayer} from './churches.js';
+import {createHistoricCenter} from './historic-center.js';
 
 // Modular exterior additions. Geometry is authored, never a copied photograph.
 export const POI_REGISTRY=[
- {id:'moroni',name:'Palazzo Moroni',kind:'civic'},
+ {id:'moroni',name:'Palazzo Moroni',kind:'civic',pending:true},
  {id:'savonarola',name:'Porta Savonarola',kind:'gate'},
  {id:'bo',name:'Palazzo del Bo',kind:'university',pending:true}
 ];
@@ -34,13 +35,9 @@ function streetDetail(data){const root=new THREE.Group(),roads=data.roads.filter
  }
  root.userData.facades=count;if(root.children.length)bake(root);return root;
 }
-function streetLamp(root,terrain,x,z){const y=terrain.elevation(x,z);box(root,'#29373a',x,y+1.8,z,.1,3.6,.1);box(root,'#e6c47b',x,y+3.65,z,.32,.18,.32);}
 function marketStall(root,terrain,x,z,color='#b7644e'){const y=terrain.elevation(x,z);box(root,'#695844',x,y+.58,z,3.4,.12,1.8);for(const sx of [-1,1])for(const sz of [-1,1])box(root,'#5a4a3c',x+sx*1.45,y+.3,z+sz*.7,.08,.6,.08);box(root,color,x,y+1.72,z,3.7,.16,2.15);for(const sx of [-1,1])box(root,'#8b765f',x+sx*1.58,y+1.16,z,.07,1.15,.07);}
 function centralSquares(terrain){const root=new THREE.Group();root.userData.poi='central-squares';
- // Piazza dei Signori: restrained stone furniture and lamp rhythm around the clock-tower square.
- for(const [x,z] of [[-318,-118],[-300,-112],[-282,-112],[-264,-118],[-320,-157],[-298,-163],[-275,-163],[-254,-154]])streetLamp(root,terrain,x,z);
- for(const [x,z,yaw] of [[-306,-140,0],[-275,-145,0],[-291,-121,Math.PI/2]]){const y=terrain.elevation(x,z),bench=new THREE.Group();bench.position.set(x,y,z);bench.rotation.y=yaw;root.add(bench);box(bench,'#6f5741',0,.52,0,2.4,.12,.42);box(bench,'#3b4645',0,.27,0,2.15,.5,.08);}
- // Erbe / Frutta: small market islands so the area reads as a lived-in piazza instead of a bare road polygon.
+ // Erbe / Frutta keep a light market rhythm; Piazza dei Signori is now rebuilt by historic-center.js.
  const stalls=[[-132,-30,'#a95a4c'],[-114,-31,'#c99b55'],[-96,-31,'#5d7d6b'],[-181,-66,'#b46a4c'],[-198,-66,'#597a85'],[-215,-66,'#c49c58']];for(const [x,z,c] of stalls)marketStall(root,terrain,x,z,c);
  return root;
 }
@@ -63,6 +60,13 @@ export function cityDetails(scene,data,terrain){const root=new THREE.Group();roo
  const f=new THREE.Group();f.userData.poi='erbe-fountain';f.position.set(-77.6,terrain.elevation(-77.6,-41.7),-41.7);
  box(f,'#92918a',0,.55,0,1.1,1.1,.7);box(f,'#afaba0',0,1.16,0,1.3,.16,.85);
  for(const side of [-1,1]){box(f,'#77776e',side*.66,.65,0,.25,.14,.1);box(f,'#969389',side*.92,.28,0,.6,.38,.7);box(f,'#75a3a0',side*.92,.48,0,.45,.035,.54);box(f,'#adc9c0',side*.76,.57,0,.025,.16,.025);}bake(f);root.add(f);
- const tadi=streetDetail(data);root.add(tadi);const portello=createPortelloDetails(terrain);portello.userData.poi='portello';root.add(portello);const squares=centralSquares(terrain);root.add(squares);const walls=venetianWalls(terrain);root.add(walls);const hill=padovaHill(terrain);root.add(hill);const churches=createChurchLayer(data,terrain);root.add(churches.root);scene.add(root);
- return {root,tadi,portello,squares,walls,hill,churches,update(x,z){tadi.visible=Math.hypot(x+570,z+60)<550;portello.visible=Math.hypot(x-PORTELLO_GATE.x,z-PORTELLO_GATE.z)<650;squares.visible=Math.hypot(x+180,z+80)<850;walls.visible=Math.hypot(x+958,z+650)<850;hill.visible=Math.hypot(x+4050,z-3220)<1500;churches.update(x,z);for(const g of root.children)if(![tadi,portello,squares,walls,hill,churches.root].includes(g)){if(g.userData.poi==='erbe-fountain')g.visible=Math.hypot(x+77.6,z+41.7)<600;}}};
+ const tadi=streetDetail(data);root.add(tadi);
+ const portello=createPortelloDetails(terrain);portello.userData.poi='portello';root.add(portello);
+ const squares=centralSquares(terrain);root.add(squares);
+ const historic=createHistoricCenter(data,terrain);root.add(historic.root);
+ const walls=venetianWalls(terrain);root.add(walls);
+ const hill=padovaHill(terrain);root.add(hill);
+ const churches=createChurchLayer(data,terrain);root.add(churches.root);
+ scene.add(root);
+ return {root,tadi,portello,squares,historic,walls,hill,churches,update(x,z){tadi.visible=Math.hypot(x+570,z+60)<550;portello.visible=Math.hypot(x-PORTELLO_GATE.x,z-PORTELLO_GATE.z)<650;squares.visible=Math.hypot(x+180,z+80)<850;historic.update(x,z);walls.visible=Math.hypot(x+958,z+650)<850;hill.visible=Math.hypot(x+4050,z-3220)<1500;churches.update(x,z);for(const g of root.children)if(![tadi,portello,squares,historic.root,walls,hill,churches.root].includes(g)){if(g.userData.poi==='erbe-fountain')g.visible=Math.hypot(x+77.6,z+41.7)<600;}}};
 }
