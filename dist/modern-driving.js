@@ -36,7 +36,6 @@ export function roadCorridor(x,z,car,graph,terrain){
  const near=nearestRoad({x,z},graph,true);if(!near||near.d>Math.max(.25,(near.segment.road.w-car.spec.width)/2))return false;
  const y=terrain.roads.sample(near.segment.road,x,z)+.05;return Math.abs(y-(car.y??y))<1.4&&terrain.dry(x,z,car.spec.width/2,y);
 }
-// Pursuit targets anticipate motion and distribute patrols along the player's route.
 export function pursuitTarget(player,index,graph){const lead=[0,.6,1.3,2][index%4],d=clamp(Math.abs(player.speed)*lead,0,95);const near=nearestRoad({x:player.x+Math.sin(player.yaw)*d,z:player.z+Math.cos(player.yaw)*d},graph,true);return near||player;}
 export function pedestrianIntent(p,time,actors,player,signals,graph){
  const profile=p.behavior||['destination','stroll','idle','cross','wait','group','runner','wander','avoid','poi'][p.seed%10];
@@ -49,8 +48,11 @@ export function pedestrianIntent(p,time,actors,player,signals,graph){
    if(dist(p,p.crossGoal)<.6){p.anchor={...p.crossGoal};p.crossGoal=null;p.side*=-1;p.at=time+12;}
   }
  }
- const threat=actors.find(c=>c.mesh.visible&&Math.abs(c.speed)>3&&Math.abs((c.y||0)-(p.y||0))<3&&dist(c,p)<9);
- if(threat){speed=3.4;yaw=Math.atan2(p.x-threat.x,p.z-threat.z);crossing=false;}
+ const nearby=actors.filter(c=>c.mesh?.visible&&Math.abs((c.y||0)-(p.y||0))<3).sort((a,b)=>dist(a,p)-dist(b,p)),threat=nearby.find(c=>Math.abs(c.speed)>3&&dist(c,p)<Math.max(8,Math.abs(c.speed)*1.25));
+ const wantedPanic=(player.wanted||0)>=3&&dist(p,player)<16;
+ if(threat){const d=Math.max(.01,dist(threat,p)),side=(p.seed%2?1:-1)*.42;speed=3.65;yaw=Math.atan2((p.x-threat.x)/d+Math.cos(threat.yaw||0)*side,(p.z-threat.z)/d-Math.sin(threat.yaw||0)*side);crossing=false;}
+ else if(wantedPanic){speed=2.8;yaw=Math.atan2(p.x-player.x,p.z-player.z);crossing=false;}
+ else if(profile==='avoid'&&nearby[0]&&dist(nearby[0],p)<6){const a=nearby[0];speed=1.9;yaw=Math.atan2(p.x-a.x,p.z-a.z);}
  else if(dist(p,player)<2){speed=1.8;yaw=Math.atan2(p.x-player.x,p.z-player.z);}
  else if(profile==='wander')yaw=p.roadYaw+Math.sin(time*.22+p.seed)*.5;
  else if(profile==='group')yaw=p.roadYaw;
