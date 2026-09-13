@@ -18,6 +18,7 @@
     "test:jumps": "node --max-old-space-size=3072 verify-vehicle-jumps.mjs",
     "test:multilane": "node verify-multilane.mjs",
     "test:taxi": "node verify-taxi.mjs",
-    "test:portello": "node --max-old-space-size=3072 verify-portello.mjs"
+    "test:portello": "node --max-old-space-size=3072 verify-portello.mjs",
+    "test:phase2-polish": "node verify-phase2-polish.mjs"
   }
 }
