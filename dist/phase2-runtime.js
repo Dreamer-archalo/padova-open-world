@@ -1,4 +1,5 @@
 import './taxi-map-ui.js';
+import './ambient-pursuits.js';
 
 // UI-only Phase 2 feedback. It does not own gameplay state: it observes the
 // existing HUD, so it cannot interfere with saves, physics or streaming.
