@@ -3,17 +3,19 @@ import {vehicleBlocked} from './movement.js';
 
 export function taxiFare(from,to){return Math.min(100,Math.max(10,Math.ceil((8+dist(from,to)/65)/5)*5));}
 export function taxiDestinations(places,home,airport){
- const named=name=>places.find(p=>p.name===name);
+ const named=name=>places.find(p=>p.name===name),renamed=(name,newName,tag)=>{const p=named(name);return p?{...p,name:newName,tag:tag||p.tag}:null;};
  return [
-  {name:'Albignasego',tag:'Settore sud',...project(45.352,11.867)},
-  {name:'Sacro Cuore',tag:'Padova nord',...project(45.44,11.879)},
-  {name:'Vigonza',tag:'Settore nord-est',...project(45.434,11.965)},
-  {name:'Ponte San Nicolò',tag:'Settore sud-est',...project(45.366,11.923)},
-  named('Portello'),named('Prato della Valle'),named('Stazione'),
-  {name:'Zona Industriale',tag:'Padova est',...project(45.4105,11.945)},
+  named('Prato della Valle'),
+  named('Piazza dei Signori'),
+  named('Portello'),
   {...airport,name:'Aeroporto',tag:'Terminal e hangar'},
-  {...home,name:'Villa',tag:'Casa e respawn'}
- ].filter(Boolean);
+  named('Arcella'),
+  {name:'Capolinea tram sud (Albignasego)',tag:'Capolinea sud',...project(45.352,11.867)},
+  renamed('Stadio Euganeo','Stadio','Stadio Euganeo'),
+  {name:'Ponte San Nicolò',tag:'Settore sud-est',...project(45.366,11.923)},
+  {name:'Vigonza',tag:'Settore nord-est',...project(45.434,11.965)},
+  {name:'Zona Industriale',tag:'Padova est',...project(45.4105,11.945)}
+ ].filter(p=>p&&Number.isFinite(p.x)&&Number.isFinite(p.z));
 }
 
 function routeLength(path,start=0){let metres=0;for(let i=Math.max(1,start);i<path.length;i++)metres+=dist(path[i-1],path[i]);return metres;}
