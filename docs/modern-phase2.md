@@ -40,13 +40,24 @@ Test del blocco 2: `npm test`, `test:city-life`, `test:guardrails` e `git diff -
 
 Test del blocco 3: `test:jumps`, `test:guardrails`, `test:airport`, `npm test` e `git diff --check`: PASS. Quattro lanci e quattro atterraggi verificati sulla mappa reale; risultati in `vehicle-jump-results.json`.
 
-I primi due blocchi sono pubblicati progressivamente sul Site esistente. Nessun merge della PR #6.
+## Blocco 4 — traffico multicorsia e dinamica NPC
+
+- Una, due o tre corsie per senso in base a larghezza e senso unico della strada; posizione laterale reale, non una sola fila centrale.
+- Cambi corsia con controllo dello spazio anteriore e posteriore: sorpasso, rientro, corsia meno congestionata e preparazione alla svolta/svincolo.
+- Solo una parte delle auto libera la corsia quando il giocatore arriva molto più velocemente da dietro.
+- Accelerazione e frenata progressive con inerzia longitudinale; sportive, compatte e camion raggiungono la velocità con tempi differenti.
+- Rallentamento proporzionale alla curva e nuova accelerazione in uscita; velocità stradali e risposta differenziate per categoria.
+- Rimosso il filtro distrettuale che spegneva una seconda volta le auto: Iper Performance conserva 24 veicoli e Performance 36, affidandosi a LOD e frequenza AI.
+
+Test del blocco 4: `test:multilane`, `test:city-life`, `test:airport`, `npm test` e `git diff --check`: PASS. Risultati in `multilane-results.json`.
+
+I primi tre blocchi sono pubblicati progressivamente sul Site esistente. Nessun merge della PR #6.
 
 ## Blocchi ancora in lavorazione
 
 - [x] Audit completo guardrail/accessi e aperture centrali.
 - [x] Rampe, salto dei veicoli e sterzo ad alta velocità.
-- [ ] Multicorsia, cambi corsia, accelerazione NPC, sorpassi e sterzo ad alta velocità.
+- [x] Multicorsia, cambi corsia, accelerazione NPC, sorpassi e sterzo ad alta velocità.
 - [ ] Taxi fisico, tassista, scelta destinazione su mappa, conferma/prezzo e loading meme con attesa del nucleo.
 - [ ] Portello: porta e ponte percorribili, gradinate, studenti, attività occasionali, bici e monopattini.
 - [ ] Distribuzione/socialità NPC, cani, spawn fuori visuale e lavoratori aeroportuali.

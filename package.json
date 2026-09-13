@@ -15,6 +15,7 @@
     "audit:surfaces": "node --max-old-space-size=3072 verify-surface-layers.mjs",
     "test:streaming": "node --max-old-space-size=3072 verify-streaming.mjs",
     "test:guardrails": "node --max-old-space-size=3072 verify-motorway-access.mjs",
-    "test:jumps": "node --max-old-space-size=3072 verify-vehicle-jumps.mjs"
+    "test:jumps": "node --max-old-space-size=3072 verify-vehicle-jumps.mjs",
+    "test:multilane": "node verify-multilane.mjs"
   }
 }
