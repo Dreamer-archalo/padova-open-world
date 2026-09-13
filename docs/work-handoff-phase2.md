@@ -10,13 +10,13 @@ Questo file serve a coordinare modifiche concorrenti sul branch `feat/modern-pad
 | Guardrail / svincoli / aperture tangenziale | FATTO | Accessi verificati, aperture centrali e collisioni già trattati. |
 | Rampe / salti / fisica in aria | FATTO | Rampe periferiche e dinamica airborne presenti. |
 | Traffico multicorsia / accelerazione progressiva | FATTO | Corsie, cambi corsia, frenata/accelerazione e curve già presenti. |
-| Taxi abusivo | QUASI FATTO | Taxi fisico, autista, destinazioni, caricamento, curiosità, spawn vicino e layout completati. Resta da garantire a UI/runtime il blocco con fondi insufficienti. |
+| Taxi abusivo | FATTO | Taxi fisico, autista, destinazioni, caricamento, curiosità, spawn vicino, layout e blocco UI/runtime con fondi insufficienti collegati al gioco. |
 | Portello | FATTO | Porta passabile ad arco, ponte, parapetti, argini, scalinate, spalle delle mura veneziane, studenti, bici/scooter, bar e wayfinding universitario. |
 | Bici / monopattini per zone | PARZIALE | Sistema dinamico presente soprattutto a Portello; manca distribuzione coerente nel resto della città. |
 | NPC / città viva | PARZIALE | Pedoni con intenti, gruppi e distretti esistono; mancano ancora reazioni più ricche, cani e lavoratori aeroportuali dedicati. |
 | Smart spawn | PARZIALE | Spawn già filtrato per strada/densità/distanza; manca un blocco finale dedicato e testato. |
 | Minimap | PARZIALE | Minimap esistente e funzionante; nessun grande redesign Phase 2 ancora dedicato. |
-| Indicatore zona | PARZIALE | Distretto già mostrato nella minimap; manca un ingresso zona più leggibile/cinematico. |
+| Indicatore zona | FATTO | Banner transitorio collegato a distretto/località esistenti; Portello mostra esplicitamente `QUARTIERE UNIVERSITARIO`. |
 | Audio | PARZIALE | Motore/audio base esistente; manca un blocco ambientale completo. |
 | Danno visivo veicoli | MANCANTE | Danno numerico esiste, deformazione/segni visivi no. |
 | Camere veicolo | PARZIALE | Più modalità camera esistono; manca rifinitura dedicata Phase 2. |
@@ -53,9 +53,15 @@ Questo file serve a coordinare modifiche concorrenti sul branch `feat/modern-pad
 - Non mergiare la PR #6 senza richiesta esplicita dell'utente.
 - Esclusi da questa PR: Padova 1500/Galileo, missili/razzi, spazio/Luna e multiplayer.
 
+## Modifiche aggiunte da ChatGPT dopo l'audit
+
+- `taxi-affordability.js`: impedisce la conferma di una corsa quando il saldo è inferiore alla tariffa e mostra il saldo richiesto/disponibile.
+- `zone-indicator.js`: mostra un banner breve quando cambia distretto/località; Portello viene identificato come quartiere universitario.
+- `phase2-ui.css`: stile isolato per i due sistemi sopra, senza modificare la logica principale del controller.
+
 ## Prossimi blocchi a basso conflitto
 
-1. Chiudere il controllo fondi insufficienti del Taxi abusivo.
-2. Rendere più leggibile l'ingresso nei quartieri con un indicatore zona non invasivo.
-3. Estendere micromobilità e vita studentesca per zona senza aumentare troppo il budget attori.
-4. Rifinire progressivamente mura veneziane e identità urbana senza duplicare i landmark già esistenti.
+1. Estendere micromobilità e vita studentesca per zona senza aumentare troppo il budget attori.
+2. Rifinire progressivamente mura veneziane e identità urbana senza duplicare i landmark già esistenti.
+3. Valutare un pacchetto separato per lavoratori aeroportuali e reazioni NPC, mantenendo i budget di performance.
+4. Lasciare a un blocco strutturale dedicato villa SW/Treves, missioni, barche e gara tangenziale perché toccano più sistemi contemporaneamente.
