@@ -1,0 +1,12 @@
+{
+  "gate": "passable",
+  "portelloStructures": 5,
+  "bridge": "clear",
+  "micromobility": {
+    "hyper": 2,
+    "performance": 4,
+    "balanced": 6,
+    "detailed": 8
+  },
+  "routes": 3
+}

@@ -58,12 +58,24 @@ Test del blocco 4: `test:multilane`, `test:city-life`, `test:airport`, `npm test
 - Dieci destinazioni compatte, prezzo proporzionale alla distanza e tetto assoluto di €100; il denaro viene sottratto solo dopo la conferma.
 - **SCEGLI TU** permette di indicare un punto direttamente sulla mappa e confermare il prezzo calcolato.
 - Schermata nera con inseguimento 2D pixel-art animato su otto fotogrammi. Le curiosità su Padova avanzano con clic/tap.
-- Il loading ha funzione reale: prefetch di 650 metri e trasferimento soltanto quando terreno, acqua, strade, ponti e collisioni essenziali risultano pronti.
+- Il loading ha funzione reale: il focus dello streaming passa alla destinazione, con prefetch compatto di 260 metri e trasferimento soltanto quando il nucleo immediatamente visibile di terreno, acqua, strade, ponti e collisioni risulta pronto. Il dettaglio secondario si completa dopo il fade-in.
 - Durante il caricamento vengono sospesi traffico, pedoni e sistemi ambientali secondari.
 
 Test del blocco 5: `test:taxi`, `test:streaming`, `test:multilane`, `test:jumps`, `test:city-life`, `test:airport`, `npm test` e `git diff --check`: PASS. Risultati in `taxi-results.json`.
 
-I primi quattro blocchi sono pubblicati progressivamente sul Site esistente. Il blocco 5 è pronto per la pubblicazione. Nessun merge della PR #6.
+## Blocco 6 — Portello e micromobilità
+
+- Porta Ognissanti sostituita da una struttura leggera con vera apertura fisica: il passaggio centrale non usa più la vecchia collisione rettangolare piena.
+- Ponte del Portello con parapetti continui fuori dalla carreggiata e centro del ponte verificato percorribile.
+- Gradinate leggibili su entrambe le rive, appoggiate alla rete pedonale esistente senza aggiungere collisioni trasversali.
+- Arredi universitari, panchine, cartelloni e sei biciclette/monopattini parcheggiati.
+- Micromobilità NPC su percorsi pedonali e ciclabili del Portello: bici urbana, bici con cestino e monopattino elettrico, con accelerazione morbida e arresto davanti agli ostacoli.
+- Budget scalabile: 2 attori in Iper Performance, 4 in Performance, 6 in Balanced e 8 in Detailed; simulazione sospesa sotto pressione di streaming.
+- Correzione emersa durante la prova: il taxi non precarica più un intero settore. Il nucleo richiesto è stato ridotto e la destinazione riceve priorità esclusiva durante il nero.
+
+Test del blocco 6: `test:portello`, `test:taxi`, `test:streaming`, sintassi e `git diff --check`: PASS. Risultati in `portello-results.json`, `taxi-results.json` e `streaming-results.json`.
+
+I primi cinque blocchi sono pubblicati progressivamente sul Site esistente. Il blocco 6 è pronto per la pubblicazione. Nessun merge della PR #6.
 
 ## Blocchi ancora in lavorazione
 
@@ -71,7 +83,8 @@ I primi quattro blocchi sono pubblicati progressivamente sul Site esistente. Il 
 - [x] Rampe, salto dei veicoli e sterzo ad alta velocità.
 - [x] Multicorsia, cambi corsia, accelerazione NPC, sorpassi e sterzo ad alta velocità.
 - [x] Taxi fisico, tassista, scelta destinazione su mappa, conferma/prezzo e loading pixel-art con attesa del nucleo.
-- [ ] Portello: porta e ponte percorribili, gradinate, studenti, attività occasionali, bici e monopattini.
+- [x] Portello: porta e ponte percorribili, gradinate e micromobilità leggera.
+- [ ] Portello: gruppi di studenti e attività occasionali (integrati nel successivo blocco NPC/socialità).
 - [ ] Distribuzione/socialità NPC, cani, spawn fuori visuale e lavoratori aeroportuali.
 - [ ] Minimap, ingresso nei quartieri, audio, danni visivi e telecamere per mezzo.
 - [ ] Nuova proprietà Mandria/Armistizio, garage/hangar, ripristino Treves e migrazione HOME/respawn.

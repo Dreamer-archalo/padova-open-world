@@ -13,6 +13,7 @@ import {gameplayStructures,gameplayVegetation,insideArea} from './gameplay-areas
 import {DISTRICTS} from './districts.js';
 import {detailedLandmarks} from './landmarks.js';
 import {nearestOnSegment} from './core.js';
+import {preparePortello,portelloStructures} from './portello.js';
 import * as THREE from './vendor/three.module.js';
 import {PRATO} from './terrain.js';
 import {SpatialIndex,pointInside,clamp,project,dist} from './core.js';
@@ -84,11 +85,11 @@ function makeLandmarks(scene,data){const g=new THREE.Group(),root=g;
   g.add(prato);scene.add(g);return g;
 }
 export class CityWorld{
- constructor(scene,data,terrain=null,quality=null){if(terrain?.modern)data.buildings=modernFootprints(data.buildings,terrain);this.terrain=terrain;this.scene=scene;this.data=data;this.chunks=new Map();this.collision=new SpatialIndex(60);this.loaded=new Map();this.queue=[];this.lastKey='';this.quality=terrain?.modern?quality||'medium':'medium';this.profile=qualityFor(this.quality);this.radius=this.profile.radius;this.pendingBuild=null;
+ constructor(scene,data,terrain=null,quality=null){if(terrain?.modern){data.buildings=modernFootprints(data.buildings,terrain);preparePortello(data);}this.terrain=terrain;this.scene=scene;this.data=data;this.chunks=new Map();this.collision=new SpatialIndex(60);this.loaded=new Map();this.queue=[];this.lastKey='';this.quality=terrain?.modern?quality||'medium':'medium';this.profile=qualityFor(this.quality);this.radius=this.profile.radius;this.pendingBuild=null;
   this.wallMats={historic:new THREE.MeshStandardMaterial({map:facadeTexture('historic'),vertexColors:true,roughness:1,side:THREE.DoubleSide}),modern:new THREE.MeshStandardMaterial({map:facadeTexture('modern'),vertexColors:true,roughness:.92,side:THREE.DoubleSide}),industrial:new THREE.MeshStandardMaterial({map:facadeTexture('industrial'),vertexColors:true,roughness:1,side:THREE.DoubleSide})};this.roofMat=new THREE.MeshStandardMaterial({vertexColors:true,roughness:1,side:THREE.DoubleSide});this.groundMat=new THREE.MeshStandardMaterial({vertexColors:true,roughness:1,side:THREE.DoubleSide});this.flatMat=new THREE.MeshBasicMaterial({vertexColors:true,side:THREE.DoubleSide});this.detailMats=new Set([...Object.values(this.wallMats),this.roofMat,this.groundMat]);
   if(!terrain){const ground=new THREE.Mesh(new THREE.PlaneGeometry(45000,45000),material('#8c9b73'));ground.rotation.x=-Math.PI/2;ground.position.y=-.05;scene.add(ground);}
   else for(let x=-6400;x<7680;x+=CHUNK)for(let z=-7040;z<6720;z+=CHUNK)this.chunk(x,z);
-  for(const b of data.buildings){b.minX=Math.min(...b.p.map(p=>p[0]));b.maxX=Math.max(...b.p.map(p=>p[0]));b.minZ=Math.min(...b.p.map(p=>p[1]));b.maxZ=Math.max(...b.p.map(p=>p[1]));b.cx=(b.minX+b.maxX)/2;b.cz=(b.minZ+b.maxZ)/2;b.minY=terrain?terrain.elevation(b.cx,b.cz):0;if(terrain?.modern){const bottom=Math.min(b.minY,...b.p.map(p=>terrain.groundHeight(...p)-.25));b.h+=b.minY-bottom;b.minY=bottom;}this.collision.add(b,b.minX,b.minZ,b.maxX,b.maxZ);this.chunk(b.cx,b.cz).buildings.push(b);}
+  for(const b of data.buildings){b.minX=Math.min(...b.p.map(p=>p[0]));b.maxX=Math.max(...b.p.map(p=>p[0]));b.minZ=Math.min(...b.p.map(p=>p[1]));b.maxZ=Math.max(...b.p.map(p=>p[1]));b.cx=(b.minX+b.maxX)/2;b.cz=(b.minZ+b.maxZ)/2;b.minY=terrain?terrain.elevation(b.cx,b.cz):0;if(terrain?.modern){const bottom=Math.min(b.minY,...b.p.map(p=>terrain.groundHeight(...p)-.25));b.h+=b.minY-bottom;b.minY=bottom;}if(!b.passableGateway)this.collision.add(b,b.minX,b.minZ,b.maxX,b.maxZ);this.chunk(b.cx,b.cz).buildings.push(b);}
   this.landmarks=makeLandmarks(scene,data);
   if(terrain)for(const o of this.landmarks.children){const b=data.buildings.find(b=>b.n===o.userData.buildingName);o.position.y+=b?b.minY:terrain.elevation(o.position.x,o.position.z);}
   if(terrain?.modern){
@@ -104,7 +105,7 @@ export class CityWorld{
   if(terrain){
    // Stone balustrades of the four Prato bridges use the same local frame as the water mask.
    for(const [x,z,yaw,width] of [[0,130.5,0,11],[0,-130.5,0,11],[85.5,0,Math.PI/2,9],[-85.5,0,Math.PI/2,9]])for(const side of [-1,1]){const px=x+Math.cos(yaw)*(width/2+.2)*side,pz=z-Math.sin(yaw)*(width/2+.2)*side,c=Math.cos(PRATO.yaw),s=Math.sin(PRATO.yaw),wx=PRATO.x+c*px+s*pz,wz=PRATO.z-s*px+c*pz,a=yaw+PRATO.yaw,points=[[-.25,-7],[.25,-7],[.25,7],[-.25,7]].map(([u,v])=>[wx+Math.cos(a)*u+Math.sin(a)*v,wz-Math.sin(a)*u+Math.cos(a)*v]),xs=points.map(p=>p[0]),zs=points.map(p=>p[1]),b={p:points,minX:Math.min(...xs),maxX:Math.max(...xs),minZ:Math.min(...zs),maxZ:Math.max(...zs),minY:terrain.pratoHeight+.3,h:1.2};this.collision.add(b,b.minX,b.minZ,b.maxX,b.maxZ);}
-   this.structures=[...roadStructures(terrain),...(terrain.modern?motorwayBarriers(terrain):[]),...gameplayStructures(terrain)];if(terrain.modern)this.structures.push(...arcadeRamps(terrain,this.structures.filter(b=>b.kind==='guardrail'||b.kind==='median'),this.collision,this.structures));for(const b of this.structures){if(b.solid!==false)this.collision.add(b,b.minX,b.minZ,b.maxX,b.maxZ);this.chunk(b.x,b.z).structures.push(b);}this.details=cityDetails(scene,data,terrain);}
+   this.structures=[...roadStructures(terrain),...(terrain.modern?motorwayBarriers(terrain):[]),...gameplayStructures(terrain),...(terrain.modern?portelloStructures(terrain):[])];if(terrain.modern)this.structures.push(...arcadeRamps(terrain,this.structures.filter(b=>b.kind==='guardrail'||b.kind==='median'),this.collision,this.structures));for(const b of this.structures){if(b.solid!==false)this.collision.add(b,b.minX,b.minZ,b.maxX,b.maxZ);this.chunk(b.x,b.z).structures.push(b);}this.details=cityDetails(scene,data,terrain);}
   for(const tree of gameplayVegetation(terrain))this.chunk(tree.x,tree.z).trees.push(tree);
  }
  chunk(x,z){const i=Math.floor(x/CHUNK),j=Math.floor(z/CHUNK),key=i+','+j;if(!this.chunks.has(key))this.chunks.set(key,{i,j,buildings:[],roads:[],water:[],areas:[],structures:[],trees:[]});return this.chunks.get(key);}

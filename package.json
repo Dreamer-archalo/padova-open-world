@@ -17,6 +17,7 @@
     "test:guardrails": "node --max-old-space-size=3072 verify-motorway-access.mjs",
     "test:jumps": "node --max-old-space-size=3072 verify-vehicle-jumps.mjs",
     "test:multilane": "node verify-multilane.mjs",
-    "test:taxi": "node verify-taxi.mjs"
+    "test:taxi": "node verify-taxi.mjs",
+    "test:portello": "node --max-old-space-size=3072 verify-portello.mjs"
   }
 }

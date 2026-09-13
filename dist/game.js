@@ -22,6 +22,7 @@ import {Terrain, WaterRecovery, safeDryRoad} from './terrain.js';
 import {VEHICLES,isBike,createVehicle,createRider,vehiclesOverlap} from './vehicles.js';
 import {BuildingModels} from './building-models.js';
 import {taxiFare,taxiDestinations,advanceTaxi} from './taxi-service.js';
+import {createMicromobilityActor,micromobilityCount,stepMicromobility,PORTELLO_GATE} from './portello.js';
 import {clamp,dist,angleDiff,collides,makeRoadGraph,nearestRoad,nearestOnSegment,roadRoute} from './core.js';
 
 const $=s=>document.getElementById(s);
@@ -30,7 +31,7 @@ let characterPicker;const cameraRig=new CameraRig();let signals,trams,incidents,
 const resolution=new AdaptiveResolution();let detailAt=0;
 const clock=new FixedClock();let modelLayer,renderAlpha=1,previousPose=null;const previousActors=new Map();
 function visualPose(){if(!previousPose||previousPose.mode!==state.mode||dist(previousPose,state)>10)return state;return {x:THREE.MathUtils.lerp(previousPose.x,state.x,renderAlpha),z:THREE.MathUtils.lerp(previousPose.z,state.z,renderAlpha),y:THREE.MathUtils.lerp(previousPose.y,state.y,renderAlpha)};}
-const keys=new Set(),cars=[],people=[],cops=[];let data,world,graph,patrolGraph,renderer,scene,camera,sun,player,marker,mapBase,mapCtx,frameTime=0,lastUi=0,toastUntil=0,collisionCooldown=0,followYaw=0,camOrbit=0,camPitch=.38,drag=null,jumpPressed=false,engineAudio=null,frame=0;
+const keys=new Set(),cars=[],people=[],cops=[],micromobility=[];let data,world,graph,patrolGraph,renderer,scene,camera,sun,player,marker,mapBase,mapCtx,frameTime=0,lastUi=0,toastUntil=0,collisionCooldown=0,followYaw=0,camOrbit=0,camPitch=.38,drag=null,jumpPressed=false,engineAudio=null,frame=0;
 const canvas=$('world'),mini=$('minimap'),miniCtx=mini.getContext('2d');
 const performanceOverlay=new PerformanceOverlay($('performanceOverlay'));
 const fullscreenControls=createFullscreenControls(document,window,{onEnter:closeDialogs,onResize:()=>requestAnimationFrame(resizeViewport)});
@@ -106,6 +107,7 @@ function createPopulation(){
  const population=qualityFor(state.quality).people;for(let i=0;i<population;i++){const p={x:0,z:0,yaw:0,seed:i,mesh:createPerson(['#d2b487','#719085','#bc745a','#527789','#c18c77','#6f789b'][i%6],i),at:0};scene.add(p.mesh);people.push(p);placePerson(p);actorDetail(p,qualityFor(state.quality).simple);}
  for(const pad of helicopterPads(terrain,world.collision,HELICOPTER).filter(p=>!data.gameplay||p.name!=='Aeroporto')){const c=addCar(pad.x,pad.z,0,false,true,'airone');c.y=pad.y;c.home=pad;c.fixedSpawn=true;c.name+=' · '+pad.name;poseVehicle(c);}
  gameplay?.populate();
+ for(let i=0;i<micromobilityCount(state.quality);i++){const actor=createMicromobilityActor(i,terrain);scene.add(actor.mesh);micromobility.push(actor);}
 }
 function placePerson(p){if(p.budgetSleeping||p.koUntil>state.elapsed)return;p.retryAt=state.elapsed+2+(p.seed%5)*.3;p.lodFrom=null;p.simulatedAt=state.elapsed;p.nextThink=state.elapsed+(p.seed%Math.round(60/qualityFor(state.quality).peopleHz))/60;p.health=100;p.koUntil=0;p.at=state.elapsed+4+Math.random()*8;p.mesh.visible=false;
  for(let attempt=0;attempt<16;attempt++){const id=goodNearbyNode(state,25,240);if(id===null)return;const n=graph.nodes[id],e=n.edges.find(e=>!/motorway|trunk/.test(e.road.k));if(!e)continue;
@@ -199,14 +201,14 @@ function updateTaxi(dt){
   return;
  }
  if(taxi.phase==='loading'){
-  const ready=world.coreReady(taxi.destination.x,taxi.destination.z,180),metrics=world.streaming?.metrics,seconds=state.elapsed-taxi.loadingAt;
+  const ready=world.coreReady(taxi.destination.x,taxi.destination.z,72),metrics=world.streaming?.metrics,seconds=state.elapsed-taxi.loadingAt;
   $('taxiLoadingStatus').textContent=ready?'Strade pronte · arrivo in corso':'Preparazione strade · '+(metrics?.coreQueued??0)+' chunk essenziali in coda';
   if(seconds<2.3||!ready)return;
   const p=taxi.destination,c=taxi.car;Object.assign(c,{x:p.x,z:p.z,y:p.y??terrain.height(p.x,p.z),yaw:p.yaw,speed:0,health:Math.max(1,c.health),parked:true});resetGroundMotion(c);poseVehicle(c);Object.assign(state,{mode:'car',car:c,x:c.x,z:c.z,y:c.y,yaw:c.yaw,speed:0,vy:0,health:c.health,waypoint:null,route:[]});taxi.phase='at-destination';previousPose=null;previousActors.delete(c.mesh);waterRecovery.reset();waterRecovery.remember(state,terrain);world.update(state.x,state.z,true);followYaw=state.yaw;cameraRig.reset(state.yaw);camera.position.set(state.x-10,state.y+8,state.z-12);$('taxiLoading').hidden=true;document.body.classList.remove('taxi-transit');toast('Destinazione raggiunta. Premi E per scendere.',5);
  }
 }
 function beginTaxiTrip(destination,road,price){
- closeDialogs();state.money-=price;save();keys.clear();const c=taxi.car;taxi.driver.visible=false;taxi.phase='loading';taxi.destination={...road,name:destination.name};taxi.loadingAt=state.elapsed;Object.assign(state,{mode:'car',car:c,x:c.x,z:c.z,y:c.y,yaw:c.yaw,speed:0,vy:0,health:c.health,waypoint:null,route:[]});c.parked=true;c.speed=0;player.visible=false;taxiFactIndex=Math.floor((state.elapsed+price)%TAXI_FACTS.length);$('taxiFact').textContent=TAXI_FACTS[taxiFactIndex];$('taxiLoadingStatus').textContent='Preparazione di terreno e strade';$('taxiLoading').hidden=false;document.body.classList.add('taxi-transit');world.prefetch(road.x,road.z,650);
+ closeDialogs();state.money-=price;save();keys.clear();const c=taxi.car;taxi.driver.visible=false;taxi.phase='loading';taxi.destination={...road,name:destination.name};taxi.loadingAt=state.elapsed;Object.assign(state,{mode:'car',car:c,x:c.x,z:c.z,y:c.y,yaw:c.yaw,speed:0,vy:0,health:c.health,waypoint:null,route:[]});c.parked=true;c.speed=0;player.visible=false;taxiFactIndex=Math.floor((state.elapsed+price)%TAXI_FACTS.length);$('taxiFact').textContent=TAXI_FACTS[taxiFactIndex];$('taxiLoadingStatus').textContent='Preparazione di terreno e strade';$('taxiLoading').hidden=false;document.body.classList.add('taxi-transit');world.prefetch(road.x,road.z,260);
 }
 function confirmTaxi(destination){
  const road=dryRoad(destination,VEHICLES.taxi,taxi.car);if(!road){toast('Destinazione non raggiungibile dalla rete stradale.',5);return;}const price=taxiFare(taxi.car,road);showMenu('Conferma il viaggio','<p class="about-copy"><strong>'+destination.name+'</strong><br>Prezzo calcolato sulla distanza: <strong>€'+price+'</strong> · massimo €100.</p><div class="menu-actions"><button class="primary" id="confirmTaxi">Conferma e parti</button><button id="cancelTaxi">Annulla</button></div>');$('confirmTaxi').onclick=()=>beginTaxiTrip(destination,road,price);$('cancelTaxi').onclick=openTaxiMenu;
@@ -308,6 +310,8 @@ function updatePeople(dt){const interval=(world.streaming?.metrics.pressure?3:1)
  if(!p.simple){const a=p.speed>.1?Math.sin(state.elapsed*(p.speed>2?10:5)+p.seed)*.3:0;p.mesh.userData.hips.children[0].rotation.x=a;p.mesh.userData.hips.children[1].rotation.x=-a;}
 }}
 
+function updateMicromobility(dt){const active=micromobilityCount(state.quality),near=Math.hypot(state.x-PORTELLO_GATE.x,state.z-PORTELLO_GATE.z)<720&&!world.streaming?.metrics.pressure;for(let i=0;i<micromobility.length;i++){const a=micromobility[i];a.mesh.visible=near&&i<active;if(a.mesh.visible)stepMicromobility(a,dt,terrain,[state,...cars,...people]);}}
+
 function updateCamera(dt){
  if(!state.started){const a=state.elapsed*.026;camera.position.set(state.x+Math.sin(a)*70,state.y+65,state.z+Math.cos(a)*70);camera.lookAt(state.x,state.y+5,state.z);return;}
  const speed=Math.abs(state.speed);
@@ -345,7 +349,7 @@ function refreshActorDetail(){const q=qualityFor(state.quality);for(const a of [
 function applyQuality(){const q=qualityFor(state.quality);world?.setQuality(state.quality);trams?.setQuality(state.quality);resolution.reset();if(renderer){renderer.setPixelRatio(Math.min(devicePixelRatio,q.pixelRatio));renderer.shadowMap.enabled=q.shadows;renderer.setSize(innerWidth,innerHeight);scene.fog.far=q.fog;camera.far=q.fog+150;camera.updateProjectionMatrix();}
  if(!state.ready)return;
  let active=0;for(const c of cars){if(c===state.car||c.fixedSpawn||c.hostile||c.missionUnit||c.militarySurplus||c.parked)continue;c.budgetSleeping=active++>=q.traffic;if(c.budgetSleeping){c.mesh.visible=false;c.speed=0;}}
- for(let i=0;i<people.length;i++){const p=people[i];p.budgetSleeping=i>=q.people;p.simulatedAt=state.elapsed;p.nextThink=state.elapsed+(p.seed%Math.round(60/q.peopleHz))/60;if(p.budgetSleeping)p.mesh.visible=false;}
+ for(let i=0;i<people.length;i++){const p=people[i];p.budgetSleeping=i>=q.people;p.simulatedAt=state.elapsed;p.nextThink=state.elapsed+(p.seed%Math.round(60/q.peopleHz))/60;if(p.budgetSleeping)p.mesh.visible=false;}while(micromobility.length<micromobilityCount(state.quality)){const a=createMicromobilityActor(micromobility.length,terrain);scene.add(a.mesh);micromobility.push(a);}
  while(people.length<q.people){const i=people.length,p={x:0,z:0,yaw:0,seed:i,mesh:createPerson('#719085',i),at:0};scene.add(p.mesh);people.push(p);placePerson(p);}
  while(active++<q.traffic){const c=addCar(0,0);placeTraffic(c);}
  refreshActorDetail();
@@ -382,7 +386,7 @@ function animate(time){
  if(!state.ready)return;frame++;
  if(characterPicker?.active){world.update(state.x,state.z);characterPicker.update(time,innerWidth,innerHeight);renderer.render(characterPicker.scene,characterPicker.camera);return;}
  if(!state.paused){
-   world.update(state.x,state.z,false,{speed:state.speed,yaw:state.yaw,aircraft:!!state.car?.spec.aircraft,altitude:Math.max(0,state.y-terrain.elevation(state.x,state.z))});
+   const streamFocus=taxi?.phase==='loading'?taxi.destination:state,streamTaxi=taxi?.phase==='loading';world.update(streamFocus.x,streamFocus.z,false,{speed:streamTaxi?0:state.speed,yaw:streamFocus.yaw??state.yaw,aircraft:!streamTaxi&&!!state.car?.spec.aircraft,altitude:streamTaxi?0:Math.max(0,state.y-terrain.elevation(state.x,state.z)),radius:streamTaxi?360:undefined});updateMicromobility(dt);
    renderAlpha=clock.advance(dt,simulate);
    const pose=visualPose();if(state.mode==='foot')player.position.set(pose.x,pose.y+.08,pose.z);
    for(const a of [...cars,...people,...cops]){if(!a.mesh.visible||a.parked&&a!==state.car)continue;const prev=a.lodFrom||previousActors.get(a.mesh);if(!prev||dist(prev,a)>10)continue;const blend=a.lodFrom?clamp((state.elapsed-a.lodAt+renderAlpha*clock.step)/a.lodSpan,0,1):renderAlpha;a.mesh.position.x=THREE.MathUtils.lerp(prev.x,a.x,blend);a.mesh.position.z=THREE.MathUtils.lerp(prev.z,a.z,blend);a.mesh.position.y=a===state.car&&waterRecovery.active?pose.y:THREE.MathUtils.lerp(prev.y,a.y,blend);a.mesh.rotation.y=prev.yaw+angleDiff(a.yaw,prev.yaw)*blend;}

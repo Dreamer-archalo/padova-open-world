@@ -29,6 +29,9 @@
   "loading": {
     "pixelFrames": 8,
     "factsClickable": true,
-    "coreReadyGate": true
+    "coreReadyGate": true,
+    "coreRadius": 72,
+    "prefetchRadius": 260,
+    "streamFocusRadius": 360
   }
 }

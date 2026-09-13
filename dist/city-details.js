@@ -1,6 +1,7 @@
 import * as THREE from './vendor/three.module.js';
 import {nearestOnSegment,pointInside} from './core.js';
 import {box,arch,windowArch,bake} from './landmarks.js';
+import {createPortelloDetails,PORTELLO_GATE} from './portello.js';
 
 // Modular exterior additions. Geometry is authored, never a copied photograph.
 export const POI_REGISTRY=[
@@ -42,5 +43,5 @@ export function cityDetails(scene,data,terrain){const root=new THREE.Group();roo
  const f=new THREE.Group();f.userData.poi='erbe-fountain';f.position.set(-77.6,terrain.elevation(-77.6,-41.7),-41.7);
  box(f,'#92918a',0,.55,0,1.1,1.1,.7);box(f,'#afaba0',0,1.16,0,1.3,.16,.85);
  for(const side of [-1,1]){box(f,'#77776e',side*.66,.65,0,.25,.14,.1);box(f,'#969389',side*.92,.28,0,.6,.38,.7);box(f,'#75a3a0',side*.92,.48,0,.45,.035,.54);box(f,'#adc9c0',side*.76,.57,0,.025,.16,.025);}bake(f);root.add(f);
- const tadi=streetDetail(data);root.add(tadi);scene.add(root);return {root,tadi,update(x,z){tadi.visible=Math.hypot(x+570,z+60)<550;for(const g of root.children)if(g!==tadi){if(g.userData.poi==='erbe-fountain')g.visible=Math.hypot(x+77.6,z+41.7)<600;}}};
+ const tadi=streetDetail(data);root.add(tadi);const portello=createPortelloDetails(terrain);portello.userData.poi='portello';root.add(portello);scene.add(root);return {root,tadi,portello,update(x,z){tadi.visible=Math.hypot(x+570,z+60)<550;portello.visible=Math.hypot(x-PORTELLO_GATE.x,z-PORTELLO_GATE.z)<650;for(const g of root.children)if(g!==tadi&&g!==portello){if(g.userData.poi==='erbe-fountain')g.visible=Math.hypot(x+77.6,z+41.7)<600;}}};
 }

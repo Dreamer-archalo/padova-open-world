@@ -1,0 +1,22 @@
+import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import {t,ctx} from './tools/controller-harness.mjs';
+import {collides} from './dist/core.js';
+import {PORTELLO_GATE,PORTELLO_BRIDGE,MICROMOBILITY_ROUTES,micromobilityCount,stepMicromobility} from './dist/portello.js';
+
+const gate=t.world.data.buildings.find(b=>b.n==='Porta Ognissanti');
+assert(gate?.passableGateway,'the original solid gate footprint must be replaced');
+assert.equal(collides(PORTELLO_GATE.x,PORTELLO_GATE.z,.6,t.world.collision,t.terrain.height(PORTELLO_GATE.x,PORTELLO_GATE.z)),null,'central arch must be physically open');
+assert(collides(PORTELLO_GATE.x+5.75,PORTELLO_GATE.z,.6,t.world.collision,t.terrain.height(PORTELLO_GATE.x+5.75,PORTELLO_GATE.z)),'masonry wing must remain solid');
+const parts=t.world.structures.filter(s=>s.kind?.startsWith('portello-'));
+assert.equal(parts.filter(s=>s.kind==='portello-gate').length,2);
+assert.equal(parts.filter(s=>s.kind==='portello-parapet').length,2);
+assert.equal(parts.filter(s=>s.kind==='portello-lintel').length,1);
+for(let z=PORTELLO_BRIDGE.z-15;z<=PORTELLO_BRIDGE.z+15;z+=3)assert.equal(collides(PORTELLO_BRIDGE.x, z,.5,t.world.collision,t.terrain.height(PORTELLO_BRIDGE.x,z)),null,'bridge centreline must remain open');
+assert.deepEqual(['hyper','low','medium','high'].map(micromobilityCount),[2,4,6,8]);
+assert(MICROMOBILITY_ROUTES.some(r=>r.kind==='bike')&&MICROMOBILITY_ROUTES.some(r=>r.kind==='scooter'));
+const actor=ctx.createMicromobilityActor(0,t.terrain),start={x:actor.x,z:actor.z};for(let i=0;i<600;i++)stepMicromobility(actor,1/60,t.terrain,[]);
+assert(Math.hypot(actor.x-start.x,actor.z-start.z)>8,'bicycle must advance along its route');
+assert(Number.isFinite(actor.y)&&actor.speed>0&&actor.speed<=4.3);
+const report={gate:'passable',portelloStructures:parts.length,bridge:'clear',micromobility:{hyper:2,performance:4,balanced:6,detailed:8},routes:MICROMOBILITY_ROUTES.length};
+fs.writeFileSync('docs/portello-results.json',JSON.stringify(report,null,2)+'\n');console.log(JSON.stringify(report,null,2));

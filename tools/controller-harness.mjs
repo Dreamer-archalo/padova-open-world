@@ -25,6 +25,7 @@ import * as movement from '../dist/movement.js';
 import * as terrainModule from '../dist/terrain.js';
 import * as vehicles from '../dist/vehicles.js';
 import * as taxiModule from '../dist/taxi-service.js';
+import * as portelloModule from '../dist/portello.js';
 import {BuildingModels,validateEntry} from '../dist/building-models.js';
 import {inspectGLB} from '../dist/model-format.js';
 import {GLTFLoader} from '../dist/vendor/GLTFLoader.js';
@@ -36,7 +37,7 @@ const element=()=>({style:{},dataset:{},hidden:false,open:false,textContent:'',w
 ids.forEach(id=>els.set(id,element()));
 const document={body:{classList:{add(){},remove(){}}},getElementById(id){assert(els.has(id),'missing DOM id '+id);return els.get(id);},querySelectorAll:()=>[],addEventListener(){},createElement:element};
 globalThis.document=document;
-const ctx=vm.createContext({THREE,SpeedCameras,...perfOverlay,...groundDynamics,...footController,...characterModule,...qualityModule,...fullscreenModule,...gameplayAreas,...specialVehicles,...modernGameplay,...modernVehicles,...modernDriving,...cameraModule,...districtModule,...trafficModule,...tramModule,...incidentModule,...core,...worldModule,...movement,cameraBoom:movement.cameraBoomContinuous,...terrainModule,...vehicles,...taxiModule,BuildingModels,document,window:{addEventListener(){}},localStorage:{getItem:()=>null,setItem(){}},console,Math,JSON,Set,Map,Number,Array,Float32Array,Uint8Array,devicePixelRatio:1,innerWidth:1440,innerHeight:900,requestAnimationFrame(){},location:{reload(){}}});
+const ctx=vm.createContext({THREE,SpeedCameras,...perfOverlay,...groundDynamics,...footController,...characterModule,...qualityModule,...fullscreenModule,...gameplayAreas,...specialVehicles,...modernGameplay,...modernVehicles,...modernDriving,...cameraModule,...districtModule,...trafficModule,...tramModule,...incidentModule,...core,...worldModule,...movement,cameraBoom:movement.cameraBoomContinuous,...terrainModule,...vehicles,...taxiModule,...portelloModule,BuildingModels,document,window:{addEventListener(){}},localStorage:{getItem:()=>null,setItem(){}},console,Math,JSON,Set,Map,Number,Array,Float32Array,Uint8Array,devicePixelRatio:1,innerWidth:1440,innerHeight:900,requestAnimationFrame(){},location:{reload(){}}});
 let code=fs.readFileSync(new URL('../dist/game.js',import.meta.url),'utf8').replace(/^import .*;\n/gm,'').replace(/init\(\);\s*$/,'');vm.runInContext(code,ctx);
 ctx.testData=JSON.parse(fs.readFileSync(new URL('../dist/data/padova.json',import.meta.url)));
 ctx.cityData=JSON.parse(fs.readFileSync(new URL('../dist/data/city.json',import.meta.url)));
