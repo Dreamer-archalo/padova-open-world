@@ -21,13 +21,17 @@ function byName(world,pattern,centre){let best=null,bestScore=Infinity;for(const
 
 // The streamed OSM shell used to be drawn on top of the authored church shell.
 // Mark authored churches before the real generator sees the chunk, while keeping
-// the original footprint collision as the physical envelope.
+// the original footprint collision as the physical envelope. Preserve whether a
+// more specific landmark system already owned the building before this patch.
 const buildSteps=CityWorld.prototype.buildStageSteps;
 if(!CityWorld.prototype.__authoredArchitectureShellFix){
  CityWorld.prototype.__authoredArchitectureShellFix=true;
  CityWorld.prototype.buildStageSteps=function*(key,stage){
   const ch=this.chunks.get(key);
-  if(ch)for(const b of ch.buildings)if(b.authoredChurch){b.modelActive=true;b.authoredLandmark=true;}
+  if(ch)for(const b of ch.buildings)if(b.authoredChurch){
+   if(b.__landmarkOwnedBeforeChurchFix===undefined)b.__landmarkOwnedBeforeChurchFix=!!b.authoredLandmark;
+   b.modelActive=true;b.authoredLandmark=true;
+  }
   yield* buildSteps.call(this,key,stage);
  };
 }
@@ -51,13 +55,12 @@ function removeLegacyDuplicates(world){
 }
 function seatChurches(world){
  const layer=world.details?.churches?.root;if(!layer)return;
- const authored=(world.data?.buildings||[]).filter(b=>b.authoredChurch);
  for(const g of [...layer.children]){
   const b=nearestBuilding(world,g.position.x,g.position.z,x=>x.authoredChurch,75);if(!b)continue;
+  if(b.__landmarkOwnedBeforeChurchFix===undefined)b.__landmarkOwnedBeforeChurchFix=!!b.authoredLandmark;
   // If landmarks.js already owns this exact building (for example Eremitani),
   // keep the more specific landmark and discard the second generic church model.
-  const preExisting=b.authoredLandmark&&!b.modelActive;
-  if(preExisting){layer.remove(g);continue;}
+  if(b.__landmarkOwnedBeforeChurchFix){layer.remove(g);continue;}
   g.position.y=foundationY(world.terrain,b);
   b.modelActive=true;b.authoredLandmark=true;
  }
