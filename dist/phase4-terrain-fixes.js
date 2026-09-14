@@ -1,9 +1,13 @@
 import * as THREE from './vendor/three.module.js';
 import {Terrain,PRATO} from './terrain.js';
+import {RoadSurfaces} from './road-surfaces.js';
 import {CityStream} from './streaming.js';
 import {ModernGameplay} from './modern-gameplay.js';
 import {project,dist} from './core.js';
 
+export const MAX_TERRAIN_GRADE=.12;
+export const MIN_ADJACENT_DELTA=.5;
+export const ROAD_WATER_CLEARANCE=.55;
 const SOUTH_PATCHES=[
  {id:'bassanello',name:'Bassanello',p:project(45.3868,11.8722),rx:650,rz:520,core:.28,strength:.78,slopeZ:.00018,slopeX:.00005},
  {id:'guizza',name:'Guizza',p:project(45.3788,11.8703),rx:760,rz:620,core:.3,strength:.82,slopeZ:.00016,slopeX:.00004},
@@ -18,7 +22,46 @@ const CENTRE_PATCHES=[
 ];
 const LEVEL_PATCHES=[...CENTRE_PATCHES,...SOUTH_PATCHES];
 const smooth=t=>{t=Math.max(0,Math.min(1,t));return t*t*(3-2*t);};
+const clamp=(n,a,b)=>Math.max(a,Math.min(b,n));
 function local(a,x,z){const dx=x-a.p.x,dz=z-a.p.z,c=Math.cos(a.yaw||0),s=Math.sin(a.yaw||0);return {x:c*dx-s*dz,z:s*dx+c*dz};}
+
+// Global Lipschitz projection for the modern terrain. Bilinear interpolation was
+// continuous already, but one noisy DEM cell could still create an implausible
+// local wall. Project neighbouring native samples onto a maximum physical grade
+// while preserving each pair's mean, so both positive spikes and pits are fixed.
+const baseRawElevation=Terrain.prototype.rawElevation;
+function harmonisedGrid(t){
+ if(t.__phase4HarmonisedGrid)return t.__phase4HarmonisedGrid;
+ const g=t.grid,h=Float64Array.from(g.heights),limit=Math.max(MIN_ADJACENT_DELTA,g.step*MAX_TERRAIN_GRADE),w=g.width,hh=g.height;
+ const pair=(i,j)=>{const d=h[i]-h[j];if(Math.abs(d)<=limit)return 0;const excess=(Math.abs(d)-limit)/2,s=Math.sign(d);h[i]-=s*excess;h[j]+=s*excess;return excess;};
+ for(let pass=0;pass<12;pass++){
+  let changed=0;for(let y=0;y<hh;y++)for(let x=0;x<w;x++){const i=y*w+x;if(x+1<w)changed=Math.max(changed,pair(i,i+1));if(y+1<hh)changed=Math.max(changed,pair(i,i+w));}
+  for(let y=hh-1;y>=0;y--)for(let x=w-1;x>=0;x--){const i=y*w+x;if(x)changed=Math.max(changed,pair(i,i-1));if(y)changed=Math.max(changed,pair(i,i-w));}
+  if(changed<1e-4)break;
+ }
+ t.__phase4NativeMaxDelta=limit;return t.__phase4HarmonisedGrid=h;
+}
+if(!Terrain.prototype.__phase4RawGradientClamp){
+ Terrain.prototype.__phase4RawGradientClamp=true;
+ Terrain.prototype.rawElevation=function(x,z){
+  if(!this.modern)return baseRawElevation.call(this,x,z);
+  const g=this.grid,h=harmonisedGrid(this),u=clamp((x-g.x0)/g.step,0,g.width-1),v=clamp((z-g.z0)/g.step,0,g.height-1),i=Math.min(g.width-2,Math.floor(u)),j=Math.min(g.height-2,Math.floor(v)),a=u-i,b=v-j,at=(xx,zz)=>h[zz*g.width+xx];
+  return at(i,j)*(1-a)*(1-b)+at(i+1,j)*a*(1-b)+at(i,j+1)*(1-a)*b+at(i+1,j+1)*a*b;
+ };
+}
+
+// Hermite road interpolation is smooth, but unconstrained tangents can in theory
+// overshoot the two solved endpoint heights. Clamp every modern segment to its
+// endpoint envelope: no hidden hump can exist between two grade-limited nodes.
+const baseSegmentHeight=RoadSurfaces.prototype.segmentHeight;
+if(!RoadSurfaces.prototype.__phase4MonotoneHeight){
+ RoadSurfaces.prototype.__phase4MonotoneHeight=true;
+ RoadSurfaces.prototype.segmentHeight=function(s,t){
+  const a=this.nodes[s.ia],b=this.nodes[s.ib],linear=a.h+(b.h-a.h)*t,h=baseSegmentHeight.call(this,s,t);
+  if(!this.modern||!Number.isFinite(h))return Number.isFinite(h)?h:linear;
+  return clamp(h,Math.min(a.h,b.h),Math.max(a.h,b.h));
+ };
+}
 
 // Padova is extremely flat. The source DEM contains small local bumps that are
 // acceptable in the countryside but look wrong in formal piazzas and in the
