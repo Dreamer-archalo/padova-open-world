@@ -1,6 +1,9 @@
 import {CityWorld} from './world.js';
 import {HOME} from './gameplay-areas.js';
 
+const debug=globalThis.__padovaLoaderDebug||{mark:message=>{const el=document.getElementById('initialLoaderStatus');if(el)el.textContent=message;},fail:(kind,error)=>console.error(kind,error)};
+debug.mark('initial-loader.js caricato · inizializzazione loader…');
+
 const CHUNK=320;
 const BOOTSTRAP_SHARE=30;
 const nextFrame=()=>new Promise(resolve=>requestAnimationFrame(()=>resolve()));
@@ -15,10 +18,11 @@ function createOverlayUI(){
   begin(){gateActive=true;paint(Math.max(lastPercent,BOOTSTRAP_SHARE),'Generazione area iniziale · 9 chunk · 18 stadi');},
   update({completed,totalStages,current,stage}){const p=BOOTSTRAP_SHARE+(completed/Math.max(1,totalStages))*(100-BOOTSTRAP_SHARE),label=stage==='detail'?'DETTAGLIO':stage==='core'?'BASE':'COMPLETO';paint(p,`Chunk ${current}/9 · ${label} · stadi ${completed}/${totalStages}`);},
   ready(){paint(100,'Città pronta');document.documentElement.dataset.initialWorldReady='true';if(overlay){overlay.classList.add('initial-loader-done');setTimeout(()=>overlay.hidden=true,260);}},
-  fail(error){if(status)status.textContent='Errore nel caricamento iniziale · ricarica la pagina';if(overlay)overlay.classList.add('initial-loader-error');console.error('[Padova initial loader]',error);}
+  fail(error){debug.fail('INITIAL LOADER',error?.stack||error?.message||error);if(status)status.textContent='ERRORE NEL LOADER';if(overlay)overlay.classList.add('initial-loader-error');console.error('[Padova initial loader]',error);}
  };
 }
 const sharedUI=createOverlayUI();
+debug.mark('Loader UI pronto · attesa inizializzazione CityWorld…');
 
 function ringKeys(world,x,z){
  const cx=Math.floor(x/CHUNK),cz=Math.floor(z/CHUNK),keys=[];
@@ -31,6 +35,7 @@ export class GameLoaderManager{
  chunkState(key){const root=this.world.loaded.get(key),attached=root?.parent===this.world.scene;return {core:!!root?.userData.coreReady&&attached,detail:!!root?.userData.detailReady&&attached};}
  async buildStage(key,stage,startedAt){
   const before=this.chunkState(key);if(stage==='core'&&before.core||stage==='detail'&&before.detail)return;
+  debug.mark(`Generazione ${stage==='core'?'BASE':'DETTAGLIO'} chunk ${key}…`);
   const steps=this.world.buildStageSteps(key,stage);let done=false;
   while(!done){
    const deadline=performance.now()+this.sliceMs;let loops=0;
@@ -42,10 +47,9 @@ export class GameLoaderManager{
  }
  async loadInitialRing(x,z){
   if(this.started)return this.promise;this.started=true;
+  debug.mark('Calcolo anello iniziale 3×3…');
   const keys=ringKeys(this.world,x,z);if(keys.length!==9)throw new Error('Initial ring incomplete: expected 9 chunks, found '+keys.length);
-  // Do not make startup depend on Worker scheduling. Cancel any speculative job
-  // started by the first world.update(), build the mandatory 3x3 directly with
-  // cooperative generators, then let normal streaming restart after the gate.
+  debug.mark('Anello 3×3 trovato · preparo generazione cooperativa…');
   this.world.streaming?.dispose?.();this.world.streaming=null;this.world.queue=[];this.world.pendingBuild=null;
   sharedUI.begin();const totalStages=keys.length*2,startedAt=performance.now();let completed=0;
   this.promise=(async()=>{
@@ -67,11 +71,13 @@ if(!CityWorld.prototype.__initialLoaderManager){
  CityWorld.prototype.update=function(x,z,force=false,motion={}){
   const result=originalUpdate.call(this,x,z,force,motion);
   if(this.terrain?.modern&&!this.__initialLoader){
+   debug.mark('CityWorld disponibile · avvio loader iniziale…');
    this.__initialLoader=new GameLoaderManager(this,{onProgress:s=>sharedUI.update(s)});globalThis.__padovaInitialLoader=this.__initialLoader;
    globalThis.__padovaInitialReadyPromise=this.__initialLoader.loadInitialRing(HOME.x,HOME.z).then(result=>{sharedUI.ready();return result;}).catch(error=>{sharedUI.fail(error);throw error;});
   }
   return result;
  };
+ debug.mark('Loader agganciato a CityWorld · attesa caricamento dati gioco…');
 }
 
 document.addEventListener('click',event=>{if(document.documentElement.dataset.initialWorldReady==='true')return;if(event.target.closest?.('#confirmCharacter,#playBtn')){event.preventDefault();event.stopImmediatePropagation();}},true);
