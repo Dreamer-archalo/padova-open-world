@@ -75,7 +75,18 @@ Test del blocco 5: `test:taxi`, `test:streaming`, `test:multilane`, `test:jumps`
 
 Test del blocco 6: `test:portello`, `test:taxi`, `test:streaming`, sintassi e `git diff --check`: PASS. Risultati in `portello-results.json`, `taxi-results.json` e `streaming-results.json`.
 
-I primi cinque blocchi sono pubblicati progressivamente sul Site esistente. Il blocco 6 è pronto per la pubblicazione. Nessun merge della PR #6.
+## Blocco 7 — vita urbana e spawn intelligente
+
+- Spawn di pedoni e veicoli pesato su distanza, direzione della telecamera e velocità del giocatore: fortemente ridotto nel cono frontale vicino, favorito dietro e lateralmente.
+- Profili universitari dedicati al Portello: studenti in cammino, in attesa, seduti, in gruppi, skater e musicisti.
+- Sei sedute reali associate agli arredi del Portello, su punti asciutti e liberi da collisioni.
+- Profili cittadini più vari: passeggiatori, conversazioni, attese, attraversamenti e lavoratori.
+- Cani semplici con proprietario, guinzaglio leggibile e animazione leggera; assenti dal proxy di Iper Performance.
+- Pose sedute e attività animate solo nel livello di dettaglio vicino; nessun nuovo loop costoso per gli attori lontani.
+
+Test del blocco 7: `test:urban-life`, `test:city-life`, `npm test`, sintassi e `git diff --check`. Risultati in `urban-life-results.json`.
+
+I primi sei blocchi sono pubblicati progressivamente sul Site esistente. Il blocco 7 è pronto per la pubblicazione. Nessun merge della PR #6.
 
 ## Blocchi ancora in lavorazione
 
@@ -84,8 +95,9 @@ I primi cinque blocchi sono pubblicati progressivamente sul Site esistente. Il b
 - [x] Multicorsia, cambi corsia, accelerazione NPC, sorpassi e sterzo ad alta velocità.
 - [x] Taxi fisico, tassista, scelta destinazione su mappa, conferma/prezzo e loading pixel-art con attesa del nucleo.
 - [x] Portello: porta e ponte percorribili, gradinate e micromobilità leggera.
-- [ ] Portello: gruppi di studenti e attività occasionali (integrati nel successivo blocco NPC/socialità).
-- [ ] Distribuzione/socialità NPC, cani, spawn fuori visuale e lavoratori aeroportuali.
+- [x] Portello: gruppi di studenti e attività occasionali leggere.
+- [x] Distribuzione/socialità NPC, cani e spawn fuori visuale.
+- [ ] Lavoratori aeroportuali e reazioni NPC avanzate a incidenti/polizia.
 - [ ] Minimap, ingresso nei quartieri, audio, danni visivi e telecamere per mezzo.
 - [ ] Nuova proprietà Mandria/Armistizio, garage/hangar, ripristino Treves e migrazione HOME/respawn.
 - [ ] Sicurezza privata, mercenari, pattuglie e ricerca della polizia con contatto visivo; militari rari.

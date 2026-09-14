@@ -1,0 +1,17 @@
+{
+  "spawn": {
+    "frontFast": 0.035,
+    "behind": 1.45,
+    "lateral": 1.12
+  },
+  "roles": [
+    "student-group",
+    "student-walk",
+    "student-seated",
+    "student-wait",
+    "skater",
+    "musician"
+  ],
+  "portelloSeats": 6,
+  "dogs": 3
+}

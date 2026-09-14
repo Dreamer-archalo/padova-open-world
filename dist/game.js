@@ -23,6 +23,7 @@ import {VEHICLES,isBike,createVehicle,createRider,vehiclesOverlap} from './vehic
 import {BuildingModels} from './building-models.js';
 import {taxiFare,taxiDestinations,advanceTaxi} from './taxi-service.js';
 import {createMicromobilityActor,micromobilityCount,stepMicromobility,PORTELLO_GATE} from './portello.js';
+import {spawnWeight,socialProfile,attachDog,animateUrbanActor,PORTELLO_SEATS} from './urban-life.js';
 import {clamp,dist,angleDiff,collides,makeRoadGraph,nearestRoad,nearestOnSegment,roadRoute} from './core.js';
 
 const $=s=>document.getElementById(s);
@@ -90,7 +91,7 @@ function vehiclesMenu(){if(!state.started||waterRecovery.active||incidents?.reco
 function goodNearbyNode(pos,minD=50,maxD=500,spec=null,style=null){const candidates=[],seen=new Set();let total=0;
  for(const s of graph.index.near(pos.x,pos.z,maxD)){const road=s.road;if(!s.connected||road.w<(spec?.length>6?7:spec?4:0)||['no','private'].includes(road.access)||spec&&road.k==='pedestrian'||!spec&&/motorway|trunk/.test(road.k))continue;
   for(const id of [s.a,s.b]){if(seen.has(id))continue;seen.add(id);const n=graph.nodes[id],d=dist(n,pos);if(d<=minD||d>=maxD||!n.edges.length)continue;
-   const zone=DISTRICTS[districts?.at(n.x,n.z,road)||'urban'],weight=spec?zone.traffic*(style?(zone.vehicles.includes(style)?3:.1):1):zone.people;
+   const zone=DISTRICTS[districts?.at(n.x,n.z,road)||'urban'],visibility=spawnWeight(state,n,followYaw),weight=(spec?zone.traffic*(style?(zone.vehicles.includes(style)?3:.1):1):zone.people)*visibility;
    if(weight<=0)continue;total+=weight;candidates.push({id,end:total});}}
  const r=Math.random()*total;return candidates.find(p=>r<p.end)?.id??null;
 }
@@ -104,7 +105,7 @@ function createPopulation(){
  if(data.gameplay){Object.assign(state,{x:HOME.x,z:HOME.z,yaw:HOME.yaw});setupGameplay();}
  const initial=dryRoad(state,VEHICLES.mito);if(initial){state.x=initial.x-3*Math.cos(initial.yaw);state.z=initial.z+3*Math.sin(initial.yaw);if(collides(state.x,state.z,.35,world.collision)||!terrain.dry(state.x,state.z,1)){state.x=initial.x;state.z=initial.z;}state.yaw=initial.yaw;addCar(initial.x,initial.z,initial.yaw,false,true,'mito');state.y=terrain.height(state.x,state.z,state.y);waterRecovery.remember(state,terrain);}
  const count=qualityFor(state.quality).traffic;for(let i=0;i<count;i++){const c=addCar(0,0,0,false,i<3);placeTraffic(c,60,520);}
- const population=qualityFor(state.quality).people;for(let i=0;i<population;i++){const p={x:0,z:0,yaw:0,seed:i,mesh:createPerson(['#d2b487','#719085','#bc745a','#527789','#c18c77','#6f789b'][i%6],i),at:0};scene.add(p.mesh);people.push(p);placePerson(p);actorDetail(p,qualityFor(state.quality).simple);}
+ const population=qualityFor(state.quality).people;for(let i=0;i<population;i++){const p={x:0,z:0,yaw:0,seed:i,mesh:createPerson(['#d2b487','#719085','#bc745a','#527789','#c18c77','#6f789b'][i%6],i),at:0};if(i%13===6)attachDog(p,i);scene.add(p.mesh);people.push(p);placePerson(p);actorDetail(p,qualityFor(state.quality).simple);}
  for(const pad of helicopterPads(terrain,world.collision,HELICOPTER).filter(p=>!data.gameplay||p.name!=='Aeroporto')){const c=addCar(pad.x,pad.z,0,false,true,'airone');c.y=pad.y;c.home=pad;c.fixedSpawn=true;c.name+=' · '+pad.name;poseVehicle(c);}
  gameplay?.populate();
  for(let i=0;i<micromobilityCount(state.quality);i++){const actor=createMicromobilityActor(i,terrain);scene.add(actor.mesh);micromobility.push(actor);}
@@ -113,9 +114,9 @@ function placePerson(p){if(p.budgetSleeping||p.koUntil>state.elapsed)return;p.re
  for(let attempt=0;attempt<16;attempt++){const id=goodNearbyNode(state,25,240);if(id===null)return;const n=graph.nodes[id],e=n.edges.find(e=>!/motorway|trunk/.test(e.road.k));if(!e)continue;
   const t=graph.nodes[e.id],yaw=Math.atan2(t.x-n.x,t.z-n.z),side=p.seed%2?1:-1,offset=e.road.k==='pedestrian'?1:e.road.w/2+1.25,u=.15+Math.random()*.7;
   const x=n.x+(t.x-n.x)*u+Math.cos(yaw)*offset*side,z=n.z+(t.z-n.z)*u-Math.sin(yaw)*offset*side;
-  const zone=DISTRICTS[districts?.at(x,z,e.road)||'urban'];if(Math.random()>Math.min(1,zone.people/1.5))continue;
+  const zoneId=districts?.at(x,z,e.road)||'urban',zone=DISTRICTS[zoneId];if(Math.random()>Math.min(1,zone.people/1.5))continue;
   if(collides(x,z,.4,world.collision)||!terrain.dry(x,z,.6))continue;
-  Object.assign(p,{x,z,y:terrain.height(x,z),yaw,roadYaw:yaw,side,behavior:['destination','stroll','idle','cross','wait','group','runner','wander','avoid','poi'][p.seed%10],crossGoal:null,destination:{x:t.x+Math.cos(yaw)*offset*side,z:t.z-Math.sin(yaw)*offset*side},road:e.road,anchor:{x,z},knockX:0,knockZ:0,spin:0});p.mesh.visible=true;if(p.behavior==='poi'){const poi=PLACES.find(a=>dist(a,p)<40);if(poi)p.destination={x:poi.x,z:poi.z};}p.at=state.elapsed+18+Math.random()*24;
+  const social=socialProfile(p.seed,zoneId),seat=zoneId==='university'&&social.role==='student-seated'?PORTELLO_SEATS[p.seed%PORTELLO_SEATS.length]:null,px=seat?.x??x,pz=seat?.z??z,py=terrain.height(px,pz),pyaw=seat?.yaw??yaw;Object.assign(p,{x:px,z:pz,y:py,yaw:pyaw,roadYaw:yaw,side,behavior:social.behavior,role:p.dog?'dog-owner':social.role,crossGoal:null,destination:{x:t.x+Math.cos(yaw)*offset*side,z:t.z-Math.sin(yaw)*offset*side},road:e.road,anchor:{x:px,z:pz},knockX:0,knockZ:0,spin:0});p.mesh.visible=true;p.at=state.elapsed+18+Math.random()*24;
   const color=zone.colors[p.seed%zone.colors.length];if(p.mesh.userData.clothesColor!==color){p.mesh.traverse(o=>{if(o.userData.clothing)o.material.color.set(color);});p.mesh.userData.clothesColor=color;}return;
  }
 }
@@ -307,7 +308,7 @@ function updatePeople(dt){const interval=(world.streaming?.metrics.pressure?3:1)
  const allowed=!collides(nx,nz,.4,world.collision,p.y)&&terrain.dry(nx,nz,.5,p.y)&&(!road||road.road.k==='pedestrian'||intent.crossing)&&dist({x:nx,z:nz},p.anchor||p)<45;
  if(allowed){p.x=nx;p.z=nz;p.blocked=0;}else{p.blocked=(p.blocked||0)+step;if(p.blocked>.5){p.yaw+=Math.PI;p.roadYaw=p.yaw;p.blocked=0;p.crossGoal=null;}}
  p.speed=allowed?intent.speed:0;p.y=terrain.height(p.x,p.z,p.y);p.mesh.position.set(p.x,p.y,p.z);p.mesh.rotation.y=p.yaw;
- if(!p.simple){const a=p.speed>.1?Math.sin(state.elapsed*(p.speed>2?10:5)+p.seed)*.3:0;p.mesh.userData.hips.children[0].rotation.x=a;p.mesh.userData.hips.children[1].rotation.x=-a;}
+ if(!p.simple){const a=p.speed>.1?Math.sin(state.elapsed*(p.speed>2?10:5)+p.seed)*.3:0;p.mesh.userData.hips.children[0].rotation.x=a;p.mesh.userData.hips.children[1].rotation.x=-a;animateUrbanActor(p,state.elapsed);}
 }}
 
 function updateMicromobility(dt){const active=micromobilityCount(state.quality),near=Math.hypot(state.x-PORTELLO_GATE.x,state.z-PORTELLO_GATE.z)<720&&!world.streaming?.metrics.pressure;for(let i=0;i<micromobility.length;i++){const a=micromobility[i];a.mesh.visible=near&&i<active;if(a.mesh.visible)stepMicromobility(a,dt,terrain,[state,...cars,...people]);}}
@@ -350,7 +351,7 @@ function applyQuality(){const q=qualityFor(state.quality);world?.setQuality(stat
  if(!state.ready)return;
  let active=0;for(const c of cars){if(c===state.car||c.fixedSpawn||c.hostile||c.missionUnit||c.militarySurplus||c.parked)continue;c.budgetSleeping=active++>=q.traffic;if(c.budgetSleeping){c.mesh.visible=false;c.speed=0;}}
  for(let i=0;i<people.length;i++){const p=people[i];p.budgetSleeping=i>=q.people;p.simulatedAt=state.elapsed;p.nextThink=state.elapsed+(p.seed%Math.round(60/q.peopleHz))/60;if(p.budgetSleeping)p.mesh.visible=false;}while(micromobility.length<micromobilityCount(state.quality)){const a=createMicromobilityActor(micromobility.length,terrain);scene.add(a.mesh);micromobility.push(a);}
- while(people.length<q.people){const i=people.length,p={x:0,z:0,yaw:0,seed:i,mesh:createPerson('#719085',i),at:0};scene.add(p.mesh);people.push(p);placePerson(p);}
+ while(people.length<q.people){const i=people.length,p={x:0,z:0,yaw:0,seed:i,mesh:createPerson('#719085',i),at:0};if(i%13===6)attachDog(p,i);scene.add(p.mesh);people.push(p);placePerson(p);}
  while(active++<q.traffic){const c=addCar(0,0);placeTraffic(c);}
  refreshActorDetail();
 }
