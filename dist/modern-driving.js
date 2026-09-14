@@ -33,6 +33,12 @@ export function helicopterPads(terrain,collision,spec){
  }if(found)pads.push(found);}return pads;
 }
 export function roadCorridor(x,z,car,graph,terrain){
+ const supports=terrain.roads?.candidates?.(x,z,0)?.filter(s=>!/footway|path|steps|cycleway|tram|pedestrian/.test(s.road.k)&&!['no','private'].includes(s.road.access)&&s.road.w>car.spec.width+.4)||[];
+ if(supports.length){
+  supports.sort((a,b)=>Math.abs((a.height+.05)-(car.y??a.height+.05))-Math.abs((b.height+.05)-(car.y??b.height+.05))||a.d-b.d);
+  const support=supports[0],limit=Math.max(.25,(support.road.w-car.spec.width)/2),y=support.height+.05;
+  return support.d<=limit&&Math.abs(y-(car.y??y))<1.6&&terrain.dry(x,z,car.spec.width/2,y);
+ }
  const near=nearestRoad({x,z},graph,true);if(!near||near.d>Math.max(.25,(near.segment.road.w-car.spec.width)/2))return false;
  const y=terrain.roads.sample(near.segment.road,x,z)+.05;return Math.abs(y-(car.y??y))<1.4&&terrain.dry(x,z,car.spec.width/2,y);
 }
