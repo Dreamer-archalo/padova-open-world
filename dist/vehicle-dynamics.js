@@ -2,7 +2,21 @@ import {clamp,angleDiff} from './core.js';
 import {vehicleBlocked} from './movement.js';
 
 export const JUMP_GRAVITY=18;
+export const MAX_CONTACT_RISE=.28;
 export function resetGroundMotion(car){if(car){car.jump=null;car.steerInput=0;car.pitch=0;}}
+
+// Ground height is authoritative for physics, but a noisy height lookup must not
+// act as a one-frame elevator. Tiny road-grade changes snap to the solved surface;
+// larger legal changes are exponentially tracked and hard vertical faces are
+// rejected by groundVehicleStep before this helper is called.
+export function smoothGroundY(current,target,dt,speed){
+ if(!Number.isFinite(current))return target;if(!Number.isFinite(target))return current;
+ const delta=target-current,horizontal=Math.max(.001,Math.abs(speed)*dt),snap=Math.max(.055,horizontal*.12);
+ if(Math.abs(delta)<=snap)return target;
+ const alpha=1-Math.exp(-18*dt),maxStep=Math.max(.075,horizontal*.2+.025),tracked=current+clamp(delta*alpha,-maxStep,maxStep);
+ // Never bury the chassis deeply inside an uphill surface while smoothing.
+ return delta>0?Math.max(target-.08,tracked):tracked;
+}
 
 // Yaw authority has a floor even beyond the normal top speed. Bikes remain
 // quicker to correct than cars; tracked vehicles retain their stationary pivot.
@@ -46,17 +60,22 @@ export function groundVehicleStep(actor,car,input,dt,terrain,collision){
    ny+=j.vy*step-.5*JUMP_GRAVITY*step*step;j.vy-=JUMP_GRAVITY*step;
    actor.speed=magnitude*(actor.speed<0?-1:1);
   }
-  const nx=actor.x+vx*step,nz=actor.z+vz*step,next=groundContact(terrain,nx,nz,actor.y);
+  const nx=actor.x+vx*step,nz=actor.z+vz*step,next=groundContact(terrain,nx,nz,actor.y),horizontal=Math.hypot(nx-actor.x,nz-actor.z);
   if(!j.airborne){
    const alignment=old.ramp?Math.cos(actor.yaw-old.ramp.yaw)*(actor.speed>=0?1:-1):0;
-   const leavesRamp=old.ramp&&old.ramp!==next.ramp&&alignment>.65&&actor.y>next.y+.25&&Math.abs(actor.speed)>8;
-   const drops=actor.y-next.y>.55&&Math.abs(actor.speed)>12;
+   const drop=actor.y-next.y,rise=next.y-actor.y;
+   const leavesRamp=old.ramp&&old.ramp!==next.ramp&&alignment>.65&&drop>.25&&Math.abs(actor.speed)>8;
+   // Any genuine ledge is ballistic. Previously slow vehicles could be snapped
+   // downward by half a metre or more in one fixed tick.
+   const drops=drop>.48&&Math.abs(actor.speed)>1.5;
    if(leavesRamp||drops){
     j.airborne=true;j.vx=vx;j.vz=vz;j.vy=leavesRamp?Math.max(2,j.groundVy):clamp(j.groundVy,-4,12);ny=actor.y+j.vy*step;launched=true;
    }else{
-    // The high side of a ramp is a physical face, not a vertical elevator.
-    if(next.ramp!==old.ramp&&next.y-actor.y>Math.max(.35,Math.abs(actor.speed)*step*.4)){hitSpeed=Math.abs(actor.speed);actor.speed*=-.15;break;}
-    ny=next.y;j.groundVy=(ny-actor.y)/step;j.ramp=next.ramp;
+    // Reject impossible vertical elevators even when both contacts are ordinary
+    // terrain (the old test only caught a transition into/out of a ramp).
+    const allowedRise=Math.max(MAX_CONTACT_RISE,horizontal*.22);
+    if(rise>allowedRise){hitSpeed=Math.abs(actor.speed);actor.speed*=-.15;break;}
+    ny=smoothGroundY(actor.y,next.y,step,actor.speed);j.groundVy=(ny-actor.y)/step;j.ramp=next.ramp;
    }
   }
   if(j.airborne&&ny<=next.y&&j.vy<=0){landingSpeed=Math.max(landingSpeed,-j.vy);j.airborne=false;landed=true;ny=next.y;j.vy=0;j.ramp=next.ramp;}
