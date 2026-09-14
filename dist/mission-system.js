@@ -15,6 +15,7 @@ const BASE_TARGETS={
 function bikeReady(state){const c=state.car;return state.mode==='car'&&!!c&&(!!c.spec?.bike||c.spec?.width<1.2||['motorcycle','scooter','cruiser','trail'].includes(c.style));}
 function requirementMet(state,kind){return kind==='bike'?bikeReady(state):kind==='car'?state.mode==='car':true;}
 function writeMoney(value){try{const saved=JSON.parse(localStorage.getItem('padova-game-v1')||'{}');saved.money=value;localStorage.setItem('padova-game-v1',JSON.stringify(saved));}catch{}}
+function taxiKey(target){return Math.round(target.x)+'|'+Math.round(target.z);}
 function sample(path,spacing=78){
  if(path.length<2)return path;const out=[path[0]];let carry=0;
  for(let i=1;i<path.length;i++){let a={...path[i-1]},b=path[i],len=dist(a,b);while(carry+len>=spacing){const need=spacing-carry,t=need/Math.max(.001,len),p={x:a.x+(b.x-a.x)*t,z:a.z+(b.z-a.z)*t};out.push(p);a=p;len=dist(a,b);carry=0;}carry+=len;}
@@ -22,7 +23,7 @@ function sample(path,spacing=78){
 }
 
 export class MissionSystem{
- constructor(){this.game=null;this.pending=null;this.guideRoot=null;this.bound=false;this.bind();}
+ constructor(){this.game=null;this.pending=null;this.guideRoot=null;this.bound=false;this.taxiTransaction=null;this.bind();}
  bind(){
   if(this.bound)return;this.bound=true;
   document.addEventListener('click',event=>{
@@ -54,10 +55,13 @@ export class MissionSystem{
   game.toast('Navigatore attivo · segui la linea e i waypoint 3D.',4);
  }
  startTaxi(info,action,fare){
-  const game=this.game;if(game.state.money<fare){game.toast('Fondi insufficienti per il taxi.',4);return;}
+  const game=this.game,key=taxiKey(info.target);
+  if(this.pending?.mode==='taxi'||this.taxiTransaction?.active){game.toast('Taxi già in partenza · il prezzo viene addebitato una sola volta.',2);return;}
+  if(game.state.money<fare){game.toast('Fondi insufficienti per il taxi.',4);return;}
+  this.taxiTransaction={active:true,key,fare,chargedAt:game.state.elapsed};
   game.state.money-=fare;writeMoney(game.state.money);
   document.getElementById('menu')?.close();game.state.paused=false;
-  this.clearGuides();this.pending={mode:'taxi',target:info.target,action,requires:info.requires,arriveAt:game.state.elapsed+2.4};
+  this.clearGuides();this.pending={mode:'taxi',target:info.target,action,requires:info.requires,arriveAt:game.state.elapsed+2.4,transaction:key};
   game.toast('Taxi · €'+fare+' · trasferimento verso '+info.label+'.',3);
  }
  transfer(game,target){
@@ -77,7 +81,7 @@ export class MissionSystem{
  update(game){
   this.game=game;const p=this.pending;if(!p)return;
   if(p.mode==='taxi'&&game.state.elapsed>=p.arriveAt){
-   this.transfer(game,p.target);const action=p.action,ready=requirementMet(game.state,p.requires);this.pending=null;
+   this.transfer(game,p.target);const action=p.action,ready=requirementMet(game.state,p.requires);this.pending=null;this.taxiTransaction=null;
    if(ready){this.pending={bypass:false};this.invoke(action);this.pending=null;}else game.toast('Arrivato alla missione. Preparati con il veicolo richiesto e selezionala di nuovo.',5);
    return;
   }
