@@ -9,8 +9,19 @@
   <link rel="stylesheet" href="./hud.css">
   <link rel="stylesheet" href="./taxi-loading-layout.css">
   <link rel="stylesheet" href="./phase2-ui.css">
+  <link rel="stylesheet" href="./initial-loader.css">
 </head>
 <body>
+  <div id="initialLoader" role="status" aria-live="polite" aria-label="Caricamento iniziale città">
+    <div class="initial-loader-panel">
+      <div class="initial-loader-kicker">PADOVA / INITIAL WORLD STREAM</div>
+      <h1 class="initial-loader-title">CARICAMENTO CITTÀ</h1>
+      <p class="initial-loader-copy">Genero completamente il punto di partenza e gli 8 chunk adiacenti prima di farti entrare nel mondo.</p>
+      <div class="initial-loader-row"><strong id="initialLoaderPercent" class="initial-loader-percent">0%</strong><span id="initialLoaderStatus" class="initial-loader-status">Preparazione chunk iniziali…</span></div>
+      <div class="initial-loader-track"><i id="initialLoaderBar"></i></div>
+      <div class="initial-loader-note">La percentuale rappresenta chunk realmente generati e inseriti nella scena WebGL.</div>
+    </div>
+  </div>
   <canvas id="world" aria-label="Padua 3D game world"></canvas>
   <div id="vignette"></div>
   <header class="hud topbar">
@@ -67,6 +78,7 @@
   <dialog id="mapDialog"><div class="dialog-head"><div><span class="eyebrow">CITY MAP</span><h2>Know your way around.</h2></div><button class="close" id="closeMap" aria-label="Close map">×</button></div><div class="map-layout"><div class="fullmap-wrap"><canvas id="fullmap" width="1000" height="1000" aria-label="Full map; click to set waypoint"></canvas></div><div id="mapPlaces"></div></div><div class="map-legend"><span>● You</span><span>◆ Destination</span><span>Click the map to set a waypoint</span></div></dialog>
   <div id="taxiLoading" class="taxi-loading" hidden role="status" aria-live="polite"><div id="taxiMeme" class="taxi-meme"><div><span>TAXI ABUSIVO IN TRANSITO…</span><strong>Caricamento destinazione</strong><p id="taxiFact"></p><small id="taxiLoadingStatus">Preparazione di terreno e strade</small><button id="taxiNext" type="button">CLICCA / TOCCA · PROSSIMA CURIOSITÀ</button></div></div></div>
   <footer id="credits"><a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">© OpenStreetMap contributors</a><a href="https://github.com/tilezen/joerd/blob/master/docs/attribution.md" target="_blank" rel="noopener">Terrain: Copernicus EU-DEM / USGS via Mapzen</a><span id="modelCredits"></span><span id="scaleCredit">Real-world scale · stylised reconstruction</span></footer>
+  <script type="module" src="./initial-loader.js"></script>
   <script type="module" src="./game.js"></script>
   <script type="module" src="./taxi-facts-extra.js"></script>
   <script type="module" src="./taxi-affordability.js"></script>
