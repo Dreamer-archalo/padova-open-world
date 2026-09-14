@@ -27,6 +27,7 @@
     "test:urban-life": "node --max-old-space-size=3072 verify-urban-life.mjs",
     "test:vehicle-damage": "node --max-old-space-size=3072 verify-vehicle-damage.mjs",
     "test:phase3-runtime": "node --check dist/roof-upgrades.js && node --check dist/phase3-runtime.js && node verify-phase3-runtime.mjs",
-    "test:phase3-city": "node --check dist/phase3-city-systems.js && node --check dist/phase3-tram-fix.js && node --check dist/phase3-polish.js && node --check dist/vehicle-damage.js && node verify-phase3-city-systems.mjs"
+    "test:phase3-city": "node --check dist/phase3-city-systems.js && node --check dist/phase3-tram-fix.js && node --check dist/phase3-polish.js && node --check dist/vehicle-damage.js && node verify-phase3-city-systems.mjs",
+    "test:terrain-polish": "node --check dist/phase4-terrain-fixes.js && node --check dist/historic-center.js && node verify-terrain-polish.mjs"
   }
 }
