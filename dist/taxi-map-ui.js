@@ -22,6 +22,16 @@ function promoteChooseYourself(){
 }
 if(menuContent){new MutationObserver(promoteChooseYourself).observe(menuContent,{childList:true,subtree:true});}
 
+// game.js intentionally ignores gameplay keys while a dialog is paused. The taxi
+// confirmation is a UI action instead, so intercept SPACE before that global
+// handler and make it equivalent to clicking "Conferma e parti".
+window.addEventListener('keydown',e=>{
+ if(e.code!=='Space'||e.repeat)return;
+ const confirm=document.getElementById('confirmTaxi'),menu=document.getElementById('menu');
+ if(!confirm||!menu?.open||confirm.disabled)return;
+ e.preventDefault();e.stopImmediatePropagation();confirm.click();
+},true);
+
 if(canvas&&wrap){
  wrap.style.overflow='hidden';wrap.style.position='relative';canvas.style.touchAction='none';canvas.style.transformOrigin='0 0';
  let scale=1,tx=0,ty=0,drag=null,moved=false;
