@@ -40,6 +40,30 @@ if(!Terrain.prototype.__phase4LevelPlane){
  };
 }
 
+// Map-wide shoulder harmonisation. Road profiles already carry the authoritative
+// driving height; this only feathers the surrounding terrain towards ordinary
+// surface streets over a wider 7.5 m shoulder. It therefore removes thin holes,
+// vertical sidewalk lips and visible undersides without flattening bridges,
+// tunnels, tram tracks or pedestrian-only ways.
+const baseGroundHeight=Terrain.prototype.groundHeight;
+const SHOULDER_FEATHER=7.5;
+if(!Terrain.prototype.__phase4HarmonicShoulders){
+ Terrain.prototype.__phase4HarmonicShoulders=true;
+ Terrain.prototype.groundHeight=function(x,z){
+  let h=baseGroundHeight.call(this,x,z);if(!this.modern||!this.roads)return h;
+  const candidates=this.roads.candidates(x,z,SHOULDER_FEATHER)
+   .filter(s=>!s.road.crossing&&!s.road.tunnel&&!/motorway|trunk|footway|path|cycleway|steps|pedestrian|tram/.test(s.road.k||''))
+   .sort((a,b)=>a.d-b.d);
+  const road=candidates[0];if(!road)return h;
+  const outside=Math.max(0,road.d-road.road.w/2);if(outside>=SHOULDER_FEATHER)return h;
+  // Water edges must stay visually explicit instead of being smeared into the
+  // carriageway. Bridge/canal structures keep their own retaining geometry.
+  if(this.waterDistance(x,z)<1.25)return h;
+  const deck=road.height-.05,t=smooth(outside/SHOULDER_FEATHER);
+  return deck*(1-t)+h*t;
+ };
+}
+
 // During the first seconds, stream a tighter neighbourhood so the current street
 // reaches detail stage sooner instead of waiting for a wide ring of distant core
 // chunks. The normal radius is restored progressively afterwards.
@@ -85,4 +109,4 @@ if(!ModernGameplay.prototype.__phase4TerrainSeal){
  ModernGameplay.prototype.update=function(dt){baseGameplayUpdate.call(this,dt);if(!seals)seals=SOUTH_PATCHES.map(p=>buildPatchSeal(this,p));if(!pratoEdges)pratoEdges=buildPratoEdges(this);for(const s of seals)s.root.visible=dist(this.state,s.patch.p)<1450;pratoEdges.visible=dist(this.state,{x:PRATO.x,z:PRATO.z})<950;};
 }
 
-export {SOUTH_PATCHES,CENTRE_PATCHES,LEVEL_PATCHES};
+export {SOUTH_PATCHES,CENTRE_PATCHES,LEVEL_PATCHES,SHOULDER_FEATHER};
