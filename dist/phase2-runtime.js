@@ -8,6 +8,7 @@ import './phase3-polish.js';
 
 // UI-only Phase 2 feedback. It does not own gameplay state: it observes the
 // existing HUD, so it cannot interfere with saves, physics or streaming.
+// Preview refresh marker: keep the canonical PR #6 deploy current with dist/.
 const playing=document.getElementById('playingUI');
 const healthValue=document.getElementById('healthValue');
 const vehicleName=document.getElementById('vehicleName');
