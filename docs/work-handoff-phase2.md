@@ -2,91 +2,55 @@
 
 Questo file coordina modifiche concorrenti sul branch `feat/modern-padova-phase-2` senza duplicare blocchi completati. Non autorizza il merge della PR #6.
 
+## Aggiornamento prioritario — loader iniziale e terreno
+- `initial-loader.js` + `initial-loader.css`: `GameLoaderManager` con `Promise.all()` sui 9 chunk dello spawn (chunk centrale + anello 3×3). Un chunk conta come pronto solo con `coreReady`, `detailReady` e root già inserita nella scena WebGL. Overlay 0–100% = chunk completi / chunk iniziali.
+- `streaming.js`: hard gate iniziale con priorità assoluta per i 9 chunk; core di tutti i chunk prima dei detail, poi detail fino a completamento. Metriche `initialLoaded/initialTotal`.
+- `terrain.js`: road/terrain carving con falloff `1 - smoothstep` su 9 m dal bordo carreggiata verso la heightmap naturale; guardia quote impossibili `Y < -10` / `Y > 100` / non finite con fallback alla quota base.
+- `surface-layers.js`: la pelle del terreno moderno resta continua sotto l'asfalto quando non serve un taglio topologico, eliminando i buchi visibili ai bordi.
+- `modern-roads.js`: i deck rialzati/bridge ricevono fasce laterali per non apparire come piani a spessore zero.
+- `verify-initial-world.mjs` + `npm run test:initial-world`: regressione dedicata. Test aggiunto, non ancora dichiarato eseguito in questa chat.
+
 ## Stato sintetico
-
-| Blocco | Stato | Note |
-|---|---|---|
-| Streaming predittivo / worker / F3 | FATTO | Core prima dei dettagli, prefetch e pressione dinamica presenti. |
-| Guardrail / svincoli / aperture tangenziale | FATTO | Accessi verificati, aperture centrali e collisioni trattati. |
-| Rampe / salti / fisica in aria | FATTO | Rampe periferiche e dinamica airborne presenti. |
-| Traffico multicorsia / accelerazione progressiva | FATTO | Corsie, cambi corsia, frenata/accelerazione e curve presenti. |
-| Taxi abusivo | FATTO | Taxi fisico, autista, caricamento, curiosità, spawn vicino, blocco fondi e prefetch robusto. 10 destinazioni, `SCEGLI TU` primo, zoom/pan interno 1×–4×. |
-| Portello | FATTO | Porta passabile ad arco, ponte, parapetti, argini, scalinate, mura, studenti, micromobilità, bar e identità universitaria. |
-| Motorini / micromobilità | PARZIALE | Profili NPC `group`, `wheelie`, `zigzag` e normale; Time Attack moto separato presente. Distribuzione specifica per quartiere ancora ampliabile. |
-| NPC / città viva | FATTO | Gruppi, seduti, musicisti, skater, cani, reazioni differenziate, ingressi/uscite virtuali dagli edifici e 18 micro-eventi urbani leggeri. |
-| Inseguimenti autonomi | FATTO | Eventi sospetto + Polizia indipendenti dal giocatore, limitati e annullati se il player entra in Wanted/missione. |
-| Smart spawn | FATTO | Spawn traffico/pedoni pesa campo visivo, direzione e velocità. |
-| Minimap | FATTO | Rifinita per contrasto/leggibilità. |
-| Indicatore zona | FATTO | Banner transitorio per distretto/località. |
-| Ingressi quartiere / segnaletica | FATTO | Gateways leggeri per Arcella, Portello, Forcellini, Madonna Pellegrina, Sacra Famiglia, San Giuseppe, Brusegana, Guizza, Sacro Cuore. |
-| Audio / clacson | FATTO | Ambience procedurale + clacson `H`; il suono rispetta il toggle Sound, mentre gli NPC reagiscono comunque. |
-| Danno visivo veicoli | FATTO | Vetro/faro rotto, pannelli, paraurti piegati, cofano sollevato, ruota proxy storta, fumo e lieve perdita prestazioni a danno critico; nascosto in Iper Performance. |
-| Camere veicolo | FATTO | Free-look/recentraggio/retromarcia rifiniti. |
-| Velocità automatica / cruise | FATTO | `K` e HUD memorizzano la velocità corrente, `−5/+5 km/h`, ritorno immediato manuale. |
-| Semafori adattivi | FATTO | La fase verde può estendersi sull'asse con più domanda/accodamento vicino all'incrocio. |
-| Parcheggi NPC | FATTO | Auto parcheggiate ai margini su strade idonee, con budget per qualità e despawn lontano. |
-| Viabilità intorno a ostacoli | FATTO | Bypass laterale leggero per veicoli bloccati dietro un mezzo fermo; mantiene la viabilità senza teletrasporto. |
-| Tram vivo | FATTO | Passeggeri instanziati alle fermate, attesa e avvicinamento virtuale durante la sosta. |
-| Ambulanza / Vigili del Fuoco | FATTO | Mezzi di emergenza rari con sirene visive, percorso autonomo e durata limitata. |
-| Incidenti autonomi | FATTO | Veicolo incidentato + coni, durata/cadenza limitate e possibile arrivo mezzo di emergenza. |
-| Vita nei bar | FATTO | Sei punti di aggregazione leggeri in zone ad alta probabilità di passaggio: Portello, Signori, Erbe, Prato, Università, Arcella. |
-| Eventi cittadini | FATTO | 18 micro-eventi/camei: studenti, musicisti, mercatino, skater, consegne, lavori, cani, gatti e piccioni. |
-| Acqua più viva | FATTO | Riflessi/linee leggere e piccole barche decorative solo a dettaglio medio/alto; riduzione marcata in Performance e zero extra in Iper Performance. |
-| Ponti differenziati | FATTO (prima passata) | Ponte Molino: identità romana a cinque campate; Portello: accenti in pietra d'Istria; San Lorenzo: trattato come ponte romano interrato/marker, non come ponte moderno visibile. Rifinitura visuale browser ancora da validare. |
-| Modalità VISITA CITTÀ | FATTO | Pulsante iniziale, nessun Wanted/missioni, badge dedicato; Play normale ripristina il gioco standard. |
-| Fondale schermata iniziale | FATTO | Salva fino a 3 screenshot reali ridotti del gameplay e li riutilizza come slideshow sfocato ai caricamenti successivi, senza download asset aggiuntivi. |
-| Tetti | FATTO | Layer pitched/hipped/gable coerente col footprint, più presente nel centro e progressivo per qualità; escluso in Iper Performance. |
-| Moto Time Attack `J` | FATTO | Quattro piste, slalom, rampe, salti, checkpoint, timer e record locali per pista. |
-| Auto da corsa autonome | FATTO | Fulmine/Zenit rare, una alla volta, durata e distanza limitate, velocità molto superiore al traffico ordinario. |
-| Interni selezionati | MANCANTE | Nessun blocco dedicato. |
-| Missioni brevi/random | PARZIALE | Delivery/race/escape/Portavalori + Time Attack moto; manca generazione random nuova. |
-| TRASPORTO STUPEFACENTI (€3,50) | MANCANTE | Da mantenere astratto/ironico, senza dettagli operativi realistici. |
-| Posti di blocco polizia | FATTO | Dinamici a 3–4 stelle; controlli normali passabili lentamente a zero stelle. |
-| Progressione Wanted | FATTO | Salita stelle cadenzata. |
-| Wanted 5 / sopravvivenza | FATTO | Grazia iniziale, carri ritardati, colpi non one-shot, elicotteri Polizia orbitanti. |
-| Nuova villa SW / Treves pubblico | MANCANTE | HOME ancora da spostare e Treves da restituire a parco pubblico. |
-| Sicurezza / mercenari | MANCANTE | Nessun blocco dedicato. |
-| Aeroporto vivo | PARZIALE | Distretto e mezzi coerenti; mancano lavoratori animati dedicati. |
-| Area militare / UFO | PARZIALE | Easter egg e mezzi esistenti; nessun nuovo blocco completo. |
-| Barche guidabili | MANCANTE | Presenti solo piccole barche decorative; nessun sistema di navigazione player. |
-| Vegetazione | PARZIALE | Streaming presente; manca passata dedicata. |
-| Mura veneziane | PARZIALE | Portello e Porta Savonarola migliorati; manca circuito più esteso. |
-| Chiese | FATTO | Santo, Santa Giustina, Duomo e numerose parrocchie centro/primissima periferia. |
-| Centro storico | FATTO | Piazza dei Signori, Pedrocchi, Palazzo Moroni/Municipio e Palazzo Bo; porticati artificiali rimossi, compreso il generatore legacy in fase di installazione dei chunk. |
-| Stadio Euganeo | FATTO | Campo, pista, tribune, illuminazione e 18 calciatori leggeri; destinazione Taxi `Stadio`. |
-| Palazzo Ragione / Erbe-Frutta | FATTO | Palazzo/fontana e mercati stilizzati presenti. |
-| Università / Riviera | PARZIALE | Palazzo Bo e Portello dedicati; Riviera ampliabile. |
-| Collina + scritta PADOVA | FATTO | Collina arcade periferica con culling. |
-| Gara tangenziale dedicata | MANCANTE | Mancano conferma, snapshot stato, turbo x3, premi e ripristino esatto. |
-| Militari rari fuori aeroporto | MANCANTE | Nessun blocco dedicato. |
-| Integrità geometrica / dislivelli | FATTO (audit matematico) | Clamp globale DEM moderno, spline stradali monotone, winding strade corretto, triangoli degeneri/normal invalidi filtrati, shoulder feather, controllo acqua e Y veicoli smussata. Resta validazione browser completa. |
-| Preservazione sistemi esistenti | IN CORSO | Non rompere Wanted5, carri, Portavalori1000, Turbo, aerei, paracadute, aeroporto, tram, acqua, respawn, fullscreen, qualità, personaggi e salvataggi. |
-| Audit finale strade/terreno | PARZIALE | Audit matematico e runtime implementati; resta prova WebGL/drive-through completa e suite totale prima del merge. |
-| Test / budget prestazioni | IN CORSO | `test:terrain-polish`, `test:elevation-harmony` e `test:geometry-integrity` disponibili; suite completa + prova WebGL/FPS reale obbligatorie prima del merge. |
-
-## Regole di coordinamento
-- Prima di ogni modifica rileggere HEAD: Work e ChatGPT possono avanzare in parallelo.
-- Preferire micro-blocchi indipendenti e committabili.
-- Non creare un nuovo Site.
-- Non mergiare PR #6 senza richiesta esplicita.
-- Non reintrodurre porticati procedurali nel centro storico.
-- Niente meteo, ciclo giorno/notte o illuminazione monumentale dinamica in questa passata.
-- Esclusi: Padova 1500/Galileo, missili/razzi, spazio/Luna, multiplayer.
-
-## Ultimi file/blocchi aggiunti da ChatGPT
-- `phase4-terrain-fixes.js`: livellamento piazze/pianura sud, raccordo banchine 7,5 m, clamp globale del DEM moderno e clamp monotono dell'interpolazione stradale.
-- `surface-layers.js`: pulizia poligoni dopo clipping, preservazione winding, rimozione triangoli degeneri e altezze non finite.
-- `modern-roads.js`: winding delle superfici e dei fan agli incroci corretto verso l'alto; controllo altezze finite.
-- `vehicle-dynamics.js`: `smoothGroundY`, guardia salita verticale 28 cm e passaggio in ballistic su veri dislivelli invece di snap Y.
-- `geometry-audit-runtime.js`: audit runtime completo griglia/rete/acqua/mesh con `window.auditPadovaGeometry(...)`; rimozione output del vecchio generatore portici prima dell'installazione detail.
-- `verify-geometry-integrity.mjs`: regressioni dedicate a geometria, winding, clamp quote e aderenza veicoli.
-- `verify-elevation-harmony.mjs`: audit rete su pendenze, transizioni strada-terreno, ponti/acqua e zone livellate; scrive `docs/elevation-harmony-audit.json` quando eseguito.
-- `roof-upgrades.js`: tetti pitched/hipped/gable a costo progressivo.
-- `phase3-runtime.js`: quattro Time Attack moto + record + rare auto da corsa autonome.
-- `phase3-city-systems.js`: clacson, semafori adattivi, parcheggi, ingressi edifici, bar, eventi, emergenze, incidenti, bypass traffico, gateways, ponti, acqua, VISITA CITTÀ, screenshot intro.
-- `phase3-tram-fix.js`: fermate vive/passeggeri instanziati e sostituzione sicura dell'update tram.
-- `phase3-polish.js`: HUD clacson, reset Tour su Play normale, reazioni NPC differenziate e micro-animazioni eventi.
-- `vehicle-damage.js`: danni fisici visualmente più leggibili mantenendo il budget e l'API dei test esistenti.
+- Streaming predittivo / worker / F3: FATTO.
+- Loader iniziale 3×3: FATTO, da validare visivamente nel browser.
+- Guardrail / svincoli / aperture tangenziale: FATTO.
+- Rampe / salti / fisica in aria: FATTO.
+- Traffico multicorsia / accelerazione progressiva: FATTO.
+- Taxi abusivo: FATTO.
+- Portello: FATTO.
+- Motorini / micromobilità: PARZIALE (profili group/wheelie/zigzag + Time Attack presenti).
+- NPC / città viva: FATTO.
+- Inseguimenti autonomi: FATTO.
+- Smart spawn: FATTO.
+- Minimap: FATTO.
+- Indicatore zona: FATTO.
+- Ingressi quartiere / segnaletica: FATTO.
+- Audio / clacson: FATTO.
+- Danno visivo veicoli: FATTO.
+- Camere veicolo: FATTO.
+- Cruise: FATTO.
+- Semafori adattivi: FATTO.
+- Parcheggi NPC: FATTO.
+- Viabilità intorno a ostacoli: FATTO.
+- Tram vivo: FATTO.
+- Ambulanza / Vigili del Fuoco: FATTO.
+- Incidenti autonomi: FATTO.
+- Vita nei bar: FATTO.
+- Eventi cittadini: FATTO.
+- Acqua più viva: FATTO.
+- Ponti differenziati: FATTO prima passata, rifinitura browser da validare.
+- Modalità VISITA CITTÀ: FATTO.
+- Fondale schermata iniziale: FATTO.
+- Tetti: FATTO.
+- Moto Time Attack `J`: FATTO.
+- Auto da corsa autonome: FATTO.
+- Chiese: FATTO.
+- Centro storico: FATTO; porticati artificiali rimossi.
+- Stadio Euganeo: FATTO.
+- Palazzo Ragione / Erbe-Frutta: FATTO.
+- Terrain / road carving: FATTO strutturale, da validare visivamente nel browser.
+- Audit finale strade/terreno: IN CORSO.
+- Test / budget prestazioni: IN CORSO.
 
 ## Blocchi strutturali ancora aperti
 1. Nuova villa SW e restituzione di Parco Treves a parco pubblico.
@@ -98,4 +62,12 @@ Questo file coordina modifiche concorrenti sul branch `feat/modern-padova-phase-
 7. Lavoratori aeroporto animati e ulteriore micromobilità per zone.
 8. Militari rari fuori aeroporto.
 9. Estensione Riviera/mura/vegetazione.
-10. Suite completa, test WebGL/FPS e drive-through finale prima del merge.
+10. Suite completa e test WebGL/FPS prima del merge.
+
+## Regole di coordinamento
+- Prima di ogni modifica rileggere HEAD: Work e ChatGPT possono avanzare in parallelo.
+- Preferire micro-blocchi indipendenti e committabili.
+- Non creare un nuovo Site.
+- Non mergiare PR #6 senza richiesta esplicita.
+- Niente meteo, ciclo giorno/notte o illuminazione monumentale dinamica in questa passata.
+- Esclusi: Padova 1500/Galileo, missili/razzi, spazio/Luna, multiplayer.
