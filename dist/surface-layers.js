@@ -5,15 +5,14 @@ export const isCarriageway = road => !/^(footway|path|steps|cycleway|tram|pedest
 const signedArea2=p=>{let a=0;for(let i=0;i<p.length;i++){const q=p[(i+1)%p.length];a+=p[i][0]*q[1]-q[0]*p[i][1];}return a;};
 const triArea2=(a,b,c)=>(b[0]-a[0])*(c[1]-a[1])-(b[1]-a[1])*(c[0]-a[0]);
 
-// Rendering and collision share the solved road profile. Cutting the actual
-// triangles (rather than changing only DEM vertices) prevents interpolation
-// through asphalt between samples. Elevated decks leave ground below intact.
+// Subtract road corridors only where a true topological cut is required. The
+// primary modern ground skin now stays continuous beneath normal asphalt: it is
+// rendered a few centimetres lower, so the camera can never see an empty world
+// through a road edge while avoiding z-fighting with the carriageway.
 export function roadCorridors(poly, terrain, {pedestrian=false, exclude=null}={}) {
   const xs=poly.map(p=>p[0]), zs=poly.map(p=>p[1]);
   const minX=Math.min(...xs),maxX=Math.max(...xs),minZ=Math.min(...zs),maxZ=Math.max(...zs);
   const x=(minX+maxX)/2,z=(minZ+maxZ)/2,r=Math.hypot(maxX-minX,maxZ-minZ)/2;
-  // Use the original mapped segments for planar clipping. The 6 m physics
-  // samples carry identical XY lines and would repeatedly cut the same polygon.
   if(!terrain.roads.renderIndex&&terrain.roads.profiles){
     const index=new SpatialIndex(100);
     for(const profile of terrain.roads.profiles.values())for(let i=1;i<profile.road.p.length;i++){
@@ -45,14 +44,14 @@ export function roadCorridors(poly, terrain, {pedestrian=false, exclude=null}={}
 }
 
 export function clearRoadSurface(poly,terrain,options={}) {
+  // Continuous ground/area layers with an explicit height callback are safe to
+  // keep below roads; only pedestrian/explicit-exclusion layers need clipping.
+  if(options.preserveUnderRoads)return [poly];
   let parts=[poly];
   for(const {rect} of roadCorridors(poly,terrain,options)) {
     parts=parts.flatMap(p=>cutCorridor(p,rect,1e-8));
     if(!parts.length)break;
   }
-  // Boolean clipping can leave duplicated/near-collinear points. Removing them
-  // here avoids zero-area faces whose normals become NaN and appear as holes at
-  // grazing camera angles.
   return parts.map(p=>p.filter((v,i,a)=>{
     const prev=a[(i+a.length-1)%a.length],next=a[(i+1)%a.length];
     if(Math.hypot(v[0]-prev[0],v[1]-prev[1])<1e-7)return false;
@@ -60,10 +59,10 @@ export function clearRoadSurface(poly,terrain,options={}) {
   })).filter(p=>p.length>=3&&Math.abs(signedArea2(p))>1e-8);
 }
 
-export function surfaceBatch(batch,terrain,{pedestrian=false,exclude=null,height=null}={}) {
+export function surfaceBatch(batch,terrain,{pedestrian=false,exclude=null,height=null,preserveUnderRoads=!!height&&!pedestrian&&!exclude}={}) {
   return {
     tri(a,b,c,color) {
-      const poly=[a,b,c].map(p=>[p[0],p[2]]),parts=clearRoadSurface(poly,terrain,{pedestrian,exclude});
+      const poly=[a,b,c].map(p=>[p[0],p[2]]),parts=clearRoadSurface(poly,terrain,{pedestrian,exclude,preserveUnderRoads});
       const den=(b[2]-c[2])*(a[0]-c[0])+(c[0]-b[0])*(a[2]-c[2]);
       if(Math.abs(den)<1e-9)return;
       const y=p=>{if(height)return height(...p);const u=((b[2]-c[2])*(p[0]-c[0])+(c[0]-b[0])*(p[1]-c[2]))/den,v=((c[2]-a[2])*(p[0]-c[0])+(a[0]-c[0])*(p[1]-c[2]))/den;return u*a[1]+v*b[1]+(1-u-v)*c[1];};
