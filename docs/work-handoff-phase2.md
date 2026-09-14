@@ -52,7 +52,7 @@ Questo file coordina modifiche concorrenti sul branch `feat/modern-padova-phase-
 | Vegetazione | PARZIALE | Streaming presente; manca passata dedicata. |
 | Mura veneziane | PARZIALE | Portello e Porta Savonarola migliorati; manca circuito più esteso. |
 | Chiese | FATTO | Santo, Santa Giustina, Duomo e numerose parrocchie centro/primissima periferia. |
-| Centro storico | FATTO | Piazza dei Signori, Pedrocchi, Palazzo Moroni/Municipio, Palazzo Bo, portici attraversabili e accenti Erbe/Frutta/Duomo. |
+| Centro storico | FATTO | Piazza dei Signori, Pedrocchi, Palazzo Moroni/Municipio e Palazzo Bo; porticati artificiali rimossi. |
 | Stadio Euganeo | FATTO | Campo, pista, tribune, illuminazione e 18 calciatori leggeri; destinazione Taxi `Stadio`. |
 | Palazzo Ragione / Erbe-Frutta | FATTO | Palazzo/fontana e mercati stilizzati presenti. |
 | Università / Riviera | PARZIALE | Palazzo Bo e Portello dedicati; Riviera ampliabile. |
@@ -60,8 +60,8 @@ Questo file coordina modifiche concorrenti sul branch `feat/modern-padova-phase-
 | Gara tangenziale dedicata | MANCANTE | Mancano conferma, snapshot stato, turbo x3, premi e ripristino esatto. |
 | Militari rari fuori aeroporto | MANCANTE | Nessun blocco dedicato. |
 | Preservazione sistemi esistenti | IN CORSO | Non rompere Wanted5, carri, Portavalori1000, Turbo, aerei, paracadute, aeroporto, tram, acqua, respawn, fullscreen, qualità, personaggi e salvataggi. |
-| Audit finale strade/terreno | IN CORSO | Da chiudere dopo gli ultimi blocchi strutturali. |
-| Test / budget prestazioni | IN CORSO | Aggiunti `test:phase3-runtime` e `test:phase3-city`; suite completa + prova WebGL/FPS reale obbligatorie prima del merge. |
+| Audit finale strade/terreno | IN CORSO | Livellamento piazze + pianura sud + raccordo globale banchine aggiunti; resta prova browser completa. |
+| Test / budget prestazioni | IN CORSO | Aggiunti `test:terrain-polish` e `test:elevation-harmony`; suite completa + prova WebGL/FPS reale obbligatorie prima del merge. |
 
 ## Regole di coordinamento
 - Prima di ogni modifica rileggere HEAD: Work e ChatGPT possono avanzare in parallelo.
@@ -72,6 +72,8 @@ Questo file coordina modifiche concorrenti sul branch `feat/modern-padova-phase-
 - Esclusi: Padova 1500/Galileo, missili/razzi, spazio/Luna, multiplayer.
 
 ## Ultimi file/blocchi aggiunti da ChatGPT
+- `phase4-terrain-fixes.js`: livellamento Piazza Signori/Erbe/Frutta/Duomo/Prato, pianura Bassanello-Guizza-Albignasego, margini canale Prato e raccordo globale banchine su 7,5 m; ponti/tunnel/acqua esclusi dalla sfumatura automatica.
+- `verify-elevation-harmony.mjs`: audit dell'intera rete su pendenze, transizioni strada-terreno, ponti/acqua e nuclei delle zone livellate; scrive `docs/elevation-harmony-audit.json` quando eseguito.
 - `roof-upgrades.js`: tetti pitched/hipped/gable a costo progressivo.
 - `phase3-runtime.js`: quattro Time Attack moto + record + rare auto da corsa autonome.
 - `phase3-city-systems.js`: clacson, semafori adattivi, parcheggi, ingressi edifici, bar, eventi, emergenze, incidenti, bypass traffico, gateways, ponti, acqua, VISITA CITTÀ, screenshot intro.
