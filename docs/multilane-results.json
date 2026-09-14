@@ -1,0 +1,31 @@
+{
+  "laneCounts": {
+    "oneWay13m": 3,
+    "twoWay12mPerDirection": 2,
+    "narrow": 1
+  },
+  "offsets": [
+    -3.4,
+    0,
+    3.4
+  ],
+  "behaviours": [
+    "sorpasso",
+    "rientro",
+    "libera corsia",
+    "svincolo"
+  ],
+  "speedAfterFiveSeconds": {
+    "sport": 30,
+    "compact": 27.904888888888912,
+    "truck": 14.998877777777828
+  },
+  "curve": {
+    "straightSpeed": 34.1,
+    "curveSpeed": 10.23
+  },
+  "qualityTraffic": {
+    "hyper": 24,
+    "performance": 36
+  }
+}

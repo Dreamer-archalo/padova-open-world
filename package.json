@@ -12,6 +12,25 @@
     "test:performance": "node --max-old-space-size=3072 verify-performance.mjs",
     "test:fullscreen": "node verify-fullscreen.mjs",
     "test:city-life": "node --max-old-space-size=3072 verify-city-life-core.mjs",
-    "audit:surfaces": "node --max-old-space-size=3072 verify-surface-layers.mjs"
+    "audit:surfaces": "node --max-old-space-size=3072 verify-surface-layers.mjs",
+    "test:streaming": "node --max-old-space-size=3072 verify-streaming.mjs",
+    "test:guardrails": "node --max-old-space-size=3072 verify-motorway-access.mjs",
+    "test:jumps": "node --max-old-space-size=3072 verify-vehicle-jumps.mjs",
+    "test:multilane": "node verify-multilane.mjs",
+    "test:taxi": "node verify-taxi.mjs",
+    "test:portello": "node --max-old-space-size=3072 verify-portello.mjs",
+    "test:phase2-polish": "node --check dist/modern-gameplay.js && node --check dist/cruise-control.js && node verify-phase2-polish.mjs",
+    "test:churches": "node --check dist/churches.js && node --check dist/city-details.js && node verify-churches.mjs",
+    "test:historic-center": "node --check dist/historic-center.js && node --check dist/city-details.js && node verify-historic-center.mjs",
+    "test:historic-performance": "node --check dist/historic-center.js && node verify-historic-performance.mjs",
+    "test:street-life": "node --check dist/taxi-map-ui.js && node --check dist/cruise-control.js && node --check dist/traffic.js && node --check dist/ambient-pursuits.js && node --check dist/stadium.js && node --check dist/city-details.js && node verify-street-life.mjs && node verify-historic-performance.mjs",
+    "test:urban-life": "node --max-old-space-size=3072 verify-urban-life.mjs",
+    "test:vehicle-damage": "node --max-old-space-size=3072 verify-vehicle-damage.mjs",
+    "test:phase3-runtime": "node --check dist/roof-upgrades.js && node --check dist/phase3-runtime.js && node verify-phase3-runtime.mjs",
+    "test:phase3-city": "node --check dist/phase3-city-systems.js && node --check dist/phase3-tram-fix.js && node --check dist/phase3-polish.js && node --check dist/vehicle-damage.js && node verify-phase3-city-systems.mjs",
+    "test:terrain-polish": "node --check dist/phase4-terrain-fixes.js && node --check dist/historic-center.js && node verify-terrain-polish.mjs",
+    "test:elevation-harmony": "node --max-old-space-size=3072 verify-elevation-harmony.mjs",
+    "test:geometry-integrity": "node --check dist/surface-layers.js && node --check dist/modern-roads.js && node --check dist/vehicle-dynamics.js && node --check dist/phase4-terrain-fixes.js && node --check dist/geometry-audit-runtime.js && node verify-geometry-integrity.mjs && node --max-old-space-size=3072 verify-elevation-harmony.mjs",
+    "test:initial-world": "node --check dist/streaming.js && node --check dist/initial-loader.js && node --check dist/terrain.js && node --check dist/surface-layers.js && node --check dist/modern-roads.js && node verify-initial-world.mjs"
   }
 }

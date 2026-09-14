@@ -1,0 +1,122 @@
+/* Taxi transit composition: keep copy and pixel art in separate visual zones. */
+.taxi-loading{
+  padding:clamp(16px,3vw,42px);
+  background:#050a12;
+}
+
+.taxi-meme{
+  position:relative;
+  isolation:isolate;
+  width:min(94vw,1180px);
+  aspect-ratio:16/9;
+  display:grid;
+  grid-template-columns:minmax(300px,38%) minmax(0,62%);
+  align-items:stretch;
+  background:#050a12;
+  background-image:none;
+  animation:none;
+  overflow:hidden;
+}
+
+.taxi-meme::after{
+  content:"";
+  position:absolute;
+  inset:0 0 0 38%;
+  z-index:0;
+  background-image:url('./assets/taxi-loading-pixel-atlas.webp');
+  background-size:400% 200%;
+  background-position:0 0;
+  background-repeat:no-repeat;
+  image-rendering:pixelated;
+  animation:taxiChase 1.05s steps(1) infinite;
+}
+
+.taxi-meme::before{
+  content:"";
+  position:absolute;
+  top:0;
+  bottom:0;
+  left:34%;
+  width:12%;
+  z-index:1;
+  pointer-events:none;
+  background:linear-gradient(90deg,#050a12 0%,rgba(5,10,18,.9) 30%,rgba(5,10,18,0) 100%);
+}
+
+.taxi-meme>div{
+  position:relative;
+  z-index:2;
+  grid-column:1;
+  width:auto;
+  min-width:0;
+  padding:clamp(24px,3.5vw,48px);
+  align-content:center;
+  background:linear-gradient(90deg,#050a12 0%,#07111bf2 82%,rgba(7,17,27,.72) 100%);
+}
+
+.taxi-meme span{
+  font-size:clamp(28px,3.8vw,54px);
+  max-width:9ch;
+}
+
+.taxi-meme strong,
+.taxi-meme p,
+.taxi-meme small{
+  max-width:30rem;
+}
+
+@media(max-width:700px) and (orientation:portrait){
+  .taxi-loading{padding:12px;}
+  .taxi-meme{
+    width:min(94vw,560px);
+    height:min(92vh,760px);
+    aspect-ratio:auto;
+    grid-template-columns:1fr;
+    grid-template-rows:44% 56%;
+  }
+  .taxi-meme::after{
+    inset:0 0 auto 0;
+    width:100%;
+    height:44%;
+  }
+  .taxi-meme::before{
+    top:34%;
+    right:0;
+    bottom:auto;
+    left:0;
+    width:100%;
+    height:14%;
+    background:linear-gradient(180deg,rgba(5,10,18,0),#050a12 78%);
+  }
+  .taxi-meme>div{
+    grid-column:1;
+    grid-row:2;
+    padding:20px 22px 24px;
+    background:#050a12;
+  }
+  .taxi-meme span{
+    max-width:none;
+    font-size:clamp(28px,9vw,42px);
+  }
+  .taxi-meme p{
+    min-height:0;
+  }
+}
+
+@media(max-height:560px) and (orientation:landscape){
+  .taxi-meme{
+    width:min(94vw,980px);
+    height:88vh;
+    aspect-ratio:auto;
+    grid-template-columns:minmax(260px,40%) minmax(0,60%);
+  }
+  .taxi-meme::after{inset:0 0 0 40%;}
+  .taxi-meme::before{left:36%;}
+  .taxi-meme>div{padding:18px 24px;}
+  .taxi-meme span{font-size:clamp(25px,5vw,40px);}
+  .taxi-meme p{margin:2px 0;font-size:14px;}
+}
+
+@media(prefers-reduced-motion:reduce){
+  .taxi-meme::after{animation:none;}
+}

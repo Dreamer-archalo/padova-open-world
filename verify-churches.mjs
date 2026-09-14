@@ -1,0 +1,11 @@
+import fs from 'node:fs';
+const read=p=>fs.readFileSync(new URL(p,import.meta.url),'utf8');
+const churches=read('./dist/churches.js');
+const details=read('./dist/city-details.js');
+const required=['santo','giustina','duomo','santuario dellarcella','santi fabiano e sebastiano','san giuseppe','sacra famiglia','madonna pellegrina','santa rita da cascia','san camillo','spirito santo','san bellino','san carlo','sacro cuore','eremitani','santa sofia','carmine','servi'];
+const missing=required.filter(x=>!churches.includes(x));
+if(missing.length)throw new Error('Missing church targets: '+missing.join(', '));
+if(!details.includes("import {createChurchLayer} from './churches.js'"))throw new Error('Church layer not wired into city details');
+if(!details.includes('churches.update(x,z)'))throw new Error('Church distance culling not wired');
+for(const signature of ['function santo(','function giustina(','function duomo(','function arcella(','function classic('])if(!churches.includes(signature))throw new Error('Missing church style: '+signature);
+console.log(JSON.stringify({ok:true,targetFamilies:required.length,dedicated:['Santo','Santa Giustina','Duomo','Arcella'],coverage:'centro storico + prima periferia named OSM churches'},null,2));

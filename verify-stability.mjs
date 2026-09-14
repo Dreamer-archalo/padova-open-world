@@ -42,7 +42,7 @@ for(const hz of [30,60,120,144]){
 const clock=new movement.FixedClock();let ticks=0;clock.advance(60,()=>ticks++);assert.equal(ticks,8,'tab resume must not trigger an unbounded catch-up');
 
 
-assert.equal(t.cars.filter(c=>!c.spec.aircraft&&!c.fixedSpawn).length,17);assert(t.cars.filter(c=>c.spec.aircraft).length>=2);assert.equal(t.people.length,32);
+assert.equal(t.cars.filter(c=>!c.spec.aircraft&&!c.fixedSpawn).length,37);assert(t.cars.filter(c=>c.spec.aircraft).length>=2);assert.equal(t.people.length,40);
 assert(t.player.userData.hips.children[0].position.y>.7,'leg pivots must be at the hips');
 assert(!core.collides(t.state.x,t.state.z,.36,t.world.collision),'centre spawn must be clear');
 t.toggleVehicle();assert.equal(t.state.mode,'car');assert.equal(t.state.y,t.terrain.height(t.state.x,t.state.z));
@@ -56,7 +56,7 @@ t.state.x=t.cars[0].x;t.state.z=t.cars[0].z;t.state.speed=0;t.toggleVehicle();as
 // Exercise the real controller in the centre across frame rates.
 const start={x:t.state.x,z:t.state.z,yaw:t.state.yaw};let reference;
 for(const hz of [30,60,144]){
-  Object.assign(t.state,start,{speed:0,y:t.terrain.height(start.x,start.z),vy:0,elapsed:0});t.clock.reset();t.keys.clear();t.keys.add('KeyW');t.keys.add('KeyA');
+  Object.assign(t.state,start,{speed:0,y:t.terrain.height(start.x,start.z),vy:0,elapsed:0});t.clock.reset();vm.runInContext('cameraRig.reset(state.yaw)',ctx);t.keys.clear();t.keys.add('KeyW');t.keys.add('KeyA');
   for(let frame=0;frame<hz*3;frame++)t.clock.advance(1/hz,dt=>{t.state.elapsed+=dt;t.movePlayer(dt);{const hit=core.collides(t.state.x,t.state.z,.359,t.world.collision,t.state.y);assert(!hit,'walk penetrated a building at actor height');}});
   const endpoint={x:t.state.x,z:t.state.z};if(reference)assert(core.dist(reference,endpoint)<1e-7,'frame-rate dependent movement');else reference=endpoint;
 }

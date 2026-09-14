@@ -31,7 +31,7 @@ assert.equal(cameraBoom({x:0,y:22,z:3.5},{x:5,y:22,z:3.5},index).x,5);
 assert(vehiclesOverlap({x:0,z:0,yaw:0,style:'truck'},{x:0,z:4,yaw:Math.PI/2,style:'motorcycle'}));
 assert(!vehiclesOverlap({x:0,z:0,yaw:0,style:'truck'},{x:5,z:4,yaw:0,style:'motorcycle'}));
 for(const type of ['mito','cinquecento','motorcycle','scooter','truck']){const model=createVehicle(type,'#aa3344'),bounds=new THREE.Box3().setFromObject(model),size=bounds.getSize(new THREE.Vector3());assert(size.z<=VEHICLES[type].length+.05,type+' model beyond collision length');assert(size.x<=VEHICLES[type].width+.12,type+' model beyond collision width');assert(size.z>VEHICLES[type].length*.8);model.traverse(o=>{if(o.isMesh)assert(o.geometry.attributes.position.array.every(Number.isFinite));});}
-globalThis.document={createElement:()=>({getContext:()=>({fillRect(){}})})};
+globalThis.document={createElement:()=>({getContext:()=>({fillRect(){},fillText(){}})})};
 const scene=new THREE.Scene(),world=new CityWorld(scene,data,terrain),graph=makeRoadGraph(data.roads);
 for(const p of PLACES)for(const type of ['mito','motorcycle','truck']){const spec=VEHICLES[type],spawn=safeDryRoad(p,graph,world.collision,terrain,spec);assert(spawn,'dry spawn '+p.name+' '+type);assert(terrain.dry(spawn.x,spawn.z,spec.length/2));assert(!vehicleBlocked(spawn.x,spawn.z,spawn.yaw,world.collision,spec,terrain.roads.sample(spawn.segment.road,spawn.x,spawn.z)+.05));assert(dist(spawn,p)<300);}
 let bridges=0;for(const r of data.roads.filter(r=>r.b))for(let i=1;i<r.p.length;i++){const x=(r.p[i-1][0]+r.p[i][0])/2,z=(r.p[i-1][1]+r.p[i][1])/2;if(terrain.waterDistance(x,z)<0){assert.equal(terrain.waterAt(x,z),null,'real bridge hazard');bridges++;}}

@@ -6,8 +6,10 @@ export function applyCityData(map,city){
  map.tracks=city.tracks;map.stops=city.stops;map.signals=city.signals;map.landuse=city.zones;map.roads.push(...map.tracks);
 }
 export const PORTELLO={...project(45.4108,11.8918),radius:520};
+export const AIRPORT_DISTRICT={...project(45.3966667,11.8483333),radius:690};
 export const DISTRICTS={
  university:{label:'PORTELLO · UNIVERSITÀ',traffic:.5,people:1.8,trees:1.1,vehicles:['scooter','scooter','compact','nido'],colors:['#608fb1','#a56765','#e1ca82','#557c79']},
+ airport:{label:'AEROPORTO DI PADOVA',traffic:.72,people:.48,trees:.28,vehicles:['utility','truck','sedan','compact'],colors:['#77898b','#c1b28b','#5e747b','#9b765e']},
  historic:{label:'CENTRO STORICO',traffic:.35,people:1.5,trees:.7,vehicles:['compact','scooter','mito','cinquecento'],colors:['#c4a188','#436c85','#a65c63','#6f8e74']},
  urban:{label:'PADOVA URBANA',traffic:1,people:1,trees:1,vehicles:['sedan','compact','mito','scooter','wagon'],colors:['#547b8c','#ad7b65','#727491','#547861']},
  residential:{label:'QUARTIERE RESIDENZIALE',traffic:.65,people:.6,trees:1.8,vehicles:['wagon','compact','sedan','utility'],colors:['#828a67','#ba9478','#6a8190']},
@@ -26,7 +28,7 @@ export class Districts{
   for(const r of map.roads)for(let i=1;i<r.p.length;i++){const a=r.p[i-1],b=r.p[i];this.roads.add({a,b,road:r},Math.min(a[0],b[0])-r.w,Math.min(a[1],b[1])-r.w,Math.max(a[0],b[0])+r.w,Math.max(a[1],b[1])+r.w);}
   const brown=(map.landuse||[]).find(a=>a.k==='brownfield'&&Math.hypot(...a.p[0])>2600);this.wild=brown?{x:brown.p[0][0],z:brown.p[0][1]}:{x:-4300,z:-3400};
  }
- at(x,z,road=null){if(dist({x,z},PORTELLO)<PORTELLO.radius&&!/motorway|trunk/.test(road?.k||''))return 'university';if(road&&['motorway','trunk','motorway_link','trunk_link'].includes(road.k))return 'motorway';if(dist({x,z},this.wild)<380)return 'wild';
+ at(x,z,road=null){if(dist({x,z},PORTELLO)<PORTELLO.radius&&!/motorway|trunk/.test(road?.k||''))return 'university';if(road&&['motorway','trunk','motorway_link','trunk_link'].includes(road.k))return 'motorway';if(dist({x,z},AIRPORT_DISTRICT)<AIRPORT_DISTRICT.radius)return 'airport';if(dist({x,z},this.wild)<380)return 'wild';
   const uses=[...this.index.near(x,z)].filter(a=>pointInside(x,z,a.p));
   if(uses.some(a=>a.k==='industrial'))return 'industrial';
   if(Math.hypot(x*.95,(z-100)*.85)<1150)return 'historic';
