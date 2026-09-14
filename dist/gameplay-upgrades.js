@@ -5,6 +5,7 @@ import {ZoneManager} from './zone-manager.js';
 import {MissionSystem} from './mission-system.js';
 import {PoliceAI,installPoliceAIHooks} from './police-ai.js';
 import './tangenziale-race.js';
+import './tangenziale-race-polish.js';
 import './taxi-loading-guard.js';
 
 installPoliceAIHooks();
