@@ -2,9 +2,9 @@ import {CityStream} from './streaming.js';
 
 const BASE_CORE_READY=CityStream.prototype.coreReady;
 const TAXI_CLASS='taxi-transit';
-const KICK_INTERVAL=650;
-const CENTER_FALLBACK_MS=4800;
-const HARD_FALLBACK_MS=7500;
+const KICK_INTERVAL=500;
+const CENTER_FALLBACK_MS=1200;
+const GUARANTEED_RELEASE_MS=2100;
 const CHUNK=320;
 
 function sameTarget(a,x,z){return a&&Math.hypot(a.x-x,a.z-z)<1;}
@@ -21,7 +21,21 @@ if(!CityStream.prototype.__taxiLoadingGuard){
 
   const now=this.now?.()??performance.now();
   if(!sameTarget(this.__taxiReadyWatch,x,z))this.__taxiReadyWatch={x,z,startedAt:now,lastKick:-Infinity};
-  const watch=this.__taxiReadyWatch;
+  const watch=this.__taxiReadyWatch,waited=now-watch.startedAt;
+
+  // Taxi travel must never depend indefinitely on the streaming backend. The
+  // loading screen in game.js already enforces a 2.3 s cinematic minimum; by
+  // 2.1 s this guard reports the destination as usable even if a worker/chunk
+  // is still late. The destination stays pinned and continues streaming after
+  // arrival, so this removes the deadlock without abandoning the requested area.
+  if(waited>=GUARANTEED_RELEASE_MS){
+   this.prefetch(x,z,520);
+   this.lastPlan='';
+   this.__taxiReadyWatch=null;
+   console.warn('[Taxi] guaranteed destination release after streaming deadline.');
+   return true;
+  }
+
   let ready=BASE_CORE_READY.call(this,x,z,radius);
   if(ready){this.__taxiReadyWatch=null;return true;}
 
@@ -33,15 +47,8 @@ if(!CityStream.prototype.__taxiLoadingGuard){
    if(ready){this.__taxiReadyWatch=null;return true;}
   }
 
-  const waited=now-watch.startedAt;
   if(waited>=CENTER_FALLBACK_MS&&centerReady(this,x,z)){
-   console.warn('[Taxi] destination core radius incomplete; continuing with centre chunk ready.');
-   this.__taxiReadyWatch=null;
-   return true;
-  }
-  if(waited>=HARD_FALLBACK_MS){
-   console.warn('[Taxi] destination streaming watchdog released transit after timeout.');
-   this.prefetch(x,z,520);
+   console.warn('[Taxi] centre chunk ready; releasing destination transit.');
    this.__taxiReadyWatch=null;
    return true;
   }
