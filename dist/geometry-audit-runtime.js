@@ -1,8 +1,16 @@
+import * as THREE from './vendor/three.module.js';
 import {CityWorld} from './world.js';
 import {MAX_TERRAIN_GRADE,MIN_ADJACENT_DELTA,ROAD_WATER_CLEARANCE} from './phase4-terrain-fixes.js';
 
 const finite=n=>Number.isFinite(n);
 const DEFAULTS={dense:true,mesh:true,sampleStep:32,probe:4,warnLimit:Infinity};
+const legacyPorticoColours=[new THREE.Color('#443f38'),new THREE.Color('#c4aa84')];
+function sameColour(attr,i,c){return Math.abs(attr.getX(i)-c.r)<1e-4&&Math.abs(attr.getY(i)-c.g)<1e-4&&Math.abs(attr.getZ(i)-c.b)<1e-4;}
+function stripLegacyPorticos(group,world){
+ let removed=0;group.traverse(mesh=>{if(!mesh.isMesh||mesh.material!==world.roofMat||!mesh.userData.streamBuildings)return;const g=mesh.geometry,p=g?.attributes?.position,c=g?.attributes?.color,uv=g?.attributes?.uv;if(!p||!c||g.index)return;
+  const keep=[];for(let i=0;i+2<p.count;i+=3){const legacy=legacyPorticoColours.some(col=>sameColour(c,i,col)&&sameColour(c,i+1,col)&&sameColour(c,i+2,col));if(!legacy)keep.push(i,i+1,i+2);else removed++;}if(keep.length===p.count)return;
+  const np=[],nc=[],nu=[];for(const i of keep){np.push(p.getX(i),p.getY(i),p.getZ(i));nc.push(c.getX(i),c.getY(i),c.getZ(i));if(uv)nu.push(uv.getX(i),uv.getY(i));}const ng=new THREE.BufferGeometry();ng.setAttribute('position',new THREE.Float32BufferAttribute(np,3));ng.setAttribute('color',new THREE.Float32BufferAttribute(nc,3));if(uv)ng.setAttribute('uv',new THREE.Float32BufferAttribute(nu,2));ng.computeVertexNormals();ng.computeBoundingSphere();g.dispose();mesh.geometry=ng;mesh.userData.legacyPorticosRemoved=removed;});return removed;
+}
 function reporter(options,report){
  let emitted=0;
  return (type,data)=>{report.issues++;report.byType[type]=(report.byType[type]||0)+1;if(emitted++<options.warnLimit)console.warn('[Padova geometry audit] '+type,data);};
@@ -42,12 +50,13 @@ export function auditPadovaGeometry(world,opts={}){
  if(!Number.isFinite(report.minWaterRoadClearance))report.minWaterRoadClearance=null;for(const k of ['maxGridDelta','maxGridGrade','maxRoadGrade','maxDenseDelta','minWaterRoadClearance'])if(Number.isFinite(report[k]))report[k]=+report[k].toFixed(4);report.ok=report.issues===0;console.log('[Padova geometry audit] complete',report);return report;
 }
 
-// Keep validation out of the streaming hot path. The wrapper only exposes the
-// latest CityWorld instance; one lightweight grid/road audit is deferred until
-// the browser is idle. Full dense + mesh validation is opt-in from the console.
+// Keep validation out of the streaming hot path. The wrapper also removes the
+// older procedural portico triangles by their dedicated vertex colours. This
+// closes the last legacy path that could still regenerate porticos after the
+// authored historic-centre porticos had been removed.
 const originalInstall=CityWorld.prototype.installStage;
 if(!CityWorld.prototype.__runtimeGeometryAudit){
  CityWorld.prototype.__runtimeGeometryAudit=true;
- CityWorld.prototype.installStage=function(key,g,stage){const result=originalInstall.call(this,key,g,stage);globalThis.__padovaWorld=this;if(!this.__geometryAuditScheduled){this.__geometryAuditScheduled=true;const run=()=>{try{auditPadovaGeometry(this,{dense:false,mesh:false,warnLimit:50});}catch(e){console.warn('[Padova geometry audit] failed',e);}};(globalThis.requestIdleCallback||((fn)=>setTimeout(fn,250)))(run,{timeout:2500});}return result;};
+ CityWorld.prototype.installStage=function(key,g,stage){if(stage==='detail')stripLegacyPorticos(g,this);const result=originalInstall.call(this,key,g,stage);globalThis.__padovaWorld=this;if(!this.__geometryAuditScheduled){this.__geometryAuditScheduled=true;const run=()=>{try{auditPadovaGeometry(this,{dense:false,mesh:false,warnLimit:50});}catch(e){console.warn('[Padova geometry audit] failed',e);}};(globalThis.requestIdleCallback||((fn)=>setTimeout(fn,250)))(run,{timeout:2500});}return result;};
 }
 if(typeof window!=='undefined')window.auditPadovaGeometry=opts=>auditPadovaGeometry(window.__padovaWorld,opts);
