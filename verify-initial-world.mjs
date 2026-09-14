@@ -1,16 +1,15 @@
 import fs from 'node:fs';
 import assert from 'node:assert/strict';
 const read=p=>fs.readFileSync(new URL(p,import.meta.url),'utf8');
-const streaming=read('./dist/streaming.js'),loader=read('./dist/initial-loader.js'),terrain=read('./dist/terrain.js'),surface=read('./dist/surface-layers.js'),roads=read('./dist/modern-roads.js'),html=read('./dist/index.html');
+const loader=read('./dist/initial-loader.js'),terrain=read('./dist/terrain.js'),surface=read('./dist/surface-layers.js'),roads=read('./dist/modern-roads.js'),html=read('./dist/index.html');
 const checks={
- ring3x3:streaming.includes('for(let dx=-1;dx<=1;dx++)for(let dz=-1;dz<=1;dz++)'),
- hardInitialGate:streaming.includes('setInitialGate(keys)')&&streaming.includes('requiredInitial:true'),
- coreThenDetail:streaming.includes("initial.filter(v=>!w.loaded.get(v.key)?.userData.coreReady)")&&streaming.includes("initial.filter(v=>w.loaded.get(v.key)?.userData.coreReady&&!w.loaded.get(v.key)?.userData.detailReady)"),
- sceneInsertionGate:loader.includes('root?.parent===this.world.scene'),
- promiseAll:loader.includes('Promise.all([Promise.all(promises),pump])'),
- stagedPercent:loader.includes('stages/(total*2)*100')&&loader.includes('BOOTSTRAP_SHARE+(stages/totalStages)*(100-BOOTSTRAP_SHARE)'),
+ ring3x3:loader.includes('for(let dx=-1;dx<=1;dx++)for(let dz=-1;dz<=1;dz++)')&&loader.includes("keys.length!==9"),
+ directCooperativeBuild:loader.includes("this.world.buildStageSteps(key,stage)")&&loader.includes("await this.buildStage(key,'core'")&&loader.includes("await this.buildStage(key,'detail'"),
+ noStartupWorkerDependency:loader.includes("this.world.streaming?.dispose?.()")&&loader.includes('this.world.streaming=null'),
+ sceneInsertionGate:loader.includes('root?.parent===this.world.scene')&&loader.includes("Initial chunks missing from scene"),
+ stagedPercent:loader.includes('totalStages=keys.length*2')&&loader.includes('completed/Math.max(1,totalStages)'),
+ timeSliced:loader.includes('performance.now()+this.sliceMs')&&loader.includes('requestAnimationFrame'),
  bootstrapMirroring:loader.includes('MutationObserver')&&loader.includes('legacyBar')&&loader.includes('legacyText'),
- workerWatchdog:loader.includes('stallTimeout=5000')&&loader.includes('forceCooperative')&&loader.includes('worker init timeout'),
  blockingOverlay:html.includes('id="initialLoader"')&&html.indexOf('./initial-loader.js')<html.indexOf('./game.js'),
  smoothRoadFalloff:terrain.includes('roadTerrainFactor')&&terrain.includes('1-smooth(t)')&&terrain.includes('ROAD_FADE_DISTANCE=9'),
  naturalTerrainReturn:terrain.includes('natural*(1-factor)+roadY*factor'),
