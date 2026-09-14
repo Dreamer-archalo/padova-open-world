@@ -1,8 +1,42 @@
 import {CityWorld} from './world.js';
+import {Terrain} from './terrain.js';
+import {modernFootprints} from './modern-map.js';
 import {HOME} from './gameplay-areas.js';
 
 const debug=globalThis.__padovaLoaderDebug||{mark:message=>{const el=document.getElementById('initialLoaderStatus');if(el)el.textContent=message;},fail:(kind,error)=>console.error(kind,error)};
 debug.mark('initial-loader.js caricato · inizializzazione loader…');
+
+// CityWorld used to synchronously carve every one of the ~88k building footprints
+// and query road/water-aware ground heights before the first frame. That work is
+// now deferred to streamed chunks. During bootstrap groundHeight is deliberately
+// the cheap natural DEM lookup; full road/water blending is restored before any
+// mandatory spawn chunk is generated.
+globalThis.__padovaFastStartup=true;
+const fullGroundHeight=Terrain.prototype.groundHeight;
+if(!Terrain.prototype.__padovaFastGround){
+ Terrain.prototype.__padovaFastGround=true;
+ Terrain.prototype.groundHeight=function(x,z){
+  if(globalThis.__padovaFastStartup!==false)return this.elevation(x,z);
+  return fullGroundHeight.call(this,x,z);
+ };
+}
+
+// Prepare expensive road/building clipping lazily, once per visible chunk rather
+// than once globally. The generator remains time-sliced by the normal loader.
+const fullBuildStageSteps=CityWorld.prototype.buildStageSteps;
+if(!CityWorld.prototype.__padovaLazyFootprints){
+ CityWorld.prototype.__padovaLazyFootprints=true;
+ CityWorld.prototype.buildStageSteps=function*(key,stage){
+  const ch=this.chunks.get(key);
+  if(this.terrain?.modern&&ch&&!ch.footprintsPrepared){
+   debug.mark(`Preparo edifici chunk ${key}…`);
+   ch.buildings=modernFootprints(ch.buildings,this.terrain,{force:true});
+   ch.footprintsPrepared=true;
+   yield;
+  }
+  yield* fullBuildStageSteps.call(this,key,stage);
+ };
+}
 
 const CHUNK=320;
 const BOOTSTRAP_SHARE=30;
@@ -22,7 +56,7 @@ function createOverlayUI(){
  };
 }
 const sharedUI=createOverlayUI();
-debug.mark('Loader UI pronto · attesa inizializzazione CityWorld…');
+debug.mark('Bootstrap rapido attivo · caricamento dati città…');
 
 function ringKeys(world,x,z){
  const cx=Math.floor(x/CHUNK),cz=Math.floor(z/CHUNK),keys=[];
@@ -47,6 +81,8 @@ export class GameLoaderManager{
  }
  async loadInitialRing(x,z){
   if(this.started)return this.promise;this.started=true;
+  debug.mark('CityWorld creato · attivo terreno completo…');
+  globalThis.__padovaFastStartup=false;
   debug.mark('Calcolo anello iniziale 3×3…');
   const keys=ringKeys(this.world,x,z);if(keys.length!==9)throw new Error('Initial ring incomplete: expected 9 chunks, found '+keys.length);
   debug.mark('Anello 3×3 trovato · preparo generazione cooperativa…');
@@ -77,7 +113,7 @@ if(!CityWorld.prototype.__initialLoaderManager){
   }
   return result;
  };
- debug.mark('Loader agganciato a CityWorld · attesa caricamento dati gioco…');
+ debug.mark('Loader agganciato · inizializzazione dati e rete stradale…');
 }
 
 document.addEventListener('click',event=>{if(document.documentElement.dataset.initialWorldReady==='true')return;if(event.target.closest?.('#confirmCharacter,#playBtn')){event.preventDefault();event.stopImmediatePropagation();}},true);
