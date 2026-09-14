@@ -4,6 +4,7 @@ import './ambient-pursuits.js';
 import './phase3-runtime.js';
 import './phase3-city-systems.js';
 import './phase3-tram-fix.js';
+import './phase3-polish.js';
 
 // UI-only Phase 2 feedback. It does not own gameplay state: it observes the
 // existing HUD, so it cannot interfere with saves, physics or streaming.
