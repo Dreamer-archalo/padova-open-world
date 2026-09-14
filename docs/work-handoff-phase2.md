@@ -52,35 +52,41 @@ Questo file coordina modifiche concorrenti sul branch `feat/modern-padova-phase-
 | Vegetazione | PARZIALE | Streaming presente; manca passata dedicata. |
 | Mura veneziane | PARZIALE | Portello e Porta Savonarola migliorati; manca circuito più esteso. |
 | Chiese | FATTO | Santo, Santa Giustina, Duomo e numerose parrocchie centro/primissima periferia. |
-| Centro storico | FATTO | Piazza dei Signori, Pedrocchi, Palazzo Moroni/Municipio e Palazzo Bo; porticati artificiali rimossi. |
+| Centro storico | FATTO | Piazza dei Signori, Pedrocchi, Palazzo Moroni/Municipio e Palazzo Bo; porticati artificiali rimossi, compreso il generatore legacy in fase di installazione dei chunk. |
 | Stadio Euganeo | FATTO | Campo, pista, tribune, illuminazione e 18 calciatori leggeri; destinazione Taxi `Stadio`. |
 | Palazzo Ragione / Erbe-Frutta | FATTO | Palazzo/fontana e mercati stilizzati presenti. |
 | Università / Riviera | PARZIALE | Palazzo Bo e Portello dedicati; Riviera ampliabile. |
 | Collina + scritta PADOVA | FATTO | Collina arcade periferica con culling. |
 | Gara tangenziale dedicata | MANCANTE | Mancano conferma, snapshot stato, turbo x3, premi e ripristino esatto. |
 | Militari rari fuori aeroporto | MANCANTE | Nessun blocco dedicato. |
+| Integrità geometrica / dislivelli | FATTO (audit matematico) | Clamp globale DEM moderno, spline stradali monotone, winding strade corretto, triangoli degeneri/normal invalidi filtrati, shoulder feather, controllo acqua e Y veicoli smussata. Resta validazione browser completa. |
 | Preservazione sistemi esistenti | IN CORSO | Non rompere Wanted5, carri, Portavalori1000, Turbo, aerei, paracadute, aeroporto, tram, acqua, respawn, fullscreen, qualità, personaggi e salvataggi. |
-| Audit finale strade/terreno | IN CORSO | Livellamento piazze + pianura sud + raccordo globale banchine aggiunti; resta prova browser completa. |
-| Test / budget prestazioni | IN CORSO | Aggiunti `test:terrain-polish` e `test:elevation-harmony`; suite completa + prova WebGL/FPS reale obbligatorie prima del merge. |
+| Audit finale strade/terreno | PARZIALE | Audit matematico e runtime implementati; resta prova WebGL/drive-through completa e suite totale prima del merge. |
+| Test / budget prestazioni | IN CORSO | `test:terrain-polish`, `test:elevation-harmony` e `test:geometry-integrity` disponibili; suite completa + prova WebGL/FPS reale obbligatorie prima del merge. |
 
 ## Regole di coordinamento
 - Prima di ogni modifica rileggere HEAD: Work e ChatGPT possono avanzare in parallelo.
 - Preferire micro-blocchi indipendenti e committabili.
 - Non creare un nuovo Site.
 - Non mergiare PR #6 senza richiesta esplicita.
+- Non reintrodurre porticati procedurali nel centro storico.
 - Niente meteo, ciclo giorno/notte o illuminazione monumentale dinamica in questa passata.
 - Esclusi: Padova 1500/Galileo, missili/razzi, spazio/Luna, multiplayer.
 
 ## Ultimi file/blocchi aggiunti da ChatGPT
-- `phase4-terrain-fixes.js`: livellamento Piazza Signori/Erbe/Frutta/Duomo/Prato, pianura Bassanello-Guizza-Albignasego, margini canale Prato e raccordo globale banchine su 7,5 m; ponti/tunnel/acqua esclusi dalla sfumatura automatica.
-- `verify-elevation-harmony.mjs`: audit dell'intera rete su pendenze, transizioni strada-terreno, ponti/acqua e nuclei delle zone livellate; scrive `docs/elevation-harmony-audit.json` quando eseguito.
+- `phase4-terrain-fixes.js`: livellamento piazze/pianura sud, raccordo banchine 7,5 m, clamp globale del DEM moderno e clamp monotono dell'interpolazione stradale.
+- `surface-layers.js`: pulizia poligoni dopo clipping, preservazione winding, rimozione triangoli degeneri e altezze non finite.
+- `modern-roads.js`: winding delle superfici e dei fan agli incroci corretto verso l'alto; controllo altezze finite.
+- `vehicle-dynamics.js`: `smoothGroundY`, guardia salita verticale 28 cm e passaggio in ballistic su veri dislivelli invece di snap Y.
+- `geometry-audit-runtime.js`: audit runtime completo griglia/rete/acqua/mesh con `window.auditPadovaGeometry(...)`; rimozione output del vecchio generatore portici prima dell'installazione detail.
+- `verify-geometry-integrity.mjs`: regressioni dedicate a geometria, winding, clamp quote e aderenza veicoli.
+- `verify-elevation-harmony.mjs`: audit rete su pendenze, transizioni strada-terreno, ponti/acqua e zone livellate; scrive `docs/elevation-harmony-audit.json` quando eseguito.
 - `roof-upgrades.js`: tetti pitched/hipped/gable a costo progressivo.
 - `phase3-runtime.js`: quattro Time Attack moto + record + rare auto da corsa autonome.
 - `phase3-city-systems.js`: clacson, semafori adattivi, parcheggi, ingressi edifici, bar, eventi, emergenze, incidenti, bypass traffico, gateways, ponti, acqua, VISITA CITTÀ, screenshot intro.
 - `phase3-tram-fix.js`: fermate vive/passeggeri instanziati e sostituzione sicura dell'update tram.
 - `phase3-polish.js`: HUD clacson, reset Tour su Play normale, reazioni NPC differenziate e micro-animazioni eventi.
 - `vehicle-damage.js`: danni fisici visualmente più leggibili mantenendo il budget e l'API dei test esistenti.
-- `verify-phase3-runtime.mjs` / `verify-phase3-city-systems.mjs`: controlli statici/sintassi dedicati.
 
 ## Blocchi strutturali ancora aperti
 1. Nuova villa SW e restituzione di Parco Treves a parco pubblico.
@@ -92,4 +98,4 @@ Questo file coordina modifiche concorrenti sul branch `feat/modern-padova-phase-
 7. Lavoratori aeroporto animati e ulteriore micromobilità per zone.
 8. Militari rari fuori aeroporto.
 9. Estensione Riviera/mura/vegetazione.
-10. Audit finale globale, suite completa e test browser prima del merge.
+10. Suite completa, test WebGL/FPS e drive-through finale prima del merge.
