@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {smoothGroundY,MAX_CONTACT_RISE} from './dist/vehicle-dynamics.js';
 
 const read=p=>fs.readFileSync(new URL(p,import.meta.url),'utf8');
-const surface=read('./dist/surface-layers.js'),terrainFix=read('./dist/phase4-terrain-fixes.js'),audit=read('./dist/geometry-audit-runtime.js');
+const surface=read('./dist/surface-layers.js'),terrainFix=read('./dist/phase4-terrain-fixes.js'),audit=read('./dist/geometry-audit-runtime.js'),roads=read('./dist/modern-roads.js');
 
 // Vehicle support: ordinary centimetre-scale grade changes follow the surface;
 // a large discontinuity must be eased instead of becoming a one-frame Y jump.
@@ -14,16 +14,18 @@ assert(MAX_CONTACT_RISE<=.3,'hard ground-rise guard must stay below 30 cm');
 
 const checks={
  clippedWinding:surface.includes('signedArea2')&&surface.includes('[...part].reverse()'),
- degenerateRemoval:surface.includes('mesh-degenerate')||surface.includes('triArea2')&&surface.includes('1e-8'),
+ degenerateRemoval:surface.includes('triArea2')&&surface.includes('1e-8'),
  finiteSurfaceHeights:surface.includes('[ya,yb,yc].every(Number.isFinite)'),
  nativeGradientClamp:terrainFix.includes('MAX_TERRAIN_GRADE')&&terrainFix.includes('harmonisedGrid')&&terrainFix.includes('MIN_ADJACENT_DELTA'),
  meanPreservingClamp:terrainFix.includes('excess=(Math.abs(d)-limit)/2'),
  monotoneRoadInterpolation:terrainFix.includes('__phase4MonotoneHeight')&&terrainFix.includes('Math.min(a.h,b.h)')&&terrainFix.includes('Math.max(a.h,b.h)'),
  shoulderFeather:terrainFix.includes('SHOULDER_FEATHER=7.5'),
+ roadUpwardWinding:roads.includes('[a[0]+nx*right')&&roads.includes('[b[0]+nx*left')&&roads.includes('writer.tri([p[0],y,p[1]],vertex(b),vertex(a),asphalt)'),
+ finiteRoadHeights:roads.includes('[h0,h1].every(Number.isFinite)'),
  runtimeGridAudit:audit.includes('terrain-delta')&&audit.includes('gridEdges'),
  runtimeRoadAudit:audit.includes('road-grade')&&audit.includes('road-hermite-overshoot'),
  runtimeWaterAudit:audit.includes('road-water-clearance'),
- runtimeMeshAudit:audit.includes('mesh-invalid-normal')&&audit.includes('surface-inverted-winding'),
+ runtimeMeshAudit:audit.includes('mesh-invalid-normal')&&audit.includes('surface-inverted-winding')&&audit.includes('mesh-degenerate-triangle'),
  legacyPorticoCleanup:audit.includes('stripLegacyPorticos')&&audit.includes('legacyPorticosRemoved'),
  fullConsoleEntry:audit.includes('window.auditPadovaGeometry')
 };
