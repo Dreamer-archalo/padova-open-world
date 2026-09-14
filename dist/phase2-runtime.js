@@ -1,5 +1,6 @@
 import './phase4-terrain-fixes.js';
 import './historic-terrain-level.js';
+import './historic-plaza-alignment.js';
 import './roof-upgrades.js';
 import './taxi-map-ui.js';
 import './ambient-pursuits.js';
@@ -9,6 +10,8 @@ import './phase3-tram-fix.js';
 import './phase3-polish.js';
 import './geometry-audit-runtime.js';
 import './gameplay-upgrades.js';
+import './historic-architecture-alignment.js';
+import './villa-spawn-alignment.js';
 
 // UI-only Phase 2 feedback. It does not own gameplay state: it observes the
 // existing HUD, so it cannot interfere with saves, physics or streaming.
