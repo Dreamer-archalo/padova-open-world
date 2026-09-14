@@ -16,19 +16,34 @@ function ensureTestWallet(){
 }
 ensureTestWallet();
 
+const taxiConfirmations=new WeakSet();
+function guardTaxiConfirmation(){
+ const confirm=document.getElementById('confirmTaxi');
+ if(!confirm||confirm.dataset.singleChargeGuard==='1')return;
+ confirm.dataset.singleChargeGuard='1';
+ confirm.addEventListener('click',event=>{
+  if(taxiConfirmations.has(confirm)){
+   event.preventDefault();event.stopImmediatePropagation();return;
+  }
+  taxiConfirmations.add(confirm);
+  confirm.setAttribute('aria-busy','true');
+  queueMicrotask(()=>{confirm.disabled=true;});
+ },true);
+}
 function promoteChooseYourself(){
  const choose=document.getElementById('taxiChoose'),activities=choose?.closest('.activities');
  if(choose&&activities&&activities.firstElementChild!==choose)activities.prepend(choose);
+ guardTaxiConfirmation();
 }
 if(menuContent){new MutationObserver(promoteChooseYourself).observe(menuContent,{childList:true,subtree:true});}
 
-// game.js intentionally ignores gameplay keys while a dialog is paused. The taxi
-// confirmation is a UI action instead, so intercept SPACE before that global
-// handler and make it equivalent to clicking "Conferma e parti".
+// SPACE can confirm the taxi from anywhere in the confirmation dialog, but never
+// synthesise a second click when the native button itself already has focus.
 window.addEventListener('keydown',e=>{
  if(e.code!=='Space'||e.repeat)return;
  const confirm=document.getElementById('confirmTaxi'),menu=document.getElementById('menu');
- if(!confirm||!menu?.open||confirm.disabled)return;
+ if(!confirm||!menu?.open||confirm.disabled||taxiConfirmations.has(confirm))return;
+ if(document.activeElement===confirm)return;
  e.preventDefault();e.stopImmediatePropagation();confirm.click();
 },true);
 
