@@ -17,6 +17,15 @@ function suite(game){
  });
  return managers.get(game);
 }
+const basePopulate=ModernGameplay.prototype.populate;
+if(!ModernGameplay.prototype.__pedestrianSpawnValidation){
+ ModernGameplay.prototype.__pedestrianSpawnValidation=true;
+ ModernGameplay.prototype.populate=function(...args){
+  const out=basePopulate.apply(this,args),m=suite(this);
+  m.pedestrians.update(this,.25);
+  return out;
+ };
+}
 const base=ModernGameplay.prototype.update;
 if(!ModernGameplay.prototype.__aiUiGameplayUpgrade){
  ModernGameplay.prototype.__aiUiGameplayUpgrade=true;
