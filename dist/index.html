@@ -17,11 +17,51 @@
       <div class="initial-loader-kicker">PADOVA / INITIAL WORLD STREAM</div>
       <h1 class="initial-loader-title">CARICAMENTO CITTÀ</h1>
       <p class="initial-loader-copy">Genero completamente il punto di partenza e gli 8 chunk adiacenti prima di farti entrare nel mondo.</p>
-      <div class="initial-loader-row"><strong id="initialLoaderPercent" class="initial-loader-percent">0%</strong><span id="initialLoaderStatus" class="initial-loader-status">Preparazione chunk iniziali…</span></div>
+      <div class="initial-loader-row"><strong id="initialLoaderPercent" class="initial-loader-percent">0%</strong><span id="initialLoaderStatus" class="initial-loader-status">Inizializzazione script…</span></div>
       <div class="initial-loader-track"><i id="initialLoaderBar"></i></div>
+      <pre id="initialLoaderError" hidden style="margin:.75rem 0 0;max-width:100%;white-space:pre-wrap;overflow-wrap:anywhere;font:600 .72rem/1.35 ui-monospace,SFMono-Regular,Menlo,monospace;color:#ffb3a7;"></pre>
       <div class="initial-loader-note">La percentuale rappresenta chunk realmente generati e inseriti nella scena WebGL.</div>
     </div>
   </div>
+  <script>
+  (()=>{
+    const status=document.getElementById('initialLoaderStatus');
+    const errorBox=document.getElementById('initialLoaderError');
+    const percent=document.getElementById('initialLoaderPercent');
+    const bar=document.getElementById('initialLoaderBar');
+    const overlay=document.getElementById('initialLoader');
+    const text=value=>{try{return typeof value==='string'?value:value?.stack||value?.message||JSON.stringify(value);}catch{return String(value);}};
+    const mark=message=>{if(status)status.textContent=message;};
+    const fail=(kind,detail)=>{
+      const message=(kind?kind+': ':'')+(text(detail)||'Errore sconosciuto');
+      if(status)status.textContent='ERRORE DI AVVIO';
+      if(errorBox){errorBox.hidden=false;errorBox.textContent=message;}
+      if(percent)percent.textContent='ERR';
+      if(bar)bar.style.width='100%';
+      if(overlay)overlay.classList.add('initial-loader-error');
+      console.error('[Padova startup]',message);
+    };
+    globalThis.__padovaLoaderDebug={mark,fail};
+    mark('Inizializzazione script…');
+    window.addEventListener('error',event=>{
+      if(event.target&&event.target!==window){
+        const target=event.target;
+        const resource=target.src||target.href||target.currentSrc||target.tagName||'risorsa sconosciuta';
+        fail('RESOURCE ERROR','Impossibile caricare '+resource);
+        return;
+      }
+      const where=[event.filename,event.lineno&&('riga '+event.lineno),event.colno&&('colonna '+event.colno)].filter(Boolean).join(' · ');
+      const reason=event.error?.stack||event.error?.message||event.message||'Errore JavaScript sconosciuto';
+      fail('JS ERROR',reason+(where?'\n'+where:''));
+    },true);
+    window.addEventListener('unhandledrejection',event=>{
+      fail('UNHANDLED PROMISE',event.reason?.stack||event.reason?.message||event.reason||'Promise rigettata senza dettaglio');
+    });
+    setTimeout(()=>{
+      if(status?.textContent==='Inizializzazione script…')mark('Attesa caricamento moduli JavaScript…');
+    },750);
+  })();
+  </script>
   <canvas id="world" aria-label="Padua 3D game world"></canvas>
   <div id="vignette"></div>
   <header class="hud topbar">
