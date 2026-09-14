@@ -1,0 +1,4 @@
+Padova After Hours — synchronized final build
+Date: 2026-09-14
+Base main: 1d7bb0e5cf002acca87f4fbb6752046bc0df7a2c
+Includes merged work through PR #25 and today's final fixes.
