@@ -7,7 +7,7 @@ const checks=[
  ['urgent destination streaming',source.includes('this.update({x,z,yaw:0,speed:0,aircraft:false,altitude:0},true)')],
  ['centre chunk fallback',source.includes('CENTER_FALLBACK_MS=1200')&&source.includes('centerReady(this,x,z)')],
  ['guaranteed release deadline',source.includes('GUARANTEED_RELEASE_MS=2100')&&source.includes('waited>=GUARANTEED_RELEASE_MS')],
- ['deadline checked before backend readiness',source.indexOf('waited>=GUARANTEED_RELEASE_MS')<source.indexOf('BASE_CORE_READY.call(this,x,z,radius)')],
+ ['deadline checked before taxi backend readiness',source.indexOf('waited>=GUARANTEED_RELEASE_MS')<source.indexOf('let ready=BASE_CORE_READY.call(this,x,z,radius)')],
  ['destination remains prefetched on forced release',source.includes("this.prefetch(x,z,520)")&&source.includes("this.lastPlan=''" )],
  ['runtime import',runtime.includes("import './taxi-loading-guard.js';")]
 ];
