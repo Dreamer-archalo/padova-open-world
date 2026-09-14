@@ -1,11 +1,13 @@
 import {Terrain} from './terrain.js';
+import {RoadSurfaces} from './road-surfaces.js';
 
 // The historic centre of Padova is a very flat urban plain. Keep the river and
-// canal geometry independent: the level correction fades out at the water edge,
-// while streets, piazzas and pavements away from the bank share one gentle plane.
-export const HISTORIC_CENTER_PLAIN={x:0,z:100,rx:1210,rz:1350,core:.62,strength:.92,slopeX:.000015,slopeZ:.00003};
-export const HISTORIC_RIVER_HARD_BUFFER=3.5;
-export const HISTORIC_RIVER_FEATHER=18;
+// canal geometry independent: only the immediate bank remains outside the urban
+// levelling pass, while streets, piazzas and pavements return quickly to one
+// gentle city plane.
+export const HISTORIC_CENTER_PLAIN={x:0,z:100,rx:1210,rz:1350,core:.62,strength:.985,slopeX:.000015,slopeZ:.00003};
+export const HISTORIC_RIVER_HARD_BUFFER=2.5;
+export const HISTORIC_RIVER_FEATHER=12;
 
 const clamp=(n,a,b)=>Math.max(a,Math.min(b,n));
 const smooth=t=>{t=clamp(t,0,1);return t*t*(3-2*t);};
@@ -17,16 +19,35 @@ export function historicPlainMask(x,z,waterDistance=Infinity){
 }
 
 const baseElevation=Terrain.prototype.elevation;
+function historicTarget(terrain,x,z){
+ terrain.__historicCenterDatum??=baseElevation.call(terrain,-145,-48);
+ const a=HISTORIC_CENTER_PLAIN;
+ return terrain.__historicCenterDatum+(x+145)*a.slopeX+(z+48)*a.slopeZ;
+}
 if(!Terrain.prototype.__historicCenterLevelPlane){
  Terrain.prototype.__historicCenterLevelPlane=true;
  Terrain.prototype.elevation=function(x,z){
   const h=baseElevation.call(this,x,z);if(!this.modern)return h;
   const waterDistance=this.waterIndex?this.waterDistance(x,z):Infinity,influence=historicPlainMask(x,z,waterDistance);if(influence<=0)return h;
-  // Piazza delle Erbe is a stable central datum. A tiny longitudinal slope keeps
-  // drainage believable without reproducing DEM bumps as ramps or urban walls.
-  this.__historicCenterDatum??=baseElevation.call(this,-145,-48);
-  const a=HISTORIC_CENTER_PLAIN,target=this.__historicCenterDatum+(x+145)*a.slopeX+(z+48)*a.slopeZ;
-  return h*(1-influence)+target*influence;
+  return h*(1-influence)+historicTarget(this,x,z)*influence;
+ };
+}
+
+// RoadSurfaces is solved after Terrain has been created. Reinforce the same flat
+// datum on ordinary historic-centre streets after the global road smoothing pass.
+// Bridges, tunnels and layered roads are deliberately excluded: their vertical
+// separation belongs to the river/structure system, not to ordinary paving.
+const baseRoadSmooth=RoadSurfaces.prototype.smoothProfiles;
+if(!RoadSurfaces.prototype.__historicCenterRoadPlane){
+ RoadSurfaces.prototype.__historicCenterRoadPlane=true;
+ RoadSurfaces.prototype.smoothProfiles=function(){
+  baseRoadSmooth.call(this);if(!this.modern||!this.terrain)return;
+  const seen=new Set();
+  for(const profile of this.profiles.values()){
+   const road=profile.road;if(road.crossing||road.tunnel||road.b||Number(road.layer))continue;
+   for(const id of profile.ids){if(seen.has(id))continue;seen.add(id);const n=this.nodes[id],waterDistance=this.terrain.waterDistance(n.x,n.z),influence=historicPlainMask(n.x,n.z,waterDistance);if(influence<=0)continue;n.h=n.h*(1-influence)+historicTarget(this.terrain,n.x,n.z)*influence;}
+  }
+  this.updateSlopes();
  };
 }
 
