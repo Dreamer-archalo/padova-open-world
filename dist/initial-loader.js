@@ -88,29 +88,25 @@ export class GameLoaderManager{
  loadInitialRing(x,z){
   if(this.promise)return this.promise;
   this.started=true;
-  this.promise=(async()=>{
-   try{
-    debug.mark('CityWorld creato · attivo terreno completo…');
-    globalThis.__padovaFastStartup=false;
-    debug.mark('Calcolo anello iniziale 3×3…');
-    const keys=ringKeys(this.world,x,z);if(keys.length!==9)throw new Error('Initial ring incomplete: expected 9 chunks, found '+keys.length);
-    debug.mark('Anello 3×3 trovato · preparo generazione cooperativa…');
-    this.world.streaming?.dispose?.();this.world.streaming=null;this.world.queue=[];this.world.pendingBuild=null;
-    sharedUI.begin();const totalStages=keys.length*2,startedAt=performance.now();let completed=0;
-    for(let index=0;index<keys.length;index++){
-     const key=keys[index],current=index+1;
-     this.onProgress({completed,totalStages,current,stage:'core'});await this.buildStage(key,'core',startedAt);completed++;this.onProgress({completed,totalStages,current,stage:'core'});await nextFrame();
-     this.onProgress({completed,totalStages,current,stage:'detail'});await this.buildStage(key,'detail',startedAt);completed++;this.onProgress({completed,totalStages,current,stage:'detail'});await nextFrame();
-    }
-    const invalid=keys.filter(key=>!this.chunkState(key).detail);if(invalid.length)throw new Error('Initial chunks missing from scene: '+invalid.join(', '));
-    this.done=true;return {keys,completed,totalStages,percent:100};
-   }catch(error){
-    this.started=false;
-    this.promise=null;
-    throw error;
+  const task=(async()=>{
+   debug.mark('CityWorld creato · attivo terreno completo…');
+   globalThis.__padovaFastStartup=false;
+   debug.mark('Calcolo anello iniziale 3×3…');
+   const keys=ringKeys(this.world,x,z);if(keys.length!==9)throw new Error('Initial ring incomplete: expected 9 chunks, found '+keys.length);
+   debug.mark('Anello 3×3 trovato · preparo generazione cooperativa…');
+   this.world.streaming?.dispose?.();this.world.streaming=null;this.world.queue=[];this.world.pendingBuild=null;
+   sharedUI.begin();const totalStages=keys.length*2,startedAt=performance.now();let completed=0;
+   for(let index=0;index<keys.length;index++){
+    const key=keys[index],current=index+1;
+    this.onProgress({completed,totalStages,current,stage:'core'});await this.buildStage(key,'core',startedAt);completed++;this.onProgress({completed,totalStages,current,stage:'core'});await nextFrame();
+    this.onProgress({completed,totalStages,current,stage:'detail'});await this.buildStage(key,'detail',startedAt);completed++;this.onProgress({completed,totalStages,current,stage:'detail'});await nextFrame();
    }
+   const invalid=keys.filter(key=>!this.chunkState(key).detail);if(invalid.length)throw new Error('Initial chunks missing from scene: '+invalid.join(', '));
+   this.done=true;return {keys,completed,totalStages,percent:100};
   })();
-  return this.promise;
+  this.promise=task;
+  task.catch(()=>{if(this.promise===task){this.started=false;this.promise=null;}});
+  return task;
  }
 }
 
