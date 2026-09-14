@@ -47,13 +47,23 @@ function shoulderPoint(game,site,side,along){
  if(!game.terrain.dry(p.x,p.z,VEHICLES.sedan.width/2,p.y)||vehicleBlocked(p.x,p.z,p.yaw,game.collision,VEHICLES.sedan,p.y))return null;
  return p;
 }
+function policeParkingPair(game,site){
+ const candidates=[[-1,-10],[-1,-18],[1,-10],[1,-18],[-1,-27],[1,-27]]
+  .map(([side,along])=>shoulderPoint(game,site,side,along)).filter(Boolean);
+ const pair=[];
+ for(const p of candidates){
+  if(pair.some(q=>dist(p,q)<6.5))continue;
+  pair.push(p);if(pair.length===2)break;
+ }
+ return pair.length===2?pair:null;
+}
 
 export class PoliceAI{
  constructor(){this.pairs=new Map();this.lastViolation=0;this.arrest=0;}
  spawnPair(game,site){
   if(this.pairs.has(site.id))return this.pairs.get(site.id);
-  const a=shoulderPoint(game,site,-1,-10),b=shoulderPoint(game,site,-1,-18);if(!a||!b)return null;
-  const units=[a,b].map((p,i)=>{const c=game.addCar(p.x,p.z,p.yaw,false,true,'sedan');Object.assign(c,{y:p.y,speed:0,parked:true,missionUnit:true,fixedSpawn:true,speedTrapPolice:true,speedTrapHome:{...p},name:'Polizia · Controllo velocità'});game.decorateRoadblock(c,i,true);c.roadblock=false;c.routineCheck=false;game.pose(c);return c;});
+  const parking=policeParkingPair(game,site);if(!parking)return null;
+  const units=parking.map((p,i)=>{const c=game.addCar(p.x,p.z,p.yaw,false,true,'sedan');Object.assign(c,{y:p.y,speed:0,parked:true,missionUnit:true,fixedSpawn:true,speedTrapPolice:true,speedTrapHome:{...p},name:'Polizia · Controllo velocità'});game.decorateRoadblock(c,i,true);c.roadblock=false;c.routineCheck=false;game.pose(c);return c;});
   this.pairs.set(site.id,{site,units,pursuit:false,startedAt:0});return this.pairs.get(site.id);
  }
  retireFar(game){
