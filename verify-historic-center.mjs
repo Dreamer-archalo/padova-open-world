@@ -8,9 +8,8 @@ const checks={
  pedrocchi:centre.includes("poi='pedrocchi'")||centre.includes("g.userData.poi='pedrocchi'"),
  municipio:centre.includes("g.userData.poi='palazzo-moroni'"),
  universita:centre.includes("g.userData.poi='palazzo-bo'"),
- passablePorticos:centre.includes('passablePortico=true')&&centre.includes('roadClearance(data'),
+ porticosRemoved:!centre.includes('passablePortico')&&!centre.includes('makePorticos')&&!centre.includes('addPortico')&&!centre.includes('localColonnade'),
  roadsUntouched:!centre.includes('passableGateway')&&!centre.includes('collision.add')&&!centre.includes('road.w='),
- sparseArcades:centre.includes('if(count>=6)break'),
  piazzaAccents:centre.includes("poi='piazza-accents'")||centre.includes("g.userData.poi='piazza-accents'")
 };
 const failed=Object.entries(checks).filter(([,ok])=>!ok).map(([k])=>k);
