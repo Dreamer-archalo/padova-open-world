@@ -10,6 +10,8 @@ const checks={
  stagedPercent:loader.includes('totalStages=keys.length*2')&&loader.includes('completed/Math.max(1,totalStages)'),
  timeSliced:loader.includes('performance.now()+this.sliceMs')&&loader.includes('requestAnimationFrame'),
  bootstrapMirroring:loader.includes('MutationObserver')&&loader.includes('legacyBar')&&loader.includes('legacyText'),
+ loadButtonNotBlocked:loader.includes("document.getElementById('playBtn')?.addEventListener")&&loader.includes("event.target.closest?.('#confirmCharacter')")&&!loader.includes('#confirmCharacter,#playBtn'),
+ retryableBootstrap:loader.includes('this.promise=null')&&loader.includes('const task=(async()=>')&&loader.includes('this.promise=task')&&loader.includes('this.started=false;this.promise=null'),
  blockingOverlay:html.includes('id="initialLoader"')&&html.indexOf('./initial-loader.js')<html.indexOf('./game.js'),
  startupDiagnostics:html.includes("window.addEventListener('error'")&&html.includes("window.addEventListener('unhandledrejection'")&&html.includes('initialLoaderError'),
  corridorModuleContract:surface.includes("import {cutCorridor} from './modern-map.js'")&&modernMap.includes('export function cutCorridor('),
