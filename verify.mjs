@@ -6,7 +6,7 @@ import {Terrain,safeDryRoad} from './dist/terrain.js';
 import {CityWorld,PLACES} from './dist/world.js';
 import {makeRoadGraph,safeRoadPoint,roadRoute,collides,dist} from './dist/core.js';
 // Exercise actual world geometry in Node. This does not claim browser or visual QA.
-globalThis.document={createElement(){return {width:0,height:0,getContext(){return {fillRect(){}};}};}};
+globalThis.document={createElement(){return {width:0,height:0,getContext(){return {fillRect(){},fillText(){}};}};}};
 const data=JSON.parse(fs.readFileSync(new URL('./dist/data/padova.json',import.meta.url)));
 const scene=new THREE.Scene();const terrain=new Terrain(JSON.parse(fs.readFileSync(new URL('./dist/data/terrain.json',import.meta.url))),data);const world=new CityWorld(scene,data,terrain),graph=makeRoadGraph(data.roads);
 const targets=PLACES.map(p=>{const t=safeDryRoad(p,graph,world.collision,terrain,VEHICLES.mito);assert(t,'no spawn '+p.name);assert(!collides(t.x,t.z,1,world.collision),'blocked '+p.name);return {...t,name:p.name};});

@@ -24,6 +24,7 @@
     "test:historic-center": "node --check dist/historic-center.js && node --check dist/city-details.js && node verify-historic-center.mjs",
     "test:historic-performance": "node --check dist/historic-center.js && node verify-historic-performance.mjs",
     "test:street-life": "node --check dist/taxi-map-ui.js && node --check dist/cruise-control.js && node --check dist/traffic.js && node --check dist/ambient-pursuits.js && node --check dist/stadium.js && node --check dist/city-details.js && node verify-street-life.mjs && node verify-historic-performance.mjs",
-    "test:urban-life": "node --max-old-space-size=3072 verify-urban-life.mjs"
+    "test:urban-life": "node --max-old-space-size=3072 verify-urban-life.mjs",
+    "test:vehicle-damage": "node --max-old-space-size=3072 verify-vehicle-damage.mjs"
   }
 }

@@ -13,13 +13,13 @@ Questo file coordina modifiche concorrenti sul branch `feat/modern-padova-phase-
 | Taxi abusivo | FATTO | Taxi fisico, autista, caricamento, curiosità, spawn vicino, blocco fondi e prefetch robusto. Lista ora ridotta alle 10 destinazioni richieste; `SCEGLI TU` è la prima opzione e la mappa ha zoom/pan interno 1×–4×. |
 | Portello | FATTO | Porta passabile ad arco, ponte, parapetti, argini, scalinate, mura, studenti, micromobilità, bar e identità universitaria. |
 | Motorini / micromobilità | PARZIALE | NPC scooter/moto ora hanno profili `group`, `wheelie`, `zigzag` e normale, con controlli di corsia/sicurezza; resta da estendere ulteriormente la distribuzione per quartiere. |
-| NPC / città viva | PARZIALE | Reazioni a veicoli veloci, inseguimenti ad alto Wanted e profilo avoid migliorati. Mancano cani e lavoratori aeroportuali dedicati. |
+| NPC / città viva | PARZIALE | Reazioni e profili sociali migliorati; gruppi, seduti, musicisti, skater e cani al guinzaglio presenti. Mancano lavoratori aeroportuali dedicati. |
 | Inseguimenti autonomi | FATTO | Eventi occasionali sospetto + Polizia indipendenti dal giocatore, uno alla volta, limitati nel tempo e annullati se il giocatore entra in Wanted/missione. |
-| Smart spawn | PARZIALE | Spawn missioni/polizia/militari evita meglio punti dietro al giocatore; aeroporto separato. Manca audit globale. |
+| Smart spawn | FATTO | Spawn traffico e pedoni pesa campo visivo, direzione e velocità: evita il fronte ad alta velocità e preferisce lati/retro; missioni/polizia/militari mantengono filtri dedicati. |
 | Minimap | FATTO | Rifinita per contrasto/leggibilità senza aumento sostanziale del rendering. |
 | Indicatore zona | FATTO | Banner transitorio per distretto/località. |
 | Audio | FATTO | Motore + ambience procedurale per distretto legata al toggle Sound. |
-| Danno visivo veicoli | PARZIALE | Feedback HUD/vignetta; deformazione mesh non implementata. |
+| Danno visivo veicoli | FATTO | Tre livelli leggeri: vetro incrinato, pannello/cofano e fumo; lieve perdita di prestazioni sotto il 35%, dettagli esclusi in Iper Performance. |
 | Camere veicolo | FATTO | Free-look/recentraggio/retromarcia rifiniti. |
 | Velocità automatica / cruise | FATTO | `K` e pulsante HUD memorizzano la velocità corrente; regolazione `−5/+5 km/h`; da quasi fermi chiede prima di raggiungere la velocità desiderata; W/S/SPACE tornano manuali. |
 | Interni selezionati | MANCANTE | Nessun blocco dedicato. |
@@ -65,6 +65,8 @@ Questo file coordina modifiche concorrenti sul branch `feat/modern-padova-phase-
 - `stadium.js`: Stadio Euganeo leggero con calciatori instanziati e culling.
 - `city-details.js`: wiring stadio.
 - `verify-street-life.mjs`: regressioni statiche e guardrail di carico per questo blocco.
+- `urban-life.js`: profili sociali, cani al guinzaglio e spawn fuori visuale.
+- `vehicle-damage.js`: livelli visivi condivisi e degrado prestazionale critico.
 
 ## Blocchi strutturali ancora aperti
 1. Nuova villa SW e restituzione di Parco Treves a parco pubblico.
@@ -73,7 +75,6 @@ Questo file coordina modifiche concorrenti sul branch `feat/modern-padova-phase-
 4. Interni selezionati.
 5. Missioni brevi/random incluso `TRASPORTO STUPEFACENTI` €3,50 puramente arcade/ironico.
 6. Sicurezza/mercenari.
-7. Lavoratori aeroporto animati, cani/NPC speciali e ulteriore micromobilità per zone.
+7. Lavoratori aeroporto animati e ulteriore micromobilità per zone.
 8. Militari rari fuori aeroporto.
-9. Danno direttamente sulle mesh veicoli.
-10. Audit finale globale e suite completa prima del merge.
+9. Audit finale globale e suite completa prima del merge.
