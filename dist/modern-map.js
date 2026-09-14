@@ -5,17 +5,16 @@ function area(p){return Math.abs(p.reduce((s,a,i)=>{const b=p[(i+1)%p.length];re
 export function cutCorridor(poly,rect,minArea=.1){let remainder=poly;const pieces=[];for(let i=0;i<rect.length&&remainder.length>=3;i++){const a=rect[i],b=rect[(i+1)%rect.length],outside=clip(remainder,a,b,false);if(outside.length>=3&&area(outside)>minArea)pieces.push(outside);remainder=clip(remainder,a,b,true);}return pieces;}
 function bounds(p){let minX=Infinity,maxX=-Infinity,minZ=Infinity,maxZ=-Infinity;for(const v of p){if(v[0]<minX)minX=v[0];if(v[0]>maxX)maxX=v[0];if(v[1]<minZ)minZ=v[1];if(v[1]>maxZ)maxZ=v[1];}return {minX,maxX,minZ,maxZ,cx:(minX+maxX)/2,cz:(minZ+maxZ)/2};}
 function overlapsSegmentBox(b,s,pad){const minX=Math.min(s.a[0],s.b[0])-pad,maxX=Math.max(s.a[0],s.b[0])+pad,minZ=Math.min(s.a[1],s.b[1])-pad,maxZ=Math.max(s.a[1],s.b[1])+pad;return !(maxX<b.minX||minX>b.maxX||maxZ<b.minZ||minZ>b.maxZ);}
-export function modernFootprints(buildings,terrain){const result=[];let corrected=0;
- // This runs before the first frame. Keep the test exact, but reject irrelevant
- // road segments with cheap AABB maths before any terrain/height lookup. With
- // ~88k buildings this removes the former long synchronous startup stall.
+export function modernFootprints(buildings,terrain,{force=false}={}){const result=[];let corrected=0;
+ // Startup must never walk ~88k buildings against the road spatial index on the
+ // browser main thread. CityWorld calls this once while the bootstrap flag is
+ // active; return the source footprints immediately. The loader then prepares
+ // only the chunks that are actually streamed, using force:true.
+ if(!force&&globalThis.__padovaFastStartup!==false){terrain.footprintCorrections=0;return buildings;}
  for(const building of buildings){if(building.n||building.authoredLandmark){result.push(building);continue;}
   const b=bounds(building.p),width=b.maxX-b.minX,depth=b.maxZ-b.minZ,radius=Math.max(width,depth)/2+5;let parts=[building.p],base=null;
   for(const s of terrain.roads.index.near(b.cx,b.cz,radius)){const road=s.profile.road;if(/footway|path|steps|cycleway|tram|pedestrian/.test(road.k))continue;const pad=road.w/2+2.25;if(!overlapsSegmentBox(b,s,pad))continue;
    const dx=s.b[0]-s.a[0],dz=s.b[1]-s.a[1],d=Math.hypot(dx,dz);if(d<.01)continue;const q=nearestOnSegment(b.cx,b.cz,s.a,s.b);if(Math.hypot(b.cx-q.x,b.cz-q.z)>radius+road.w/2)continue;
-   // Height separation matters only for grade-separated infrastructure. Ordinary
-   // surface roads and buildings share the same terrain reference, so avoid the
-   // expensive repeated elevation/sample calls on the common path.
    if(road.crossing||road.tunnel||road.b||Number(road.layer)){
     base??=terrain.elevation(b.cx,b.cz);const h=terrain.roads.sample(road,q.x,q.z);if(h>base+building.h+.5||h+2<base)continue;
    }
@@ -26,5 +25,5 @@ export function modernFootprints(buildings,terrain){const result=[];let correcte
   if(parts.length!==1||Math.abs(area(parts[0])-area(building.p))>.05)corrected++;
   for(const p of parts)if(area(p)>.5)result.push({...building,p});
  }
- terrain.footprintCorrections=corrected;return result;
+ terrain.footprintCorrections=(terrain.footprintCorrections||0)+corrected;return result;
 }
