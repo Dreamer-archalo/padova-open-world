@@ -44,19 +44,25 @@ const nextFrame=()=>new Promise(resolve=>requestAnimationFrame(()=>resolve()));
 
 function createOverlayUI(){
  const overlay=document.getElementById('initialLoader'),bar=document.getElementById('initialLoaderBar'),percent=document.getElementById('initialLoaderPercent'),status=document.getElementById('initialLoaderStatus'),legacyBar=document.getElementById('loadingBar'),legacyText=document.getElementById('loadingText');
+ // The map is loaded only after the user presses #playBtn. Keeping this overlay
+ // visible before that click while cancelling the same click caused a permanent
+ // 0% deadlock. Hide it until the user really starts init().
+ if(overlay)overlay.hidden=true;
  let gateActive=false,lastPercent=0;
+ const show=(text='Avvio caricamento città…')=>{if(overlay){overlay.hidden=false;overlay.classList.remove('initial-loader-done','initial-loader-error');}if(status&&text)status.textContent=text;};
  const paint=(value,text)=>{const p=Math.max(lastPercent,Math.min(100,Math.max(0,value)));lastPercent=p;if(bar)bar.style.width=p.toFixed(2)+'%';if(percent)percent.textContent=Math.round(p)+'%';if(status&&text)status.textContent=text;};
  const mirrorBootstrap=()=>{if(gateActive)return;const raw=parseFloat(legacyBar?.style.width)||0,text=legacyText?.textContent?.trim()||'Preparazione dati città…';paint(raw/100*BOOTSTRAP_SHARE,text);};
  if(legacyBar||legacyText){const observer=new MutationObserver(mirrorBootstrap);if(legacyBar)observer.observe(legacyBar,{attributes:true,attributeFilter:['style']});if(legacyText)observer.observe(legacyText,{childList:true,subtree:true,characterData:true});mirrorBootstrap();}
  return {
-  begin(){gateActive=true;paint(Math.max(lastPercent,BOOTSTRAP_SHARE),'Generazione area iniziale · 9 chunk · 18 stadi');},
-  update({completed,totalStages,current,stage}){const p=BOOTSTRAP_SHARE+(completed/Math.max(1,totalStages))*(100-BOOTSTRAP_SHARE),label=stage==='detail'?'DETTAGLIO':stage==='core'?'BASE':'COMPLETO';paint(p,`Chunk ${current}/9 · ${label} · stadi ${completed}/${totalStages}`);},
+  show,
+  begin(){show('Generazione area iniziale · 9 chunk · 18 stadi');gateActive=true;paint(Math.max(lastPercent,BOOTSTRAP_SHARE),'Generazione area iniziale · 9 chunk · 18 stadi');},
+  update({completed,totalStages,current,stage}){show();const p=BOOTSTRAP_SHARE+(completed/Math.max(1,totalStages))*(100-BOOTSTRAP_SHARE),label=stage==='detail'?'DETTAGLIO':stage==='core'?'BASE':'COMPLETO';paint(p,`Chunk ${current}/9 · ${label} · stadi ${completed}/${totalStages}`);},
   ready(){paint(100,'Città pronta');document.documentElement.dataset.initialWorldReady='true';if(overlay){overlay.classList.add('initial-loader-done');setTimeout(()=>overlay.hidden=true,260);}},
-  fail(error){debug.fail('INITIAL LOADER',error?.stack||error?.message||error);if(status)status.textContent='ERRORE NEL LOADER';if(overlay)overlay.classList.add('initial-loader-error');console.error('[Padova initial loader]',error);}
+  fail(error){show('ERRORE NEL LOADER');debug.fail('INITIAL LOADER',error?.stack||error?.message||error);if(status)status.textContent='ERRORE NEL LOADER';if(overlay)overlay.classList.add('initial-loader-error');console.error('[Padova initial loader]',error);}
  };
 }
 const sharedUI=createOverlayUI();
-debug.mark('Bootstrap rapido attivo · caricamento dati città…');
+debug.mark('Bootstrap pronto · premi Carica la mappa');
 
 function ringKeys(world,x,z){
  const cx=Math.floor(x/CHUNK),cz=Math.floor(z/CHUNK),keys=[];
@@ -113,7 +119,19 @@ if(!CityWorld.prototype.__initialLoaderManager){
   }
   return result;
  };
- debug.mark('Loader agganciato · inizializzazione dati e rete stradale…');
+ debug.mark('Loader agganciato · pronto ad avviare il caricamento');
 }
 
-document.addEventListener('click',event=>{if(document.documentElement.dataset.initialWorldReady==='true')return;if(event.target.closest?.('#confirmCharacter,#playBtn')){event.preventDefault();event.stopImmediatePropagation();}},true);
+// Show the blocking overlay when the user actually starts init(), but DO NOT
+// cancel this click: game.js owns #playBtn and needs it to start downloading data.
+document.getElementById('playBtn')?.addEventListener('click',()=>{
+ if(document.documentElement.dataset.initialWorldReady==='true')return;
+ sharedUI.show('Avvio caricamento dati città…');
+},true);
+
+// Only entry into the 3D world is gated. The initial "Carica la mappa" action
+// must always be allowed or init() can never run.
+document.addEventListener('click',event=>{
+ if(document.documentElement.dataset.initialWorldReady==='true')return;
+ if(event.target.closest?.('#confirmCharacter')){event.preventDefault();event.stopImmediatePropagation();}
+},true);
