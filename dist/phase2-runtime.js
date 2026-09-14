@@ -1,3 +1,4 @@
+import './phase4-terrain-fixes.js';
 import './roof-upgrades.js';
 import './taxi-map-ui.js';
 import './ambient-pursuits.js';
