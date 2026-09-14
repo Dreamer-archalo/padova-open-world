@@ -2,6 +2,7 @@ import {nearestOnSegment} from './core.js';
 // Subtract a convex road corridor from a footprint, retaining the outside pieces.
 function clip(poly,a,b,inside){const out=[],side=p=>(b[0]-a[0])*(p[1]-a[1])-(b[1]-a[1])*(p[0]-a[0]);for(let i=0;i<poly.length;i++){const p=poly[i],q=poly[(i+1)%poly.length],sp=side(p),sq=side(q),ip=inside?sp>=0:sp<=0,iq=inside?sq>=0:sq<=0;if(ip)out.push(p);if(ip!==iq){const t=sp/(sp-sq);out.push([p[0]+(q[0]-p[0])*t,p[1]+(q[1]-p[1])*t]);}}return out;}
 function area(p){return Math.abs(p.reduce((s,a,i)=>{const b=p[(i+1)%p.length];return s+a[0]*b[1]-b[0]*a[1];},0))/2;}
+export function cutCorridor(poly,rect,minArea=.1){let remainder=poly;const pieces=[];for(let i=0;i<rect.length&&remainder.length>=3;i++){const a=rect[i],b=rect[(i+1)%rect.length],outside=clip(remainder,a,b,false);if(outside.length>=3&&area(outside)>minArea)pieces.push(outside);remainder=clip(remainder,a,b,true);}return pieces;}
 function bounds(p){let minX=Infinity,maxX=-Infinity,minZ=Infinity,maxZ=-Infinity;for(const v of p){if(v[0]<minX)minX=v[0];if(v[0]>maxX)maxX=v[0];if(v[1]<minZ)minZ=v[1];if(v[1]>maxZ)maxZ=v[1];}return {minX,maxX,minZ,maxZ,cx:(minX+maxX)/2,cz:(minZ+maxZ)/2};}
 function overlapsSegmentBox(b,s,pad){const minX=Math.min(s.a[0],s.b[0])-pad,maxX=Math.max(s.a[0],s.b[0])+pad,minZ=Math.min(s.a[1],s.b[1])-pad,maxZ=Math.max(s.a[1],s.b[1])+pad;return !(maxX<b.minX||minX>b.maxX||maxZ<b.minZ||minZ>b.maxZ);}
 export function modernFootprints(buildings,terrain){const result=[];let corrected=0;
