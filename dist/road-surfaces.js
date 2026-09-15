@@ -49,24 +49,46 @@ export class RoadSurfaces{
    }
   }}
   for(let pass=0;pass<4;pass++){const heap=new MaxHeap();for(const c of crossings){const a=this.nodes[c.ia],b=this.nodes[c.ib],required=this.segmentHeight(c.other,c.v)+c.clearance+.4,current=a.h*(1-c.u)+b.h*c.u;if(required>current+.01){const lift=Math.min(2,required-current,a.base+c.maxLift-a.h,b.base+c.maxLift-b.h);if(lift<=.01)continue;a.h+=lift;b.h+=lift;heap.push({id:c.ia,h:a.h});heap.push({id:c.ib,h:b.h});}}
-   if(!heap.a.length)break;while(heap.a.length){const item=heap.pop(),n=this.nodes[item.id];if(item.h<n.h-.001)continue;for(const e of n.edges){const q=this.nodes[e.id],h=n.h-e.d*e.grade;if(h>q.h+.001){q.h=h;heap.push({id:e.id,h});}}}
+   if(!heap.a.length)break;while(heap.a.length){const item=heap.pop(),n=this.nodes[item.id];if(item.h<n.h-.001)continue;for(const e of n.edges){const q=this.nodes[e.id],h=n.h+e.d*e.grade;if(h<q.h-.001){q.h=h;heap.push({id:e.id,h:-h});}}}
   }
-  if(this.modern){this.alignParallelDecks();this.smoothProfiles();this.protectClearance(crossings);}
+  if(this.modern){this.alignAtGradeCrossings();this.alignParallelDecks();this.smoothProfiles();this.alignAtGradeCrossings();this.alignParallelDecks();this.updateSlopes();this.protectClearance(crossings);}
   // Broad elevation noise is grade-limited as well; do not make a road follow a crater.
   for(const profile of this.profiles.values())for(let i=1;i<profile.ids.length;i++){const a=this.nodes[profile.ids[i-1]],b=this.nodes[profile.ids[i]],grade=Math.abs(a.h-b.h)/Math.max(.01,distance(profile.points[i-1],profile.points[i]));if(grade>(profile.road.k==='steps'?.65:this.modern?.055:MAX_GRADE)+.005)this.report.steep.push({road:profile.id,grade});}
   for(const n of this.nodes){n.degree=new Set(n.edges.map(e=>e.id)).size;delete n.edges;}
  }
  sample(road,x,z){const profile=this.profiles.get(road);if(!profile)return this.terrain.elevation(x,z);let best=null,d=Infinity;for(const s of this.index.near(x,z,road.w+8)){if(s.profile!==profile)continue;const q=nearestOnSegment(x,z,s.a,s.b),dd=Math.hypot(x-q.x,z-q.z);if(dd<d){d=dd;best={s,q};}}if(!best)return this.terrain.elevation(x,z);return this.segmentHeight(best.s,best.q.t);}
+ profileLevel(p){return p.tunnel?-1:Number(p.layer)||(p.road.b?1:0);}
+ auxiliary(road){return /^(footway|path|cycleway|pedestrian|tram)$/.test(road.k);}
+ alignAtGradeCrossings(){
+  // OSM footways/tram paths often cross carriageways without a shared vertex. If
+  // neither feature declares a bridge/tunnel/layer, the crossing is at grade and
+  // must have one height. Drivable carriageways are the anchor so a footway cannot
+  // become a raised wall across the road.
+  const seen=new Set();
+  for(const p of this.profiles.values()){if(this.profileLevel(p)!==0)continue;for(let i=1;i<p.points.length;i++){
+   const a=p.points[i-1],b=p.points[i],dx=b[0]-a[0],dz=b[1]-a[1],mx=(a[0]+b[0])/2,mz=(a[1]+b[1])/2;
+   for(const s of this.index.near(mx,mz,Math.max(8,distance(a,b)/2+4))){if(s.profile===p||this.profileLevel(s.profile)!==0)continue;const key=p.id<s.profile.id?p.id+':'+i+':'+s.profile.id+':'+s.i:s.profile.id+':'+s.i+':'+p.id+':'+i;if(seen.has(key))continue;
+    const ex=s.b[0]-s.a[0],ez=s.b[1]-s.a[1],den=dx*ez-dz*ex;if(Math.abs(den)<1e-6)continue;const u=((s.a[0]-a[0])*ez-(s.a[1]-a[1])*ex)/den,v=((s.a[0]-a[0])*dz-(s.a[1]-a[1])*dx)/den;if(u<=.001||u>=.999||v<=.001||v>=.999)continue;seen.add(key);
+    const pa=this.nodes[p.ids[i-1]],pb=this.nodes[p.ids[i]],sa=this.nodes[s.ia],sb=this.nodes[s.ib],ph=pa.h*(1-u)+pb.h*u,sh=sa.h*(1-v)+sb.h*v,pAux=this.auxiliary(p.road),sAux=this.auxiliary(s.profile.road);
+    if(pAux&&!sAux){const delta=sh-ph;pa.h+=delta;pb.h+=delta;}
+    else if(!pAux&&sAux){const delta=ph-sh;sa.h+=delta;sb.h+=delta;}
+    else{const target=(ph+sh)/2,dp=target-ph,ds=target-sh;pa.h+=dp;pb.h+=dp;sa.h+=ds;sb.h+=ds;}
+   }
+  }}
+ }
  alignParallelDecks(){
-  // Parallel tram tracks, sidewalks and carriageways on the same structure must
-  // share a deck; vertical ordering is retained for actual grade-separated roads.
-  for(let pass=0;pass<2;pass++)for(const p of this.profiles.values()){if(!p.road.crossing)continue;
+  // Parallel carriageways, tram tracks and separately mapped sidewalks at the same
+  // declared level must form one deck. The drivable road is the anchor; this keeps
+  // pedestrian geometry from floating above or sinking below the carriageway.
+  for(let pass=0;pass<3;pass++)for(const p of this.profiles.values()){
    for(let i=1;i<p.points.length;i++){const a=p.points[i-1],b=p.points[i],dx=b[0]-a[0],dz=b[1]-a[1],len=distance(a,b);if(len<.01)continue;
-    for(const id of [p.ids[i-1],p.ids[i]]){const n=this.nodes[id];let target=n.h;
-     for(const s of this.index.near(n.x,n.z,10)){if(s.profile===p||!s.profile.road.crossing)continue;const ex=s.b[0]-s.a[0],ez=s.b[1]-s.a[1],length=distance(s.a,s.b);if(length<.01||Math.abs((dx*ex+dz*ez)/len/length)<.8)continue;
-      const q=nearestOnSegment(n.x,n.z,s.a,s.b),d=Math.hypot(n.x-q.x,n.z-q.z),h=this.segmentHeight(s,q.t);
-      if(d<(p.road.w+s.profile.road.w)/2&&h-n.h<3)target=Math.max(target,h-Math.max(0,d-1)*.01);
-     }n.h=target;
+    for(const id of [p.ids[i-1],p.ids[i]]){const n=this.nodes[id],pAux=this.auxiliary(p.road);let best=null;
+     for(const s of this.index.near(n.x,n.z,14)){if(s.profile===p)continue;const ex=s.b[0]-s.a[0],ez=s.b[1]-s.a[1],length=distance(s.a,s.b);if(length<.01||Math.abs((dx*ex+dz*ez)/len/length)<.86)continue;
+      const q=nearestOnSegment(n.x,n.z,s.a,s.b),d=Math.hypot(n.x-q.x,n.z-q.z),maxD=(p.road.w+s.profile.road.w)/2+2.2;if(d>maxD)continue;
+      const sAux=this.auxiliary(s.profile.road),sameLevel=this.profileLevel(p)===this.profileLevel(s.profile),sameDeckFallback=p.road.crossing&&s.profile.road.crossing&&Math.abs(this.segmentHeight(s,q.t)-n.h)<3;if(!sameLevel&&!sameDeckFallback)continue;
+      if(!pAux&&sAux)continue;const h=this.segmentHeight(s,q.t),rank=pAux&&!sAux?d:d+3;if(!best||rank<best.rank)best={h,rank,anchored:pAux&&!sAux};
+     }
+     if(best)n.h=best.anchored?best.h:(n.h+best.h)/2;
     }
    }
   }
