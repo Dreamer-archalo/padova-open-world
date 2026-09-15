@@ -184,41 +184,32 @@ function taxiPickupRoad(pos){
 }
 function taxiRouteTo(target,routeOverride=null){const route=routeOverride||roadRoute(taxi.car,target,graph);taxi.path=route.length?route:[target];taxi.index=Math.min(1,Math.max(0,taxi.path.length-1));taxi.car.parked=false;taxi.car.speed=0;taxi.blocked=0;}
 function callTaxi(){
- if(!state.started||taxi?.phase==='loading')return;
+ if(!state.started)return;
  if(state.mode!=='foot'){toast('Scendi dal veicolo prima di chiamare il taxi.',4);return;}
- if(taxi?.phase==='ready'){toast('Il Taxi abusivo è già qui. Avvicinati al tassista: E · PARLA.',5);state.waypoint={x:taxi.driver.position.x,z:taxi.driver.position.z,name:'Taxi abusivo'};routeTo(state.waypoint);return;}
- const target=taxiPickupRoad({x:state.x+Math.sin(state.yaw)*12,z:state.z+Math.cos(state.yaw)*12});let choice=null;
- if(target)for(const radius of [90,130,180])for(const angle of [Math.PI,Math.PI*.65,-Math.PI*.65,Math.PI/2,-Math.PI/2]){const yaw=state.yaw+angle,candidate=dryRoad({x:state.x+Math.sin(yaw)*radius,z:state.z+Math.cos(yaw)*radius},VEHICLES.taxi),path=candidate&&roadRoute(candidate,target,graph);if(!path?.length)continue;let metres=0;for(let i=1;i<path.length;i++)metres+=dist(path[i-1],path[i]);if(!choice||metres<choice.metres)choice={spawn:candidate,path,metres};}
- if(!target||!choice){toast('Il taxi non trova una strada libera. Spostati verso una strada principale.',5);return;}const {spawn,path}=choice;
- if(!taxi){const car=addCar(spawn.x,spawn.z,spawn.yaw,false,false,'taxi');car.missionUnit=true;car.name='Taxi abusivo';taxi={car,driver:createTaxiDriver(),phase:'arriving',path:[],index:0,blocked:0,repathAt:0};}
- else{Object.assign(taxi.car,{x:spawn.x,z:spawn.z,y:spawn.y??terrain.height(spawn.x,spawn.z),yaw:spawn.yaw,speed:0,health:100,parked:false});taxi.car.mesh.visible=true;taxi.driver.visible=false;taxi.phase='arriving';}
- taxi.target=target;taxiRouteTo(target,path);poseVehicle(taxi.car);state.waypoint={x:target.x,z:target.z,name:'Taxi abusivo'};routeTo(state.waypoint);toast('Taxi abusivo chiamato: sta arrivando davvero.',5);
+ const probe={x:state.x+Math.sin(state.yaw)*8,z:state.z+Math.cos(state.yaw)*8},spawn=taxiFastRoad(probe)||taxiFastRoad(state);
+ if(!spawn){toast('Taxi non disponibile qui. Riprova dalla mappa.',4);return;}
+ if(!taxi){const car=addCar(spawn.x,spawn.z,spawn.yaw,false,true,'taxi');car.missionUnit=true;car.name='Taxi abusivo';taxi={car,driver:createTaxiDriver(),phase:'ready',path:[],index:0,blocked:0,repathAt:0};}
+ else{Object.assign(taxi.car,{x:spawn.x,z:spawn.z,y:spawn.y??terrain.height(spawn.x,spawn.z),yaw:spawn.yaw,speed:0,health:100,parked:true});taxi.car.mesh.visible=true;taxi.driver.visible=false;taxi.phase='ready';}
+ taxi.target=null;taxi.path=[];taxi.index=0;taxi.blocked=0;poseVehicle(taxi.car);placeTaxiDriver();state.waypoint=null;state.route=[];toast('Taxi pronto. Scegli la destinazione.',3);openTaxiMenu(true);
 }
 function updateTaxi(dt){
- if(!taxi)return;
- if(taxi.phase==='arriving'){
-  if(state.elapsed>taxi.repathAt&&dist(taxi.target,state)>28){taxi.target=taxiPickupRoad({x:state.x+Math.sin(state.yaw)*10,z:state.z+Math.cos(state.yaw)*10})||taxi.target;taxiRouteTo(taxi.target);taxi.repathAt=state.elapsed+3;}
-  const result=advanceTaxi(taxi.car,taxi.path,taxi.index,dt,terrain,world.collision);taxi.index=result.index;taxi.blocked=result.blocked?taxi.blocked+dt:0;poseVehicle(taxi.car);
-  if(result.arrived||dist(taxi.car,taxi.target)<7){taxi.phase='ready';taxi.car.speed=0;taxi.car.parked=true;placeTaxiDriver();state.waypoint=null;state.route=[];toast('Taxi arrivato. Avvicinati al tassista e premi E · PARLA.',6);}
-  else if(taxi.blocked>2.5){const recover=dryRoad(taxi.car,VEHICLES.taxi,taxi.car);if(recover){Object.assign(taxi.car,{x:recover.x,z:recover.z,y:recover.y??terrain.height(recover.x,recover.z),yaw:recover.yaw});taxiRouteTo(taxi.target);poseVehicle(taxi.car);}taxi.blocked=0;}
-  return;
- }
- if(taxi.phase==='loading'){
-  const wallSeconds=(performance.now()-(taxi.loadingWallAt??performance.now()))/1000,seconds=Math.max(state.elapsed-taxi.loadingAt,wallSeconds);
-  $('taxiLoadingStatus').textContent='Trasferimento in corso';
-  if(seconds<1.35)return;
-  const p=taxi.destination,c=taxi.car;Object.assign(c,{x:p.x,z:p.z,y:p.y??terrain.height(p.x,p.z),yaw:p.yaw,speed:0,health:Math.max(1,c.health),parked:true});resetGroundMotion(c);poseVehicle(c);Object.assign(state,{mode:'car',car:c,x:c.x,z:c.z,y:c.y,yaw:c.yaw,speed:0,vy:0,health:c.health,waypoint:null,route:[]});taxi.phase='at-destination';previousPose=null;previousActors.delete(c.mesh);waterRecovery.reset();waterRecovery.remember(state,terrain);followYaw=state.yaw;cameraRig.reset(state.yaw);camera.position.set(state.x-10,state.y+8,state.z-12);$('taxiLoading').hidden=true;toast('Destinazione raggiunta. Premi E per scendere.',5);setTimeout(()=>document.body.classList.remove('taxi-transit'),80);return;
- }
+ // Taxi travel is deterministic: no arrival AI, chunk readiness or streaming wait.
+ return;
 }
 function beginTaxiTrip(destination,road,price){
- closeDialogs();state.money-=price;save();keys.clear();const c=taxi.car;taxi.driver.visible=false;taxi.phase='loading';taxi.destination={...road,name:destination.name};taxi.loadingAt=state.elapsed;taxi.loadingWallAt=performance.now();Object.assign(state,{mode:'car',car:c,x:c.x,z:c.z,y:c.y,yaw:c.yaw,speed:0,vy:0,health:c.health,waypoint:null,route:[]});c.parked=true;c.speed=0;player.visible=false;taxiFactIndex=Math.floor((state.elapsed+price)%TAXI_FACTS.length);$('taxiFact').textContent=TAXI_FACTS[taxiFactIndex];$('taxiLoadingStatus').textContent='Trasferimento taxi';$('taxiLoading').hidden=false;document.body.classList.add('taxi-transit');
+ if(!taxi?.car)return;
+ closeDialogs();keys.clear();state.money=Math.max(0,state.money-price);save();
+ const p=road,c=taxi.car;taxi.driver.visible=false;taxi.destination={...p,name:destination.name};
+ Object.assign(c,{x:p.x,z:p.z,y:p.y??terrain.height(p.x,p.z),yaw:p.yaw??state.yaw,speed:0,health:Math.max(1,c.health),parked:true});resetGroundMotion(c);poseVehicle(c);
+ Object.assign(state,{mode:'car',car:c,x:c.x,z:c.z,y:c.y,yaw:c.yaw,speed:0,vy:0,health:c.health,waypoint:null,route:[]});taxi.phase='at-destination';previousPose=null;previousActors.delete(c.mesh);waterRecovery.reset();waterRecovery.remember(state,terrain);followYaw=state.yaw;cameraRig.reset(state.yaw);camera.position.set(state.x-10,state.y+8,state.z-12);player.visible=false;$('taxiLoading').hidden=true;document.body.classList.remove('taxi-transit');toast('Destinazione raggiunta. Premi E per scendere.',5);
 }
 function confirmTaxi(destination){
  const road=taxiFastRoad(destination);if(!road){toast('Destinazione non raggiungibile dalla rete stradale.',5);return;}const price=taxiFare(taxi.car,road);showMenu('Conferma il viaggio','<p class="about-copy"><strong>'+destination.name+'</strong><br>Prezzo calcolato sulla distanza: <strong>€'+price+'</strong> · massimo €100.</p><div class="menu-actions"><button class="primary" id="confirmTaxi">Conferma e parti</button><button id="cancelTaxi">Annulla</button></div>');$('confirmTaxi').onclick=()=>beginTaxiTrip(destination,road,price);$('cancelTaxi').onclick=openTaxiMenu;
 }
 function openTaxiMap(){taxiMapPick=true;$('menu').close();setPaused(true);$('mapPlaces').innerHTML='<span class="eyebrow">SCEGLI TU</span><p class="about-copy">Tocca un punto sulla mappa. Vedrai il prezzo prima di confermare.</p>';$('mapDialog').showModal();drawFullMap();}
-function openTaxiMenu(){
- if(!taxiCanTalk()){closeDialogs();toast('Avvicinati al tassista per parlare.',4);return;}
+function openTaxiMenu(force=false){
+ if(!force&&!taxiCanTalk()){closeDialogs();toast('Avvicinati al tassista per parlare.',4);return;}
+ if(!taxi?.car){toast('Chiama prima il taxi dalla mappa.',4);return;}
  const destinations=taxiDestinations(PLACES,HOME,AIRPORT_GATE);showMenu('Dove vuoi andare?','<div class="activities">'+destinations.map((p,i)=>'<button class="activity" data-taxi="'+i+'"><span><b>'+p.name+'</b><small>'+p.tag+' · €'+taxiFare(taxi.car,p)+'</small></span></button>').join('')+'<button class="activity" id="taxiChoose"><span><b>SCEGLI TU</b><small>Indica un punto sulla mappa · massimo €100</small></span></button></div>');document.querySelectorAll('[data-taxi]').forEach(button=>button.onclick=()=>confirmTaxi(destinations[Number(button.dataset.taxi)]));$('taxiChoose').onclick=openTaxiMap;
 }
 function beginMission(type){if(!ensureCar())return;cancelMission(false);clearPolice();state.waypoint=null;const now=state.elapsed;if(type==='portavalori'){const van=gameplay?.startArmored();if(!van){toast('Portavalori non disponibile: raggiungi una strada principale e riprova.',5);return;}state.mission={type,van,target:{x:van.x,z:van.z,name:'Portavalori'},deadline:now+360,title:'CATTURA PORTAVALORI',desc:'Ricompensa: €1.000 · Blocca il furgone e resta vicino per 2,5 secondi. Incendi e incidenti attirano la polizia.'};}
