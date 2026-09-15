@@ -71,16 +71,17 @@ function keepFinalRoadLive(manager,dt){
  if(Number.isFinite(roadY)&&Math.abs(s.y-roadY)>.85&&!r.playerCar.jump?.airborne){
   s.y=roadY+.05;r.playerCar.y=s.y;manager.game.pose(r.playerCar);
  }
- // If the player has throttle/speed but a bad world structure still cancels all
- // forward motion, nudge onto the next valid road sample instead of freezing.
+ // If a bad world structure cancels movement in the final corridor, recover onto
+ // the next valid road sample instead of allowing a permanent freeze.
  const last=r.__finalMotionSample||{x:s.x,z:s.z};const moved=Math.hypot(s.x-last.x,s.z-last.z);r.__finalMotionSample={x:s.x,z:s.z};
- const speed=Math.abs(Number(s.speed)||0);
- if(speed>3&&moved<.018)r.__finalHardBlock=(r.__finalHardBlock||0)+dt;else r.__finalHardBlock=Math.max(0,(r.__finalHardBlock||0)-dt*3);
+ const speed=Math.abs(Number(s.speed)||0),previousSpeed=Math.abs(Number(r.__finalPreviousSpeed)||0),suddenStop=previousSpeed>8&&speed<1.2&&moved<.05;r.__finalPreviousSpeed=speed;
+ if((speed>3&&moved<.018)||suddenStop)r.__finalHardBlock=(r.__finalHardBlock||0)+dt*(suddenStop?8:1);else r.__finalHardBlock=Math.max(0,(r.__finalHardBlock||0)-dt*3);
  if((r.__finalHardBlock||0)<.48)return;
  const idx=Math.min(r.samples.length-3,current+2),next=r.samples[idx],yaw=Math.atan2(r.samples[Math.min(r.samples.length-1,idx+1)].x-r.samples[Math.max(0,idx-1)].x,r.samples[Math.min(r.samples.length-1,idx+1)].z-r.samples[Math.max(0,idx-1)].z),y=next.road?manager.game.terrain.roads?.sample?.(next.road,next.x,next.z):next.y;
- Object.assign(r.playerCar,{x:next.x,z:next.z,y:Number.isFinite(y)?y+.05:next.y,yaw,speed:Math.max(12,Math.min(speed,r.playerCar.spec.max*.68))});
+ const restart=Math.max(12,Math.min(Math.max(speed,previousSpeed*.72),r.playerCar.spec.max*.68));
+ Object.assign(r.playerCar,{x:next.x,z:next.z,y:Number.isFinite(y)?y+.05:next.y,yaw,speed:restart});
  Object.assign(s,{x:r.playerCar.x,z:r.playerCar.z,y:r.playerCar.y,yaw:r.playerCar.yaw,speed:r.playerCar.speed,vy:0});
- r.playerHint=idx;r.playerCheckpoint=Math.max(r.playerCheckpoint||0,idx);r.playerProgress=Math.max(r.playerProgress||0,progressAt(r,idx));r.__finalHardBlock=0;manager.game.pose(r.playerCar);
+ r.playerHint=idx;r.playerCheckpoint=Math.max(r.playerCheckpoint||0,idx);r.playerProgress=Math.max(r.playerProgress||0,progressAt(r,idx));r.__finalHardBlock=0;r.__finalPreviousSpeed=restart;manager.game.pose(r.playerCar);
 }
 function showFinish(){
  if(typeof document==='undefined')return;let el=document.getElementById('raceFinishFlash');
