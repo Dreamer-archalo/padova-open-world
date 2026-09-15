@@ -3,6 +3,7 @@ import './historic-terrain-level.js';
 import './historic-plaza-alignment.js';
 import './roof-upgrades.js';
 import './taxi-map-ui.js';
+import './taxi-confirmation-runtime.js';
 import './ambient-pursuits.js';
 import './phase3-runtime.js';
 import './phase3-city-systems.js';
