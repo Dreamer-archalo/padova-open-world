@@ -1,0 +1,37 @@
+name: World geometry latest validation
+
+on:
+  push:
+    branches: [work/world-geometry-overhaul-latest]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  geometry:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Core regression suite
+        run: npm test
+      - name: Modern world suite
+        run: npm run test:modern
+      - name: Surface layer audit
+        run: npm run audit:surfaces
+      - name: Terrain polish
+        run: npm run test:terrain-polish
+      - name: Elevation harmony
+        run: npm run test:elevation-harmony
+      - name: Geometry integrity
+        run: npm run test:geometry-integrity
+      - name: Initial world loading
+        run: npm run test:initial-world
+      - name: Streaming regression
+        run: npm run test:streaming
+      - name: Taxi regression
+        run: npm run test:taxi
