@@ -1,6 +1,6 @@
 import fs from 'node:fs';
 const [{Terrain},{applyCityData},{prepareGameplayMap}]=await Promise.all([import('../dist/terrain.js'),import('../dist/districts.js'),import('../dist/gameplay-areas.js')]);
-await import('../dist/phase4-terrain-fixes.js');await import('../dist/terrain-level-calibration.js');
+await import('../dist/phase4-terrain-fixes.js');await import('../dist/terrain-level-calibration.js');await import('../dist/road-surface-authority.js');
 const read=n=>JSON.parse(fs.readFileSync(new URL('../dist/data/'+n+'.json',import.meta.url)));
 const map=read('padova');applyCityData(map,read('city'));prepareGameplayMap(map);const terrain=new Terrain(read('terrain'),map,{modern:true});
 const probes=[['Borgomagno',80,-1270],['Mussato',-667,-218],['Avanzo',1134,-1392],['San Massimo',1050,164],['Paolotti',764,-243]];
