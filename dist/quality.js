@@ -2,9 +2,9 @@ import * as THREE from './vendor/three.module.js';
 
 export const QUALITY={
  hyper:{label:'Iper Performance',radius:420,fog:600,pixelRatio:.65,floor:.45,traffic:24,trafficHz:10,trams:2,airTraffic:2,people:24,peopleHz:10,trees:.15,simple:true,shadows:false,antialias:false},
- low:{label:'Performance',radius:680,fog:900,pixelRatio:1,floor:.65,traffic:36,trafficHz:15,trams:3,airTraffic:3,people:40,peopleHz:15,trees:.55,simple:false,shadows:false,antialias:false},
- medium:{label:'Balanced',radius:1050,fog:1400,pixelRatio:1.25,floor:.75,traffic:52,trafficHz:20,trams:4,airTraffic:4,people:80,peopleHz:20,trees:1,simple:false,shadows:true,antialias:true},
- high:{label:'Detailed',radius:1450,fog:1950,pixelRatio:1.7,floor:1,traffic:72,trafficHz:30,trams:4,airTraffic:5,people:120,peopleHz:30,trees:1,simple:false,shadows:true,antialias:true}
+ low:{label:'Performance',radius:680,fog:900,pixelRatio:1,floor:.65,traffic:42,trafficHz:15,trams:3,airTraffic:3,people:40,peopleHz:15,trees:.55,simple:false,shadows:false,antialias:false},
+ medium:{label:'Balanced',radius:1050,fog:1400,pixelRatio:1.25,floor:.75,traffic:64,trafficHz:20,trams:4,airTraffic:4,people:80,peopleHz:20,trees:1,simple:false,shadows:true,antialias:true},
+ high:{label:'Detailed',radius:1450,fog:1950,pixelRatio:1.7,floor:1,traffic:96,trafficHz:30,trams:4,airTraffic:5,people:120,peopleHz:30,trees:1,simple:false,shadows:true,antialias:true}
 };
 export const qualityFor=id=>(Object.hasOwn(QUALITY,id)?QUALITY[id]:QUALITY.low);
 export const qualityOptions=()=>Object.entries(QUALITY).map(([id,q])=>'<option value="'+id+'">'+q.label+'</option>').join('');
