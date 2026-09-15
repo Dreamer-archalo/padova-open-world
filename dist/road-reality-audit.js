@@ -1,4 +1,3 @@
-import {CityWorld} from './world.js';
 import {ordinarySurfaceRoad,independentRoadLevel,ORDINARY_ROAD_TOLERANCE,MOTORWAY_ROAD_TOLERANCE} from './road-reality-pass.js';
 
 const finite=Number.isFinite;
@@ -26,9 +25,11 @@ export function auditRoadReality(world,{warnLimit=40}={}){
  return report;
 }
 
-const previousInstall=CityWorld.prototype.installStage;
-if(!CityWorld.prototype.__roadRealityAudit){
- CityWorld.prototype.__roadRealityAudit=true;
- CityWorld.prototype.installStage=function(key,g,stage){const out=previousInstall.call(this,key,g,stage);if(!this.__roadRealityAuditScheduled){this.__roadRealityAuditScheduled=true;const run=()=>{try{auditRoadReality(this);}catch(error){console.warn('[Padova road reality audit] failed',error);}};(globalThis.requestIdleCallback||((fn)=>setTimeout(fn,350)))(run,{timeout:3000});}return out;};
+// IMPORTANT: this is a diagnostics-only full-network audit. Running it from
+// CityWorld.installStage used to monopolise the main thread exactly when the
+// initial loader entered its first streamed chunk (30%). Keep it available for
+// manual diagnostics, but never auto-run it during production startup/gameplay.
+if(typeof window!=='undefined'){
+ window.__padovaRoadRealityAuditAutoDisabled=true;
+ window.auditRoadReality=opts=>auditRoadReality(window.__padovaWorld,opts);
 }
-if(typeof window!=='undefined')window.auditRoadReality=opts=>auditRoadReality(window.__padovaWorld,opts);
