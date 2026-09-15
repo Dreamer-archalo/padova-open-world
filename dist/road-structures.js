@@ -15,15 +15,12 @@ export function roadStructures(terrain){const boxes=[],portals=new Set();
   const q=nearestOnSegment(x,z,lower.segment.a,lower.segment.b),lowerYaw=Math.atan2(lower.segment.b[0]-lower.segment.a[0],lower.segment.b[1]-lower.segment.a[1]),lowerY=lower.height+.05,clearance=deckBottom-lowerY;
   if(clearance<3.2)return;
   const key=(lower.road.surfaceId??lower.road.k)+':'+Math.round(q.x/9)+','+Math.round(q.z/9);if(portals.has(key))return;portals.add(key);
-  // Give the lower road a generous opening so a visual support can never sit on
-  // the driveable envelope. The portal reads as an arch/tunnel instead of a road
-  // clipping through an opaque bridge slab.
-  const opening=Math.max(6.6,lower.road.w+2.6),depth=Math.max(2.0,Math.min(3.6,upperRoad.w*.30)),pierW=.58,side=opening/2+pierW/2,archTop=deckBottom+.03,pierH=archTop-lowerY;
+  // Keep the carriageway physically and visually open. The old faux arch used
+  // collisionless blocks across the road, so cars visibly passed through them.
+  // Real bridge mass is already supplied by the deck above; here we only add
+  // side piers well outside the lower road envelope.
+  const opening=Math.max(7.4,lower.road.w+3.2),depth=Math.max(2.0,Math.min(3.6,upperRoad.w*.30)),pierW=.62,side=opening/2+pierW/2,archTop=deckBottom+.03,pierH=archTop-lowerY;
   for(const sign of [-1,1]){const px=q.x+Math.cos(lowerYaw)*side*sign,pz=q.z-Math.sin(lowerYaw)*side*sign;add(px,pz,lowerY-.05,pierW,pierH+.05,depth,lowerYaw,'underpass-pier',upperRoad,{color:'#8f918b'});}
-  // Lintel/arch are visual: collision stays on the distant side piers, removing
-  // surprise overhead hits on fast cars while preserving an explicit portal.
-  add(q.x,q.z,Math.max(lowerY+3.55,archTop-.54),opening+1.25,.54,depth,lowerYaw,'underpass-lintel',upperRoad,{solid:false,color:'#8f918b'});
-  for(const [u,lift] of [[-.42,.08],[-.25,.30],[0,.48],[.25,.30],[.42,.08]]){const px=q.x+Math.cos(lowerYaw)*opening*u,pz=q.z-Math.sin(lowerYaw)*opening*u,y=archTop-.86+lift;add(px,pz,y,.72,.40,depth+.10,lowerYaw,'underpass-arch',upperRoad,{solid:false,color:'#a3a096'});}
  };
  for(const profile of terrain.roads.profiles.values()){const road=profile.road;if(!(road.crossing||road.b||Number(road.layer)>0)||road.k==='tram')continue;let run=0;
   for(let i=1;i<profile.points.length;i++){const a=profile.points[i-1],b=profile.points[i],x=(a[0]+b[0])/2,z=(a[1]+b[1])/2;if(terrain.prato(x,z))continue;const h=terrain.roads.sample(road,x,z),base=terrain.elevation(x,z),len=Math.hypot(b[0]-a[0],b[1]-a[1]);if(h-base<.7&&!profile.wet[i]&&!profile.wet[i-1]&&!road.b&&Number(road.layer)<=0)continue;
