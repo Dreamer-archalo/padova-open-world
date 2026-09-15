@@ -10,6 +10,7 @@ import './tangenziale-race-short-sprint.js';
 import './tangenziale-race-second.js';
 import './tangenziale-race-runtime-fixes.js';
 import './tangenziale-race-v2-polish.js';
+import './hospital-rooftop-easter-egg.js';
 import './taxi-loading-guard.js';
 
 installPoliceAIHooks();
