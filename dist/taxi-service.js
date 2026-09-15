@@ -1,4 +1,4 @@
-import {project,dist,angleDiff,clamp} from './core.js';
+import {project,dist,angleDiff,clamp,nearestOnSegment} from './core.js';
 import {vehicleBlocked} from './movement.js';
 
 export function taxiFare(from,to){return Math.min(100,Math.max(10,Math.ceil((8+dist(from,to)/65)/5)*5));}
@@ -18,10 +18,37 @@ export function taxiDestinations(places,home,airport){
  ].filter(p=>p&&Number.isFinite(p.x)&&Number.isFinite(p.z));
 }
 
-function routeLength(path,start=0){let metres=0;for(let i=Math.max(1,start);i<path.length;i++)metres+=dist(path[i-1],path[i]);return metres;}
+// Bounded nearest-road lookup used by taxi destination selection. It never
+// falls back to scanning the entire road graph: malformed/out-of-grid map
+// coordinates therefore fail quickly instead of blocking the main thread.
+export function findTaxiRoad(pos,graph,terrain,{maxRadius=520,maxCandidates=2500,maxMs=18}={}){
+ if(!pos||!Number.isFinite(pos.x)||!Number.isFinite(pos.z)||!graph?.index||!graph?.nodes)return null;
+ const now=()=>globalThis.performance?.now?.()??Date.now(),started=now(),seen=new Set();
+ let best=null,bestDistance=Infinity,visited=0;
+ for(const radius of [90,180,320,520]){
+  if(radius>maxRadius)break;
+  for(const segment of graph.index.near(pos.x,pos.z,radius)){
+   if(seen.has(segment))continue;seen.add(segment);visited++;
+   if(visited>maxCandidates||now()-started>maxMs)return best;
+   const road=segment.road;
+   if(!segment.connected||['no','private'].includes(road?.access)||['pedestrian','footway','path','cycleway','steps','track','tram'].includes(road?.k)||Number(road?.w||0)<3.5)continue;
+   const a=graph.nodes[segment.a],b=graph.nodes[segment.b];if(!a||!b)continue;
+   const point=nearestOnSegment(pos.x,pos.z,[a.x,a.z],[b.x,b.z]);
+   if(!Number.isFinite(point.x)||!Number.isFinite(point.z))continue;
+   const distance=dist(point,pos);if(distance>=bestDistance)continue;
+   const yaw=Math.atan2(b.x-a.x,b.z-a.z)+(road.oneway===-1?Math.PI:0),sample=terrain?.roads?.sample?.(road,point.x,point.z),y=Number.isFinite(sample)?sample+.05:terrain?.height?.(point.x,point.z);
+   if(!Number.isFinite(y))continue;
+   best={...point,yaw,y,segment};bestDistance=distance;
+  }
+  if(best)return best;
+ }
+ return null;
+}
+
+function routeLength(path,start=0){let metres=0;for(let i=Math.max(1,start),steps=0;i<path.length&&steps++<5000;i++)metres+=dist(path[i-1],path[i]);return metres;}
 function approachPoint(path,metres){
- let remaining=metres;
- for(let i=path.length-1;i>0;i--){
+ let remaining=metres,steps=0;
+ for(let i=path.length-1;i>0&&steps++<5000;i--){
   const a=path[i-1],b=path[i],segment=dist(a,b);if(segment<=0)continue;
   if(remaining<=segment){const t=remaining/segment;return {x:b.x+(a.x-b.x)*t,z:b.z+(a.z-b.z)*t,index:i,yaw:Math.atan2(b.x-a.x,b.z-a.z)};}
   remaining-=segment;
@@ -29,10 +56,6 @@ function approachPoint(path,metres){
  return null;
 }
 function pullTaxiNearPickup(car,path,index,terrain,collision){
- // Every newly-created route gets one chance to move the taxi close to its
- // pickup point. This avoids 1+ km detours caused by nearby one-way roads or
- // separated carriageways while still keeping the car far enough away that it
- // can drive into view rather than materialising beside the player.
  if(car.taxiApproachPath===path)return index;car.taxiApproachPath=path;
  if(path.length<2||routeLength(path,index)<180)return index;
  for(const metres of [65,80,100,125,150]){
