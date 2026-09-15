@@ -1,8 +1,9 @@
 import {Color} from './vendor/three.module.js';
 import {nearestOnSegment} from './core.js';
+import {ROAD_TOP} from './terrain.js';
 
 // Centreline sampling keeps both sides at the same cross-section elevation.
-// Paint and pavement use exactly the same smooth profile as vehicle physics.
+// Paint, pavement and vehicle physics share the exact same road-top reference.
 export function buildModernRoads(batch,segments,terrain){
  const colours=new Map(),colour=hex=>{if(!colours.has(hex))colours.set(hex,new Color(hex));return colours.get(hex);};
  const joins=new Set();
@@ -15,22 +16,22 @@ export function buildModernRoads(batch,segments,terrain){
   const count=Math.ceil(length/3);
   for(let i=0;i<count;i++){
    const a=[s.a[0]+dx*i/count,s.a[1]+dz*i/count],b=[s.a[0]+dx*(i+1)/count,s.a[1]+dz*(i+1)/count],mid=[(a[0]+b[0])/2,(a[1]+b[1])/2],atJunction=junction(...mid);
-   section(a,b,-road.w/2-.3,road.w/2+.3,.025,colour('#969b95'));
-   section(a,b,-road.w/2,road.w/2,.075,asphalt);
+   section(a,b,-road.w/2-.3,road.w/2+.3,ROAD_TOP-.035,colour('#969b95'));
+   section(a,b,-road.w/2,road.w/2,ROAD_TOP,asphalt);
    if(!ped&&!rail&&!atJunction){
     for(const side of [-1,1]){
-     const edge=side*(road.w/2-.25);section(a,b,edge-.055,edge+.055,.086,colour('#d7d4c2'));
+     const edge=side*(road.w/2-.25);section(a,b,edge-.055,edge+.055,ROAD_TOP+.008,colour('#d7d4c2'));
      if(urban&&!road.crossing){const off=side*(road.w/2+.65),x=mid[0]+nx*off,z=mid[1]+nz*off;
-      if(!terrain.roads.candidates(x,z).some(c=>c.road!==road)&&terrain.waterDistance(x,z)>1)section(a,b,Math.min(side*road.w/2,side*(road.w/2+1.2)),Math.max(side*road.w/2,side*(road.w/2+1.2)),.13,colour('#b7b5a8'));
+      if(!terrain.roads.candidates(x,z).some(c=>c.road!==road)&&terrain.waterDistance(x,z)>1)section(a,b,Math.min(side*road.w/2,side*(road.w/2+1.2)),Math.max(side*road.w/2,side*(road.w/2+1.2)),ROAD_TOP+.012,colour('#b7b5a8'));
      }
     }
-    if(road.w>=6.5&&!road.oneway&&Math.floor((i/count*length)/5)%2===0)section(a,b,-.06,.06,.09,colour('#d7d4c2'));
+    if(road.w>=6.5&&!road.oneway&&Math.floor((i/count*length)/5)%2===0)section(a,b,-.06,.06,ROAD_TOP+.01,colour('#d7d4c2'));
    }
-   if(rail)for(const offset of [-.7,.7])section(a,b,offset-.055,offset+.055,.1,colour('#bdc8c9'));
+   if(rail)for(const offset of [-.7,.7])section(a,b,offset-.055,offset+.055,ROAD_TOP+.015,colour('#bdc8c9'));
   }
   // Bounded fan fills corner wedges; sample the road rather than a horizontal cap.
-  for(const p of [s.a,s.b]){const key=road.surfaceId+':'+p.join(',');if(joins.has(key))continue;joins.add(key);const y=terrain.roads.sample(road,...p)+.077;
-   for(let i=0;i<12;i++){const a=i*Math.PI/6,b=(i+1)*Math.PI/6,r=road.w/2;const vertex=t=>{const x=p[0]+Math.cos(t)*r,z=p[1]+Math.sin(t)*r,q=nearestOnSegment(x,z,s.a,s.b);return [x,terrain.roads.sample(road,x,z)+.077,z];};batch.tri([p[0],y,p[1]],vertex(a),vertex(b),asphalt);}
+  for(const p of [s.a,s.b]){const key=road.surfaceId+':'+p.join(',');if(joins.has(key))continue;joins.add(key);const y=terrain.roads.sample(road,...p)+ROAD_TOP+.002;
+   for(let i=0;i<12;i++){const a=i*Math.PI/6,b=(i+1)*Math.PI/6,r=road.w/2;const vertex=t=>{const x=p[0]+Math.cos(t)*r,z=p[1]+Math.sin(t)*r;return [x,terrain.roads.sample(road,x,z)+ROAD_TOP+.002,z];};batch.tri([p[0],y,p[1]],vertex(a),vertex(b),asphalt);}
   }
  }
 }
