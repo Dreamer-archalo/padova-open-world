@@ -18,13 +18,13 @@ const terrain=new Terrain(read('terrain'),map,{modern:true}),resolver=terrain.su
 assert(resolver,'WorldSurfaceResolver missing');
 
 const report={
-  profiles:0,segments:0,ordinarySamples:0,ordinaryFreeSamples:0,maxOrdinaryDatumError:0,maxFreeRoadTerrainDelta:0,
+  profiles:0,segments:0,ordinarySamples:0,ordinaryFreeSamples:0,approachSamples:0,maxOrdinaryDatumError:0,maxFreeRoadTerrainDelta:0,maxApproachGrade:0,
   bridgeSamples:0,minBridgeWaterClearance:Infinity,bridgeIndependentSamples:0,
   sidewalkSamples:0,maxCurbError:0,tramSamples:0,maxEmbeddedTramDelta:0,
   riverSamples:0,minRiverbedDepth:Infinity,physicsSamples:0,maxPhysicsResolverDelta:0,
   seamSamples:0,maxTerrainSeamDelta:0,invalidNumbers:0
 };
-const examples={ordinary:[],bridge:[],sidewalk:[],tram:[],river:[],physics:[],seam:[]};
+const examples={ordinary:[],approach:[],bridge:[],sidewalk:[],tram:[],river:[],physics:[],seam:[]};
 const finite=(...v)=>v.every(Number.isFinite);
 const ex=(type,data)=>{if(examples[type].length<12)examples[type].push(data);};
 
@@ -39,7 +39,7 @@ for(const profile of terrain.roads.profiles.values()){
       const physics=terrain.height(x,z,actual+SURFACE_CONFIG.roadSurfaceOffset),walkable=resolver.getWalkableSurfaceHeight(x,z,actual+SURFACE_CONFIG.roadSurfaceOffset),pDelta=Math.abs(physics-walkable);report.physicsSamples++;report.maxPhysicsResolverDelta=Math.max(report.maxPhysicsResolverDelta,pDelta);if(pDelta>1e-6)ex('physics',{road:road.n||road.k,x,z,pDelta});
       if(!isStructuralRoad(road)&&!isPedestrianRoad(road)&&!isTramRoad(road)){
         report.ordinarySamples++;const err=Math.abs(actual-expected);report.maxOrdinaryDatumError=Math.max(report.maxOrdinaryDatumError,err);if(err>SURFACE_CONFIG.roadAlignmentTolerance)ex('ordinary',{road:road.n||road.k,x,z,err});
-        const influence=resolver.approachInfluence(s,t);if(influence<.02){const delta=Math.abs(actual-natural);report.ordinaryFreeSamples++;report.maxFreeRoadTerrainDelta=Math.max(report.maxFreeRoadTerrainDelta,delta);if(delta>.035)ex('ordinary',{road:road.n||road.k,x,z,delta,influence});}
+        const influence=resolver.approachInfluence(s,t);if(influence<=1e-9){const delta=Math.abs(actual-natural);report.ordinaryFreeSamples++;report.maxFreeRoadTerrainDelta=Math.max(report.maxFreeRoadTerrainDelta,delta);if(delta>.035)ex('ordinary',{road:road.n||road.k,x,z,delta,influence});}else{report.approachSamples++;const h0=terrain.roads.sample(road,a[0],a[1]),h1=terrain.roads.sample(road,b[0],b[1]),grade=Math.abs(h1-h0)/len;report.maxApproachGrade=Math.max(report.maxApproachGrade,grade);if(grade>SURFACE_CONFIG.maxOrdinaryGrade+.006)ex('approach',{road:road.n||road.k,x,z,grade,influence});}
         const sidewalk=resolver.getSidewalkHeight(road,x,z),curb=sidewalk-(actual+SURFACE_CONFIG.roadRenderOffset),curbError=Math.abs(curb-SURFACE_CONFIG.curbHeight);report.sidewalkSamples++;report.maxCurbError=Math.max(report.maxCurbError,curbError);if(curbError>1e-6)ex('sidewalk',{road:road.n||road.k,x,z,curb,curbError});
       }
       if((road.crossing||road.b||Number(road.layer)>0)&&terrain.waterDistance(x,z)<0){const clearance=actual-terrain.waterHeight(x,z);report.bridgeSamples++;report.minBridgeWaterClearance=Math.min(report.minBridgeWaterClearance,clearance);if(Math.abs(actual-natural)>.35)report.bridgeIndependentSamples++;if(clearance<.5)ex('bridge',{road:road.n||road.k,x,z,clearance});}
@@ -54,7 +54,7 @@ const g=terrain.grid,maxX=g.x0+g.step*(g.width-1),maxZ=g.z0+g.step*(g.height-1),
 for(let x=Math.ceil(g.x0/320)*320;x<maxX;x+=320)for(let z=g.z0+40;z<maxZ;z+=160){const a=resolver.getPreciseHeight(x-eps,z),b=resolver.getPreciseHeight(x+eps,z),delta=Math.abs(a-b);if(!finite(a,b)){report.invalidNumbers++;continue;}report.seamSamples++;report.maxTerrainSeamDelta=Math.max(report.maxTerrainSeamDelta,delta);if(delta>SURFACE_CONFIG.seamTolerance)ex('seam',{axis:'x',x,z,delta});}
 for(let z=Math.ceil(g.z0/320)*320;z<maxZ;z+=320)for(let x=g.x0+40;x<maxX;x+=160){const a=resolver.getPreciseHeight(x,z-eps),b=resolver.getPreciseHeight(x,z+eps),delta=Math.abs(a-b);if(!finite(a,b)){report.invalidNumbers++;continue;}report.seamSamples++;report.maxTerrainSeamDelta=Math.max(report.maxTerrainSeamDelta,delta);if(delta>SURFACE_CONFIG.seamTolerance)ex('seam',{axis:'z',x,z,delta});}
 
-for(const key of ['maxOrdinaryDatumError','maxFreeRoadTerrainDelta','minBridgeWaterClearance','maxCurbError','maxEmbeddedTramDelta','minRiverbedDepth','maxPhysicsResolverDelta','maxTerrainSeamDelta'])if(Number.isFinite(report[key]))report[key]=+report[key].toFixed(5);
+for(const key of ['maxOrdinaryDatumError','maxFreeRoadTerrainDelta','maxApproachGrade','minBridgeWaterClearance','maxCurbError','maxEmbeddedTramDelta','minRiverbedDepth','maxPhysicsResolverDelta','maxTerrainSeamDelta'])if(Number.isFinite(report[key]))report[key]=+report[key].toFixed(5);
 if(!Number.isFinite(report.minBridgeWaterClearance))report.minBridgeWaterClearance=null;
 if(!Number.isFinite(report.minRiverbedDepth))report.minRiverbedDepth=null;
 
@@ -63,6 +63,7 @@ assert(report.ordinarySamples>10000,'ordinary road coverage too small');
 assert.equal(report.invalidNumbers,0,'non-finite surface values detected');
 assert(report.maxOrdinaryDatumError<=SURFACE_CONFIG.roadAlignmentTolerance+1e-6,'ordinary road authority mismatch: '+JSON.stringify(examples.ordinary));
 assert(report.maxFreeRoadTerrainDelta<=.035,'ordinary roads detached from corrected terrain: '+JSON.stringify(examples.ordinary));
+assert(report.maxApproachGrade<=SURFACE_CONFIG.maxOrdinaryGrade+.006,'structural approach grade too steep: '+JSON.stringify(examples.approach));
 assert.equal(report.maxCurbError,0,'sidewalk hierarchy mismatch: '+JSON.stringify(examples.sidewalk));
 assert(report.maxPhysicsResolverDelta<=1e-6,'physics and surface resolver disagree: '+JSON.stringify(examples.physics));
 assert(report.maxTerrainSeamDelta<=SURFACE_CONFIG.seamTolerance,'terrain chunk seam tolerance exceeded: '+JSON.stringify(examples.seam));
