@@ -14,6 +14,7 @@ import './tangenziale-race-final-fixes.js';
 import './hospital-rooftop-easter-egg.js';
 import './taxi-loading-guard.js';
 
+// Preview revision: hospital rooftop is now resolved on the actual hospital footprint beside Villa Treves.
 installPoliceAIHooks();
 const managers=new WeakMap();
 function suite(game){
