@@ -23,22 +23,26 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v6
-      - name: Apply taxi runtime safeguards
+      - name: Apply taxi global audit safeguards
         run: |
           python3 scripts/fix-taxi-runtime.py
           node --check dist/game.js
           node --check dist/core.js
           node --check dist/taxi-service.js
           node --check dist/taxi-map-ui.js
-          if [ -f dist/InputManager.js ]; then node --check dist/InputManager.js; fi
-          if [ -f dist/TaxiDispatcher.js ]; then node --check dist/TaxiDispatcher.js; fi
-      - name: Persist generated runtime changes in main
+          node --check dist/InputManager.js
+          node --check dist/TaxiDispatcher.js
+          node --check dist/TaxiLoadingOverlay.js
+          node --check dist/TaxiDriverNPC.js
+          node --check dist/Pathfinder.js
+          node --check dist/TaxiSystem.js
+      - name: Persist generated taxi integration in main
         run: |
           if ! git diff --quiet -- dist; then
             git config user.name "github-actions[bot]"
             git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
             git add dist
-            git commit -m "Persist taxi runtime safeguards [skip ci]"
+            git commit -m "Persist zero-freeze taxi integration [skip ci]"
             git push origin HEAD:main
           fi
       - name: Configure GitHub Pages
