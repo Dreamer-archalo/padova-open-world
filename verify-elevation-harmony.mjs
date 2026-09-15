@@ -7,12 +7,13 @@ globalThis.document={createElement:()=>({width:0,height:0,getContext:()=>({fillR
 const [{Terrain},{applyCityData},{prepareGameplayMap},{LEVEL_PATCHES,SHOULDER_FEATHER}]=await Promise.all([
  import('./dist/terrain.js'),import('./dist/districts.js'),import('./dist/gameplay-areas.js'),import('./dist/phase4-terrain-fixes.js')
 ]);
+await import('./dist/terrain-level-calibration.js');
 const read=name=>JSON.parse(fs.readFileSync(new URL('./dist/data/'+name+'.json',import.meta.url)));
 const map=read('padova');applyCityData(map,read('city'));prepareGameplayMap(map);
 const terrain=new Terrain(read('terrain'),map,{modern:true});
 
 const report={roadSegments:0,maxRoadGrade:0,gradeViolations:0,shoulderSamples:0,maxNearShoulderGap:0,shoulderViolations:0,bridgeSamples:0,bridgeViolations:0,flatZones:{},finiteSamples:0};
-const badGrades=[],badShoulders=[],badBridges=[];
+const badGrades=[],badShoulders=[],badBridges=[],flatViolations=[];
 const excluded=/motorway|trunk|footway|path|cycleway|steps|pedestrian|tram/;
 
 for(const profile of terrain.roads.profiles.values()){
@@ -43,13 +44,14 @@ for(const patch of LEVEL_PATCHES){
  let min=Infinity,max=-Infinity,count=0;for(let ix=-2;ix<=2;ix++)for(let iz=-2;iz<=2;iz++){
   const lx=ix*patch.rx*.13,lz=iz*patch.rz*.13,c=Math.cos(patch.yaw||0),s=Math.sin(patch.yaw||0),x=patch.p.x+c*lx+s*lz,z=patch.p.z-s*lx+c*lz,h=terrain.elevation(x,z);assert(Number.isFinite(h));min=Math.min(min,h);max=Math.max(max,h);count++;report.finiteSamples++;
  }
- const variation=max-min;report.flatZones[patch.id]={samples:count,variation:+variation.toFixed(3)};assert(variation<.35,patch.name+' core variation '+variation.toFixed(3)+' m');
+ const variation=max-min;report.flatZones[patch.id]={samples:count,variation:+variation.toFixed(3)};if(variation>=.35)flatViolations.push({id:patch.id,name:patch.name,variation:+variation.toFixed(3)});
 }
 
+assert.equal(flatViolations.length,0,'level-plane core discontinuities: '+JSON.stringify(flatViolations));
 assert(report.roadSegments>10000,'map-wide road coverage too small');
 assert.equal(report.gradeViolations,0,'road grade discontinuities: '+JSON.stringify(badGrades));
 assert.equal(report.shoulderViolations,0,'road/terrain shoulder discontinuities: '+JSON.stringify(badShoulders));
 assert.equal(report.bridgeViolations,0,'bridge/water discontinuities: '+JSON.stringify(badBridges));
 report.maxRoadGrade=+report.maxRoadGrade.toFixed(4);report.maxNearShoulderGap=+report.maxNearShoulderGap.toFixed(3);report.ok=true;
-fs.writeFileSync(new URL('./docs/elevation-harmony-audit.json',import.meta.url),JSON.stringify({...report,badGrades,badShoulders,badBridges},null,2)+'\n');
+fs.writeFileSync(new URL('./docs/elevation-harmony-audit.json',import.meta.url),JSON.stringify({...report,badGrades,badShoulders,badBridges,flatViolations},null,2)+'\n');
 console.log(JSON.stringify(report,null,2));
