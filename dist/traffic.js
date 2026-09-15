@@ -27,8 +27,14 @@ export class TrafficSignals{
  }for(const {j,yaw,bulbs} of this.visible){const p=this.phase(j.id,time,yaw);bulbs.forEach((b,i)=>b.material.color.set(i===(p==='red'?0:p==='amber'?1:2)?['#ff4234','#ffc547','#5cff8a'][i]:'#26312c'));}}
 
 }
+function directionalLanes(road){let lanes=parseInt(road?.lanes,10);if(!Number.isFinite(lanes)||lanes<1)lanes=(road?.w||0)>=11?4:(road?.w||0)>=8?2:1;return road?.oneway??road?.one?lanes:Math.max(1,Math.floor(lanes/2));}
 export function lanePoint(node,from,road){const yaw=Math.atan2(node.x-from.x,node.z-from.z),offset=(road?.oneway??road?.one)?0:Math.min(1.55,(road?.w||6)/4);return {x:node.x-Math.cos(yaw)*offset,z:node.z+Math.sin(yaw)*offset,yaw};}
-export function trafficSpeed(car,target,actors,signals,time){const yaw=Math.atan2(target.x-car.x,target.z-car.z),turn=Math.abs(angleDiff(yaw,car.yaw)),limit=car.road?.k?.includes('motorway')?24:['primary','secondary'].includes(car.road?.k)?14:car.road?.k==='pedestrian'?3:9;let speed=Math.min(car.spec.max*.7,turn>.7?4:limit*(car.driver||1));
+function settleTrafficLane(car,target){const road=car.road,lanes=directionalLanes(road);if(lanes<2||road?.junction==='roundabout'||road?.roundabout||dist(car,target)<18)return;
+ if(car._laneRoad!==road||car._laneCount!==lanes){car._laneRoad=road;car._laneCount=lanes;const seed=clamp(((car.driver??1)-.8)/.35,0,.9999);car._laneIndex=Math.floor(seed*lanes);}
+ const yaw=Math.atan2(target.x-car.x,target.z-car.z),base=(road?.oneway??road?.one)?0:Math.min(1.55,(road?.w||6)/4),maxCenter=Math.max(base,(road.w-car.spec.width)/2-.45),step=lanes>1?(maxCenter-base)/(lanes-1):0,wanted=car._laneIndex*step;
+ if(wanted<.15)return;const lateral=(target.x-car.x)*Math.cos(yaw)-(target.z-car.z)*Math.sin(yaw),correction=clamp(wanted-lateral,-.028,.028);car.x-=Math.cos(yaw)*correction;car.z+=Math.sin(yaw)*correction;
+}
+export function trafficSpeed(car,target,actors,signals,time){settleTrafficLane(car,target);const yaw=Math.atan2(target.x-car.x,target.z-car.z),turn=Math.abs(angleDiff(yaw,car.yaw)),limit=car.road?.k?.includes('motorway')?24:['primary','secondary'].includes(car.road?.k)?14:car.road?.k==='pedestrian'?3:9;let speed=Math.min(car.spec.max*.7,turn>.7?4:limit*(car.driver||1));
  const j=signals.junctions?.get(car.target),remaining=dist(car,target)-(j?.radius||3)-car.spec.length/2;
  if(!signals.allowed(car.target,time,yaw)&&remaining> -car.spec.length)speed=Math.min(speed,remaining<.25?0:Math.sqrt(2*car.spec.brake*.65*Math.max(0,remaining)));
  if(!signals.allowed(car.target,time,yaw)&&dist(car,target)<7)speed=0;
