@@ -216,6 +216,17 @@ function dispatchPhysicalTaxi(){
 }
 function updateTaxi(dt){
  if(!taxi)return;taxiDriverNPC?.update(state.elapsed);updateTaxiHazards();
+ if(taxi.phase==='departing'){
+  try{
+   const c=taxi.car;if(!c?.mesh?.visible){taxi.phase='gone';return;}
+   if(state.elapsed<(taxi.departAt||0))return;
+   setTaxiHazards(false);c.parked=false;
+   const result=taxiDispatcher.step(c,taxi.path,taxi.index,dt);taxi.index=result.index;taxi.blocked=result.blocked?(taxi.blocked||0)+dt:Math.max(0,(taxi.blocked||0)-dt);poseVehicle(c);
+   if(result.arrived||dist(c,state)>140||state.elapsed>(taxi.departUntil||0)){c.speed=0;c.parked=true;c.mesh.visible=false;taxi.phase='gone';taxiDriverNPC?.hide();setTaxiHazards(false);return;}
+   if(taxi.blocked>2){const departure=planTaxiDeparture(c);if(departure){taxi.target=departure.target;taxi.path=departure.path;taxi.index=Math.min(1,departure.path.length-1);taxi.blocked=0;}else if(state.elapsed>(taxi.departAt||0)+3){c.speed=0;c.parked=true;c.mesh.visible=false;taxi.phase='gone';setTaxiHazards(false);}}
+  }catch(error){console.warn('[Taxi] departure recovered from error',error);if(taxi?.car){taxi.car.speed=0;taxi.car.parked=true;taxi.car.mesh.visible=false;}taxi.phase='gone';setTaxiHazards(false);}
+  return;
+ }
  if(taxi.phase!=='arriving')return;
  try{
   if(state.elapsed>taxi.repathAt&&dist(taxi.target,state)>20){const target=taxiDispatcher.pickup(state);if(target){const path=taxiDispatcher.route(taxi.car,target);if(path.length){taxi.target=target;taxi.path=path;taxi.index=Math.min(1,path.length-1);}}taxi.repathAt=state.elapsed+2.5;}
@@ -230,21 +241,35 @@ function boardTaxiAndChoose(){
   const c=taxi.car;state.mode='car';state.car=c;resetGroundMotion(c);state.x=c.x;state.z=c.z;state.y=c.y??terrain.height(c.x,c.z);state.yaw=c.yaw;state.speed=0;state.vy=0;state.health=c.health;c.parked=true;c.speed=0;taxiDriverNPC?.hide();taxi.phase='boarded';setTaxiHazards(false);player.visible=false;camOrbit=0;followYaw=state.yaw;cameraRig.reset(state.yaw);openTaxiMenu(true);
  }catch(error){taxiDestinationFailure(error,'boarding');}
 }
+function taxiDropoffPoint(c){
+ const sideDistance=c.spec.width/2+1.35;
+ for(const side of [1,-1]){const x=c.x+Math.cos(c.yaw)*sideDistance*side,z=c.z-Math.sin(c.yaw)*sideDistance*side,y=terrain.height(x,z,c.y);if(terrain.dry(x,z,.45,y)&&!collides(x,z,.42,world.collision,y))return {x,z,y};}
+ const backDistance=c.spec.length/2+1.6,x=c.x-Math.sin(c.yaw)*backDistance,z=c.z-Math.cos(c.yaw)*backDistance,y=terrain.height(x,z,c.y);return {x,z,y};
+}
+function planTaxiDeparture(c){
+ if(!taxiDispatcher)return null;
+ for(const metres of [90,130,170,220])for(const offset of [0,.4,-.4,.8,-.8,Math.PI]){const yaw=c.yaw+offset,probe={x:c.x+Math.sin(yaw)*metres,z:c.z+Math.cos(yaw)*metres},target=taxiDispatcher.roadNear(probe,180);if(!target)continue;const path=taxiDispatcher.route(c,target);if(path.length>=2)return {target,path};}
+ return null;
+}
 function applyTaxiDestination(destination,road,price,{fallback=false}={}){
  if(!taxi?.car||!road||!Number.isFinite(road.x)||!Number.isFinite(road.z))throw new Error('Taxi destination fallback unavailable');
  const c=taxi.car;if(!taxi.tripCharged){state.money=Math.max(0,state.money-price);taxi.tripCharged=true;save();}
  const y=Number.isFinite(road.y)?road.y:terrain.height(road.x,road.z),yaw=Number.isFinite(road.yaw)?road.yaw:state.yaw;
  Object.assign(c,{x:road.x,z:road.z,y,yaw,speed:0,health:Math.max(1,c.health),parked:true});resetGroundMotion(c);poseVehicle(c);
- Object.assign(state,{mode:'car',car:c,x:c.x,z:c.z,y:c.y,yaw:c.yaw,speed:0,vy:0,health:c.health,waypoint:null,route:[]});taxi.phase='at-destination';taxi.destination={...road,name:destination.name};previousPose=null;previousActors.delete(c.mesh);waterRecovery.reset();waterRecovery.remember(state,terrain);followYaw=state.yaw;cameraRig.reset(state.yaw);camera.position.set(state.x-10,state.y+8,state.z-12);player.visible=false;setTaxiHazards(true);taxiDriverNPC?.ensure();taxiDriverNPC?.hide();
- toast(fallback?'Taxi: timeout evitato, arrivo completato in modalità sicura.':'Destinazione raggiunta. Premi E per scendere.',5);
+ taxi.destination={...road,name:destination?.name||'Destinazione'};previousPose=null;previousActors.delete(c.mesh);waterRecovery.reset();
+ const out=taxiDropoffPoint(c);Object.assign(state,{mode:'foot',car:null,x:out.x,z:out.z,y:out.y,yaw:c.yaw,speed:0,vy:0,waypoint:null,route:[]});player.position.set(state.x,state.y,state.z);player.visible=true;waterRecovery.remember(state,terrain);followYaw=state.yaw;cameraRig.reset(state.yaw);camera.position.set(state.x-7,state.y+5,state.z-9);taxiDriverNPC?.hide();
+ const departure=planTaxiDeparture(c);if(departure){taxi.phase='departing';taxi.target=departure.target;taxi.path=departure.path;taxi.index=Math.min(1,departure.path.length-1);taxi.blocked=0;taxi.departAt=state.elapsed+.9;taxi.departUntil=state.elapsed+14;setTaxiHazards(true);}else{taxi.phase='gone';c.mesh.visible=false;c.parked=true;setTaxiHazards(false);}
+ toast(fallback?'Arrivo completato su strada. Il taxi riparte.':'Sei arrivato. Il taxi ti ha lasciato a bordo strada e riparte.',5);
 }
 async function executeTaxiTransition({targetCoords,meta={}}){
  if(!taxi?.car||state.car!==taxi.car||!validTaxiDestination(targetCoords))throw new Error('Invalid static taxi destination or player is not aboard');
  const destination={x:targetCoords.x,y:Number.isFinite(targetCoords.y)?targetCoords.y:0,z:targetCoords.z,yaw:Number.isFinite(targetCoords.yaw)?targetCoords.yaw:state.yaw,name:meta.name||targetCoords.name||'Destinazione personalizzata',tag:meta.tag||''};
- const price=taxiFare(taxi.car,destination);
+ await new Promise(resolve=>setTimeout(resolve,0));
+ const road=taxiPathfinder?.nearestRoad(destination,{maxRadius:320,maxCandidates:2500,maxMs:18});if(!road)throw new Error('Nessuna strada carrabile vicina alla destinazione selezionata');
+ const arrival={...road,name:destination.name},price=taxiFare(taxi.car,arrival);
  taxi.phase='transition';taxi.destination={...destination};taxi.tripCharged=false;taxiDriverNPC?.hide();setTaxiHazards(false);keys.clear();document.body.classList.add('taxi-transit');taxiFactIndex=Math.floor((state.elapsed+price)%TAXI_FACTS.length);if($('taxiFact'))$('taxiFact').textContent=TAXI_FACTS[taxiFactIndex];
  if(!taxiSystem)throw new Error('TaxiSystem not initialized');
- await taxiSystem.travel({targetCoords:destination,destination,price,yaw:state.yaw});
+ await taxiSystem.travel({targetCoords:arrival,destination,price,yaw:arrival.yaw??state.yaw});
 }
 function confirmTaxi(destination,event=null){
  try{
