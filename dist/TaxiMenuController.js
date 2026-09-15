@@ -36,6 +36,8 @@ export class TaxiMenuController {
     this.onMapPickingChange = onMapPickingChange ?? (() => {});
     this.delayMs = Math.max(0, Number(delayMs) || 50);
     this.destinations = new Map();
+    this.lastDestinations = [];
+    this.pending = null;
     this.mapPicking = false;
     this.busy = false;
     this.transitionTimer = null;
@@ -59,6 +61,22 @@ export class TaxiMenuController {
       z: Number(destination.z),
       yaw: Number.isFinite(destination.yaw) ? Number(destination.yaw) : 0,
     };
+  }
+
+  escapeHtml(value) {
+    return String(value ?? '').replace(/[&<>"']/g, character => ({
+      '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+    })[character]);
+  }
+
+  fareFor(coords) {
+    try {
+      const value = Number(this.getFare(coords));
+      return Number.isFinite(value) ? Math.max(0, Math.round(value)) : null;
+    } catch (error) {
+      this.onError(error, 'fare calculation');
+      return null;
+    }
   }
 
   setMapPicking(value) {
@@ -108,17 +126,19 @@ export class TaxiMenuController {
 
   openList(destinations = []) {
     if (!this.menu || !this.menuContent) throw new Error('Taxi menu DOM unavailable');
+    this.pending = null;
+    this.lastDestinations = [...destinations];
     this.destinations.clear();
     const rows = [];
     destinations.forEach((destination, index) => {
       const coords = this.staticCoords(destination, index);
       if (!coords) return;
       this.destinations.set(coords.id, coords);
-      let price = 0;
-      try { price = this.getFare(coords); } catch {}
-      rows.push(`<button class="activity" data-taxi-id="${coords.id}"><span><b>${coords.name}</b><small>${coords.tag}${coords.tag ? ' · ' : ''}€${price}</small></span></button>`);
+      const price = this.fareFor(coords);
+      const fareText = price === null ? 'Tariffa da calcolare' : `€${price}`;
+      rows.push(`<button class="activity" data-taxi-id="${this.escapeHtml(coords.id)}"><span><b>${this.escapeHtml(coords.name)}</b><small>${this.escapeHtml(coords.tag)}${coords.tag ? ' · ' : ''}${fareText}</small></span></button>`);
     });
-    rows.push('<button class="activity" id="taxiChoose"><span><b>SCEGLI TU</b><small>Indica un punto sulla mappa · massimo €100</small></span></button>');
+    rows.push('<button class="activity" id="taxiChoose"><span><b>SCEGLI TU</b><small>Indica un punto sulla mappa · tariffa mostrata prima della conferma</small></span></button>');
     this.menuContent.innerHTML = `<div class="activities">${rows.join('')}</div>`;
     this.setPaused(true);
     if (!this.menu.open) this.menu.showModal();
@@ -136,11 +156,12 @@ export class TaxiMenuController {
 
   openMap() {
     if (!this.mapDialog || !this.mapPlaces) throw new Error('Taxi map DOM unavailable');
+    this.pending = null;
     try { if (this.menu?.open) this.menu.close(); } catch {}
     this.unlockPointerEvents();
     this.setMapPicking(true);
     this.setPaused(true);
-    this.mapPlaces.innerHTML = '<span class="eyebrow">SCEGLI TU</span><p class="about-copy">Tocca un punto sulla mappa. Il trasferimento parte subito senza calcoli nel click.</p>';
+    this.mapPlaces.innerHTML = '<span class="eyebrow">SCEGLI TU</span><p class="about-copy">Tocca un punto sulla mappa. Prima di partire ti mostreremo la tariffa e ti chiederemo conferma.</p>';
     if (!this.mapDialog.open) this.mapDialog.showModal();
     this.drawFullMap();
   }
@@ -191,17 +212,66 @@ export class TaxiMenuController {
     return true;
   }
 
-  startTaxiTransition(targetCoords, meta = {}) {
+  openConfirmation(targetCoords, meta = {}) {
     if (this.busy) return false;
     if (!this.validCoords(targetCoords)) {
       this.onError(new Error('Invalid static taxi target'), 'static destination');
+      return false;
+    }
+    const fare = this.fareFor(targetCoords);
+    if (fare === null) {
+      this.onError(new Error('Unable to calculate taxi fare'), 'fare calculation');
+      return false;
+    }
+
+    const target = {...targetCoords};
+    this.pending = {targetCoords: target, meta: {...meta, quotedFare: fare}, fare};
+    this.setMapPicking(false);
+    try { if (this.mapDialog?.open) this.mapDialog.close(); } catch {}
+    this.setPaused(true);
+    this.unlockPointerEvents();
+
+    const title = this.document?.getElementById?.('menuTitle');
+    if (title) title.textContent = 'Conferma taxi';
+    if (!this.menu || !this.menuContent) throw new Error('Taxi confirmation DOM unavailable');
+    const name = this.escapeHtml(meta.name || target.name || 'Destinazione');
+    const tag = this.escapeHtml(meta.tag || '');
+    this.menuContent.innerHTML = `<p class="about-copy"><strong>${name}</strong>${tag ? `<br>${tag}` : ''}<br><br>Tariffa calcolata: <strong>€${fare}</strong>.<br>Confermi lo spostamento?</p><div class="menu-actions"><button class="primary" id="confirmTaxi">CONFERMA · €${fare}</button><button id="cancelTaxiConfirm">INDIETRO</button></div>`;
+    if (!this.menu.open) this.menu.showModal();
+
+    this.menuContent.querySelector('#confirmTaxi')?.addEventListener('click', event => {
+      event.preventDefault();
+      event.stopPropagation();
+      this.executeConfirmedTransition();
+    }, {once: true});
+    this.menuContent.querySelector('#cancelTaxiConfirm')?.addEventListener('click', event => {
+      event.preventDefault();
+      event.stopPropagation();
+      const source = this.pending?.meta?.source;
+      this.pending = null;
+      if (source === 'map') this.openMap();
+      else this.openList(this.lastDestinations);
+    }, {once: true});
+    return true;
+  }
+
+  startTaxiTransition(targetCoords, meta = {}) {
+    return this.openConfirmation(targetCoords, meta);
+  }
+
+  executeConfirmedTransition() {
+    if (this.busy || !this.pending) return false;
+    const {targetCoords, meta} = this.pending;
+    this.pending = null;
+    if (!this.validCoords(targetCoords)) {
+      this.onError(new Error('Invalid confirmed taxi target'), 'confirmed destination');
       return false;
     }
 
     this.busy = true;
     this.lockPointerEvents();
     this.inputManager?.disable?.();
-    console.warn('[Taxi Step 1] Destinazione acquisita senza pathfinding', targetCoords);
+    console.warn('[Taxi Step 1] Destinazione confermata dopo preventivo tariffa', targetCoords, meta.quotedFare);
     this.closeAllTaxiUI();
     this.showFastFadeOverlay();
     console.warn('[Taxi Step 2] UI chiusa; rilascio del thread al browser');
@@ -229,6 +299,7 @@ export class TaxiMenuController {
   }
 
   cancel() {
+    this.pending = null;
     this.setMapPicking(false);
     this.hideFastFadeOverlay();
     this.unlockPointerEvents();
