@@ -62,3 +62,12 @@ if source != original:
     print('Taxi runtime patched: destination resolution and transfer are non-blocking.')
 else:
     print('Taxi runtime already patched.')
+
+index_path = Path('dist/index.html')
+index = index_path.read_text(encoding='utf-8')
+versioned = '<script type="module" src="./game.js?v=taxi-20260915-2"></script>'
+index = re.sub(r'<script type="module" src="\./game\.js(?:\?v=[^"]+)?"></script>', versioned, index, count=1)
+if versioned not in index:
+    raise SystemExit('Taxi patch failed: game.js cache-buster not applied')
+index_path.write_text(index, encoding='utf-8')
+print('Taxi cache-buster set for GitHub Pages.')
