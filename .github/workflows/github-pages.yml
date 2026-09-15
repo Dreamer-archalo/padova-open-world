@@ -29,10 +29,10 @@ jobs:
           node --check dist/game.js
       - name: Persist taxi fix in main
         run: |
-          if ! git diff --quiet -- dist/game.js; then
+          if ! git diff --quiet -- dist/game.js dist/index.html; then
             git config user.name "github-actions[bot]"
             git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-            git add dist/game.js
+            git add dist/game.js dist/index.html
             git commit -m "Fix taxi destination flow permanently [skip ci]"
             git push origin HEAD:main
           fi
