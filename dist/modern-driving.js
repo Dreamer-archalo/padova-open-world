@@ -5,8 +5,19 @@ export function updateTurbo(car,speed,dt){
  car.turboTime=car.style==='cinquecento'&&speed>=car.spec.critical?(car.turboTime||0)+dt:0;
  return {remaining:car.turboTime?Math.max(0,Math.ceil(6-car.turboTime-1e-8)):null,explode:car.turboTime>=6-1e-8};
 }
+function airLandingHeight(terrain,x,z,reference){
+ let y=terrain.height(x,z,reference);
+ for(const r of terrain.arcadeRamps||[]){
+  if(!Array.isArray(r.topY)||!Number.isFinite(r.width)||!Number.isFinite(r.length))continue;
+  const dx=x-r.x,dz=z-r.z,u=dx*Math.cos(r.yaw)-dz*Math.sin(r.yaw),v=dx*Math.sin(r.yaw)+dz*Math.cos(r.yaw);
+  if(Math.abs(u)>r.width/2||Math.abs(v)>r.length/2)continue;
+  const a=clamp(u/r.width+.5,0,1),b=clamp(v/r.length+.5,0,1),back=r.topY[0]+(r.topY[1]-r.topY[0])*a,front=r.topY[3]+(r.topY[2]-r.topY[3])*a,top=back+(front-back)*b;
+  if(Number.isFinite(top))y=Math.max(y,top);
+ }
+ return y;
+}
 export function helicopterStep(actor,input,dt,terrain,collision){
- const spec=actor.spec||actor.car.spec,ground=terrain.height(actor.x,actor.z,actor.y),wasY=actor.y;
+ const spec=actor.spec||actor.car.spec,ground=airLandingHeight(terrain,actor.x,actor.z,actor.y),wasY=actor.y;
  actor.speed+=clamp((input.forward<0?-spec.reverse:input.forward*spec.max)-actor.speed,-spec.brake*dt,spec.accel*dt);
  actor.yaw+=input.turn*spec.steer*dt;
  const climb=input.up?8:input.down?-6:0;actor.vy=(actor.vy||0)+(climb-(actor.vy||0))*(1-Math.exp(-4*dt));
@@ -14,13 +25,13 @@ export function helicopterStep(actor,input,dt,terrain,collision){
  const count=Math.max(1,Math.ceil(Math.abs(actor.speed)*dt/.5));
  for(let i=0;i<count;i++){
   const x=clamp(actor.x+Math.sin(actor.yaw)*actor.speed*dt/count,-5970,7250),z=clamp(actor.z+Math.cos(actor.yaw)*actor.speed*dt/count,-6480,6230);
-  const base=terrain.height(x,z,ny),wet=!terrain.dry(x,z,2,ny);
+  const base=airLandingHeight(terrain,x,z,ny),wet=!terrain.dry(x,z,2,ny);
   if(vehicleBlocked(x,z,actor.yaw,collision,spec,Math.min(wasY,ny))||ny<base-.2||wet&&ny<terrain.waterHeight(x,z)+3){actor.speed=0;break;}
   actor.x=x;actor.z=z;
  }
  if(vehicleBlocked(actor.x,actor.z,actor.yaw,collision,spec,ny)){ny=wasY;actor.vy=0;}
  if(!terrain.dry(actor.x,actor.z,2,ny))ny=Math.max(ny,terrain.waterHeight(actor.x,actor.z)+3);
- actor.y=ny;if(ny<=ground+.02)actor.vy=0;
+ const finalGround=airLandingHeight(terrain,actor.x,actor.z,ny);actor.y=Math.max(ny,finalGround);if(actor.y<=finalGround+.02)actor.vy=0;
  return actor;
 }
 export function helicopterPads(terrain,collision,spec){
