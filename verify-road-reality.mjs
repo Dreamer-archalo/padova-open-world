@@ -14,6 +14,7 @@ const checks={
  roadEdgeLock:pass.includes('__ordinaryRoadEdgeLock')&&pass.includes('ROAD_EDGE_BLEND'),
  streetTramLock:pass.includes('__streetRunningTerrainLock')&&pass.includes('natural+clamp(rail-natural,-.12,.12)+.05'),
  motorwayDensity:pass.includes('HIGHWAY_TRAFFIC_TARGET={hyper:7,low:11,medium:16,high:22}')&&pass.includes('ensureHighwayTraffic'),
+ spatialIndexSetHandled:pass.includes('[...game.graph.index.near(state.x,state.z,720)].filter(highwaySegment)'),
  noVisibleTrafficRecycling:pass.includes('dist(c,state)>900'),
  protectedIncidents:pass.includes('Polizia Stradale · Incidente')&&pass.includes('Veicolo coinvolto nell’incidente'),
  grassBelowRoad:surfaces.includes('support.height-.18')&&surfaces.includes('road.w/2+1.0'),
