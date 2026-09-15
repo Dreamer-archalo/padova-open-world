@@ -4,6 +4,7 @@ import {cutCorridor} from './modern-map.js';
 export const isCarriageway = road => !/^(footway|path|steps|cycleway|tram|pedestrian)$/.test(road.k);
 const signedArea2=p=>{let a=0;for(let i=0;i<p.length;i++){const q=p[(i+1)%p.length];a+=p[i][0]*q[1]-q[0]*p[i][1];}return a;};
 const triArea2=(a,b,c)=>(b[0]-a[0])*(c[1]-a[1])-(b[1]-a[1])*(c[0]-a[0]);
+const independentLevel=road=>!!road&&(!!road.crossing||!!road.b||!!road.tunnel||Math.abs(Number(road.layer)||0)>0||road.k==='steps');
 
 // Subtract road corridors only where a true topological cut is required. The
 // primary modern ground skin now stays continuous beneath normal asphalt: it is
@@ -65,7 +66,15 @@ export function surfaceBatch(batch,terrain,{pedestrian=false,exclude=null,height
       const poly=[a,b,c].map(p=>[p[0],p[2]]),parts=clearRoadSurface(poly,terrain,{pedestrian,exclude,preserveUnderRoads});
       const den=(b[2]-c[2])*(a[0]-c[0])+(c[0]-b[0])*(a[2]-c[2]);
       if(Math.abs(den)<1e-9)return;
-      const y=p=>{if(height)return height(...p);const u=((b[2]-c[2])*(p[0]-c[0])+(c[0]-b[0])*(p[1]-c[2]))/den,v=((c[2]-a[2])*(p[0]-c[0])+(a[0]-c[0])*(p[1]-c[2]))/den;return u*a[1]+v*b[1]+(1-u-v)*c[1];};
+      const y=p=>{
+        let value;if(height)value=height(...p);else{const u=((b[2]-c[2])*(p[0]-c[0])+(c[0]-b[0])*(p[1]-c[2]))/den,v=((c[2]-a[2])*(p[0]-c[0])+(a[0]-c[0])*(p[1]-c[2]))/den;value=u*a[1]+v*b[1]+(1-u-v)*c[1];}
+        // Parks, grass and generic area meshes may remain continuous beneath a
+        // surface street, but they must stay visibly below its asphalt. Without
+        // this clamp a height callback could pick the road support itself and put
+        // grass only millimetres below (or above) the carriageway at slip roads.
+        if(height&&!pedestrian&&!exclude&&terrain?.roads){const support=terrain.roads.at(p[0],p[1],null,1.25),road=support?.road;if(support&&isCarriageway(road)&&!independentLevel(road)&&support.d<=road.w/2+1.0)value=Math.min(value,support.height-.18);}
+        return value;
+      };
       const expected=Math.sign(signedArea2(poly))||1;
       for(const part of parts){
         const p=(Math.sign(signedArea2(part))||expected)===expected?part:[...part].reverse();

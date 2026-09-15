@@ -26,7 +26,7 @@ export class TrafficSignals{
  }for(const {j,yaw,bulbs} of this.visible){const p=this.phase(j.id,time,yaw);bulbs.forEach((b,i)=>b.material.color.set(i===(p==='red'?0:p==='amber'?1:2)?['#ff4234','#ffc547','#5cff8a'][i]:'#26312c'));}}
 
 }
-export function laneCount(road){const w=road?.w||6;if(road?.oneway??road?.one)return clamp(Math.floor((w-.5)/3.2),1,3);return clamp(Math.floor(w/6),1,3);}
+export function laneCount(road){const w=road?.w||6;if(road?.oneway??road?.one){const base=Math.floor((w-.5)/3.2);return /motorway|trunk/.test(road?.k||'')&&w>=6.2?clamp(Math.max(2,base),1,3):clamp(base,1,3);}return clamp(Math.floor(w/6),1,3);}
 export function laneOffset(road,lane=0){
  const count=laneCount(road),i=clamp(Math.round(lane),0,count-1),w=road?.w||6;
  if(road?.oneway??road?.one){const laneWidth=Math.min(3.4,(w-.8)/count);return (i-(count-1)/2)*laneWidth;}
@@ -58,9 +58,11 @@ export function trafficLane(car,target,actors,player,time,nextYaw=null){
  car.desiredLane=desired;return desired;
 }
 export function advanceTrafficSpeed(car,desired,dt){const wanted=clamp((desired-car.speed)/Math.max(dt,1/60),-car.spec.brake*.72,car.spec.accel*.72),jerk=wanted<(car.longAccel||0)?car.spec.brake*3:car.spec.accel*2.2;car.longAccel=(car.longAccel||0)+clamp(wanted-(car.longAccel||0),-jerk*dt,jerk*dt);car.speed=Math.max(0,car.speed+car.longAccel*dt);if(desired===0&&car.speed<.08){car.speed=0;car.longAccel=0;}return car.speed;}
+function roundaboutRoad(road){return road?.junction==='roundabout'||road?.roundabout===true||road?.j==='roundabout';}
 export function trafficSpeed(car,target,actors,signals,time,{nextYaw=null}={}){const yaw=Math.atan2(target.x-car.x,target.z-car.z),turn=Math.abs(angleDiff(yaw,car.yaw)),road=car.road,k=road?.k||'',limit=/motorway|trunk/.test(k)?31:k==='primary'?18:k==='secondary'?15:k==='pedestrian'?3:10,family=car.spec.family||car.style||'',mood=scooterMood(car),moodFactor=mood==='group'?1.12:mood==='wheelie'?1.08:mood==='zigzag'?1.06:1,classFactor=(['sport','supercar'].includes(family)?1.1:['freight','work','van','truck','utility'].includes(family)?.86:1)*moodFactor,curve=clamp(1-turn/1.25,.3,1);let speed=Math.min(car.spec.max*.86,limit*(car.driver||1)*classFactor)*curve;
  if(mood==='group'){const friend=actors.find(a=>a!==car&&['scooter','motorcycle'].includes(a.style)&&a.mesh?.visible&&dist(a,car)<35);if(friend)speed=Math.min(car.spec.max*.88,Math.max(speed,friend.speed*.97));}
  if(nextYaw!==null){const bend=Math.abs(angleDiff(nextYaw,yaw)),remaining=dist(car,target);if(remaining<Math.max(28,car.speed*2.2))speed=Math.min(speed,Math.max(5,limit*clamp(1-bend/1.45,.28,1)));}
+ const enteringRoundabout=!roundaboutRoad(road)&&roundaboutRoad(car.plannedEdge?.road),distanceToEntry=dist(car,target);if(enteringRoundabout&&distanceToEntry<24){const circulating=actors.some(other=>other!==car&&other.mesh?.visible&&roundaboutRoad(other.road)&&Math.abs((other.y||0)-(car.y||0))<3&&dist(other,target)<28);if(circulating)speed=Math.min(speed,distanceToEntry<5?0:Math.max(1.5,(distanceToEntry-3)*.42));}
  const j=signals.junctions?.get(car.target),remaining=dist(car,target)-(j?.radius||3)-car.spec.length/2;
  if(!signals.allowed(car.target,time,yaw)&&remaining> -car.spec.length)speed=Math.min(speed,remaining<.25?0:Math.sqrt(2*car.spec.brake*.65*Math.max(0,remaining)));
  if(!signals.allowed(car.target,time,yaw)&&dist(car,target)<7)speed=0;

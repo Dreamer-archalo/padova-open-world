@@ -24,7 +24,7 @@ function validSidewalk(game,p,road){
 }
 
 export class PedestrianManager{
- constructor(){this.acc=0;this.fixed=0;}
+ constructor(){this.acc=0;this.fixed=0;this.roundaboutFixed=0;}
  sidewalkPoint(game,p,near){
   const a=game.graph.nodes[near.segment.a],b=game.graph.nodes[near.segment.b];
   const yaw=Math.atan2(b.x-a.x,b.z-a.z),normal={x:Math.cos(yaw),z:-Math.sin(yaw)};
@@ -38,14 +38,17 @@ export class PedestrianManager{
   this.acc+=dt;if(this.acc<.18)return;this.acc=0;
   for(const p of game.people){
    if(!p?.mesh?.visible||p.health<=0||p.koUntil>game.state.elapsed)continue;
-   if(p.crossGoal||p.crossing||CROSSING_KEYS.has(p.road?.k))continue;
    const near=nearestRoad(p,game.graph,false);if(!near)continue;
-   const road=near.segment.road;if(WALKABLE.has(road.k))continue;
-   if(near.d>road.w/2+.2)continue;
+   const road=near.segment.road,roundabout=isRoundabout(road);
+   // Crossing/path flags must never exempt somebody standing inside a
+   // roundabout. Those exemptions are valid only on ordinary road segments.
+   if(!roundabout&&(p.crossGoal||p.crossing||CROSSING_KEYS.has(p.road?.k)))continue;
+   if(WALKABLE.has(road.k)&&!roundabout)continue;
+   if(near.d>road.w/2+(roundabout?1.2:.2))continue;
    const q=this.sidewalkPoint(game,p,near);if(!q)continue;
    p.x=q.x;p.z=q.z;p.y=game.terrain.height(q.x,q.z,p.y);
-   p.anchor={x:q.x,z:q.z};p.crossGoal=null;p.blocked=0;
-   p.mesh.position.set(p.x,p.y,p.z);this.fixed++;
+   p.anchor={x:q.x,z:q.z};p.crossGoal=null;p.crossing=false;p.blocked=0;
+   p.mesh.position.set(p.x,p.y,p.z);this.fixed++;if(roundabout)this.roundaboutFixed++;
   }
  }
 }
