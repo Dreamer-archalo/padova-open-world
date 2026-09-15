@@ -31,6 +31,12 @@
   animation:taxiChase 1.05s steps(1) infinite;
 }
 
+/* JS adds this class if preload fails or exceeds one second. The transition
+   continues with text only; a missing image can never hold the taxi flow. */
+.taxi-meme.taxi-splash-unavailable::after{
+  display:none;
+}
+
 .taxi-meme::before{
   content:"";
   position:absolute;
