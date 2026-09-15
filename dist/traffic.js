@@ -58,9 +58,14 @@ export function trafficLane(car,target,actors,player,time,nextYaw=null){
  car.desiredLane=desired;return desired;
 }
 export function advanceTrafficSpeed(car,desired,dt){const wanted=clamp((desired-car.speed)/Math.max(dt,1/60),-car.spec.brake*.72,car.spec.accel*.72),jerk=wanted<(car.longAccel||0)?car.spec.brake*3:car.spec.accel*2.2;car.longAccel=(car.longAccel||0)+clamp(wanted-(car.longAccel||0),-jerk*dt,jerk*dt);car.speed=Math.max(0,car.speed+car.longAccel*dt);if(desired===0&&car.speed<.08){car.speed=0;car.longAccel=0;}return car.speed;}
+function roundaboutRoad(road){return road?.junction==='roundabout'||road?.roundabout===true||road?.j==='roundabout';}
 export function trafficSpeed(car,target,actors,signals,time,{nextYaw=null}={}){const yaw=Math.atan2(target.x-car.x,target.z-car.z),turn=Math.abs(angleDiff(yaw,car.yaw)),road=car.road,k=road?.k||'',limit=/motorway|trunk/.test(k)?31:k==='primary'?18:k==='secondary'?15:k==='pedestrian'?3:10,family=car.spec.family||car.style||'',mood=scooterMood(car),moodFactor=mood==='group'?1.12:mood==='wheelie'?1.08:mood==='zigzag'?1.06:1,classFactor=(['sport','supercar'].includes(family)?1.1:['freight','work','van','truck','utility'].includes(family)?.86:1)*moodFactor,curve=clamp(1-turn/1.25,.3,1);let speed=Math.min(car.spec.max*.86,limit*(car.driver||1)*classFactor)*curve;
  if(mood==='group'){const friend=actors.find(a=>a!==car&&['scooter','motorcycle'].includes(a.style)&&a.mesh?.visible&&dist(a,car)<35);if(friend)speed=Math.min(car.spec.max*.88,Math.max(speed,friend.speed*.97));}
  if(nextYaw!==null){const bend=Math.abs(angleDiff(nextYaw,yaw)),remaining=dist(car,target);if(remaining<Math.max(28,car.speed*2.2))speed=Math.min(speed,Math.max(5,limit*clamp(1-bend/1.45,.28,1)));}
+ // Vehicles approaching a roundabout give way to traffic already circulating.
+ // This is deliberately independent of traffic lights because mapped roundabouts
+ // are excluded from the signal controller.
+ const enteringRoundabout=!roundaboutRoad(road)&&roundaboutRoad(car.plannedEdge?.road),distanceToEntry=dist(car,target);if(enteringRoundabout&&distanceToEntry<24){const circulating=actors.some(other=>other!==car&&other.mesh?.visible&&roundaboutRoad(other.road)&&Math.abs((other.y||0)-(car.y||0))<3&&dist(other,target)<28);if(circulating)speed=Math.min(speed,distanceToEntry<5?0:Math.max(1.5,(distanceToEntry-3)*.42));}
  const j=signals.junctions?.get(car.target),remaining=dist(car,target)-(j?.radius||3)-car.spec.length/2;
  if(!signals.allowed(car.target,time,yaw)&&remaining> -car.spec.length)speed=Math.min(speed,remaining<.25?0:Math.sqrt(2*car.spec.brake*.65*Math.max(0,remaining)));
  if(!signals.allowed(car.target,time,yaw)&&dist(car,target)<7)speed=0;
