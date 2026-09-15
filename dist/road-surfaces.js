@@ -49,7 +49,7 @@ export class RoadSurfaces{
    }
   }}
   for(let pass=0;pass<4;pass++){const heap=new MaxHeap();for(const c of crossings){const a=this.nodes[c.ia],b=this.nodes[c.ib],required=this.segmentHeight(c.other,c.v)+c.clearance+.4,current=a.h*(1-c.u)+b.h*c.u;if(required>current+.01){const lift=Math.min(2,required-current,a.base+c.maxLift-a.h,b.base+c.maxLift-b.h);if(lift<=.01)continue;a.h+=lift;b.h+=lift;heap.push({id:c.ia,h:a.h});heap.push({id:c.ib,h:b.h});}}
-   if(!heap.a.length)break;while(heap.a.length){const item=heap.pop(),n=this.nodes[item.id];if(item.h<n.h-.001)continue;for(const e of n.edges){const q=this.nodes[e.id],h=n.h+e.d*e.grade;if(h<q.h-.001){q.h=h;heap.push({id:e.id,h:-h});}}}
+   if(!heap.a.length)break;while(heap.a.length){const item=heap.pop(),n=this.nodes[item.id];if(item.h<n.h-.001)continue;for(const e of n.edges){const q=this.nodes[e.id],h=n.h-e.d*e.grade;if(h>q.h+.001){q.h=h;heap.push({id:e.id,h});}}}
   }
   if(this.modern){this.alignAtGradeCrossings();this.alignParallelDecks();this.smoothProfiles();this.alignAtGradeCrossings();this.alignParallelDecks();this.updateSlopes();this.protectClearance(crossings);}
   // Broad elevation noise is grade-limited as well; do not make a road follow a crater.
