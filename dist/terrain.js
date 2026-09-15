@@ -2,6 +2,7 @@ import {RoadSurfaces} from './road-surfaces.js';
 import {SpatialIndex, nearestOnSegment, pointInside, clamp, safeRoadPoint} from './core.js';
 import {vehicleBlocked} from './movement.js';
 import {gameplayElevation,areaLocal} from './gameplay-areas.js';
+import {ensureSurfaceResolver,SURFACE_CONFIG} from './world-surface-resolver.js';
 
 const smooth=t=>{t=clamp(t,0,1);return t*t*(3-2*t);};
 export const SAFE_MIN_Y=-10,SAFE_MAX_Y=100,ROAD_FADE_DISTANCE=9;
@@ -27,44 +28,53 @@ export class Terrain {
       const lengths=road.p.slice(1).map((p,i)=>Math.hypot(p[0]-road.p[i][0],p[1]-road.p[i][1])),total=lengths.reduce((a,b)=>a+b,0);let offset=0;
       for(let i=1;i<road.p.length;i++){const a=road.p[i-1],b=road.p[i];add(this.bridgeIndex,{a,b,w:road.w,offset,length:lengths[i-1],total},[a,b],road.w/2+2);offset+=lengths[i-1];}
     }
-    this.pratoHeight=safeTerrainHeight(this.elevation(PRATO.x,PRATO.z),this.rawElevation(PRATO.x,PRATO.z));this.roads=new RoadSurfaces(map,this);
+    this.pratoHeight=safeTerrainHeight(this.elevation(PRATO.x,PRATO.z),this.rawElevation(PRATO.x,PRATO.z));this.roads=new RoadSurfaces(map,this);this.surfaceResolver=ensureSurfaceResolver(this);
   }
   rawElevation(x,z){const g=this.grid,u=clamp((x-g.x0)/g.step,0,g.width-1),v=clamp((z-g.z0)/g.step,0,g.height-1),i=Math.min(g.width-2,Math.floor(u)),j=Math.min(g.height-2,Math.floor(v)),a=u-i,b=v-j,h=(i,j)=>g.heights[j*g.width+i],value=h(i,j)*(1-a)*(1-b)+h(i+1,j)*a*(1-b)+h(i,j+1)*(1-a)*b+h(i+1,j+1)*a*b;return safeTerrainHeight(value,h(i,j));}
   elevation(x,z){const raw=this.rawElevation(x,z),value=this.gameplayPatches?.length?gameplayElevation(x,z,raw,this.gameplayPatches):raw;return safeTerrainHeight(value,raw);}
+  getPreciseHeight(x,z){return this.surfaceResolver?.getPreciseHeight(x,z)??this.elevation(x,z);}
+  getTerrainHeight(x,z){return this.surfaceResolver?.getGroundHeight(x,z)??this.elevation(x,z);}
+  getRoadHeight(x,z,referenceY=null){return this.surfaceResolver?.getRoadHeight(x,z,referenceY)??null;}
+  getWalkableSurfaceHeight(x,z,referenceY=null){return this.surfaceResolver?.getWalkableSurfaceHeight(x,z,referenceY)??this.height(x,z,referenceY);}
+  getSurfaceType(x,z,referenceY=null){return this.surfaceResolver?.getSurfaceType(x,z,referenceY)??'terrain';}
+  isBridge(x,z,referenceY=null){return this.surfaceResolver?.isBridge(x,z,referenceY)??false;}
+  isTunnel(x,z,referenceY=null){return this.surfaceResolver?.isTunnel(x,z,referenceY)??false;}
+  isRiver(x,z){return this.surfaceResolver?.isRiver(x,z)??this.waterDistance(x,z)<=0;}
+  isTramTrack(x,z,referenceY=null){return this.surfaceResolver?.isTramTrack(x,z,referenceY)??false;}
   platformAt(x,z){for(const a of this.gameplayPatches){if(!a.platform)continue;const p=areaLocal(a,x,z),b=a.platform;if(p.u>=b.minU&&p.u<=b.maxU&&p.v>=b.minV&&p.v<=b.maxV)return a;}return null;}
   waterHeight(x,z){const p=this.grid.waterPlane,base=safeTerrainHeight(this.elevation(x,z)-1.8,0),value=this.waterSample(x,z).level??(p[0]+p[1]*x+p[2]*z-1.8);return safeTerrainHeight(value,base);}
   prato(x,z){const p=pratoLocal(x,z);if((p.x/115)**2+(p.z/163)**2>1)return null;const canal=(p.x/90)**2+(p.z/135)**2<1&&(p.x/81)**2+(p.z/126)**2>1;return {canal,bridge:Math.abs(p.x)<5.5||Math.abs(p.z)<4.5};}
   waterSample(x,z){let distance=Infinity,level;for(const r of this.waterIndex.near(x,z)){
     let d=Infinity;if(r.p){for(let i=0;i<r.p.length;i++){const q=nearestOnSegment(x,z,r.p[i],r.p[(i+1)%r.p.length]);d=Math.min(d,Math.hypot(q.x-x,q.z-z));}if(pointInside(x,z,r.p))d=-Math.max(.01,d);}
-    else{const q=nearestOnSegment(x,z,r.a,r.b);d=Math.hypot(q.x-x,q.z-z)-r.w/2;}
+    else{const q=nearestOnSegment(x,z,r.a,r.b);d=Math.hypot(q.x-x,q.z-q.z)-r.w/2;}
     if(d<distance){distance=d;level=r.level;}
   }return {distance,level};}
   waterDistance(x,z){return this.waterSample(x,z).distance;}
   bridge(x,z,margin=0,referenceY=null){return this.roads?.bridge(x,z,referenceY)||null;}
-  waterAt(x,z,margin=0,referenceY=null){if(this.platformAt(x,z))return null;if(this.modern){const support=this.roads.at(x,z,referenceY,margin);if(support&&safeTerrainHeight(support.height,this.elevation(x,z))>this.waterHeight(x,z)+.5)return null;}const prato=this.prato(x,z);if(prato)return prato.canal&&!prato.bridge?this.pratoHeight-1.5:null;if(this.modern){const road=this.roads.at(x,z,referenceY,margin);if(road&&safeTerrainHeight(road.height,this.elevation(x,z))>this.waterHeight(x,z)+.5)return null;}if(this.bridge(x,z,margin,referenceY))return null;return this.waterDistance(x,z)<margin?this.waterHeight(x,z):null;}
+  waterAt(x,z,margin=0,referenceY=null){if(this.platformAt(x,z))return null;if(this.modern){const support=this.roads.at(x,z,referenceY,margin);if(support&&safeTerrainHeight(support.height,this.elevation(x,z))>this.waterHeight(x,z)+.5)return null;}const prato=this.prato(x,z);if(prato)return prato.canal&&!prato.bridge?this.pratoHeight-1.5:null;if(this.bridge(x,z,margin,referenceY))return null;return this.waterDistance(x,z)<margin?this.waterHeight(x,z):null;}
   groundHeight(x,z){
+    if(this.modern&&this.surfaceResolver)return safeTerrainHeight(this.surfaceResolver.getGroundHeight(x,z),this.rawElevation(x,z));
     const platform=this.platformAt(x,z);if(platform)return safeTerrainHeight(platform.height,this.rawElevation(x,z));
     const prato=this.prato(x,z);if(prato)return safeTerrainHeight(this.pratoHeight+(prato.canal?-3:0),this.pratoHeight);
     const natural=safeTerrainHeight(this.elevation(x,z),this.rawElevation(x,z));let raw=natural;
-    // Smooth road/terrain carving: the road owns the centre, then influence
-    // decays with smoothstep across ROAD_FADE_DISTANCE back to the untouched DEM.
     const support=this.roads?.at(x,z,null,ROAD_FADE_DISTANCE);
     if(support&&!support.road.crossing&&!support.road.tunnel&&!support.road.b&&!(Number(support.road.layer)>0)){
-      const roadY=safeTerrainHeight(support.height-.05,natural),factor=roadTerrainFactor(support.d,support.road.w,ROAD_FADE_DISTANCE);
-      raw=safeTerrainHeight(natural*(1-factor)+roadY*factor,natural);
-      if(support.d<=support.road.w/2)return raw;
+      const roadY=safeTerrainHeight(support.height-.05,natural),factor=roadTerrainFactor(support.d,support.road.w,ROAD_FADE_DISTANCE);raw=safeTerrainHeight(natural*(1-factor)+roadY*factor,natural);if(support.d<=support.road.w/2)return raw;
     }
     const d=this.waterDistance(x,z);if(d>10)return raw;const water=this.waterHeight(x,z),channel=safeTerrainHeight(water-1.5,natural),bank=safeTerrainHeight(Math.max(raw,water+.8),natural);return safeTerrainHeight(channel+(bank-channel)*smooth((d+1)/11),natural);
   }
-  height(x,z,referenceY=null){const base=this.rawElevation(x,z),platform=this.platformAt(x,z);if(platform){const road=this.roads?.at(x,z,referenceY),roadY=road?safeTerrainHeight(road.height+.05,platform.height+.05):SAFE_MIN_Y;return safeTerrainHeight(Math.max(platform.height+.05,roadY),base);}if(this.modern){const support=this.roads.at(x,z,referenceY);if(support)return safeTerrainHeight(support.height+.05,this.groundHeight(x,z)+.05);}const prato=this.prato(x,z);if(prato)return safeTerrainHeight(this.pratoHeight+(prato.bridge?.36:prato.canal?-3:.18),base);const road=this.roads?.at(x,z,referenceY);return safeTerrainHeight(road?road.height+.05:this.groundHeight(x,z)+.05,base);}
+  height(x,z,referenceY=null){
+    if(this.modern&&this.surfaceResolver)return safeTerrainHeight(this.surfaceResolver.getWalkableSurfaceHeight(x,z,referenceY),this.rawElevation(x,z));
+    const base=this.rawElevation(x,z),platform=this.platformAt(x,z);if(platform){const road=this.roads?.at(x,z,referenceY),roadY=road?safeTerrainHeight(road.height+.05,platform.height+.05):SAFE_MIN_Y;return safeTerrainHeight(Math.max(platform.height+.05,roadY),base);}const prato=this.prato(x,z);if(prato)return safeTerrainHeight(this.pratoHeight+(prato.bridge?.36:prato.canal?-3:.18),base);const road=this.roads?.at(x,z,referenceY);return safeTerrainHeight(road?road.height+.05:this.groundHeight(x,z)+.05,base);
+  }
   slope(x,z,yaw,wheelbase=2.5,referenceY=null){const dx=Math.sin(yaw)*wheelbase/2,dz=Math.cos(yaw)*wheelbase/2,a=this.height(x+dx,z+dz,referenceY),b=this.height(x-dx,z-dz,referenceY);return -Math.atan2(safeTerrainHeight(a,b)-b,wheelbase);}
   dry(x,z,radius=.4,referenceY=null){for(const [dx,dz] of [[0,0],[radius,0],[-radius,0],[0,radius],[0,-radius]])if(this.waterAt(x+dx,z+dz,0,referenceY)!==null)return false;return true;}
 }
 
 export function safeDryRoad(pos,graph,collision,terrain,spec=null,allowed=()=>true){
-  const radius=spec?spec.width/2:.4;
-  const point=safeRoadPoint(pos,graph,collision,radius,p=>allowed(p)&&p.x>-5960&&p.x<7240&&p.z>-6470&&p.z<6220&&terrain.dry(p.x,p.z,spec?spec.length/2+.3:1)&&(!spec||!vehicleBlocked(p.x,p.z,p.yaw,collision,spec,terrain.roads.sample(p.segment.road,p.x,p.z)+.05)),p=>safeTerrainHeight(terrain.roads.sample(p.segment.road,p.x,p.z)+.05,terrain.elevation(p.x,p.z)));
-  if(point&&terrain.modern)point.y=safeTerrainHeight(terrain.roads.sample(point.segment.road,point.x,point.z)+.05,terrain.elevation(point.x,point.z));return point;
+  const radius=spec?spec.width/2:.4,contact=SURFACE_CONFIG.roadSurfaceOffset;
+  const point=safeRoadPoint(pos,graph,collision,radius,p=>allowed(p)&&p.x>-5960&&p.x<7240&&p.z>-6470&&p.z<6220&&terrain.dry(p.x,p.z,spec?spec.length/2+.3:1)&&(!spec||!vehicleBlocked(p.x,p.z,p.yaw,collision,spec,terrain.roads.sample(p.segment.road,p.x,p.z)+contact)),p=>safeTerrainHeight(terrain.roads.sample(p.segment.road,p.x,p.z)+contact,terrain.elevation(p.x,p.z)));
+  if(point&&terrain.modern)point.y=safeTerrainHeight(terrain.roads.sample(point.segment.road,point.x,point.z)+contact,terrain.elevation(point.x,point.z));return point;
 }
 
 // Independent from rendering, so falling/recovery remains deterministic at 60 Hz.
