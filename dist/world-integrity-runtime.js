@@ -8,10 +8,22 @@ function annotateChunk(world,key,g,stage){
   g.traverse(o=>{if(!o.isMesh)return;if(o.userData.streamRoads){o.userData.surfaceType=structural?'mixed-road-structure':'road';o.userData.isRoad=true;o.userData.isBridge=roads.some(r=>r.crossing||r.b||Number(r.layer)>0);o.userData.isTunnel=roads.some(r=>r.tunnel);o.userData.isTram=tram;o.userData.supportsTerrainSnap=!structural;}else if(o.material===world.groundMat&&!o.userData.streamBuildings){o.userData.surfaceType='terrain';o.userData.supportsTerrainSnap=true;}});
 }
 
+const baseDispose=CityWorld.prototype.disposePart;
+if(!CityWorld.prototype.__worldIntegrityDispose){
+  CityWorld.prototype.__worldIntegrityDispose=true;
+  CityWorld.prototype.disposePart=function(g){this.__buildingCollisionManager?.releaseRoot(g);return baseDispose.call(this,g);};
+}
+
 const baseInstall=CityWorld.prototype.installStage;
 if(!CityWorld.prototype.__worldIntegrityInstall){
   CityWorld.prototype.__worldIntegrityInstall=true;
-  CityWorld.prototype.installStage=function(key,g,stage){annotateChunk(this,key,g,stage);const out=baseInstall.call(this,key,g,stage);globalThis.__padovaWorld=this;ensureCollisionManager(this);scheduleWorldSelfTest(this,key,stage);return out;};
+  CityWorld.prototype.installStage=function(key,g,stage){
+    // A rebuilt detail stage replaces the previous whole detail group. Keeping
+    // the old container used to leave vegetation and other unflagged geometry
+    // duplicated even after road/building meshes were individually disposed.
+    const root=this.loaded.get(key),previousDetail=stage==='detail'?root?.userData?.detail:null;if(previousDetail&&previousDetail!==g)this.disposePart(previousDetail);
+    annotateChunk(this,key,g,stage);const out=baseInstall.call(this,key,g,stage);globalThis.__padovaWorld=this;const collisions=ensureCollisionManager(this);if(stage==='detail')collisions.registerVegetation(g,key);scheduleWorldSelfTest(this,key,stage);return out;
+  };
 }
 
 const baseUpdate=CityWorld.prototype.update;
