@@ -1,48 +1,43 @@
-const nextFrame = () => new Promise(resolve => {
-  if (typeof requestAnimationFrame === 'function') requestAnimationFrame(() => resolve());
-  else setTimeout(resolve, 0);
-});
+const delay = ms => new Promise(resolve => setTimeout(resolve, ms));
 
 export class TaxiSystem {
-  constructor({overlay, pathfinder, inputManager, timeoutMs = 3000, onResolved, onFallback, onFinally, onDriverReady} = {}) {
-    this.overlay = overlay;
-    this.pathfinder = pathfinder;
-    this.inputManager = inputManager;
+  constructor({
+    inputManager,
+    timeoutMs = 3000,
+    executeTeleport,
+    forcePlayerPosition,
+    onFinally,
+  } = {}) {
+    this.inputManager = inputManager ?? null;
     this.timeoutMs = Math.max(500, Number(timeoutMs) || 3000);
-    this.onResolved = onResolved;
-    this.onFallback = onFallback;
-    this.onFinally = onFinally;
-    this.onDriverReady = onDriverReady;
+    this.executeTeleport = executeTeleport ?? (async () => {});
+    this.forcePlayerPosition = forcePlayerPosition ?? (async () => {});
+    this.onFinally = onFinally ?? (async () => {});
     this.runId = 0;
   }
 
-  async travel({destination, price = 0, yaw = 0} = {}) {
-    const runId = ++this.runId;
-    const token = {cancelled: false};
-    let timer = null;
-    let road = null;
+  validTarget(targetCoords) {
+    return !!targetCoords && Number.isFinite(targetCoords.x) && Number.isFinite(targetCoords.z);
+  }
 
-    console.info('[Taxi Step 1] Inizio selezione destinazione', destination);
+  async travel({targetCoords, destination = null, price = 0, yaw = 0} = {}) {
+    if (!this.validTarget(targetCoords)) throw new Error('Invalid static taxi coordinates');
+
+    const runId = ++this.runId;
+    const target = {
+      x: Number(targetCoords.x),
+      y: Number.isFinite(targetCoords.y) ? Number(targetCoords.y) : 0,
+      z: Number(targetCoords.z),
+      yaw: Number.isFinite(targetCoords.yaw) ? Number(targetCoords.yaw) : Number(yaw) || 0,
+    };
+    let timer = null;
+
     this.inputManager?.disable?.();
 
     const operation = (async () => {
-      console.info('[Taxi Step 2] Caricamento asset 2D splash screen...');
-      await this.overlay?.show?.('Preparazione destinazione…');
-      if (token.cancelled || runId !== this.runId) return;
-
-      await nextFrame();
-      if (token.cancelled || runId !== this.runId) return;
-
-      console.info('[Taxi Step 3] Calcolo percorso/nodo stradale...');
-      road = this.pathfinder?.resolveDestination?.(destination) ?? null;
-      if (!road) throw new Error('Taxi destination has no bounded road node');
-      if (token.cancelled || runId !== this.runId) return;
-
-      await this.onResolved?.({destination, road, price, runId});
-      if (token.cancelled || runId !== this.runId) return;
-
-      console.info('[Taxi Step 4] Spawn Driver NPC e sblocco UI.');
-      await this.onDriverReady?.({destination, road, runId});
+      await delay(0);
+      if (runId !== this.runId) return;
+      await this.executeTeleport({targetCoords: target, destination, price, runId});
     })();
 
     const timeoutGuard = new Promise((_, reject) => {
@@ -51,19 +46,15 @@ export class TaxiSystem {
 
     try {
       await Promise.race([operation, timeoutGuard]);
-      return {ok: true, road};
+      return {ok: true, targetCoords: target};
     } catch (error) {
-      token.cancelled = true;
-      console.warn('[Taxi] Destination transition fallback', error);
-      const fallbackRoad = road ?? this.pathfinder?.fallbackPoint?.(destination, yaw) ?? null;
-      await this.onFallback?.({destination, road: fallbackRoad, price, error, runId});
-      return {ok: false, road: fallbackRoad, error};
+      console.error('[Taxi Error] Direct transition fallback', error);
+      await this.forcePlayerPosition({targetCoords: target, destination, price, error, runId});
+      return {ok: false, targetCoords: target, error};
     } finally {
-      token.cancelled = true;
       if (timer !== null) clearTimeout(timer);
-      try { this.overlay?.hide?.(); } catch (error) { console.warn('[Taxi UI] hide failed', error); }
       try { this.inputManager?.enable?.(); } catch (error) { console.warn('[Taxi Input] unlock failed', error); }
-      try { await this.onFinally?.({destination, road, runId}); } catch (error) { console.warn('[Taxi] finally handler failed', error); }
+      try { await this.onFinally({targetCoords: target, destination, runId}); } catch (error) { console.warn('[Taxi] finally handler failed', error); }
     }
   }
 }
