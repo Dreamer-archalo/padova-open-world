@@ -1,11 +1,17 @@
 import {CityWorld} from './world.js';
 import {WorldSelfTester,scheduleWorldSelfTest} from './world-self-tester.js';
 import {ensureCollisionManager} from './building-collision-manager.js';
+import {isStructuralRoad,isTramRoad} from './world-surface-resolver.js';
+
+function annotateChunk(world,key,g,stage){
+  const roads=world.chunks.get(key)?.roads?.map(s=>s.road)||[],structural=roads.some(isStructuralRoad),tram=roads.some(isTramRoad);g.userData.chunkId=key;g.userData.stage=stage;
+  g.traverse(o=>{if(!o.isMesh)return;if(o.userData.streamRoads){o.userData.surfaceType=structural?'mixed-road-structure':'road';o.userData.isRoad=true;o.userData.isBridge=roads.some(r=>r.crossing||r.b||Number(r.layer)>0);o.userData.isTunnel=roads.some(r=>r.tunnel);o.userData.isTram=tram;o.userData.supportsTerrainSnap=!structural;}else if(o.material===world.groundMat&&!o.userData.streamBuildings){o.userData.surfaceType='terrain';o.userData.supportsTerrainSnap=true;}});
+}
 
 const baseInstall=CityWorld.prototype.installStage;
 if(!CityWorld.prototype.__worldIntegrityInstall){
   CityWorld.prototype.__worldIntegrityInstall=true;
-  CityWorld.prototype.installStage=function(key,g,stage){const out=baseInstall.call(this,key,g,stage);globalThis.__padovaWorld=this;ensureCollisionManager(this);scheduleWorldSelfTest(this,key,stage);return out;};
+  CityWorld.prototype.installStage=function(key,g,stage){annotateChunk(this,key,g,stage);const out=baseInstall.call(this,key,g,stage);globalThis.__padovaWorld=this;ensureCollisionManager(this);scheduleWorldSelfTest(this,key,stage);return out;};
 }
 
 const baseUpdate=CityWorld.prototype.update;
