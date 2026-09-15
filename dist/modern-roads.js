@@ -38,7 +38,9 @@ export function* modernRoadSteps(batch,segments,terrain,{coarse=false}={}){
     }
     if(road.w>=6.5&&!road.oneway&&Math.floor((i/count*length)/5)%2===0)section(a,b,-.06,.06,.09,colour('#d7d4c2'));
    }
-   if(!coarse&&/motorway|trunk/.test(road.k)&&road.w>=7&&Math.floor((i/count*length)/6)%2===0){const offsets=road.oneway||road.one?[0]:[-road.w/4,road.w/4];for(const o of offsets)section(a,b,o-.075,o+.075,.09,colour('#ece5cd'));}
+   // At motorway/trunk merges and exits lane markings stop briefly instead of
+   // drawing two incompatible lines through one another.
+   if(!coarse&&!atJunction&&/motorway|trunk/.test(road.k)&&road.w>=7&&Math.floor((i/count*length)/6)%2===0){const offsets=road.oneway||road.one?[0]:[-road.w/4,road.w/4];for(const o of offsets)section(a,b,o-.075,o+.075,.09,colour('#ece5cd'));}
    if(i%4===0)yield;
    if(rail)for(const offset of [-.7,.7])section(a,b,offset-.055,offset+.055,.1,colour('#bdc8c9'));
   }
