@@ -61,7 +61,7 @@ if(canvas&&wrap){
  function constrain(){const b=bounds();tx=clamp(tx,b.minX,0);ty=clamp(ty,b.minY,0);if(scale===1){tx=0;ty=0;}}
  function paint(){constrain();canvas.style.transform=`translate(${tx}px,${ty}px) scale(${scale})`;controls.querySelector('[data-map-zoom="reset"]').textContent=scale.toFixed(scale%1?1:0)+'×';}
  function zoomAt(next,cx=wrap.clientWidth/2,cy=wrap.clientHeight/2){next=clamp(next,1,4);const ux=(cx-tx)/scale,uy=(cy-ty)/scale;tx=cx-ux*next;ty=cy-uy*next;scale=next;paint();}
- function mapPointFromPointer(e){const r=wrap.getBoundingClientRect(),width=canvas.clientWidth||wrap.clientWidth,height=canvas.clientHeight||wrap.clientHeight;return {u:clamp((e.clientX-r.left-tx)/(Math.max(1,width)*scale),0,1),v:clamp((e.clientY-r.top-ty)/(Math.max(1,height)*scale),0,1)};}
+ function mapPointFromPointer(e){const r=wrap.getBoundingClientRect(),width=canvas.clientWidth||wrap.clientWidth,height=canvas.clientHeight||wrap.clientHeight;if(!Number.isFinite(e?.clientX)||!Number.isFinite(e?.clientY)||!Number.isFinite(width)||!Number.isFinite(height)||width<=0||height<=0||!Number.isFinite(scale)||scale<=0)return null;const u=(e.clientX-r.left-tx)/(width*scale),v=(e.clientY-r.top-ty)/(height*scale);return Number.isFinite(u)&&Number.isFinite(v)?{u:clamp(u,0,1),v:clamp(v,0,1)}:null;}
  controls.addEventListener('click',e=>{const mode=e.target.closest('button')?.dataset.mapZoom;if(!mode)return;e.stopPropagation();if(mode==='in')zoomAt(scale+.5);else if(mode==='out')zoomAt(scale-.5);else{scale=1;tx=ty=0;paint();}});
  canvas.addEventListener('wheel',e=>{e.preventDefault();const r=wrap.getBoundingClientRect(),cx=e.clientX-r.left,cy=e.clientY-r.top;zoomAt(scale*(e.deltaY<0?1.22:.82),cx,cy);},{passive:false});
  canvas.addEventListener('pointerdown',e=>{if(scale<=1)return;drag={id:e.pointerId,x:e.clientX,y:e.clientY,tx,ty,threshold:e.pointerType==='touch'?12:5};moved=false;canvas.setPointerCapture?.(e.pointerId);});
@@ -69,9 +69,12 @@ if(canvas&&wrap){
  const end=e=>{if(drag?.id===e.pointerId){canvas.releasePointerCapture?.(e.pointerId);drag=null;}};canvas.addEventListener('pointerup',end);canvas.addEventListener('pointercancel',end);
  canvas.addEventListener('click',e=>{if(!moved)return;moved=false;e.preventDefault();e.stopImmediatePropagation();},true);
  if(typeof nativeMapClick==='function')canvas.onclick=e=>{
-  if(scale<=1)return nativeMapClick.call(canvas,e);
-  const {u,v}=mapPointFromPointer(e),r=canvas.getBoundingClientRect(),size=Math.min(r.width,r.height),offsetX=(r.width-size)/2,offsetY=(r.height-size)/2;
-  return nativeMapClick.call(canvas,{clientX:r.left+offsetX+u*size,clientY:r.top+offsetY+v*size});
+  try{
+   if(scale<=1)return nativeMapClick.call(canvas,e);
+   const point=mapPointFromPointer(e);if(!point)throw new Error('Invalid zoomed map coordinates');
+   const {u,v}=point,r=canvas.getBoundingClientRect(),size=Math.min(r.width,r.height);if(!Number.isFinite(size)||size<=0)throw new Error('Invalid map dimensions');const offsetX=(r.width-size)/2,offsetY=(r.height-size)/2,clientX=r.left+offsetX+u*size,clientY=r.top+offsetY+v*size;if(!Number.isFinite(clientX)||!Number.isFinite(clientY))throw new Error('Map remap produced NaN');
+   return nativeMapClick.call(canvas,{clientX,clientY});
+  }catch(error){console.warn('[Taxi map] click guard',error);try{mapDialog?.dispatchEvent(new Event('cancel',{cancelable:true}));}catch{}try{if(mapDialog?.open)mapDialog.close();}catch{}const toast=document.getElementById('toast');if(toast){toast.textContent='Destinazione non raggiungibile';toast.hidden=false;}return null;}
  };
  if(mapDialog)new MutationObserver(()=>{if(mapDialog.open){scale=1;tx=ty=0;moved=false;paint();}}).observe(mapDialog,{attributes:true,attributeFilter:['open']});
  paint();

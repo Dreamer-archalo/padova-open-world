@@ -21,7 +21,7 @@ import {FixedClock,slideMove,vehicleBlocked,cameraBoomContinuous as cameraBoom} 
 import {Terrain, WaterRecovery, safeDryRoad} from './terrain.js';
 import {VEHICLES,isBike,createVehicle,createRider,vehiclesOverlap} from './vehicles.js';
 import {BuildingModels} from './building-models.js';
-import {taxiFare,taxiDestinations,advanceTaxi} from './taxi-service.js';
+import {taxiFare,taxiDestinations,advanceTaxi,findTaxiRoad} from './taxi-service.js';
 import {createMicromobilityActor,micromobilityCount,stepMicromobility,PORTELLO_GATE} from './portello.js';
 import {spawnWeight,socialProfile,attachDog,animateUrbanActor,PORTELLO_SEATS} from './urban-life.js';
 import {installVehicleDamage,updateVehicleDamage,vehiclePerformanceFactor} from './vehicle-damage.js';
@@ -83,7 +83,7 @@ function addCar(x,z,yaw=0,police=false,parked=false,requestedStyle=null){
  if(police){const mat=new THREE.MeshBasicMaterial({color:'#419cff'});const lamp=new THREE.Mesh(new THREE.BoxGeometry(.4,.18,.32),mat);lamp.position.set(-.35,1.84,-.15);m.add(lamp);c.lamp=lamp;c.beacon=new THREE.PointLight('#298aff',0,13,2);c.beacon.position.set(0,2,0);m.add(c.beacon);cops.push(c);}else cars.push(c);return c;
 }
 function dryRoad(pos,spec=null,ignore=state.car){return safeDryRoad(pos,graph,world.collision,terrain,spec,p=>![...cars,...cops].some(c=>c!==ignore&&c.mesh.visible&&dist(c,p)<(c.spec.length+(spec?.length||1))/2+1));}
-function taxiFastRoad(pos){const n=nearestRoad(pos,graph,true);if(!n||!n.segment?.road)return null;const road=n.segment.road,sample=terrain.roads?.sample?.(road,n.x,n.z),y=Number.isFinite(sample)?sample+.05:terrain.height(n.x,n.z);return {...n,y};}
+function taxiFastRoad(pos){return validTaxiDestination(pos)?findTaxiRoad(pos,graph,terrain,{maxRadius:520,maxCandidates:2500,maxMs:18}):null;}
 function vehiclesMenu(){if(!state.started||waterRecovery.active||incidents?.recovery)return;showMenu('Choose a vehicle','<p class="about-copy">Bring a vehicle to a clear road nearby. E to get in. V opens this menu.</p><div class="activities">'+['mito','cinquecento','cruiser','scooter','truck'].map(type=>'<button class="activity" data-vehicle="'+type+'"><span><b>'+VEHICLES[type].name+'</b><small>'+Math.round(VEHICLES[type].max*3.6)+' km/h · '+VEHICLES[type].length+' m</small></span></button>').join('')+'</div>');document.querySelectorAll('[data-vehicle]').forEach(button=>button.onclick=()=>{
  const type=button.dataset.vehicle,spec=VEHICLES[type];let p=null;
  for(const offset of [12,24,40,70]){const candidate=dryRoad({x:state.x+Math.sin(state.yaw)*offset,z:state.z+Math.cos(state.yaw)*offset},spec);if(candidate&&dist(candidate,state)>spec.length/2+3&&![...cars,...cops].some(c=>c.mesh.visible&&dist(c,candidate)<(c.spec.length+spec.length)/2+2)){p=candidate;break;}}
@@ -138,7 +138,7 @@ function drawMini(){if(!mapBase)return;const c=miniCtx,w=mini.width,h=mini.heigh
 function fullTransform(p){const c=$('fullmap');return {x:(p.x-minBounds.x)/minBounds.w*c.width,y:(p.z-minBounds.z)/minBounds.h*c.height};}
 function drawFullMap(){const c=$('fullmap').getContext('2d'),w=$('fullmap').width,h=$('fullmap').height;c.drawImage(mapBase,0,0,w,h);drawRoute(c,fullTransform,3);for(const p of PLACES){const a=fullTransform(p);c.fillStyle='#ffc56a';c.beginPath();c.arc(a.x,a.y,3,0,Math.PI*2);c.fill();}const a=fullTransform(state);c.fillStyle='white';c.strokeStyle='#172e38';c.lineWidth=3;c.beginPath();c.arc(a.x,a.y,8,0,Math.PI*2);c.fill();c.stroke();const target=currentTarget();if(target){const b=fullTransform(target);c.strokeStyle='#ffc56a';c.lineWidth=3;c.beginPath();c.arc(b.x,b.y,10,0,Math.PI*2);c.stroke();c.fillStyle='#ffc56a';c.font='600 19px system-ui';c.fillText('DESTINATION',clamp(b.x+16,5,810),b.y+6);}}
 function currentTarget(){return state.mission?.target||state.waypoint;}
-function routeTo(target){state.route=target?roadRoute(state,target,graph):[];if(target&&!state.route.length)toast('No connected road route here. Follow the destination marker.');}
+function routeTo(target){try{state.route=target?roadRoute(state,target,graph,{maxSteps:30000,maxMs:60}):[];}catch(error){console.warn('[Navigation] route failed',error);state.route=[];}if(target&&!state.route.length)toast('No connected road route here. Follow the destination marker.');}
 function updateMarker(){const t=currentTarget();marker.visible=!!t;if(!t)return;marker.position.set(t.x,terrain.height(t.x,t.z)+.16,t.z);const d=dist(state,t);$('targetDistance').hidden=false;$('targetDistance').textContent=(t.name||'Destination')+' · '+(d>=1000?(d/1000).toFixed(1)+' km':Math.round(d)+' m');}
 
 function vehicleReach(p,c){const dx=p.x-c.x,dz=p.z-c.z,side=Math.cos(c.yaw)*dx-Math.sin(c.yaw)*dz,along=Math.sin(c.yaw)*dx+Math.cos(c.yaw)*dz;return Math.hypot(Math.max(0,Math.abs(side)-c.spec.width/2),Math.max(0,Math.abs(along)-c.spec.length/2));}
@@ -178,39 +178,66 @@ function placeTaxiDriver(){
  if(!taxi?.driver)return;const c=taxi.car,distance=1.2+c.spec.width/2;let spot=null;for(const side of [1,-1]){const x=c.x+Math.cos(c.yaw)*distance*side,z=c.z-Math.sin(c.yaw)*distance*side,y=terrain.height(x,z);if(terrain.dry(x,z,.4,y)&&!collides(x,z,.4,world.collision,y)){spot={x,z,y};break;}}spot||={x:c.x,z:c.z,y:c.y};taxi.driver.position.set(spot.x,spot.y,spot.z);taxi.driver.rotation.y=c.yaw+Math.PI;taxi.driver.visible=true;
 }
 function taxiCanTalk(){return state.mode==='foot'&&taxi?.phase==='ready'&&taxi.driver.visible&&dist(state,taxi.driver.position)<3;}
+function validTaxiDestination(pos){return !!pos&&Number.isFinite(pos.x)&&Number.isFinite(pos.z)&&pos.x>=minBounds.x&&pos.x<=minBounds.x+minBounds.w&&pos.z>=minBounds.z&&pos.z<=minBounds.z+minBounds.h;}
+function unlockTaxiUI(){
+ taxiMapPick=false;try{if($('mapDialog')?.open)$('mapDialog').close();}catch{}try{if($('menu')?.open)$('menu').close();}catch{}try{setPaused(false);}catch{}keys.clear();document.body.classList.remove('taxi-transit');if($('taxiLoading'))$('taxiLoading').hidden=true;
+}
+function taxiDestinationFailure(error,context='taxi destination'){
+ console.warn('[Taxi] '+context+' failed',error);unlockTaxiUI();toast('Destinazione non raggiungibile',5);
+}
 function taxiPickupRoad(pos){
  let best=null,bestDistance=Infinity;for(const segment of graph.index.near(pos.x,pos.z,320)){const road=segment.road;if(!segment.connected||['no','private'].includes(road.access)||['pedestrian','footway','path','cycleway','steps','track'].includes(road.k)||road.w<4)continue;const a=graph.nodes[segment.a],b=graph.nodes[segment.b],point=nearestOnSegment(pos.x,pos.z,[a.x,a.z],[b.x,b.z]),yaw=Math.atan2(b.x-a.x,b.z-a.z)+(road.oneway===-1?Math.PI:0),y=terrain.height(point.x,point.z),distance=dist(point,pos);if(distance<bestDistance&&terrain.dry(point.x,point.z,VEHICLES.taxi.width/2,y)&&!vehicleBlocked(point.x,point.z,yaw,world.collision,VEHICLES.taxi,y)){best={...point,yaw,y,segment};bestDistance=distance;}}
  return best||dryRoad(pos,VEHICLES.taxi);
 }
 function taxiRouteTo(target,routeOverride=null){const route=routeOverride||roadRoute(taxi.car,target,graph);taxi.path=route.length?route:[target];taxi.index=Math.min(1,Math.max(0,taxi.path.length-1));taxi.car.parked=false;taxi.car.speed=0;taxi.blocked=0;}
 function callTaxi(){
- if(!state.started)return;
- if(state.mode!=='foot'){toast('Scendi dal veicolo prima di chiamare il taxi.',4);return;}
- const probe={x:state.x+Math.sin(state.yaw)*8,z:state.z+Math.cos(state.yaw)*8},spawn=taxiFastRoad(probe)||taxiFastRoad(state);
- if(!spawn){toast('Taxi non disponibile qui. Riprova dalla mappa.',4);return;}
- if(!taxi){const car=addCar(spawn.x,spawn.z,spawn.yaw,false,true,'taxi');car.missionUnit=true;car.name='Taxi abusivo';taxi={car,driver:createTaxiDriver(),phase:'ready',path:[],index:0,blocked:0,repathAt:0};}
- else{Object.assign(taxi.car,{x:spawn.x,z:spawn.z,y:spawn.y??terrain.height(spawn.x,spawn.z),yaw:spawn.yaw,speed:0,health:100,parked:true});taxi.car.mesh.visible=true;taxi.driver.visible=false;taxi.phase='ready';}
- taxi.target=null;taxi.path=[];taxi.index=0;taxi.blocked=0;poseVehicle(taxi.car);placeTaxiDriver();state.waypoint=null;state.route=[];toast('Taxi pronto. Scegli la destinazione.',3);openTaxiMenu(true);
+ try{
+  if(!state.started)return;
+  if(state.mode!=='foot'){toast('Scendi dal veicolo prima di chiamare il taxi.',4);return;}
+  const probe={x:state.x+Math.sin(state.yaw)*8,z:state.z+Math.cos(state.yaw)*8},spawn=taxiFastRoad(probe)||taxiFastRoad(state);
+  if(!spawn){taxiDestinationFailure(new Error('No bounded road near player'),'call');return;}
+  if(!taxi){const car=addCar(spawn.x,spawn.z,spawn.yaw,false,true,'taxi');car.missionUnit=true;car.name='Taxi abusivo';taxi={car,driver:createTaxiDriver(),phase:'ready',path:[],index:0,blocked:0,repathAt:0};}
+  else{Object.assign(taxi.car,{x:spawn.x,z:spawn.z,y:spawn.y??terrain.height(spawn.x,spawn.z),yaw:spawn.yaw,speed:0,health:100,parked:true});taxi.car.mesh.visible=true;taxi.driver.visible=false;taxi.phase='ready';}
+  taxi.target=null;taxi.path=[];taxi.index=0;taxi.blocked=0;poseVehicle(taxi.car);placeTaxiDriver();state.waypoint=null;state.route=[];toast('Taxi pronto. Scegli la destinazione.',3);openTaxiMenu(true);
+ }catch(error){taxiDestinationFailure(error,'call');}
 }
 function updateTaxi(dt){
- // Taxi travel is deterministic: no arrival AI, chunk readiness or streaming wait.
+ // Destination travel is a deterministic teleport. No taxi AI/pathfinding runs here.
  return;
 }
 function beginTaxiTrip(destination,road,price){
- if(!taxi?.car)return;
- closeDialogs();keys.clear();state.money=Math.max(0,state.money-price);save();
- const p=road,c=taxi.car;taxi.driver.visible=false;taxi.destination={...p,name:destination.name};
- Object.assign(c,{x:p.x,z:p.z,y:p.y??terrain.height(p.x,p.z),yaw:p.yaw??state.yaw,speed:0,health:Math.max(1,c.health),parked:true});resetGroundMotion(c);poseVehicle(c);
- Object.assign(state,{mode:'car',car:c,x:c.x,z:c.z,y:c.y,yaw:c.yaw,speed:0,vy:0,health:c.health,waypoint:null,route:[]});taxi.phase='at-destination';previousPose=null;previousActors.delete(c.mesh);waterRecovery.reset();waterRecovery.remember(state,terrain);followYaw=state.yaw;cameraRig.reset(state.yaw);camera.position.set(state.x-10,state.y+8,state.z-12);player.visible=false;$('taxiLoading').hidden=true;document.body.classList.remove('taxi-transit');toast('Destinazione raggiunta. Premi E per scendere.',5);
+ try{
+  if(!taxi?.car||!validTaxiDestination(destination)||!validTaxiDestination(road))throw new Error('Invalid taxi destination');
+  unlockTaxiUI();state.money=Math.max(0,state.money-price);save();
+  const p=road,c=taxi.car;taxi.driver.visible=false;taxi.destination={...p,name:destination.name};
+  Object.assign(c,{x:p.x,z:p.z,y:p.y??terrain.height(p.x,p.z),yaw:Number.isFinite(p.yaw)?p.yaw:state.yaw,speed:0,health:Math.max(1,c.health),parked:true});resetGroundMotion(c);poseVehicle(c);
+  Object.assign(state,{mode:'car',car:c,x:c.x,z:c.z,y:c.y,yaw:c.yaw,speed:0,vy:0,health:c.health,waypoint:null,route:[]});taxi.phase='at-destination';previousPose=null;previousActors.delete(c.mesh);waterRecovery.reset();waterRecovery.remember(state,terrain);followYaw=state.yaw;cameraRig.reset(state.yaw);camera.position.set(state.x-10,state.y+8,state.z-12);player.visible=false;toast('Destinazione raggiunta. Premi E per scendere.',5);
+ }catch(error){taxiDestinationFailure(error,'trip confirmation');}
 }
 function confirmTaxi(destination){
- const road=taxiFastRoad(destination);if(!road){toast('Destinazione non raggiungibile dalla rete stradale.',5);return;}const price=taxiFare(taxi.car,road);showMenu('Conferma il viaggio','<p class="about-copy"><strong>'+destination.name+'</strong><br>Prezzo calcolato sulla distanza: <strong>€'+price+'</strong> · massimo €100.</p><div class="menu-actions"><button class="primary" id="confirmTaxi">Conferma e parti</button><button id="cancelTaxi">Annulla</button></div>');$('confirmTaxi').onclick=()=>beginTaxiTrip(destination,road,price);$('cancelTaxi').onclick=openTaxiMenu;
+ try{
+  if(!validTaxiDestination(destination))throw new Error('Destination coordinates are null/undefined/NaN/outside map');
+  if(!taxi?.car)throw new Error('Taxi car missing');
+  const road=taxiFastRoad(destination);if(!road)throw new Error('No road found within bounded taxi search');
+  const price=taxiFare(taxi.car,road);showMenu('Conferma il viaggio','<p class="about-copy"><strong>'+destination.name+'</strong><br>Prezzo calcolato sulla distanza: <strong>€'+price+'</strong> · massimo €100.</p><div class="menu-actions"><button class="primary" id="confirmTaxi">Conferma e parti</button><button id="cancelTaxi">Annulla</button></div>');
+  const confirm=$('confirmTaxi'),cancel=$('cancelTaxi');if(!confirm||!cancel)throw new Error('Taxi confirmation controls missing');
+  confirm.onclick=()=>{try{beginTaxiTrip(destination,road,price);}catch(error){taxiDestinationFailure(error,'confirm button');}};
+  cancel.onclick=()=>{try{openTaxiMenu();}catch(error){taxiDestinationFailure(error,'cancel button');}};
+ }catch(error){taxiDestinationFailure(error,'destination selection');}
 }
-function openTaxiMap(){taxiMapPick=true;$('menu').close();setPaused(true);$('mapPlaces').innerHTML='<span class="eyebrow">SCEGLI TU</span><p class="about-copy">Tocca un punto sulla mappa. Vedrai il prezzo prima di confermare.</p>';$('mapDialog').showModal();drawFullMap();}
+function openTaxiMap(){
+ try{
+  if(!taxi?.car)throw new Error('Taxi car missing');taxiMapPick=true;if($('menu')?.open)$('menu').close();setPaused(true);$('mapPlaces').innerHTML='<span class="eyebrow">SCEGLI TU</span><p class="about-copy">Tocca un punto sulla mappa. Vedrai il prezzo prima di confermare.</p>';$('mapDialog').showModal();drawFullMap();
+ }catch(error){taxiDestinationFailure(error,'open map');}
+}
 function openTaxiMenu(force=false){
- if(!force&&!taxiCanTalk()){closeDialogs();toast('Avvicinati al tassista per parlare.',4);return;}
- if(!taxi?.car){toast('Chiama prima il taxi dalla mappa.',4);return;}
- const destinations=taxiDestinations(PLACES,HOME,AIRPORT_GATE);showMenu('Dove vuoi andare?','<div class="activities">'+destinations.map((p,i)=>'<button class="activity" data-taxi="'+i+'"><span><b>'+p.name+'</b><small>'+p.tag+' · €'+taxiFare(taxi.car,p)+'</small></span></button>').join('')+'<button class="activity" id="taxiChoose"><span><b>SCEGLI TU</b><small>Indica un punto sulla mappa · massimo €100</small></span></button></div>');document.querySelectorAll('[data-taxi]').forEach(button=>button.onclick=()=>confirmTaxi(destinations[Number(button.dataset.taxi)]));$('taxiChoose').onclick=openTaxiMap;
+ try{
+  if(!force&&!taxiCanTalk()){unlockTaxiUI();toast('Avvicinati al tassista per parlare.',4);return;}
+  if(!taxi?.car)throw new Error('Taxi car missing');
+  const destinations=taxiDestinations(PLACES,HOME,AIRPORT_GATE).filter(validTaxiDestination);showMenu('Dove vuoi andare?','<div class="activities">'+destinations.map((p,i)=>'<button class="activity" data-taxi="'+i+'"><span><b>'+p.name+'</b><small>'+p.tag+' · €'+taxiFare(taxi.car,p)+'</small></span></button>').join('')+'<button class="activity" id="taxiChoose"><span><b>SCEGLI TU</b><small>Indica un punto sulla mappa · massimo €100</small></span></button></div>');
+  document.querySelectorAll('[data-taxi]').forEach(button=>button.onclick=()=>{try{const destination=destinations[Number(button.dataset.taxi)];if(!validTaxiDestination(destination))throw new Error('Invalid list destination');confirmTaxi(destination);}catch(error){taxiDestinationFailure(error,'list click');}});
+  const choose=$('taxiChoose');if(!choose)throw new Error('Custom destination button missing');choose.onclick=()=>{try{openTaxiMap();}catch(error){taxiDestinationFailure(error,'custom destination');}};
+ }catch(error){taxiDestinationFailure(error,'open menu');}
 }
 function beginMission(type){if(!ensureCar())return;cancelMission(false);clearPolice();state.waypoint=null;const now=state.elapsed;if(type==='portavalori'){const van=gameplay?.startArmored();if(!van){toast('Portavalori non disponibile: raggiungi una strada principale e riprova.',5);return;}state.mission={type,van,target:{x:van.x,z:van.z,name:'Portavalori'},deadline:now+360,title:'CATTURA PORTAVALORI',desc:'Ricompensa: €1.000 · Blocca il furgone e resta vicino per 2,5 secondi. Incendi e incidenti attirano la polizia.'};}
  if(type==='delivery'){const pickup=safeTarget(PLACES[2]),drop=safeTarget(PLACES[8]);state.mission={type,phase:'pickup',target:pickup,drop,deadline:now+240,title:'A parcel at the piazza',desc:'Reach Piazza delle Erbe and stop in the gold marker to collect the parcel.'};}
@@ -338,7 +365,16 @@ function activities(){if(!state.ready)return;let html='<div class="activities">'
 function pauseMenu(){if(!state.ready)return;showMenu('Take a breather.','<div class="controls-grid"><span><kbd>W / S</kbd> accelerate / reverse</span><span><kbd>A / D</kbd> sterza / ruota</span><span><kbd>E</kbd> enter / leave vehicle</span><span><kbd>V</kbd> choose a vehicle</span><span><kbd>SPACE</kbd> brake / jump</span><span><kbd>SHIFT</kbd> boost / sprint</span><span><kbd>TAB</kbd> Turbo Cinquecento / cannone carro</span><span><kbd>F</kbd> paracadute in volo</span><span>Volo: W accelera · SPACE sale · SHIFT scende</span><span><kbd>C</kbd> cycle camera</span><span><kbd>M</kbd> city map</span><span><kbd>J</kbd> activities</span><span><kbd>R</kbd> recover & repair</span><span>A piedi: W/S cammina, A/D ruota. Trascina per guardarti intorno.</span></div><div class="settings"><label for="quality">Graphics</label><select id="quality">'+qualityOptions()+'</select><button id="soundBtn" class="textbutton">Sound: '+(state.sound?'on':'off')+'</button></div><p class="about-copy">'+state.jobs+' jobs completed · €'+Math.floor(state.money)+' earned<br>Progress is saved on this browser. Graphics and population update immediately. Iper Performance simplifies buildings, vehicles and people.<br>Scene: '+renderer.info.render.calls+' draw calls · '+Math.round(renderer.info.render.triangles/1000)+'k triangles.</p><div class="menu-actions"><button class="primary" id="resumeBtn">'+(state.started?'Back to the streets':'Close')+'</button><button id="recoverBtn">Recover vehicle</button><button id="fullscreenBtn" aria-pressed="false" aria-describedby="fullscreenMessage">Schermo intero</button><button id="vehiclesBtn">Choose a vehicle</button><button id="worldInfoBtn">About the world</button></div><div id="fullscreenHelp" class="fullscreen-help" role="status" hidden><p id="fullscreenMessage"></p><a id="fullscreenLink" target="_blank" rel="noopener">Apri il gioco nel browser ↗</a></div>');$('quality').value=state.quality;$('quality').onchange=e=>{state.quality=e.target.value;applyQuality();save();};$('resumeBtn').onclick=closeDialogs;$('recoverBtn').onclick=()=>{recover();closeDialogs();};fullscreenControls.bind($('fullscreenBtn'),$('fullscreenHelp'),$('fullscreenMessage'),$('fullscreenLink'));$('worldInfoBtn').onclick=about;$('vehiclesBtn').onclick=vehiclesMenu;$('soundBtn').onclick=()=>{state.sound=!state.sound;if(state.sound)initAudio();$('soundBtn').textContent='Sound: '+(state.sound?'on':'off');};}
 function about(){const buildings=data?.buildings.length.toLocaleString('en-GB')||'88,000';showMenu('Padova, at street scale.','<div class="about-copy"><p><strong>A playable, stylised reconstruction of Padua.</strong> '+buildings+' mapped building footprints, real streets, waterways and parks across a roughly 13 × 13 km area. One metre in the map is one metre in the game.</p><p>Street geometry and building footprints come from <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap contributors</a> (ODbL). Building heights are estimated where the map has no height data. Facades and landmark details are interpretive. Terrain follows an offline, smoothed elevation grid without exaggeration. Bridge ramps and river levels are approximate. Water causes a fall and automatic recovery; bridges remain usable.</p><p>Elevation: <a href="https://github.com/tilezen/joerd/blob/master/docs/attribution.md" target="_blank" rel="noopener">Mapzen Terrain Tiles · Copernicus EU-DEM · USGS</a>. <a href="./data/terrain.json" download>Download the derived terrain data</a>.</p><p>Buildings with supplied GLB models replace their map extrusions automatically. The remaining city is still approximate; a complete photographic centre is not included.</p><p>This version has outdoor exploration, driving, traffic, courier jobs, checkpoint races and police pursuits. It does not contain photographic buildings, complex interiors, multiplayer or GTA’s full systems.</p><p>Best on a MacBook with a keyboard. Use <strong>Performance</strong> graphics if movement feels slow. Drag on the scene to look around; no mouse lock needed.</p><p>Built with <a href="https://threejs.org" target="_blank" rel="noopener">Three.js</a> · <a href="./data/padova.json" download>Download the derived map data</a> · <a href="./model-guide.html" target="_blank" rel="noopener">Add real buildings</a></p></div><div class="menu-actions"><button class="primary" id="aboutClose">Back</button></div>');$('aboutClose').onclick=closeDialogs;}
 function openMap(){if(!state.ready)return;taxiMapPick=false;setPaused(true);$('mapPlaces').innerHTML='<button class="primary" id="callTaxi">CHIAMA TAXI ABUSIVO</button><span class="eyebrow">IMPOSTA INDICATORE</span>'+PLACES.map((p,i)=>'<button data-place="'+i+'">'+p.name+'<small>'+p.tag+'</small></button>').join('')+'<button id="clearWaypoint">Clear waypoint</button>';$('callTaxi').onclick=()=>{closeDialogs();callTaxi();};$('mapPlaces').querySelectorAll('[data-place]').forEach(b=>b.onclick=()=>{state.waypoint=safeTarget(PLACES[Number(b.dataset.place)]);routeTo(state.waypoint);drawFullMap();closeDialogs();});$('clearWaypoint').onclick=()=>{state.waypoint=null;if(!state.mission)state.route=[];drawFullMap();};drawFullMap();$('mapDialog').showModal();}
-$('fullmap').onclick=e=>{const r=$('fullmap').getBoundingClientRect();const size=Math.min(r.width,r.height),offsetX=(r.width-size)/2,offsetY=(r.height-size)/2,px=e.clientX-r.left-offsetX,py=e.clientY-r.top-offsetY;if(px<0||py<0||px>size||py>size)return;if(state.mission){toast('Finish or cancel your activity to set a waypoint.');return;}const p={x:minBounds.x+px/size*minBounds.w,z:minBounds.z+py/size*minBounds.h,name:taxiMapPick?'Destinazione personalizzata':'Waypoint'};if(taxiMapPick){taxiMapPick=false;$('mapDialog').close();confirmTaxi(p);return;}state.waypoint=safeTarget(p);routeTo(state.waypoint);drawFullMap();};
+$('fullmap').onclick=e=>{
+ try{
+  const r=$('fullmap').getBoundingClientRect(),size=Math.min(r.width,r.height);if(!Number.isFinite(size)||size<=0||!Number.isFinite(e?.clientX)||!Number.isFinite(e?.clientY))throw new Error('Invalid map pointer/geometry');
+  const offsetX=(r.width-size)/2,offsetY=(r.height-size)/2,px=e.clientX-r.left-offsetX,py=e.clientY-r.top-offsetY;if(!Number.isFinite(px)||!Number.isFinite(py))throw new Error('Map conversion returned NaN');if(px<0||py<0||px>size||py>size)return;
+  if(state.mission){toast('Finish or cancel your activity to set a waypoint.');return;}
+  const p={x:minBounds.x+px/size*minBounds.w,z:minBounds.z+py/size*minBounds.h,name:taxiMapPick?'Destinazione personalizzata':'Waypoint'};if(!validTaxiDestination(p))throw new Error('Map click outside valid world bounds');
+  if(taxiMapPick){taxiMapPick=false;if($('mapDialog')?.open)$('mapDialog').close();confirmTaxi(p);return;}
+  const road=taxiFastRoad(p);if(!road)throw new Error('Waypoint has no bounded road node');state.waypoint={x:road.x,z:road.z,name:p.name};routeTo(state.waypoint);drawFullMap();closeDialogs();
+ }catch(error){taxiDestinationFailure(error,'map click');}
+};
 function refreshActorDetail(){const q=qualityFor(state.quality);for(const a of [...cars,...people,...cops])actorDetail(a,q.simple||a!==state.car&&dist(a,state)>(state.quality==='low'?110:260),!a.budgetSleeping&&(a===state.car||a.hostile||a.missionUnit||dist(a,state)<q.radius*.85));}
 function applyQuality(){const q=qualityFor(state.quality);world?.setQuality(state.quality);trams?.setQuality(state.quality);resolution.reset();if(renderer){renderer.setPixelRatio(Math.min(devicePixelRatio,q.pixelRatio));renderer.shadowMap.enabled=q.shadows;renderer.setSize(innerWidth,innerHeight);scene.fog.far=q.fog;camera.far=q.fog+150;camera.updateProjectionMatrix();}
  if(!state.ready)return;
