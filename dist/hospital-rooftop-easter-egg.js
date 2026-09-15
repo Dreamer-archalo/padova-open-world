@@ -46,4 +46,5 @@ function updateRiders(game,dt){const h=stateByGame.get(game);if(!h)return;for(le
 const previousPopulate=ModernGameplay.prototype.populate;
 if(!ModernGameplay.prototype.__hospitalRooftopEasterEgg){ModernGameplay.prototype.__hospitalRooftopEasterEgg=true;ModernGameplay.prototype.populate=function(...args){const out=previousPopulate.apply(this,args);install(this);return out;};const previousUpdate=ModernGameplay.prototype.update;ModernGameplay.prototype.update=function(dt){const out=previousUpdate.call(this,dt);updateRiders(this,dt);return out;};}
 
+// Public preview revision marker for the rooftop easter egg.
 export const HOSPITAL_ROOFTOP_EASTER_EGG={lat:45.403920,lon:11.887309,width:ROOF_W,length:ROOF_L,helipad:true,bikes:3,movingRiders:2,ramps:3};
