@@ -3,6 +3,7 @@ const [{Terrain},{applyCityData},{prepareGameplayMap},{SHOULDER_FEATHER}]=await 
   import('../dist/terrain.js'),import('../dist/districts.js'),import('../dist/gameplay-areas.js'),import('../dist/phase4-terrain-fixes.js')
 ]);
 await import('../dist/terrain-level-calibration.js');
+await import('../dist/road-surface-authority.js');
 const read=name=>JSON.parse(fs.readFileSync(new URL('../dist/data/'+name+'.json',import.meta.url)));
 const map=read('padova');applyCityData(map,read('city'));prepareGameplayMap(map);
 const terrain=new Terrain(read('terrain'),map,{modern:true});
