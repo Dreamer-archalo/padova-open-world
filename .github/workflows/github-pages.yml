@@ -27,13 +27,16 @@ jobs:
         run: |
           python3 scripts/fix-taxi-runtime.py
           node --check dist/game.js
+          node --check dist/core.js
+          node --check dist/taxi-service.js
+          node --check dist/taxi-map-ui.js
       - name: Persist taxi fix in main
         run: |
-          if ! git diff --quiet -- dist/game.js dist/index.html; then
+          if ! git diff --quiet -- dist/game.js dist/index.html dist/core.js dist/taxi-map-ui.js; then
             git config user.name "github-actions[bot]"
             git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-            git add dist/game.js dist/index.html
-            git commit -m "Fix taxi destination flow permanently [skip ci]"
+            git add dist/game.js dist/index.html dist/core.js dist/taxi-map-ui.js
+            git commit -m "Harden taxi destination flow against freezes [skip ci]"
             git push origin HEAD:main
           fi
       - name: Configure GitHub Pages
