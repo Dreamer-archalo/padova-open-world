@@ -17,7 +17,7 @@
     "test:guardrails": "node --max-old-space-size=3072 verify-motorway-access.mjs",
     "test:jumps": "node --max-old-space-size=3072 verify-vehicle-jumps.mjs",
     "test:multilane": "node verify-multilane.mjs",
-    "test:taxi": "node verify-taxi.mjs",
+    "test:taxi": "node --check dist/TaxiMenuController.js && node verify-taxi.mjs && node verify-taxi-fare-confirmation.mjs",
     "test:portello": "node --max-old-space-size=3072 verify-portello.mjs",
     "test:phase2-polish": "node --check dist/modern-gameplay.js && node --check dist/cruise-control.js && node verify-phase2-polish.mjs",
     "test:churches": "node --check dist/churches.js && node --check dist/city-details.js && node verify-churches.mjs",
