@@ -1,0 +1,26 @@
+name: Padova World Geometry Integrity
+
+on:
+  push:
+    branches:
+      - fix/global-road-reality-audit
+  pull_request:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+jobs:
+  geometry-integrity:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+      - name: Setup Node
+        uses: actions/setup-node@v6
+        with:
+          node-version: 22
+      - name: World surface authority and regressions
+        run: npm run test:world-integrity
