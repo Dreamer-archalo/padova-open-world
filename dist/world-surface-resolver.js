@@ -75,7 +75,7 @@ export class WorldSurfaceResolver{
   roadContext(x,z,referenceY=null,margin=0){return this.terrain.roads?.at(x,z,referenceY,margin)||null;}
   getRoadHeight(x,z,referenceY=null){const s=this.roadContext(x,z,referenceY,0);return s?s.height+SURFACE_CONFIG.roadSurfaceOffset:null;}
   getRoadDatum(x,z,referenceY=null){const s=this.roadContext(x,z,referenceY,0);return s?.height??null;}
-  getSidewalkHeight(road,x,z){const datum=road?this.expectedRoadDatum(road,x,z):this.getRoadDatum(x,z);return datum==null?null:datum+SURFACE_CONFIG.curbHeight;}
+  getSidewalkHeight(road,x,z){const datum=road?this.expectedRoadDatum(road,x,z):this.getRoadDatum(x,z);return datum==null?null:datum+SURFACE_CONFIG.roadRenderOffset+SURFACE_CONFIG.curbHeight;}
   getTramHeight(road,x,z,referenceY=null){
     if(road&&isStructuralRoad(road))return this.terrain.roads.sample(road,x,z)+SURFACE_CONFIG.roadSurfaceOffset;
     const datum=road?this.terrain.roads.sample(road,x,z):this.getPreciseHeight(x,z);return datum+SURFACE_CONFIG.tramEmbeddedOffset;
