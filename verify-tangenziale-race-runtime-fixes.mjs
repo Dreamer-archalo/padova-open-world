@@ -1,6 +1,7 @@
 import fs from 'node:fs';
 
 const fixes=fs.readFileSync(new URL('./dist/tangenziale-race-runtime-fixes.js',import.meta.url),'utf8');
+const polish=fs.readFileSync(new URL('./dist/tangenziale-race-v2-polish.js',import.meta.url),'utf8');
 const upgrades=fs.readFileSync(new URL('./dist/gameplay-upgrades.js',import.meta.url),'utf8');
 const second=fs.readFileSync(new URL('./dist/tangenziale-race-second.js',import.meta.url),'utf8');
 
@@ -15,7 +16,11 @@ const checks=[
  ['ramp locations reject bends bridges and tunnels',/rampSpotSafe/.test(fixes)&&/road\.tunnel\|\|road\.crossing\|\|road\.b/.test(fixes)&&/bend<\.14/.test(fixes)],
  ['ramp freeze recovery exists',/recoverRampFailure/.test(fixes)&&/Rampa ripristinata · gara continua/.test(fixes)],
  ['second race still has seven equal-spec racers',/AI_COUNT=6/.test(second)&&/g\.addCar\(r\.start\.x,r\.start\.z,r\.startYaw,false,true,'fulmine'\)/.test(second)&&/raceSkill:1/.test(second)],
- ['runtime fixes load after second race',/tangenziale-race-second\.js';\nimport '\.\/tangenziale-race-runtime-fixes\.js'/.test(upgrades)]
+ ['late second-race obstacles are moved out of the final section',/ENDGAME_OBSTACLE_MAX=\.72/.test(polish)&&/sanitizeSecondRaceEndgame/.test(polish)&&/relocateObstacle/.test(polish)],
+ ['last 1.2 km has deadlock recovery',/ENDGAME_DEADLOCK_WINDOW=1200/.test(polish)&&/recoverSecondRaceDeadlock/.test(polish)&&/Tratto finale ripristinato · gara continua/.test(polish)],
+ ['top minimap shows the whole race route and racer dots',/paintRaceOverview/.test(polish)&&/document\.getElementById\('minimap'\)/.test(polish)&&/racers=\[r\.playerCar,\.\.\.r\.ai\]/.test(polish)&&/path=r\.samples\.slice/.test(polish)],
+ ['race menu uses one hub instead of two separate entries',/tangenzialeRaceHubActivity/.test(polish)&&/tangenzialeRaceActivity','tangenzialeRaceSecondActivity/.test(polish)&&/Gare in tangenziale/.test(polish)&&/raceHubOne/.test(polish)&&/raceHubTwo/.test(polish)],
+ ['runtime fixes and v2 polish load after second race',/tangenziale-race-second\.js';\nimport '\.\/tangenziale-race-runtime-fixes\.js';\nimport '\.\/tangenziale-race-v2-polish\.js'/.test(upgrades)]
 ];
 
 let failed=0;
