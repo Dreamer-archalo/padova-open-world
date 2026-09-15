@@ -1,9 +1,8 @@
 import * as THREE from './vendor/three.module.js';
-import {SURFACE_CONFIG,isStructuralRoad,isTramRoad} from './world-surface-resolver.js';
+import {SURFACE_CONFIG,isStructuralSegment,isBridgeSegment,isTramRoad} from './world-surface-resolver.js';
 import {ensureCollisionManager} from './building-collision-manager.js';
 
 const finite=Number.isFinite;
-const merge=(a,b)=>Object.fromEntries(Object.keys(a).map(k=>[k,(a[k]||0)+(b[k]||0)]));
 
 export class WorldValidator{
   constructor(world){this.world=world;this.terrain=world.terrain;this.resolver=this.terrain.surfaceResolver;this.collisions=ensureCollisionManager(world);this.raycaster=new THREE.Raycaster();}
@@ -12,20 +11,20 @@ export class WorldValidator{
   validateRoads(key,report){
     const ch=this.world.chunks.get(key);if(!ch)return;const terrain=this.terrain,resolver=this.resolver;
     for(const seg of ch.roads||[]){const road=seg.road,dx=seg.b[0]-seg.a[0],dz=seg.b[1]-seg.a[1],len=Math.hypot(dx,dz);if(len<.01)continue;const nx=-dz/len,nz=dx/len;
-      for(const t of [0,.25,.5,.75,1]){const x=seg.a[0]+dx*t,z=seg.a[1]+dz*t,actual=terrain.roads.sample(road,x,z),expected=resolver.expectedRoadDatum(road,x,z);report.roadSamples++;
+      for(const t of [0,.25,.5,.75,1]){const x=seg.a[0]+dx*t,z=seg.a[1]+dz*t,actual=terrain.roads.sample(road,x,z),expected=resolver.expectedRoadDatum(road,x,z),resolved=resolver.roadSegmentAt(road,x,z),structural=!!resolved&&isStructuralSegment(resolved.s);report.roadSamples++;
         if(!finite(actual)||!finite(expected)){this.issue(report,'roadErrors',{road:road.n||road.k,x,z,reason:'nonfinite'});continue;}
         const err=Math.abs(actual-expected);report.maxHeightError=Math.max(report.maxHeightError,err);if(err>SURFACE_CONFIG.roadAlignmentTolerance)this.issue(report,'roadErrors',{road:road.n||road.k,x:+x.toFixed(1),z:+z.toFixed(1),error:+err.toFixed(3)});
-        if(!isStructuralRoad(road)){
+        if(!structural){
           const ground=resolver.getGroundHeight(x,z);if(ground>actual+SURFACE_CONFIG.surfaceEpsilon)this.issue(report,'buriedRoads',{road:road.n||road.k,x:+x.toFixed(1),z:+z.toFixed(1),penetration:+(ground-actual).toFixed(3)});
           if(!isTramRoad(road)&&!/footway|path|cycleway|pedestrian|steps/.test(road.k||''))for(const side of [-1,1]){const sx=x+nx*(road.w/2+.6)*side,sz=z+nz*(road.w/2+.6)*side,sidewalk=resolver.getSidewalkHeight(road,x,z),sideGround=resolver.getGroundHeight(sx,sz),curb=sidewalk-(actual+SURFACE_CONFIG.roadRenderOffset);if(curb<.10||curb>.20||sideGround>sidewalk+.05)this.issue(report,'sidewalkErrors',{road:road.n||road.k,x:+sx.toFixed(1),z:+sz.toFixed(1),curb:+curb.toFixed(3),groundDelta:+(sideGround-sidewalk).toFixed(3)});}
-        }else if((road.crossing||road.b||Number(road.layer)>0)&&terrain.waterDistance(x,z)<0){const clearance=actual-terrain.waterHeight(x,z);if(clearance<.5)this.issue(report,'bridgeErrors',{road:road.n||road.k,x:+x.toFixed(1),z:+z.toFixed(1),clearance:+clearance.toFixed(3)});}
+        }else if(resolved&&isBridgeSegment(resolved.s)&&terrain.waterDistance(x,z)<0){const clearance=actual-terrain.waterHeight(x,z);if(clearance<.5)this.issue(report,'bridgeErrors',{road:road.n||road.k,x:+x.toFixed(1),z:+z.toFixed(1),clearance:+clearance.toFixed(3)});}
         const physics=terrain.height(x,z,actual+SURFACE_CONFIG.roadSurfaceOffset),walkable=resolver.getWalkableSurfaceHeight(x,z,actual+SURFACE_CONFIG.roadSurfaceOffset),pErr=Math.abs(physics-walkable);report.maxPhysicsError=Math.max(report.maxPhysicsError,pErr);if(pErr>.025)this.issue(report,'physicsMismatch',{x:+x.toFixed(1),z:+z.toFixed(1),error:+pErr.toFixed(3)});
       }
     }
   }
   validateTram(key,report){
     const ch=this.world.chunks.get(key);if(!ch)return;const minX=ch.i*320,maxX=(ch.i+1)*320,minZ=ch.j*320,maxZ=(ch.j+1)*320;
-    for(const road of this.world.data?.tracks||[])for(let i=1;i<road.p.length;i++){const a=road.p[i-1],b=road.p[i],x=(a[0]+b[0])/2,z=(a[1]+b[1])/2;if(x<minX||x>maxX||z<minZ||z>maxZ)continue;const y=this.resolver.getTramHeight(road,x,z),natural=this.resolver.getPreciseHeight(x,z);if(!finite(y)){this.issue(report,'tramErrors',{x,z,reason:'nonfinite'});continue;}if(!isStructuralRoad(road)&&Math.abs(y-natural)>.12)this.issue(report,'tramErrors',{x:+x.toFixed(1),z:+z.toFixed(1),delta:+(y-natural).toFixed(3)});}
+    for(const road of this.world.data?.tracks||[])for(let i=1;i<road.p.length;i++){const a=road.p[i-1],b=road.p[i],x=(a[0]+b[0])/2,z=(a[1]+b[1])/2;if(x<minX||x>maxX||z<minZ||z>maxZ)continue;const y=this.resolver.getTramHeight(road,x,z),natural=this.resolver.getPreciseHeight(x,z),resolved=this.resolver.roadSegmentAt(road,x,z),structural=!!resolved&&isStructuralSegment(resolved.s);if(!finite(y)){this.issue(report,'tramErrors',{x,z,reason:'nonfinite'});continue;}if(!structural&&Math.abs(y-natural)>.12)this.issue(report,'tramErrors',{x:+x.toFixed(1),z:+z.toFixed(1),delta:+(y-natural).toFixed(3)});}
   }
   validateRivers(key,report){const ch=this.world.chunks.get(key);if(!ch)return;for(const r of ch.water||[]){const x=(r.a[0]+r.b[0])/2,z=(r.a[1]+r.b[1])/2,info=this.resolver.riverInfo(x,z);if(![info.waterHeight,info.bedHeight].every(finite)||info.bedHeight>info.waterHeight-.45)this.issue(report,'riverErrors',{x:+x.toFixed(1),z:+z.toFixed(1),water:info.waterHeight,bed:info.bedHeight});}}
   validateMesh(key,report){const root=this.world.loaded.get(key);if(!root)return;root.traverse(mesh=>{if(!mesh.isMesh||mesh.isInstancedMesh)return;const g=mesh.geometry,p=g?.attributes?.position;if(!p)return;report.testedVertices+=p.count;for(let i=0;i<p.count;i++)if(![p.getX(i),p.getY(i),p.getZ(i)].every(finite)){this.issue(report,'invalidGeometry',{mesh:mesh.name||mesh.type,vertex:i,reason:'nonfinite-position'});break;}const idx=g.index;if(idx)for(let i=0;i<idx.count;i++)if(idx.getX(i)<0||idx.getX(i)>=p.count){this.issue(report,'invalidGeometry',{mesh:mesh.name||mesh.type,index:i,value:idx.getX(i),reason:'invalid-index'});break;}const n=g.attributes.normal;if(n)for(let i=0;i<n.count;i++){const x=n.getX(i),y=n.getY(i),z=n.getZ(i),l=Math.hypot(x,y,z);if(!finite(l)||l<1e-5){this.issue(report,'invalidGeometry',{mesh:mesh.name||mesh.type,vertex:i,reason:'invalid-normal'});break;}}const sphere=g.boundingSphere;if(sphere&&(!finite(sphere.radius)||!sphere.center.toArray().every(finite)))this.issue(report,'invalidGeometry',{mesh:mesh.name||mesh.type,reason:'invalid-bounding-sphere'});const box=g.boundingBox;if(box&&![...box.min.toArray(),...box.max.toArray()].every(finite))this.issue(report,'invalidGeometry',{mesh:mesh.name||mesh.type,reason:'invalid-bounding-box'});});}
