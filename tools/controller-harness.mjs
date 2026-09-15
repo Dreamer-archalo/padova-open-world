@@ -38,6 +38,9 @@ import * as vehicleDamageModule from '../dist/vehicle-damage.js';
 import {BuildingModels,validateEntry} from '../dist/building-models.js';
 import {inspectGLB} from '../dist/model-format.js';
 import {GLTFLoader} from '../dist/vendor/GLTFLoader.js';
+import '../dist/phase4-terrain-fixes.js';
+import '../dist/terrain-level-calibration.js';
+import '../dist/road-surface-authority.js';
 
 const html=fs.readFileSync(new URL('../dist/index.html',import.meta.url),'utf8');
 const ids=[...html.matchAll(/\bid="([^"]+)"/g)].map(m=>m[1]);assert.equal(ids.length,new Set(ids).size);
