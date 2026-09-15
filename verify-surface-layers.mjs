@@ -8,7 +8,7 @@ import {prepareGameplayMap} from './dist/gameplay-areas.js';
 
 const road={w:6,k:'secondary'},segment={a:[0,-30],b:[0,30],profile:{road}};
 const index=new SpatialIndex(80);index.add(segment,-4,-30,4,30);
-const fake={elevation:()=>0,roads:{index,segmentHeight:()=>0,sample:()=>0}};
+const fake={elevation:()=>0,roads:{index,segmentHeight:()=>0,sample:()=>0,at:(x,z,_referenceY=null,margin=0)=>Math.abs(x)<=road.w/2+margin&&z>=-30-margin&&z<=30+margin?{road,height:0,d:Math.abs(x)}:null}};
 const poly=[[-16,-16],[16,-16],[16,16],[-16,16]];
 const cut=clearRoadSurface(poly,fake);
 for(let x=-2.9;x<3;x+=.2)for(let z=-15;z<16;z++)assert(!cut.some(p=>pointInside(x,z,p)));
