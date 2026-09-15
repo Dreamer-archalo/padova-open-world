@@ -9,6 +9,7 @@ import * as districtModule from './dist/districts.js';
 import * as trafficModule from './dist/traffic.js';
 import * as tramModule from './dist/tram.js';
 import * as incidentModule from './dist/incidents.js';
+import {qualityFor} from './dist/quality.js';
 import fs from 'node:fs';
 import vm from 'node:vm';
 import assert from 'node:assert/strict';
@@ -41,8 +42,8 @@ for(const hz of [30,60,120,144]){
 }
 const clock=new movement.FixedClock();let ticks=0;clock.advance(60,()=>ticks++);assert.equal(ticks,8,'tab resume must not trigger an unbounded catch-up');
 
-
-assert.equal(t.cars.filter(c=>!c.spec.aircraft&&!c.fixedSpawn).length,37);assert(t.cars.filter(c=>c.spec.aircraft).length>=2);assert.equal(t.people.length,40);
+const expectedTraffic=qualityFor(t.state.quality).traffic+1;
+assert.equal(t.cars.filter(c=>!c.spec.aircraft&&!c.fixedSpawn).length,expectedTraffic,'traffic population matches active quality profile plus the initial parked car');assert(t.cars.filter(c=>c.spec.aircraft).length>=2);assert.equal(t.people.length,qualityFor(t.state.quality).people);
 assert(t.player.userData.hips.children[0].position.y>.7,'leg pivots must be at the hips');
 assert(!core.collides(t.state.x,t.state.z,.36,t.world.collision),'centre spawn must be clear');
 t.toggleVehicle();assert.equal(t.state.mode,'car');assert.equal(t.state.y,t.terrain.height(t.state.x,t.state.z));
