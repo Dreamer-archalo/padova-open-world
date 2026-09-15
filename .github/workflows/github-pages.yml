@@ -6,7 +6,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write
   pages: write
   id-token: write
 
@@ -23,8 +23,9 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v6
-      - name: Validate production runtime
+      - name: Apply taxi road-snap and drop-off patch
         run: |
+          python3 scripts/fix-taxi-runtime.py
           node --check dist/game.js
           node --check dist/core.js
           node --check dist/taxi-service.js
@@ -36,6 +37,15 @@ jobs:
           node --check dist/Pathfinder.js
           node --check dist/TaxiSystem.js
           node --check dist/TaxiMenuController.js
+      - name: Persist taxi road-snap runtime in main
+        run: |
+          if ! git diff --quiet -- dist; then
+            git config user.name "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            git add dist
+            git commit -m "Persist taxi road snap and visible drop-off [skip ci]"
+            git push origin HEAD:main
+          fi
       - name: Configure GitHub Pages
         uses: actions/configure-pages@v5
       - name: Upload dist
