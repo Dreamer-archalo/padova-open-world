@@ -12,6 +12,7 @@ import './phase3-tram-fix.js';
 // mixed geometry/traffic monkey patches are superseded by WorldSurfaceResolver.
 import './phase3-polish.js';
 import './geometry-audit-runtime.js';
+import './world-integrity-runtime.js';
 import './gameplay-upgrades.js';
 import './historic-architecture-alignment.js';
 import './villa-spawn-alignment.js';
