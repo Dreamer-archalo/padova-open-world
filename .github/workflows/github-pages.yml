@@ -6,7 +6,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: write
+  contents: read
   pages: write
   id-token: write
 
@@ -23,9 +23,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v6
-      - name: Apply unified taxi menu refactor
+      - name: Validate production runtime
         run: |
-          python3 scripts/fix-taxi-runtime.py
           node --check dist/game.js
           node --check dist/core.js
           node --check dist/taxi-service.js
@@ -37,15 +36,6 @@ jobs:
           node --check dist/Pathfinder.js
           node --check dist/TaxiSystem.js
           node --check dist/TaxiMenuController.js
-      - name: Persist unified taxi menu runtime in main
-        run: |
-          if ! git diff --quiet -- dist; then
-            git config user.name "github-actions[bot]"
-            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-            git add dist
-            git commit -m "Persist non-blocking taxi menu integration [skip ci]"
-            git push origin HEAD:main
-          fi
       - name: Configure GitHub Pages
         uses: actions/configure-pages@v5
       - name: Upload dist
