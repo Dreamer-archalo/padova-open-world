@@ -1,4 +1,5 @@
 import './multiplayer-live.js';
+import './multiplayer-entry-hotfix.js';
 
 const speedEl=document.getElementById('speed');
 const vehicleName=document.getElementById('vehicleName');
