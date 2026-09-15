@@ -8,6 +8,7 @@ const [{Terrain},{applyCityData},{prepareGameplayMap},{LEVEL_PATCHES,SHOULDER_FE
  import('./dist/terrain.js'),import('./dist/districts.js'),import('./dist/gameplay-areas.js'),import('./dist/phase4-terrain-fixes.js')
 ]);
 await import('./dist/terrain-level-calibration.js');
+await import('./dist/road-surface-authority.js');
 const read=name=>JSON.parse(fs.readFileSync(new URL('./dist/data/'+name+'.json',import.meta.url)));
 const map=read('padova');applyCityData(map,read('city'));prepareGameplayMap(map);
 const terrain=new Terrain(read('terrain'),map,{modern:true});
@@ -19,7 +20,7 @@ const excluded=/motorway|trunk|footway|path|cycleway|steps|pedestrian|tram/;
 for(const profile of terrain.roads.profiles.values()){
  for(let i=1;i<profile.points.length;i++){
   const a=terrain.roads.nodes[profile.ids[i-1]],b=terrain.roads.nodes[profile.ids[i]],dx=profile.points[i][0]-profile.points[i-1][0],dz=profile.points[i][1]-profile.points[i-1][1],length=Math.hypot(dx,dz);if(length<.01)continue;
-  const grade=Math.abs(b.h-a.h)/length;report.roadSegments++;report.maxRoadGrade=Math.max(report.maxRoadGrade,grade);
+  const segment={a:profile.points[i-1],b:profile.points[i],ia:profile.ids[i-1],ib:profile.ids[i],profile,i:i-1},ah=terrain.roads.segmentHeight(segment,0),bh=terrain.roads.segmentHeight(segment,1),grade=Math.abs(bh-ah)/length;report.roadSegments++;report.maxRoadGrade=Math.max(report.maxRoadGrade,grade);
   const limit=profile.road.k==='steps'?.66:.061;if(grade>limit){report.gradeViolations++;if(badGrades.length<20)badGrades.push({road:profile.road.n||profile.road.k,grade:+grade.toFixed(4),x:+((a.x+b.x)/2).toFixed(1),z:+((a.z+b.z)/2).toFixed(1)});}
   if(profile.road.crossing||profile.road.tunnel||excluded.test(profile.road.k||''))continue;
   const mx=(a.x+b.x)/2,mz=(a.z+b.z)/2,yaw=Math.atan2(dx,dz),nx=Math.cos(yaw),nz=-Math.sin(yaw),deck=terrain.roads.sample(profile.road,mx,mz);
