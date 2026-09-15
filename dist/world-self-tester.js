@@ -15,7 +15,7 @@ export class WorldSelfTester{
     if(!world?.terrain||!key)return null;const root=world.loaded.get(key),healed=heal?this.healMeshMetadata(root):{healedVertices:0,healedMeshes:0},validator=new WorldValidator(world),report=validator.validateChunk(key,{mesh:true,seams:true,colliders:true});report.stage=stage;report.healedVertices=healed.healedVertices;report.healedMeshes=healed.healedMeshes;report.passed=report.passed&&report.invalidGeometry===0;world.__selfTestReports??=new Map();world.__selfTestReports.set(key,report);globalThis.__padovaLastSelfTest=report;return report;
   }
   static auditInitialArea(world,center,keys=[]){
-    const validator=new WorldValidator(world),chunks=(keys.length?keys:[...world.loaded.keys()]).map(key=>validator.validateChunk(key,{mesh:true,seams:true,colliders:true})),area=validator.validateArea(center,{radius:72,step:8,denseStep:2,raycast:true}),summary=combineValidationReports([...chunks,area]);summary.kind='boot';summary.chunkReports=chunks;summary.area=area;globalThis.__padovaBootValidation=summary;return summary;
+    const validator=new WorldValidator(world),chunks=(keys.length?keys:[...world.loaded.keys()]).map(key=>validator.validateChunk(key,{mesh:true,seams:true,colliders:true})),area=validator.validateArea(center,{radius:60,step:5,denseStep:1,raycast:true}),summary=combineValidationReports([...chunks,area]);summary.kind='boot';summary.chunkReports=chunks;summary.area=area;globalThis.__padovaBootValidation=summary;return summary;
   }
   static auditActiveArea(world,center){const validator=new WorldValidator(world),area=validator.validateArea(center,{radius:48,step:12,denseStep:3,raycast:true});globalThis.__padovaActiveAreaValidation=area;return area;}
 }
