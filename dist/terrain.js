@@ -40,12 +40,12 @@ export class Terrain {
   groundHeight(x,z){
     const prato=this.prato(x,z);if(prato)return this.pratoHeight+(prato.canal?-3:0);
     let raw=this.elevation(x,z);
-    // Roads and the terrain beside them must form one continuous surface. The old
-    // 4 m blend was narrower than the rendered terrain tiles, so grass could cut
-    // through asphalt and leave vehicles visually floating over the ground.
-    const road=this.roads?.at(x,z,null,18),layer=Number(road?.road?.layer)||0,gradeSeparated=!!road&&(road.road.crossing||road.road.tunnel||layer!==0);
+    // Terrain tiles are 16 m wide, so the road influence must extend beyond a tile
+    // diagonal. This prevents an unsampled grass corner from interpolating through
+    // asphalt while retaining true grade separation for bridges and tunnels.
+    const road=this.roads?.at(x,z,null,28),layer=Number(road?.road?.layer)||0,gradeSeparated=!!road&&(road.road.crossing||road.road.tunnel||layer!==0);
     if(road&&!gradeSeparated){
-      const apron=Math.max(9,Math.min(18,road.road.w*1.5+4)),blend=1-smooth((road.d-road.road.w/2)/apron);
+      const apron=Math.max(18,Math.min(26,road.road.w*1.6+12)),blend=1-smooth((road.d-road.road.w/2)/apron);
       raw=raw*(1-blend)+(road.height-.015)*blend;
     }
     const d=this.waterDistance(x,z);if(this.modern&&road&&road.d<=road.road.w/2&&!gradeSeparated)return raw;if(d>10)return raw;const channel=this.waterHeight(x,z)-1.5;return channel+(Math.max(raw,this.waterHeight(x,z)+.8)-channel)*smooth((d+1)/11);
