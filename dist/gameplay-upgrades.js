@@ -8,6 +8,7 @@ import './tangenziale-race.js';
 import './tangenziale-race-polish.js';
 import './tangenziale-race-short-sprint.js';
 import './tangenziale-race-second.js';
+import './tangenziale-race-runtime-fixes.js';
 import './taxi-loading-guard.js';
 
 installPoliceAIHooks();
