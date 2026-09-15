@@ -22,6 +22,7 @@ const checks={
  cleanMotorwayMerges:roads.includes('!coarse&&!atJunction&&/motorway|trunk/'),
  roundaboutPedestrians:peds.includes('!roundabout&&(p.crossGoal||p.crossing')&&peds.includes('this.roundaboutFixed++'),
  roundaboutYield:traffic.includes('enteringRoundabout')&&traffic.includes('roundaboutRoad(other.road)'),
+ motorwayTwoLanes:traffic.includes("/motorway|trunk/.test(road?.k||'')&&w>=6.2")&&traffic.includes('Math.max(2,base)'),
  detailedTraffic:quality.includes("high:{label:'Detailed'")&&quality.includes('traffic:96'),
  fullNetworkAudit:audit.includes('for(const profile of terrain.roads.profiles.values())')&&audit.includes('maxRoadTerrainDelta')&&audit.includes('maxEdgeDelta'),
  wired:runtime.includes("import './road-reality-pass.js';")&&runtime.includes("import './road-reality-audit.js';")
