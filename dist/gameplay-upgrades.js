@@ -7,6 +7,7 @@ import {PoliceAI,installPoliceAIHooks} from './police-ai.js';
 import './tangenziale-race.js';
 import './tangenziale-race-polish.js';
 import './tangenziale-race-short-sprint.js';
+import './tangenziale-race-second.js';
 import './taxi-loading-guard.js';
 
 installPoliceAIHooks();
