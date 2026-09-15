@@ -2,15 +2,11 @@ import {CityWorld} from './world.js';
 import {Terrain} from './terrain.js';
 import {modernFootprints} from './modern-map.js';
 import {HOME} from './gameplay-areas.js';
+import {WorldSelfTester} from './world-self-tester.js';
 
 const debug=globalThis.__padovaLoaderDebug||{mark:message=>{const el=document.getElementById('initialLoaderStatus');if(el)el.textContent=message;},fail:(kind,error)=>console.error(kind,error)};
 debug.mark('initial-loader.js caricato · inizializzazione loader…');
 
-// CityWorld used to synchronously carve every one of the ~88k building footprints
-// and query road/water-aware ground heights before the first frame. That work is
-// now deferred to streamed chunks. During bootstrap groundHeight is deliberately
-// the cheap natural DEM lookup; full road/water blending is restored before any
-// mandatory spawn chunk is generated.
 globalThis.__padovaFastStartup=true;
 const fullGroundHeight=Terrain.prototype.groundHeight;
 if(!Terrain.prototype.__padovaFastGround){
@@ -21,8 +17,6 @@ if(!Terrain.prototype.__padovaFastGround){
  };
 }
 
-// Prepare expensive road/building clipping lazily, once per visible chunk rather
-// than once globally. The generator remains time-sliced by the normal loader.
 const fullBuildStageSteps=CityWorld.prototype.buildStageSteps;
 if(!CityWorld.prototype.__padovaLazyFootprints){
  CityWorld.prototype.__padovaLazyFootprints=true;
@@ -44,9 +38,6 @@ const nextFrame=()=>new Promise(resolve=>requestAnimationFrame(()=>resolve()));
 
 function createOverlayUI(){
  const overlay=document.getElementById('initialLoader'),bar=document.getElementById('initialLoaderBar'),percent=document.getElementById('initialLoaderPercent'),status=document.getElementById('initialLoaderStatus'),legacyBar=document.getElementById('loadingBar'),legacyText=document.getElementById('loadingText');
- // The map is loaded only after the user presses #playBtn. Keeping this overlay
- // visible before that click while cancelling the same click caused a permanent
- // 0% deadlock. Hide it until the user really starts init().
  if(overlay)overlay.hidden=true;
  let gateActive=false,lastPercent=0;
  const show=(text='Avvio caricamento città…')=>{if(overlay){overlay.hidden=false;overlay.classList.remove('initial-loader-done','initial-loader-error');}if(status&&text)status.textContent=text;};
@@ -57,6 +48,7 @@ function createOverlayUI(){
   show,
   begin(){show('Generazione area iniziale · 9 chunk · 18 stadi');gateActive=true;paint(Math.max(lastPercent,BOOTSTRAP_SHARE),'Generazione area iniziale · 9 chunk · 18 stadi');},
   update({completed,totalStages,current,stage}){show();const p=BOOTSTRAP_SHARE+(completed/Math.max(1,totalStages))*(100-BOOTSTRAP_SHARE),label=stage==='detail'?'DETTAGLIO':stage==='core'?'BASE':'COMPLETO';paint(p,`Chunk ${current}/9 · ${label} · stadi ${completed}/${totalStages}`);},
+  validating(){paint(99,'Verifica geometria, collisioni e superfici iniziali…');},
   ready(){paint(100,'Città pronta');document.documentElement.dataset.initialWorldReady='true';if(overlay){overlay.classList.add('initial-loader-done');setTimeout(()=>overlay.hidden=true,260);}},
   fail(error){show('ERRORE NEL LOADER');debug.fail('INITIAL LOADER',error?.stack||error?.message||error);if(status)status.textContent='ERRORE NEL LOADER';if(overlay)overlay.classList.add('initial-loader-error');console.error('[Padova initial loader]',error);}
  };
@@ -102,7 +94,9 @@ export class GameLoaderManager{
     this.onProgress({completed,totalStages,current,stage:'detail'});await this.buildStage(key,'detail',startedAt);completed++;this.onProgress({completed,totalStages,current,stage:'detail'});await nextFrame();
    }
    const invalid=keys.filter(key=>!this.chunkState(key).detail);if(invalid.length)throw new Error('Initial chunks missing from scene: '+invalid.join(', '));
-   this.done=true;return {keys,completed,totalStages,percent:100};
+   sharedUI.validating();await nextFrame();const validation=WorldSelfTester.auditInitialArea(this.world,{x,z},keys),blocking=(validation.invalidGeometry||0)+(validation.missingSurfaces||0)+(validation.physicsMismatch||0);
+   if(blocking)throw new Error('Initial world validation failed: '+JSON.stringify({invalidGeometry:validation.invalidGeometry,missingSurfaces:validation.missingSurfaces,physicsMismatch:validation.physicsMismatch,maxHeightError:validation.maxHeightError,maxPhysicsError:validation.maxPhysicsError}));
+   this.done=true;return {keys,completed,totalStages,percent:100,validation};
   })();
   this.promise=task;
   task.catch(()=>{if(this.promise===task){this.started=false;this.promise=null;}});
@@ -125,15 +119,11 @@ if(!CityWorld.prototype.__initialLoaderManager){
  debug.mark('Loader agganciato · pronto ad avviare il caricamento');
 }
 
-// Show the blocking overlay when the user actually starts init(), but DO NOT
-// cancel this click: game.js owns #playBtn and needs it to start downloading data.
 document.getElementById('playBtn')?.addEventListener('click',()=>{
  if(document.documentElement.dataset.initialWorldReady==='true')return;
  sharedUI.show('Avvio caricamento dati città…');
 },true);
 
-// Only entry into the 3D world is gated. The initial "Carica la mappa" action
-// must always be allowed or init() can never run.
 document.addEventListener('click',event=>{
  if(document.documentElement.dataset.initialWorldReady==='true')return;
  if(event.target.closest?.('#confirmCharacter')){event.preventDefault();event.stopImmediatePropagation();}
