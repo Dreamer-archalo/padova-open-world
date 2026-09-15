@@ -84,7 +84,9 @@ function ensureHighwayTraffic(game){
  const target=HIGHWAY_TRAFFIC_TARGET[state.quality]??11,nearby=game.cars.filter(c=>ambientCar(c,state)&&c.mesh?.visible&&/motorway|trunk/.test(c.road?.k||'')&&dist(c,state)>55&&dist(c,state)<720&&Math.abs((c.y||0)-state.y)<6);
  let missing=Math.max(0,target-nearby.length);if(!missing)return;
  const segments=game.graph.index.near(state.x,state.z,720).filter(highwaySegment);if(!segments.length)return;
- const pool=game.cars.filter(c=>ambientCar(c,state)&&(!c.mesh?.visible||dist(c,state)>620)).sort((a,b)=>(a.mesh?.visible?1:0)-(b.mesh?.visible?1:0));
+ // Never make an on-screen car vanish to fill the motorway. Recycle only actors
+ // that are already hidden or well beyond the normal traffic simulation radius.
+ const pool=game.cars.filter(c=>ambientCar(c,state)&&(!c.mesh?.visible||dist(c,state)>900)).sort((a,b)=>(a.mesh?.visible?1:0)-(b.mesh?.visible?1:0));
  for(let i=0;i<pool.length&&missing>0;i++)for(let j=0;j<Math.min(segments.length,18)&&missing>0;j++)if(placeHighwayCar(game,pool[i],segments[(i*7+j*11)%segments.length],i*17+j)){missing--;break;}
 }
 function decoratePoliceUnit(c){
