@@ -28,9 +28,12 @@ export function* modernRoadSteps(batch,segments,terrain,{coarse=false}={}){
    if(road.crossing&&!ped){const t0=height(a)+.025,t1=height(b)+.025,thickness=.58;if([t0,t1].every(Number.isFinite))for(const side of [-1,1]){const off=side*(road.w/2+.3),ax=a[0]+nx*off,az=a[1]+nz*off,bx=b[0]+nx*off,bz=b[1]+nz*off;batch.quad([ax,t0,az],[bx,t1,bz],[bx,t1-thickness,bz],[ax,t0-thickness,az],colour('#8f918b'));}}
    if(!coarse&&!ped&&!rail&&!atJunction){
     for(const side of [-1,1]){
-     const edge=side*(road.w/2-.25);section(a,b,edge-.055,edge+.055,.086,colour('#d7d4c2'));
+     const edge=side*(road.w/2-.25);section(a,b,edge-.055,edge+.055,.082,colour('#d7d4c2'));
      if(urban&&!road.crossing){const off=side*(road.w/2+.65),x=mid[0]+nx*off,z=mid[1]+nz*off;
-      if(!terrain.roads.candidates(x,z).some(c=>c.road!==road)&&terrain.waterDistance(x,z)>1)section(a,b,Math.min(side*road.w/2,side*(road.w/2+1.2)),Math.max(side*road.w/2,side*(road.w/2+1.2)),.13,colour('#b7b5a8'));
+      // The old +13 cm sidewalk slab could become a wall when a road profile
+      // disagreed with the terrain. Keep the generated pavement essentially
+      // flush with asphalt; real authored steps/curbs remain independent.
+      if(!terrain.roads.candidates(x,z).some(c=>c.road!==road)&&terrain.waterDistance(x,z)>1)section(a,b,Math.min(side*road.w/2,side*(road.w/2+1.2)),Math.max(side*road.w/2,side*(road.w/2+1.2)),.083,colour('#b7b5a8'));
      }
     }
     if(road.w>=6.5&&!road.oneway&&Math.floor((i/count*length)/5)%2===0)section(a,b,-.06,.06,.09,colour('#d7d4c2'));
