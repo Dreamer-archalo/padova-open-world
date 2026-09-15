@@ -13,6 +13,9 @@ export const DISTRICTS={
  countryside:{label:'CAMPAGNA',traffic:.22,people:.12,trees:2.2,vehicles:['utility','wagon','sedan'],colors:['#7c8964','#85745d','#899798']},
  green:{label:'AREA VERDE',traffic:.1,people:1,trees:3,vehicles:['scooter','compact'],colors:['#b95a58','#5e94b0','#9d9681']},
  wild:{label:'MARGINE SELVAGGIO',traffic:.08,people:.07,trees:5,vehicles:['utility','wagon'],colors:['#6f7967','#8a7864']},
+ // Pedestrians are never spawned from roundabout carriageways or their centre-side
+ // offset. Traffic still uses them normally.
+ roundabout:{label:'ROTONDA',traffic:1.25,people:0,trees:.25,vehicles:['sedan','compact','wagon','scooter'],colors:['#657879']},
  // Tangenziali and trunk roads should be visibly busier than ordinary urban streets.
  // The population pool is still bounded by graphics quality; this weight mainly
  // attracts the available cars to the high-capacity network instead of side roads.
@@ -27,7 +30,7 @@ export class Districts{
   for(const r of map.roads)for(let i=1;i<r.p.length;i++){const a=r.p[i-1],b=r.p[i];this.roads.add({a,b,road:r},Math.min(a[0],b[0])-r.w,Math.min(a[1],b[1])-r.w,Math.max(a[0],b[0])+r.w,Math.max(a[1],b[1])+r.w);}
   const brown=(map.landuse||[]).find(a=>a.k==='brownfield'&&Math.hypot(...a.p[0])>2600);this.wild=brown?{x:brown.p[0][0],z:brown.p[0][1]}:{x:-4300,z:-3400};
  }
- at(x,z,road=null){if(road&&['motorway','trunk','motorway_link','trunk_link'].includes(road.k))return 'motorway';if(dist({x,z},this.wild)<380)return 'wild';
+ at(x,z,road=null){if(road&&(road.junction==='roundabout'||road.roundabout))return 'roundabout';if(road&&['motorway','trunk','motorway_link','trunk_link'].includes(road.k))return 'motorway';if(dist({x,z},this.wild)<380)return 'wild';
   const uses=[...this.index.near(x,z)].filter(a=>pointInside(x,z,a.p));
   if(uses.some(a=>a.k==='industrial'))return 'industrial';
   if(Math.hypot(x*.95,(z-100)*.85)<1150)return 'historic';
