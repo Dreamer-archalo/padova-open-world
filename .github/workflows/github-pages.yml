@@ -23,20 +23,22 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v6
-      - name: Apply permanent taxi fail-safe
+      - name: Apply taxi runtime safeguards
         run: |
           python3 scripts/fix-taxi-runtime.py
           node --check dist/game.js
           node --check dist/core.js
           node --check dist/taxi-service.js
           node --check dist/taxi-map-ui.js
-      - name: Persist taxi fix in main
+          if [ -f dist/InputManager.js ]; then node --check dist/InputManager.js; fi
+          if [ -f dist/TaxiDispatcher.js ]; then node --check dist/TaxiDispatcher.js; fi
+      - name: Persist generated runtime changes in main
         run: |
-          if ! git diff --quiet -- dist/game.js dist/index.html dist/core.js dist/taxi-map-ui.js; then
+          if ! git diff --quiet -- dist; then
             git config user.name "github-actions[bot]"
             git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-            git add dist/game.js dist/index.html dist/core.js dist/taxi-map-ui.js
-            git commit -m "Harden taxi destination flow against freezes [skip ci]"
+            git add dist
+            git commit -m "Persist taxi runtime safeguards [skip ci]"
             git push origin HEAD:main
           fi
       - name: Configure GitHub Pages
