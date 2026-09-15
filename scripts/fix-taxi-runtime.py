@@ -7,20 +7,10 @@ INDEX = Path('dist/index.html')
 source = GAME.read_text(encoding='utf-8')
 original = source
 
-if "import {TaxiMenuController}" not in source:
-    anchor = "import {TaxiSystem} from './TaxiSystem.js';\n"
-    if anchor not in source:
-        raise SystemExit('Taxi menu patch failed: TaxiSystem import anchor missing')
-    source = source.replace(anchor, anchor + "import {TaxiMenuController} from './TaxiMenuController.js';\n", 1)
-
-source = source.replace(
-    "taxiDriverNPC=null,taxiSystem=null;",
-    "taxiDriverNPC=null,taxiSystem=null,taxiMenuController=null;",
-    1,
-)
-
-update_taxi_pattern = r"function updateTaxi\(dt\)\{.*?\n\}\nfunction boardTaxiAndChoose"
-update_taxi_replacement = """function updateTaxi(dt){
+# 1) Extend the physical taxi AI with a visible departure phase after drop-off.
+if "taxi.phase==='departing'" not in source:
+    pattern = r"function updateTaxi\(dt\)\{.*?\n\}\nfunction boardTaxiAndChoose"
+    replacement = """function updateTaxi(dt){
  if(!taxi)return;taxiDriverNPC?.update(state.elapsed);updateTaxiHazards();
  if(taxi.phase==='departing'){
   try{
@@ -42,12 +32,14 @@ update_taxi_replacement = """function updateTaxi(dt){
  }catch(error){console.warn('[Taxi] physical AI recovered from error',error);const plan=taxiDispatcher?.planDispatch(state);if(plan){Object.assign(taxi.car,{x:plan.spawn.x,z:plan.spawn.z,y:plan.spawn.y,yaw:plan.spawn.yaw,speed:0,parked:false});taxi.target=plan.target;taxi.path=plan.path;taxi.index=Math.min(1,plan.path.length-1);poseVehicle(taxi.car);}else{taxiDestinationFailure(error,'physical taxi AI');}}
 }
 function boardTaxiAndChoose"""
-source, update_count = re.subn(update_taxi_pattern, update_taxi_replacement, source, count=1, flags=re.S)
-if update_count != 1 and "taxi.phase==='departing'" not in source:
-    raise SystemExit(f'Taxi departure patch failed: updateTaxi replacements={update_count}')
+    source, count = re.subn(pattern, replacement, source, count=1, flags=re.S)
+    if count != 1:
+        raise SystemExit(f'Taxi departure patch failed: updateTaxi replacements={count}')
 
-apply_pattern = r"function applyTaxiDestination\(destination,road,price,\{fallback=false\}=\{\}\)\{.*?\n\}\nasync function beginTaxiTrip"
-apply_replacement = """function taxiDropoffPoint(c){
+# 2) At destination, drop the player beside the taxi and let the taxi drive away.
+if 'function taxiDropoffPoint(c)' not in source:
+    pattern = r"function applyTaxiDestination\(destination,road,price,\{fallback=false\}=\{\}\)\{.*?\n\}\nasync function executeTaxiTransition"
+    replacement = """function taxiDropoffPoint(c){
  const sideDistance=c.spec.width/2+1.35;
  for(const side of [1,-1]){const x=c.x+Math.cos(c.yaw)*sideDistance*side,z=c.z-Math.sin(c.yaw)*sideDistance*side,y=terrain.height(x,z,c.y);if(terrain.dry(x,z,.45,y)&&!collides(x,z,.42,world.collision,y))return {x,z,y};}
  const backDistance=c.spec.length/2+1.6,x=c.x-Math.sin(c.yaw)*backDistance,z=c.z-Math.cos(c.yaw)*backDistance,y=terrain.height(x,z,c.y);return {x,z,y};
@@ -67,13 +59,16 @@ function applyTaxiDestination(destination,road,price,{fallback=false}={}){
  const departure=planTaxiDeparture(c);if(departure){taxi.phase='departing';taxi.target=departure.target;taxi.path=departure.path;taxi.index=Math.min(1,departure.path.length-1);taxi.blocked=0;taxi.departAt=state.elapsed+.9;taxi.departUntil=state.elapsed+14;setTaxiHazards(true);}else{taxi.phase='gone';c.mesh.visible=false;c.parked=true;setTaxiHazards(false);}
  toast(fallback?'Arrivo completato su strada. Il taxi riparte.':'Sei arrivato. Il taxi ti ha lasciato a bordo strada e riparte.',5);
 }
-async function beginTaxiTrip"""
-source, apply_count = re.subn(apply_pattern, apply_replacement, source, count=1, flags=re.S)
-if apply_count != 1 and 'function taxiDropoffPoint(c)' not in source:
-    raise SystemExit(f'Taxi drop-off patch failed: applyTaxiDestination replacements={apply_count}')
+async function executeTaxiTransition"""
+    source, count = re.subn(pattern, replacement, source, count=1, flags=re.S)
+    if count != 1:
+        raise SystemExit(f'Taxi drop-off patch failed: applyTaxiDestination replacements={count}')
 
-menu_block = r"async function beginTaxiTrip\(destination,road,price\)\{.*?\n\}\nfunction confirmTaxi\(destination\)\{.*?\n\}\nfunction openTaxiMap\(\)\{.*?\n\}\nfunction openTaxiMenu\(force=false\)\{.*?\n\}\nfunction beginMission"
-menu_replacement = """async function executeTaxiTransition({targetCoords,meta={}}){
+# 3) Resolve the clicked/list destination to a nearby drivable road only AFTER
+# TaxiMenuController has already closed the UI and yielded 50ms to the browser.
+if 'maxRadius:320,maxCandidates:2500,maxMs:18' not in source:
+    pattern = r"async function executeTaxiTransition\(\{targetCoords,meta=\{\}\}\)\{.*?\n\}\nfunction confirmTaxi"
+    replacement = """async function executeTaxiTransition({targetCoords,meta={}}){
  if(!taxi?.car||state.car!==taxi.car||!validTaxiDestination(targetCoords))throw new Error('Invalid static taxi destination or player is not aboard');
  const destination={x:targetCoords.x,y:Number.isFinite(targetCoords.y)?targetCoords.y:0,z:targetCoords.z,yaw:Number.isFinite(targetCoords.yaw)?targetCoords.yaw:state.yaw,name:meta.name||targetCoords.name||'Destinazione personalizzata',tag:meta.tag||''};
  await new Promise(resolve=>setTimeout(resolve,0));
@@ -83,70 +78,21 @@ menu_replacement = """async function executeTaxiTransition({targetCoords,meta={}
  if(!taxiSystem)throw new Error('TaxiSystem not initialized');
  await taxiSystem.travel({targetCoords:arrival,destination,price,yaw:arrival.yaw??state.yaw});
 }
-function confirmTaxi(destination,event=null){
- try{
-  if(!validTaxiDestination(destination))throw new Error('Destination coordinates are invalid');
-  if(!taxiMenuController)throw new Error('TaxiMenuController not initialized');
-  taxiMenuController.startTaxiTransition({x:destination.x,y:Number.isFinite(destination.y)?destination.y:0,z:destination.z,yaw:Number.isFinite(destination.yaw)?destination.yaw:state.yaw,name:destination.name},{source:'legacy',name:destination.name||'Destinazione',tag:destination.tag||''},event);
- }catch(error){taxiDestinationFailure(error,'destination selection');}
-}
-function openTaxiMap(){
- try{if(!taxi?.car||state.car!==taxi.car)throw new Error('Player is not aboard taxi');if(!taxiMenuController)throw new Error('TaxiMenuController not initialized');taxiMenuController.openMap();}catch(error){taxiDestinationFailure(error,'open taxi map');}
-}
-function openTaxiMenu(force=false){
- try{
-  if(!taxi?.car||state.car!==taxi.car||state.mode!=='car'||(!force&&taxi.phase!=='boarded'&&taxi.phase!=='at-destination'))throw new Error('Enter the taxi before choosing a destination');
-  if(!taxiMenuController)throw new Error('TaxiMenuController not initialized');
-  const destinations=taxiDestinations(PLACES,HOME,AIRPORT_GATE).filter(validTaxiDestination);taxi.phase='boarded';$('menuTitle').textContent='Dove vuoi andare?';taxiMenuController.openList(destinations);
- }catch(error){taxiDestinationFailure(error,'open taxi menu');}
-}
-function beginMission"""
-source, count = re.subn(menu_block, menu_replacement, source, count=1, flags=re.S)
-if count != 1 and 'async function executeTaxiTransition' not in source:
-    raise SystemExit(f'Taxi menu patch failed: menu block replacements={count}')
-
-source = source.replace(
-    "if(taxiMapPick){taxiMapPick=false;if($('mapDialog')?.open)$('mapDialog').close();confirmTaxi(p);return;}",
-    "if(taxiMapPick){if(!taxiMenuController)throw new Error('TaxiMenuController not initialized');taxiMenuController.onSelectFromMap(p.x,p.z,e);return;}",
-    1,
-)
-
-old_init = """taxiPathfinder=new TaxiPathfinder({graph,terrain,bounds:minBounds});
- taxiDispatcher=new TaxiDispatcher({graph,terrain,collision:world.collision,taxiSpec:VEHICLES.taxi,vehicleBlocked,pathfinder:taxiPathfinder});
- taxiLoadingOverlay=new TaxiLoadingOverlay({overlay:$('taxiLoading'),meme:$('taxiMeme'),status:$('taxiLoadingStatus'),assetTimeoutMs:1000});
- taxiDriverNPC=new TaxiDriverNPC({scene,createPerson,THREE,terrain,collision:world.collision,collides});
- taxiSystem=new TaxiSystem({overlay:taxiLoadingOverlay,pathfinder:taxiPathfinder,inputManager,timeoutMs:3000,onResolved:({destination,road,price})=>applyTaxiDestination(destination,road,price),onFallback:({destination,road,price,error})=>{const fallback=road||taxiPathfinder.fallbackPoint(destination,state.yaw);if(!fallback)throw error||new Error('Taxi fallback point unavailable');applyTaxiDestination(destination,fallback,price,{fallback:true});},onDriverReady:()=>taxiDriverNPC.ensure(),onFinally:()=>{document.body.classList.remove('taxi-transit');if($('taxiLoading'))$('taxiLoading').hidden=true;setPaused(false);keys.clear();}});
- signals=new TrafficSignals(graph,data.signals);"""
-new_init = """taxiPathfinder=new TaxiPathfinder({graph,terrain,bounds:minBounds});
- taxiDispatcher=new TaxiDispatcher({graph,terrain,collision:world.collision,taxiSpec:VEHICLES.taxi,vehicleBlocked,pathfinder:taxiPathfinder});
- taxiLoadingOverlay=new TaxiLoadingOverlay({overlay:$('taxiLoading'),meme:$('taxiMeme'),status:$('taxiLoadingStatus'),assetTimeoutMs:1000});
- taxiDriverNPC=new TaxiDriverNPC({scene,createPerson,THREE,terrain,collision:world.collision,collides});
- taxiSystem=new TaxiSystem({inputManager,timeoutMs:3000,executeTeleport:({targetCoords,destination,price})=>applyTaxiDestination(destination,targetCoords,price),forcePlayerPosition:({targetCoords,destination,price,error})=>{const fallback=taxiPathfinder?.nearestRoad(targetCoords,{maxRadius:520,maxCandidates:3500,maxMs:30});if(!fallback)throw error||new Error('Taxi fallback road unavailable');applyTaxiDestination(destination,fallback,price,{fallback:true});},onFinally:()=>{document.body.classList.remove('taxi-transit');if($('taxiLoading'))$('taxiLoading').hidden=true;setPaused(false);keys.clear();}});
- taxiMenuController=new TaxiMenuController({document,menu:$('menu'),mapDialog:$('mapDialog'),menuContent:$('menuContent'),mapPlaces:$('mapPlaces'),fullMap:$('fullmap'),overlay:$('taxiLoading'),status:$('taxiLoadingStatus'),inputManager,bounds:minBounds,setPaused,drawFullMap,getFare:coords=>taxiFare(taxi.car,coords),executeTransition:executeTaxiTransition,onError:(error,context)=>taxiDestinationFailure(error,context),onMapPickingChange:value=>{taxiMapPick=value;},delayMs:50});
- signals=new TrafficSignals(graph,data.signals);"""
-if old_init in source:
-    source = source.replace(old_init, new_init, 1)
-elif 'taxiMenuController=new TaxiMenuController' not in source:
-    raise SystemExit('Taxi menu patch failed: init block not found')
+function confirmTaxi"""
+    source, count = re.subn(pattern, replacement, source, count=1, flags=re.S)
+    if count != 1:
+        raise SystemExit(f'Taxi road-snap patch failed: executeTaxiTransition replacements={count}')
 
 required = [
-    "import {TaxiMenuController}",
-    "async function executeTaxiTransition",
-    "taxiMenuController.openList(destinations)",
-    "taxiMenuController.onSelectFromMap(p.x,p.z,e)",
-    "taxiMenuController=new TaxiMenuController",
-    "function taxiDropoffPoint(c)",
     "taxi.phase='departing'",
-    "maxRadius:320",
+    "function taxiDropoffPoint(c)",
+    "function planTaxiDeparture(c)",
+    "maxRadius:320,maxCandidates:2500,maxMs:18",
+    "await taxiSystem.travel({targetCoords:arrival",
 ]
 for token in required:
     if token not in source:
         raise SystemExit('Taxi patch failed: missing token ' + token)
-
-click_region = source[source.find('function confirmTaxi'):source.find('function beginMission')]
-for forbidden in ['resolveDestination(', 'taxiFastRoad(', 'roadRoute(', 'findTaxiRoad(']:
-    if forbidden in click_region:
-        raise SystemExit('Taxi menu patch failed: blocking call remains in click handlers: ' + forbidden)
 
 if source != original:
     GAME.write_text(source, encoding='utf-8')
