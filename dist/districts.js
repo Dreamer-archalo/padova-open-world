@@ -13,7 +13,10 @@ export const DISTRICTS={
  countryside:{label:'CAMPAGNA',traffic:.22,people:.12,trees:2.2,vehicles:['utility','wagon','sedan'],colors:['#7c8964','#85745d','#899798']},
  green:{label:'AREA VERDE',traffic:.1,people:1,trees:3,vehicles:['scooter','compact'],colors:['#b95a58','#5e94b0','#9d9681']},
  wild:{label:'MARGINE SELVAGGIO',traffic:.08,people:.07,trees:5,vehicles:['utility','wagon'],colors:['#6f7967','#8a7864']},
- motorway:{label:'TANGENZIALE',traffic:1.6,people:0,trees:.7,vehicles:['sedan','truck','wagon','sport'],colors:['#657879']}
+ // Tangenziali and trunk roads should be visibly busier than ordinary urban streets.
+ // The population pool is still bounded by graphics quality; this weight mainly
+ // attracts the available cars to the high-capacity network instead of side roads.
+ motorway:{label:'TANGENZIALE',traffic:3.2,people:0,trees:.7,vehicles:['sedan','truck','wagon','sport'],colors:['#657879']}
 };
 export class Districts{
  constructor(map){this.map=map;this.index=new SpatialIndex(200);this.buildings=new SpatialIndex(60);this.roads=new SpatialIndex(80);this.cache=new Map();
