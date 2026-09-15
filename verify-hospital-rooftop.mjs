@@ -15,7 +15,8 @@ const checks=[
  ['three stunt ramps exist',/ramps=\[addRoofRamp[\s\S]*addRoofRamp[\s\S]*addRoofRamp/.test(source)],
  ['roof obstacles and parapet collision exist',/addObstacle/.test(source)&&/addParapet/.test(source)&&/hospitalRoofObstacle:true/.test(source)],
  ['module is loaded by gameplay runtime',/hospital-rooftop-easter-egg\.js/.test(upgrades)],
- ['module installs from populate and updates riders',/__hospitalRooftopEasterEgg/.test(source)&&/ModernGameplay\.prototype\.populate/.test(source)&&/ModernGameplay\.prototype\.update/.test(source)]
+ ['module installs from populate and updates riders',/__hospitalRooftopEasterEgg/.test(source)&&/ModernGameplay\.prototype\.populate/.test(source)&&/ModernGameplay\.prototype\.update/.test(source)],
+ ['public preview revision contains rooftop feature',/Public preview revision marker/.test(source)]
 ];
 for(const [name,ok] of checks){console.log((ok?'PASS':'FAIL')+' '+name);assert.ok(ok,name);}
 console.log('PASS hospital rooftop easter egg');
