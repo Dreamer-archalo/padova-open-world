@@ -32,6 +32,6 @@
     "test:elevation-harmony": "node --max-old-space-size=3072 verify-elevation-harmony.mjs",
     "test:geometry-integrity": "node --check dist/surface-layers.js && node --check dist/modern-roads.js && node --check dist/vehicle-dynamics.js && node --check dist/phase4-terrain-fixes.js && node --check dist/geometry-audit-runtime.js && node verify-geometry-integrity.mjs && node --max-old-space-size=3072 verify-elevation-harmony.mjs",
     "test:initial-world": "node --check dist/streaming.js && node --check dist/initial-loader.js && node --check dist/terrain.js && node --check dist/surface-layers.js && node --check dist/modern-roads.js && node verify-initial-world.mjs",
-    "test:tangenziale-race": "node --check dist/tangenziale-race-rules.js && node --check dist/tangenziale-race.js && node --check dist/road-structures.js && node verify-tangenziale-race.mjs && node verify-tangenziale-race-e2e.mjs"
+    "test:tangenziale-race": "node --check dist/tangenziale-race-rules.js && node --check dist/tangenziale-race.js && node --check dist/tangenziale-race-short-course.js && node --check dist/road-structures.js && node verify-tangenziale-race.mjs && node verify-tangenziale-short-course.mjs && node verify-tangenziale-race-e2e.mjs"
   }
 }
