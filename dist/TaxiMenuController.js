@@ -261,7 +261,7 @@ export class TaxiMenuController {
 
   executeConfirmedTransition() {
     if (this.busy || !this.pending) return false;
-    const {targetCoords, meta} = this.pending;
+    const {targetCoords, meta, fare} = this.pending;
     this.pending = null;
     if (!this.validCoords(targetCoords)) {
       this.onError(new Error('Invalid confirmed taxi target'), 'confirmed destination');
@@ -271,16 +271,17 @@ export class TaxiMenuController {
     this.busy = true;
     this.lockPointerEvents();
     this.inputManager?.disable?.();
-    console.warn('[Taxi Step 1] Destinazione confermata dopo preventivo tariffa', targetCoords, meta.quotedFare);
+    console.warn('[Taxi Step 1] Destinazione confermata dopo preventivo tariffa', targetCoords, fare);
     this.closeAllTaxiUI();
     this.showFastFadeOverlay();
     console.warn('[Taxi Step 2] UI chiusa; rilascio del thread al browser');
 
     const target = {...targetCoords};
+    const confirmedMeta = {...meta, quotedFare: fare};
     this.transitionTimer = setTimeout(async () => {
       try {
         console.warn('[Taxi Step 3] Esecuzione transizione su coordinate statiche');
-        await this.executeTransition({targetCoords: target, meta});
+        await this.executeTransition({targetCoords: target, meta: confirmedMeta});
         console.warn('[Taxi Step 4] Transizione completata; controlli sbloccati');
       } catch (error) {
         console.error('[Taxi Error] Fallback coordinata diretta:', error);
