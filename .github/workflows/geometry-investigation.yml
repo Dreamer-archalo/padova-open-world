@@ -13,7 +13,9 @@ jobs:
     steps:
       - uses: actions/checkout@v6
       - name: Check diagnostic scripts
-        run: node --check verify-world-contact.mjs && node --check verify-world-edge.mjs
+        run: node --check verify-world-contact.mjs && node --check verify-world-edge.mjs && node --check verify-villa-location.mjs
+      - name: Survey dry land near Villa Treves
+        run: node --max-old-space-size=4096 verify-villa-location.mjs
       - name: Probe exact terrain boundary vertices
         run: node --max-old-space-size=4096 verify-world-edge.mjs
       - name: Measure actual world height and generated geometry
