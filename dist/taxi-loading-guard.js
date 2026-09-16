@@ -11,24 +11,26 @@ function taxiTransit(){
 if(!CityStream.prototype.__taxiLoadingGuard){
  CityStream.prototype.__taxiLoadingGuard=true;
 
- // Taxi travel is now completely decoupled from chunk readiness. The game
- // already provides a short fixed travel/loading interval; making that interval
- // wait on the streaming backend was the source of the recurring destination
- // freeze. While the taxi overlay is active we therefore do not build/unload
- // chunks at all and we report the destination as ready immediately. As soon as
- // the arrival code removes `taxi-transit`, normal streaming resumes at the new
- // player position and fills in the destination in the ordinary frame loop.
+ // Never wait on worker/chunk readiness while the taxi travel screen is open.
+ // Prefetch once per destination: re-requesting every frame can requeue work and
+ // recreate the freeze that the original guard was intended to eliminate.
  CityStream.prototype.coreReady=function(x,z,radius=160){
-  if(!taxiTransit())return BASE_CORE_READY.call(this,x,z,radius);
-  this.prefetch(x,z,520);
+  if(!taxiTransit()){
+   this.__taxiTransitTarget=null;
+   return BASE_CORE_READY.call(this,x,z,radius);
+  }
+  const target=this.__taxiTransitTarget;
+  if(!target||Math.hypot(target.x-x,target.z-z)>1){
+   this.__taxiTransitTarget={x,z};
+   this.prefetch(x,z,520);
+  }
   this.lastPlan='';
   return true;
  };
 
  CityStream.prototype.update=function(p,force=false){
   if(!taxiTransit())return BASE_UPDATE.call(this,p,force);
-  // Keep detail generation suppressed during the two-second cinematic and do
-  // no cooperative/worker chunk work that could stall requestAnimationFrame.
+  // No cooperative or worker chunk generation/unloading during transit.
   if(this.metrics){
    this.metrics.pressure=true;
    this.metrics.coreQueued=0;
