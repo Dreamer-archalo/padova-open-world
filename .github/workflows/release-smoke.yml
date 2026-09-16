@@ -32,5 +32,7 @@ jobs:
         run: |
           npm run test:initial-world
           node verify-geometry-integrity.mjs
+      - name: Diagnose map-wide shoulder continuity
+        run: node --max-old-space-size=3072 tools/diagnose-shoulder-continuity.mjs
       - name: Full elevation audit — required
         run: npm run test:geometry-integrity
