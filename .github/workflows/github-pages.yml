@@ -41,6 +41,8 @@ jobs:
           node --check dist/tangenziale-race.js
           node --check dist/tangenziale-race-polish.js
           node --check dist/tangenziale-race-short-sprint.js
+          node --check dist/online-race.js
+          node verify-online-race.mjs
       - name: Configure GitHub Pages
         uses: actions/configure-pages@v5
       - name: Upload dist
