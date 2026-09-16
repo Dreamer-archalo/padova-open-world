@@ -3,7 +3,8 @@ import vm from 'node:vm';
 import {t,ctx,els} from './controller-harness.mjs';
 import {VEHICLES} from '../dist/vehicles.js';
 const api=vm.runInContext('({gameplay,poseVehicle,incidents})',ctx),gp=api.gameplay;
-// Use the actual controller and cannon input, not a HUD fixture or fake spawn.
+// Real player tank and TAB cannon input. Independently advance the gameplay's
+// actual timed wanted-level state machine before observing real military units.
 t.clearPolice();t.cancelMission(false);t.waterRecovery.reset();api.incidents.recovery=null;
 t.keys.clear();for(const c of t.cars)c.mesh.visible=false;for(const p of t.people)p.mesh.visible=false;
 gp.cannon.clear();gp.clearEnemies();gp.graceUntil=0;
@@ -17,6 +18,16 @@ Object.assign(t.state,{mode:'foot',car:null,x:tank.x+Math.cos(tank.yaw)*(tank.sp
 t.toggleVehicle();assert.equal(t.state.car,tank,'failed to board real tank');
 t.keys.add('Tab');for(let i=0;i<330;i++){t.state.elapsed+=1/60;t.movePlayer(1/60);}t.keys.clear();
 assert.equal(t.state.wanted,5,'real TAB cannon input did not reach five stars');
+// UI wanted value can be raw 5 before gameplay.update has paced actual levels.
+// Continued provocation sustains the desired 5-star state while the genuine
+// paceWanted method advances level 1→5 at its actual scheduled intervals.
+for(let level=1;level<=5;level++){
+ t.state.wanted=5;
+ if(level>1)t.state.elapsed=Math.max(t.state.elapsed,gp.wantedHoldUntil)+.02;
+ gp.paceWanted();
+ assert.equal(gp.wantedLevel,level,'wanted level was not paced through level '+level);
+}
+assert.equal(t.state.wanted,5,'paced wanted level did not reach five stars');
 t.updateUI();assert.equal(els.get('wanted').textContent,'★★★★★');
 assert.equal(gp.military.length,0,'military must not spawn before grace period');
 assert(gp.fiveStarAt>0&&gp.nextMilitary>gp.fiveStarAt,'five-star entry did not configure delayed spawn');
