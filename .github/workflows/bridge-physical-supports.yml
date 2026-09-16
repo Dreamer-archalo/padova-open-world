@@ -17,6 +17,8 @@ jobs:
         run: |
           node --check dist/road-structures.js
           node verify-bridge-physical-supports.mjs
+      - name: Audit genuine elevated bridge spans from entire Padova map
+        run: node --max-old-space-size=3072 verify-bridge-real-map.mjs
       - name: Existing structural and both Tangenziale race regressions
         run: |
           node verify-geometry-integrity.mjs
