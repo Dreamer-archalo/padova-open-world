@@ -9,6 +9,7 @@ on:
       - 'dist/terrain.js'
       - 'dist/world.js'
       - 'tools/diagnose-airport-junction.mjs'
+      - 'tools/probe-airport-ground-connector.mjs'
       - 'tools/controller-harness.mjs'
       - 'verify-airport-road-network.mjs'
       - 'verify-world-3d-contact.mjs'
@@ -26,6 +27,9 @@ jobs:
           node-version: '22'
       - name: Diagnose real junction candidates, heights and bridge levels
         run: node tools/diagnose-airport-junction.mjs
+      - name: Reversible at-grade gate connector probe with taxi, slopes, dry land and collisions
+        if: always()
+        run: node tools/probe-airport-ground-connector.mjs
       - name: Airport road topology, actual graph and taxi gate diagnostic
         if: always()
         run: node --check dist/gameplay-areas.js && node verify-airport-road-network.mjs
