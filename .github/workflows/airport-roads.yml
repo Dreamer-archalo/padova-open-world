@@ -10,6 +10,7 @@ on:
       - 'dist/world.js'
       - 'tools/diagnose-airport-junction.mjs'
       - 'tools/probe-airport-ground-connector.mjs'
+      - 'tools/verify-five-star-timing.mjs'
       - 'tools/controller-harness.mjs'
       - 'verify-airport-road-network.mjs'
       - 'verify-world-3d-contact.mjs'
@@ -39,6 +40,9 @@ jobs:
       - name: Strict full-map elevation, shoulder, bridges and geometry integrity
         if: always()
         run: npm run test:geometry-integrity
+      - name: Five-star actual staggered military spawn timing
+        if: always()
+        run: node --check tools/verify-five-star-timing.mjs && node tools/verify-five-star-timing.mjs
       - name: Full airport vehicle, colliders and surface regression
         if: always()
         run: npm run test:airport
