@@ -13,6 +13,8 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
+      - name: Identify actual hospital blocks and largest roof
+        run: node tools/diagnose-hospital-footprints.mjs
       - name: Three raised bridges, columns, real 3D deck and underpass clearance
         run: |
           node --check dist/road-structures.js
