@@ -1,0 +1,28 @@
+import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import {RACE_ONE_DIFFICULTIES,raceOneDifficulty,applyRaceOneDifficulty} from './dist/tangenziale-race-difficulty.js';
+
+assert.deepEqual(Object.keys(RACE_ONE_DIFFICULTIES),['easy','medium','hard']);
+assert.equal(raceOneDifficulty('not-a-mode'),'medium');
+assert.equal(raceOneDifficulty('hard'),'hard');
+const player={raceSkill:1,raceTurbo:3,spec:{max:40}};
+const ai=Array.from({length:3},()=>({raceSkill:1,raceTurbo:3,raceTurboUntil:42,raceTurboIndex:2}));
+const race={playerCar:player,ai,finishTimes:[null,null,null,null]};
+assert.equal(applyRaceOneDifficulty(race,'easy'),true);
+assert.equal(race.difficulty,'easy');
+assert(ai.every((c,i)=>c.raceSkill===RACE_ONE_DIFFICULTIES.easy.skills[i]&&c.raceTurbo===0&&c.raceTurboUntil===0&&c.raceTurboIndex===0));
+assert.equal(player.raceSkill,1,'player handling stays unchanged');
+assert.equal(player.raceTurbo,3,'player turbos stay unchanged');
+assert.equal(applyRaceOneDifficulty(race,'hard'),true);
+assert(ai.every((c,i)=>c.raceSkill===RACE_ONE_DIFFICULTIES.hard.skills[i]&&c.raceTurbo===3));
+assert(RACE_ONE_DIFFICULTIES.easy.skills.every((v,i)=>v<RACE_ONE_DIFFICULTIES.medium.skills[i]&&RACE_ONE_DIFFICULTIES.medium.skills[i]<RACE_ONE_DIFFICULTIES.hard.skills[i]));
+const second={__secondRace:true,playerCar:player,ai:[{raceSkill:1,raceTurbo:3}]};
+assert.equal(applyRaceOneDifficulty(second,'hard'),false);
+assert.deepEqual(second.ai,[{raceSkill:1,raceTurbo:3}]);
+const source=fs.readFileSync('dist/tangenziale-race-difficulty.js','utf8');
+const upgrades=fs.readFileSync('dist/gameplay-upgrades.js','utf8');
+assert(source.includes('raceOneDifficulty')&&source.includes('DIFFICOLTÀ BOT · GARA 1')&&source.includes('openConfirmation'));
+assert(source.includes('if(!r||r.__secondRace||!r.difficulty||r.difficulty===\'medium\')'));
+assert(source.includes('const isSecond=this.__nextRaceMode===\'second\''));
+assert(upgrades.indexOf("import './tangenziale-race-difficulty.js';")>0&&upgrades.indexOf("import './tangenziale-race-difficulty.js';")<upgrades.indexOf("import './online-race-v2.js';"),'online ownership wrappers load after difficulty');
+console.log('PASS race 1 difficulty: three AI levels, no player or race 2 spec changes, online ownership import order');
