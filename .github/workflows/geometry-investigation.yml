@@ -12,7 +12,9 @@ jobs:
     timeout-minutes: 12
     steps:
       - uses: actions/checkout@v6
-      - name: Check diagnostic script
-        run: node --check verify-world-contact.mjs
+      - name: Check diagnostic scripts
+        run: node --check verify-world-contact.mjs && node --check verify-world-edge.mjs
+      - name: Probe exact terrain boundary vertices
+        run: node --max-old-space-size=4096 verify-world-edge.mjs
       - name: Measure actual world height and generated geometry
         run: node --max-old-space-size=4096 verify-world-contact.mjs
