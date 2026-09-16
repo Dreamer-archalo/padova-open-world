@@ -13,6 +13,7 @@ import './tangenziale-race-v2-polish.js';
 import './tangenziale-race-final-fixes.js';
 import './hospital-rooftop-easter-egg.js';
 import './taxi-loading-guard.js';
+import './online-race.js';
 
 // Preview revision: hospital rooftop is now resolved on the actual hospital footprint beside Villa Treves.
 installPoliceAIHooks();
