@@ -1,0 +1,24 @@
+name: Race one difficulty checks
+on:
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Check difficulty module syntax and bot-only modes
+        run: |
+          node --check dist/tangenziale-race-difficulty.js
+          node verify-race-one-difficulty.mjs
+      - name: Check both existing races and online regression
+        run: |
+          npm run test:tangenziale-race
+          node verify-online-race.mjs
+          node verify-online-race-second-fix.mjs
