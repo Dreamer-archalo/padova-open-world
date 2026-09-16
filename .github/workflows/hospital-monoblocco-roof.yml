@@ -1,0 +1,27 @@
+name: Monoblocco rooftop and helipad
+on:
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Validate rooftop source and exact real-map polygon route
+        run: |
+          node --check dist/hospital-rooftop-easter-egg.js
+          node --check dist/hospital-helipad-exit.js
+          node verify-hospital-rooftop.mjs
+      - name: Verify existing city, taxi, races and online are unaffected
+        run: |
+          node verify-geometry-integrity.mjs
+          npm run test:taxi
+          npm run test:tangenziale-race
+          node verify-online-race.mjs
+          node verify-online-race-second-fix.mjs
