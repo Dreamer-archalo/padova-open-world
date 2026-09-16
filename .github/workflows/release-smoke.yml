@@ -23,6 +23,7 @@ jobs:
       - name: Taxi and two Tangenziale races
         run: |
           npm run test:taxi
+          node verify-taxi-transition-recovery.mjs
           npm run test:tangenziale-race
       - name: Online race regression
         run: |
