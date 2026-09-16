@@ -13,6 +13,8 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
+      - name: Identify polygon corridors and suitable separate helipad
+        run: node tools/diagnose-monoblocco-roof.mjs
       - name: Validate rooftop source and exact real-map polygon route
         run: |
           node --check dist/hospital-rooftop-easter-egg.js
