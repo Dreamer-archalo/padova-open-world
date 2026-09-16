@@ -2,7 +2,6 @@ import fs from 'node:fs';
 import {AIRPORT,AIRPORT_GATE,areaLocal,prepareGameplayMap} from './dist/gameplay-areas.js';
 import {makeRoadGraph,dist,nearestRoad,roadRoute,nearestOnSegment} from './dist/core.js';
 import {findTaxiRoad} from './dist/taxi-service.js';
-
 const map=JSON.parse(fs.readFileSync(new URL('./dist/data/padova.json',import.meta.url)));
 const local=p=>areaLocal(AIRPORT,p.x,p.z);
 const publicRoad=r=>['service','residential','unclassified','tertiary','secondary','primary'].includes(r.k)&&!r.tunnel&&!r.b&&!['no','private'].includes(r.access);
@@ -17,14 +16,20 @@ const road=nearestRoad(AIRPORT_GATE,graph,true,{maxRadius:100,fallback:false});
 const taxi=findTaxiRoad(AIRPORT_GATE,graph,{roads:{sample:()=>0},height:()=>0},{maxMs:500,maxCandidates:8000});
 const route=roadRoute(outside,AIRPORT_GATE,graph,{maxSteps:100000,maxMs:2000});
 const nearby=[];
-for(const s of graph.index.near(AIRPORT_GATE.x,AIRPORT_GATE.z,60)){
+for(const s of graph.index.near(AIRPORT_GATE.x,AIRPORT_GATE.z,70)){
  const a=graph.nodes[s.a],b=graph.nodes[s.b],q=nearestOnSegment(AIRPORT_GATE.x,AIRPORT_GATE.z,[a.x,a.z],[b.x,b.z]),d=dist(q,AIRPORT_GATE);
- if(d>55)continue;nearby.push({road:s.road.n||s.road.k,access:s.road.access,connected:s.connected,d:+d.toFixed(3),a:s.a,b:s.b,aDegree:a.edges.length,bDegree:b.edges.length,al:local(a),bl:local(b)});
+ if(d>55)continue;nearby.push({road:s.road.n||s.road.k,access:s.road.access,connected:s.connected,d:+d.toFixed(3),al:local(a),bl:local(b)});
 }
 nearby.sort((a,b)=>a.d-b.d);
+const nearbyConnected=[];
+for(const s of graph.index.near(AIRPORT_GATE.x,AIRPORT_GATE.z,550)){
+ if(!s.connected||!publicRoad(s.road))continue;
+ for(const id of [s.a,s.b]){const n=graph.nodes[id],dGate=dist(n,AIRPORT_GATE),dVia=dist(n,outside);if(dGate>550)continue;nearbyConnected.push({road:s.road.n||s.road.k,dGate:+dGate.toFixed(2),dVia:+dVia.toFixed(2),point:local(n),node:id});}
+}
+nearbyConnected.sort((a,b)=>a.dVia-b.dVia);
 const crossings=[];
 for(const r of map.gameplay.roads)for(let i=1;i<r.p.length;i++){
  const a=local({x:r.p[i-1][0],z:r.p[i-1][1]}),b=local({x:r.p[i][0],z:r.p[i][1]});
  if((a.u-215)*(b.u-215)<0){const t=(215-a.u)/(b.u-a.u);crossings.push({name:r.n,v:a.v+(b.v-a.v)*t});}
 }
-console.log(JSON.stringify({gate:local(AIRPORT_GATE),nearestPublicSource:candidates.slice(0,12),authoredRoads:map.gameplay.roads.map(r=>({name:r.n,access:r.access,width:r.w,points:r.p.length,localPoints:r.p.map(([x,z])=>local({x,z}))})),gateNearestRoad:road?{name:road.segment.road.n,access:road.segment.road.access,d:road.d,connected:road.segment.connected}:null,taxiDropoff:taxi?{name:taxi.segment.road.n,access:taxi.segment.road.access,offset:dist(taxi,AIRPORT_GATE)}:null,cityToGateRoutePoints:route.length,perimeterCrossings:crossings,nearbySegments:nearby.slice(0,24)},null,2));
+console.log(JSON.stringify({gate:local(AIRPORT_GATE),nearestPublicSource:candidates.slice(0,6),authoredRoads:map.gameplay.roads.map(r=>({name:r.n,access:r.access,width:r.w,points:r.p.length,localPoints:r.n==='Ingresso aeroporto'?r.p.map(([x,z])=>local({x,z})):undefined})),gateNearestRoad:road?{name:road.segment.road.n,d:road.d,connected:road.segment.connected}:null,taxiDropoff:taxi?{name:taxi.segment.road.n,offset:dist(taxi,AIRPORT_GATE)}:null,cityToGateRoutePoints:route.length,perimeterCrossings:crossings,nearbySegments:nearby.slice(0,12),nearestMainNetwork:nearbyConnected.slice(0,16)},null,2));
