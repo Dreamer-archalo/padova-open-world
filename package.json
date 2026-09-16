@@ -17,7 +17,7 @@
     "test:guardrails": "node --max-old-space-size=3072 verify-motorway-access.mjs",
     "test:jumps": "node --max-old-space-size=3072 verify-vehicle-jumps.mjs",
     "test:multilane": "node verify-multilane.mjs",
-    "test:taxi": "node verify-taxi.mjs",
+    "test:taxi": "node --check dist/TaxiMenuController.js && node verify-taxi.mjs && node verify-taxi-fare-confirmation.mjs",
     "test:portello": "node --max-old-space-size=3072 verify-portello.mjs",
     "test:phase2-polish": "node --check dist/modern-gameplay.js && node --check dist/cruise-control.js && node verify-phase2-polish.mjs",
     "test:churches": "node --check dist/churches.js && node --check dist/city-details.js && node verify-churches.mjs",
@@ -32,6 +32,8 @@
     "test:elevation-harmony": "node --max-old-space-size=3072 verify-elevation-harmony.mjs",
     "test:geometry-integrity": "node --check dist/surface-layers.js && node --check dist/modern-roads.js && node --check dist/vehicle-dynamics.js && node --check dist/phase4-terrain-fixes.js && node --check dist/geometry-audit-runtime.js && node verify-geometry-integrity.mjs && node --max-old-space-size=3072 verify-elevation-harmony.mjs",
     "test:initial-world": "node --check dist/streaming.js && node --check dist/initial-loader.js && node --check dist/terrain.js && node --check dist/surface-layers.js && node --check dist/modern-roads.js && node verify-initial-world.mjs",
-    "test:tangenziale-race": "node --check dist/tangenziale-race-rules.js && node --check dist/tangenziale-race.js && node --check dist/tangenziale-race-polish.js && node --check dist/tangenziale-race-short-sprint.js && node --check dist/road-structures.js && node verify-tangenziale-race.mjs && node verify-tangenziale-race-e2e.mjs && node verify-tangenziale-short-sprint.mjs"
+    "test:hospital-rooftop": "node --check dist/hospital-rooftop-easter-egg.js && node --check dist/modern-driving.js && node verify-hospital-rooftop.mjs",
+    "test:tangenziale-race-2": "node --check dist/tangenziale-race-second.js && node --check dist/tangenziale-race-runtime-fixes.js && node --check dist/tangenziale-race-v2-polish.js && node --check dist/tangenziale-race-final-fixes.js && node verify-tangenziale-second-race.mjs && node verify-tangenziale-race-runtime-fixes.mjs && node verify-tangenziale-final-fixes.mjs",
+    "test:tangenziale-race": "node --check dist/tangenziale-race-rules.js && node --check dist/tangenziale-race.js && node --check dist/tangenziale-race-polish.js && node --check dist/tangenziale-race-short-sprint.js && node --check dist/tangenziale-race-second.js && node --check dist/tangenziale-race-runtime-fixes.js && node --check dist/tangenziale-race-v2-polish.js && node --check dist/tangenziale-race-final-fixes.js && node --check dist/road-structures.js && node verify-tangenziale-race.mjs && node verify-tangenziale-race-e2e.mjs && node verify-tangenziale-short-sprint.mjs && node verify-tangenziale-second-race.mjs && node verify-tangenziale-race-runtime-fixes.mjs && node verify-tangenziale-final-fixes.mjs"
   }
 }

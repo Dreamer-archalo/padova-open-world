@@ -7,8 +7,14 @@ import {PoliceAI,installPoliceAIHooks} from './police-ai.js';
 import './tangenziale-race.js';
 import './tangenziale-race-polish.js';
 import './tangenziale-race-short-sprint.js';
+import './tangenziale-race-second.js';
+import './tangenziale-race-runtime-fixes.js';
+import './tangenziale-race-v2-polish.js';
+import './tangenziale-race-final-fixes.js';
+import './hospital-rooftop-easter-egg.js';
 import './taxi-loading-guard.js';
 
+// Preview revision: hospital rooftop is now resolved on the actual hospital footprint beside Villa Treves.
 installPoliceAIHooks();
 const managers=new WeakMap();
 function suite(game){
