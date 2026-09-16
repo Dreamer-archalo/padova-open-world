@@ -32,6 +32,9 @@ jobs:
       - name: Independent 3D verification of real map, physics and rendered ground triangles
         if: always()
         run: node --check verify-world-3d-contact.mjs && node --max-old-space-size=4096 verify-world-3d-contact.mjs
+      - name: Strict full-map elevation, shoulder, bridges and geometry integrity
+        if: always()
+        run: npm run test:geometry-integrity
       - name: Full airport vehicle, colliders and surface regression
         if: always()
         run: npm run test:airport
