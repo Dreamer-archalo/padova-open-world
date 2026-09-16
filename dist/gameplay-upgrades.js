@@ -12,13 +12,14 @@ import './tangenziale-race-runtime-fixes.js';
 import './tangenziale-race-v2-polish.js';
 import './tangenziale-race-final-fixes.js';
 import './hospital-rooftop-easter-egg.js';
+import './hospital-helipad-exit.js';
 import './taxi-loading-guard.js';
 // Must precede online ownership hooks so remote human cars are never AI-driven.
 import './tangenziale-race-difficulty.js';
 import './online-race-v2.js';
 import './online-race-second-fix.js';
 
-// Preview revision: hospital rooftop is now resolved on the actual hospital footprint beside Villa Treves.
+// Exact Ospedale Civile Monoblocco footprint, not the former Treves-side roof.
 installPoliceAIHooks();
 const managers=new WeakMap();
 function suite(game){
