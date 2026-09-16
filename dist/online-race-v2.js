@@ -36,8 +36,9 @@ function notice(text,offer=null){
 function lobbyUI(){
   if(!session||session.started||!manager?.race)return;
   closeConfirmation();
-  let el=$('onlineRaceLobby');if(!el){el=document.createElement('div');el.id='onlineRaceLobby';el.style.cssText='position:fixed;left:50%;top:38%;transform:translate(-50%,-50%);z-index:150;width:min(92vw,500px);padding:24px;background:#102532fa;border:2px solid #ffc56a;color:white;text-align:center;border-radius:12px;box-shadow:0 15px 55px #000c;font:600 14px/1.6 system-ui';document.body.appendChild(el);}
-  el.replaceChildren();const title=document.createElement('h2');title.textContent=name(session.mode)+' · ONLINE';el.append(title);
+  const fingerprint=[session.id,session.mode,session.roster.join(','),[...session.ready].sort().join(','),session.localReady].join('|');
+  let el=$('onlineRaceLobby');if(el?.__raceFingerprint===fingerprint)return;if(!el){el=document.createElement('div');el.id='onlineRaceLobby';el.style.cssText='position:fixed;left:50%;top:38%;transform:translate(-50%,-50%);z-index:150;width:min(92vw,500px);padding:24px;background:#102532fa;border:2px solid #ffc56a;color:white;text-align:center;border-radius:12px;box-shadow:0 15px 55px #000c;font:600 14px/1.6 system-ui';document.body.appendChild(el);}
+  el.__raceFingerprint=fingerprint;el.replaceChildren();const title=document.createElement('h2');title.textContent=name(session.mode)+' · ONLINE';el.append(title);
   const count=document.createElement('p');count.textContent='IN ATTESA DI ALTRI GIOCATORI · '+session.roster.join(', ')+' ('+session.roster.length+'/'+Math.min(capacity(session.mode),5)+')';el.append(count);
   const msg=document.createElement('p');msg.textContent='Posti liberi: BOT. I partecipanti devono completare il caricamento prima della partenza.';el.append(msg);
   if(session.host===me()){
