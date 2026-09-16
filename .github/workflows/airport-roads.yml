@@ -8,6 +8,8 @@ on:
       - 'dist/gameplay-areas.js'
       - 'dist/terrain.js'
       - 'dist/world.js'
+      - 'tools/diagnose-airport-junction.mjs'
+      - 'tools/controller-harness.mjs'
       - 'verify-airport-road-network.mjs'
       - 'verify-world-3d-contact.mjs'
       - '.github/workflows/airport-roads.yml'
@@ -22,7 +24,10 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
+      - name: Diagnose real junction candidates, heights and bridge levels
+        run: node tools/diagnose-airport-junction.mjs
       - name: Airport road topology, actual graph and taxi gate diagnostic
+        if: always()
         run: node --check dist/gameplay-areas.js && node verify-airport-road-network.mjs
       - name: Independent 3D verification of real map, physics and rendered ground triangles
         if: always()
