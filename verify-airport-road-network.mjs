@@ -1,17 +1,41 @@
+import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import {AIRPORT,AIRPORT_GATE,areaLocal,prepareGameplayMap} from './dist/gameplay-areas.js';
 import {makeRoadGraph,dist,nearestRoad,roadRoute} from './dist/core.js';
 import {findTaxiRoad} from './dist/taxi-service.js';
-const map=JSON.parse(fs.readFileSync(new URL('./dist/data/padova.json',import.meta.url)));
-const local=p=>areaLocal(AIRPORT,p.x,p.z),publicRoad=r=>['service','residential','unclassified','tertiary','secondary','primary'].includes(r.k)&&!r.tunnel&&!r.b&&!['no','private'].includes(r.access);
+
+const read=name=>JSON.parse(fs.readFileSync(new URL(`./dist/data/${name}.json`,import.meta.url)));
+const map=read('padova');
 prepareGameplayMap(map);
-const graph=makeRoadGraph(map.roads,{separateLevels:true}),entry=map.gameplay.roads.find(r=>r.n==='Ingresso aeroporto');
-const outside={x:entry.p[0][0],z:entry.p[0][1]},near=[];
-const sourceNodes=[...new Set(graph.segments.filter(s=>!s.connected&&s.road.n==='Via Sorio').flatMap(s=>[s.a,s.b]))].map(id=>({id,...graph.nodes[id]})).filter(n=>dist(n,outside)<1000);
-for(const s of graph.index.near(outside.x,outside.z,1800)){
- if(!s.connected||!publicRoad(s.road))continue;
- for(const id of [s.a,s.b]){const n=graph.nodes[id],d=dist(n,outside);if(d>1500)continue;let best={d:Infinity};for(const p of sourceNodes){const gap=dist(n,p);if(gap<best.d)best={d:gap,id:p.id,point:local(p)};}near.push({road:s.road.n||s.road.k,access:s.road.access,bridge:!!s.road.b,layer:s.road.layer,point:local(n),distanceToGate:+dist(n,AIRPORT_GATE).toFixed(2),distanceToVia:+best.d.toFixed(2),nearestVia:best.point,node:id});}
+const graph=makeRoadGraph(map.roads,{separateLevels:true});
+const entry=map.gameplay.roads.find(r=>r.n==='Ingresso aeroporto');
+const service=map.gameplay.roads.find(r=>r.n==='Servizi aeroportuali');
+assert(entry&&service,'Airport entry and airside access must exist');
+assert.equal(entry.access,'yes','Only the public airport approach is unrestricted');
+assert.equal(service.access,'private','Aircraft service roads must remain private');
+assert.equal(entry.p.length,3,'Public airport approach must have an exterior bend and gate');
+const local=([x,z])=>areaLocal(AIRPORT,x,z);
+const gate=local([AIRPORT_GATE.x,AIRPORT_GATE.z]);
+assert(Math.abs(gate.u-205)<.01&&Math.abs(gate.v-250)<.01,'Entrance endpoint must meet the authored gate');
+const crossings=[];
+for(const road of map.gameplay.roads)for(let i=1;i<road.p.length;i++){
+ const a=local(road.p[i-1]),b=local(road.p[i]);
+ if((a.u-215)*(b.u-215)>=0)continue;
+ const fraction=(215-a.u)/(b.u-a.u);
+ crossings.push({road:road.n,v:a.v+(b.v-a.v)*fraction});
 }
-const uniq=[...new Map(near.map(n=>[n.node,n])).values()];uniq.sort((a,b)=>a.distanceToVia-b.distanceToVia);
-const road=nearestRoad(AIRPORT_GATE,graph,true,{maxRadius:100,fallback:false}),taxi=findTaxiRoad(AIRPORT_GATE,graph,{roads:{sample:()=>0},height:()=>0},{maxMs:500,maxCandidates:8000}),route=roadRoute(outside,AIRPORT_GATE,graph,{maxSteps:100000,maxMs:2000});
-console.log(JSON.stringify({gate:local(AIRPORT_GATE),entry:entry.p.map(([x,z])=>local({x,z})),sourceViaNodes:sourceNodes.length,nearMainNetwork:uniq.slice(0,32),nearestToGate:road?{road:road.segment.road.n,d:road.d}:null,taxiDropoff:taxi?{road:taxi.segment.road.n,d:dist(taxi,AIRPORT_GATE)}:null,cityRoutePoints:route.length},null,2));
+assert.equal(crossings.length,1,'Only the designated entrance should cross the airport fence');
+assert.equal(crossings[0].road,entry.n);
+assert(Math.abs(crossings[0].v-250)<.01,'Approach must cross through the real fence opening');
+assert(entry.p.every(p=>local(p).u>200),'Public entrance cannot cut through the runway or apron');
+const segments=graph.segments.filter(s=>s.road===entry);
+const connected=segments.length===2&&segments.every(s=>s.connected);
+const nearest=nearestRoad(AIRPORT_GATE,graph,true,{maxRadius:100,fallback:false});
+const taxi=findTaxiRoad(AIRPORT_GATE,graph,{roads:{sample:()=>0},height:()=>0},{maxMs:500,maxCandidates:8000});
+const toGate=roadRoute({x:entry.p[0][0],z:entry.p[0][1]},AIRPORT_GATE,graph,{maxSteps:100000,maxMs:2000});
+const report={publicGate:true,fenceCrossings:crossings,airsidePrivate:true,cityGraphConnected:connected,taxiUsesAirportEntrance:taxi?.segment?.road===entry,nearestConnectedRoad:nearest?.segment?.road?.n??null,taxiRoad:taxi?.segment?.road?.n??null,cityToGateRoutePoints:toGate.length};
+console.log(JSON.stringify(report,null,2));
+assert(connected,'BLOCKED: Via Sorio and airport entrance are disconnected from the main city road graph. Do not falsely attach them to the flyover.');
+assert.equal(taxi?.segment?.road,entry,'BLOCKED: Taxi must use airport entrance, not Cavalcavia Brusegana');
+assert(toGate.length>=3,'BLOCKED: City to airport must be navigable along the actual road network');
+console.log('PASS airport entry, public road graph, taxi drop-off and fence opening');
