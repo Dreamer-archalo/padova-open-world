@@ -1,66 +1,78 @@
 import * as THREE from './vendor/three.module.js';
 import {ModernGameplay} from './modern-gameplay.js';
-import {project,clamp,dist} from './core.js';
-import {VILLA} from './gameplay-areas.js';
+import {pointInside,nearestOnSegment,clamp} from './core.js';
+import {vehicleFootprint} from './movement.js';
+import {SPECIAL_VEHICLES,EXTRA_TRAFFIC} from './special-vehicles.js';
+import {VEHICLES} from './vehicles.js';
 
-// The easter egg belongs to the central hospital immediately beside the Treves villa.
-// Resolve the actual hospital footprint present in the loaded map instead of placing
-// a detached platform at a fixed coordinate.
-const HOSPITAL_HINT=project(45.403920,11.887309);
-const SEARCH_RADIUS=175;
-const DEFAULT_W=68,DEFAULT_L=50;
-const stateByGame=new WeakMap();
-const mats=new Map();
-function mat(color,{emissive=null,metalness=.05,roughness=.72}={}){const key=[color,emissive,metalness,roughness].join(':');if(!mats.has(key))mats.set(key,new THREE.MeshStandardMaterial({color,emissive:emissive||'#000000',emissiveIntensity:emissive?1.15:0,metalness,roughness}));return mats.get(key);}
-function basic(color){return new THREE.MeshBasicMaterial({color});}
-function worldPoint(center,lx,lz){const s=Math.sin(center.yaw),c=Math.cos(center.yaw);return {x:center.x+c*lx+s*lz,z:center.z-s*lx+c*lz};}
-function box(root,color,cx,cy,cz,w,h,d,yaw,material=null){const m=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),material||mat(color));m.position.set(cx,cy,cz);m.rotation.y=yaw;m.castShadow=true;m.receiveShadow=true;root.add(m);return m;}
-function orientedRect(cx,cz,w,l,yaw){const s=Math.sin(yaw),c=Math.cos(yaw);return [[-1,-1],[1,-1],[1,1],[-1,1]].map(([sx,sz])=>[cx+c*sx*w/2+s*sz*l/2,cz-s*sx*w/2+c*sz*l/2]);}
-function collisionBox(game,cx,cz,w,l,minY,h,yaw,extra={}){if(!game.collision?.add)return null;const p=orientedRect(cx,cz,w,l,yaw),item={p,minY,h,...extra},xs=p.map(v=>v[0]),zs=p.map(v=>v[1]);game.collision.add(item,Math.min(...xs),Math.min(...zs),Math.max(...xs),Math.max(...zs));return item;}
-function candidateCenter(b){return {x:Number.isFinite(b.cx)?b.cx:(b.minX+b.maxX)/2,z:Number.isFinite(b.cz)?b.cz:(b.minZ+b.maxZ)/2};}
-function footprintYaw(b){if(!Array.isArray(b.p)||b.p.length<2)return .08;let best=null;for(let i=0;i<b.p.length;i++){const a=b.p[i],q=b.p[(i+1)%b.p.length],len=Math.hypot(q[0]-a[0],q[1]-a[1]);if(!best||len>best.len)best={len,yaw:Math.atan2(q[0]-a[0],q[1]-a[1])};}return best?.yaw??.08;}
-function resolveHospital(game){
- const pool=[...(game.collision?.near?.(HOSPITAL_HINT.x,HOSPITAL_HINT.z,SEARCH_RADIUS)||[])].filter(b=>{
-  if(!b||b.kind||!Array.isArray(b.p)||b.p.length<3||!Number.isFinite(b.minX)||!Number.isFinite(b.maxX)||!Number.isFinite(b.minZ)||!Number.isFinite(b.maxZ)||!Number.isFinite(b.h))return false;
-  const c=candidateCenter(b),w=b.maxX-b.minX,l=b.maxZ-b.minZ,dVilla=dist(c,VILLA),dHint=dist(c,HOSPITAL_HINT);
-  return dVilla>70&&dVilla<390&&dHint<SEARCH_RADIUS&&w*l>180&&b.h>5;
- });
- pool.sort((a,b)=>{
-  const ca=candidateCenter(a),cb=candidateCenter(b),na=String(a.n||a.name||'').toLowerCase(),nb=String(b.n||b.name||'').toLowerCase(),hospital=/osped|hospital|clin|giustinian|policlin/.test(na)?-180:0,hospitalB=/osped|hospital|clin|giustinian|policlin/.test(nb)?-180:0;
-  const areaA=(a.maxX-a.minX)*(a.maxZ-a.minZ),areaB=(b.maxX-b.minX)*(b.maxZ-b.minZ);
-  return hospital+dist(ca,HOSPITAL_HINT)-Math.min(70,areaA/80)-(hospitalB+dist(cb,HOSPITAL_HINT)-Math.min(70,areaB/80));
- });
- const building=pool[0]||null,c=building?candidateCenter(building):HOSPITAL_HINT,w=building?building.maxX-building.minX:DEFAULT_W,l=building?building.maxZ-building.minZ:DEFAULT_L;
- return {building,x:c.x,z:c.z,yaw:building?footprintYaw(building):.08,width:clamp(w+3,58,82),length:clamp(l+3,44,62),name:building?.n||building?.name||'Ospedale centrale'};
+// The former Treves-side roof was the wrong building. The OSM Monoblocco is a
+// 90-vertex, irregular 245 x 200 m footprint; never replace it with its bounding box.
+const TARGET='Ospedale Civile - Monoblocco - Casse - Prenotazioni';
+const TARGET_POINT={x:816,z:518};
+const trialSpec={name:'Trial 125 · Roof Edition',family:'motorcycle',width:.78,length:1.94,height:1.36,wheelbase:1.21,accel:18,brake:31,max:19,boost:21,reverse:3,steer:2.65,mass:.52,npcOnly:true,bike:true};
+EXTRA_TRAFFIC.rooftrial=trialSpec;SPECIAL_VEHICLES.rooftrial=trialSpec;VEHICLES.rooftrial=trialSpec;
+const games=new WeakMap(),materials=new Map();
+function material(color,emissive=false){const key=color+emissive;if(!materials.has(key))materials.set(key,new THREE.MeshStandardMaterial({color,emissive:emissive?color:'#000000',emissiveIntensity:emissive?.65:0,roughness:.78,metalness:.04,side:THREE.DoubleSide}));return materials.get(key);}
+function block(root,color,x,y,z,w,h,l,yaw=0){const m=new THREE.Mesh(new THREE.BoxGeometry(w,h,l),material(color));m.position.set(x,y,z);m.rotation.y=yaw;m.castShadow=m.receiveShadow=true;root.add(m);return m;}
+function footprint(box){const p=box.p||[];return p.length>3&&p[0][0]===p.at(-1)[0]&&p[0][1]===p.at(-1)[1]?p.slice(0,-1):p;}
+function distanceToEdge(x,z,poly){let d=Infinity;for(let i=0;i<poly.length;i++){const p=nearestOnSegment(x,z,poly[i],poly[(i+1)%poly.length]);d=Math.min(d,Math.hypot(x-p.x,z-p.z));}return d;}
+function safe(poly,x,z,margin=5){return pointInside(x,z,poly)&&distanceToEdge(x,z,poly)>=margin;}
+function resolveHospital(game){const nearby=[...(game.collision?.near?.(TARGET_POINT.x,TARGET_POINT.z,250)||[])];const building=nearby.find(b=>b.n===TARGET&&Array.isArray(b.p)&&b.p.length>=3&&Number.isFinite(b.minY)&&Number.isFinite(b.h));if(!building)return null;return {building,polygon:footprint(building),roofY:building.minY+building.h+.13};}
+function onTrack(layout,t){const a=t*2*Math.PI,x=layout.x+Math.cos(a)*layout.rx,z=layout.z+Math.sin(a)*layout.rz,dx=-layout.rx*Math.sin(a),dz=layout.rz*Math.cos(a);return {x,z,yaw:Math.atan2(dx,dz),dx,dz};}
+function trackSafe(poly,layout){for(let i=0;i<48;i++){const p=onTrack(layout,i/48);if(!safe(poly,p.x,p.z,6))return false;}return true;}
+function findLayout(poly,building){const good=[];for(let x=building.minX+21;x<=building.maxX-21;x+=11)for(let z=building.minZ+21;z<=building.maxZ-21;z+=11){if(safe(poly,x,z,18))good.push({x,z});}
+ let best=null;
+ for(const c of good){for(const rx of [73,62,52,43,34,25])for(const rz of [57,47,38,29,21]){
+  if(c.x-rx<building.minX+5||c.x+rx>building.maxX-5||c.z-rz<building.minZ+5||c.z+rz>building.maxZ-5)continue;
+  const layout={...c,rx,rz};if(!trackSafe(poly,layout))continue;
+  const helipad=good.map(p=>{let d=Infinity;for(let i=0;i<36;i++){const q=onTrack(layout,i/36);d=Math.min(d,Math.hypot(p.x-q.x,p.z-q.z));}return {...p,d};}).filter(p=>p.d>=22).sort((a,b)=>b.d-a.d)[0];
+  if(!helipad)continue;const score=rx*rz;if(!best||score>best.score)best={...layout,helipad,score};
+ }}
+ return best;
 }
-function highestRoof(game,anchor,ground){if(anchor.building&&Number.isFinite(anchor.building.minY)&&Number.isFinite(anchor.building.h))return clamp(anchor.building.minY+anchor.building.h+.28,ground+13,ground+36);let top=ground+19;for(const b of game.collision?.near?.(anchor.x,anchor.z,40)||[]){if(b.kind)continue;const value=(b.minY||ground)+(b.h||0);if(Number.isFinite(value)&&value>ground+5&&value<ground+42)top=Math.max(top,value);}return clamp(top+.28,ground+16,ground+35);}
-function makeHelipad(root,center){const p=worldPoint(center,-center.width*.27,0),ring=new THREE.Mesh(new THREE.TorusGeometry(10.4,.38,8,64),mat('#f7f7ef',{emissive:'#777b72',roughness:.42}));ring.position.set(p.x,center.roofY+.15,p.z);ring.rotation.x=Math.PI/2;ring.rotation.z=-center.yaw;root.add(ring);const white=mat('#ffffff',{emissive:'#4f524d',roughness:.48});
- for(const [lx,lz,w,d] of [[-3.3,0,1.25,9],[3.3,0,1.25,9],[0,0,7.8,1.25]]){const q=worldPoint(center,-center.width*.27+lx,lz);box(root,'#fff',q.x,center.roofY+.16,q.z,w,.10,d,center.yaw,white);}
- for(let i=0;i<12;i++){const a=i/12*Math.PI*2,q=worldPoint(center,-center.width*.27+Math.cos(a)*12.1,Math.sin(a)*12.1),lamp=new THREE.Mesh(new THREE.CylinderGeometry(.18,.18,.08,10),mat(i%2?'#4cd7ff':'#f4f4e9',{emissive:i%2?'#4cd7ff':'#f4f4e9'}));lamp.position.set(q.x,center.roofY+.14,q.z);root.add(lamp);}return p;}
-function addRoofRamp(game,root,center,lx,lz,yawOffset=0,rise=1.45,width=3.8,length=8.2){const p=worldPoint(center,lx,lz),yaw=center.yaw+yawOffset,r={kind:'hospital-rooftop-ramp',hospitalRoof:true,x:p.x,z:p.z,yaw,width,length,rise,baseY:center.roofY,topY:[center.roofY,center.roofY,center.roofY+rise,center.roofY+rise]};game.terrain.arcadeRamps=[...(game.terrain.arcadeRamps||[]),r];const mesh=box(root,'#d48735',p.x,center.roofY+rise*.5+.05,p.z,width,.18,length,yaw);mesh.rotation.order='YXZ';mesh.rotation.x=-Math.atan2(rise,length);return r;}
-function addObstacle(game,root,center,lx,lz,w,l,h,color='#596168'){const p=worldPoint(center,lx,lz);box(root,color,p.x,center.roofY+h/2+.05,p.z,w,h,l,center.yaw);collisionBox(game,p.x,p.z,w,l,center.roofY,h,center.yaw,{hospitalRoofObstacle:true});}
-function addParapet(game,root,center){const h=.82,t=.34;for(const [lx,lz,w,l] of [[0,-center.length/2,center.width,t],[0,center.length/2,center.width,t],[-center.width/2,0,t,center.length],[center.width/2,0,t,center.length]]){const p=worldPoint(center,lx,lz);box(root,'#d9d5cb',p.x,center.roofY+h/2,p.z,w,h,l,center.yaw);collisionBox(game,p.x,p.z,w,l,center.roofY,h,center.yaw,{hospitalRoofParapet:true});}}
-function addHospitalMark(root,center){const p=worldPoint(center,center.width*.39,-center.length*.39);const post=box(root,'#d9d9d2',p.x,center.roofY+1.65,p.z,.20,3.3,.20,center.yaw),panel=box(root,'#20262b',p.x,center.roofY+3.05,p.z,9.2,1.05,.22,center.yaw,mat('#20262b',{metalness:.2,roughness:.48}));post.userData.hospitalRoofMarker=true;panel.userData.hospitalRoofMarker=true;const q=worldPoint(center,center.width*.39,-center.length*.395);box(root,'#52e1ff',q.x,center.roofY+3.05,q.z,7.4,.08,.04,center.yaw,basic('#52e1ff'));}
-function addBike(game,center,style,lx,lz,yawOffset,name){const p=worldPoint(center,lx,lz),c=game.addCar(p.x,p.z,center.yaw+yawOffset,false,true,style);Object.assign(c,{x:p.x,z:p.z,y:center.roofY+.09,yaw:center.yaw+yawOffset,speed:0,health:100,parked:true,fixedSpawn:true,missionUnit:false,budgetSleeping:false,hospitalRoofBike:true,name});c.mesh.visible=true;game.pose(c);return c;}
-function install(game){
- if(stateByGame.has(game))return stateByGame.get(game);
- const anchor=resolveHospital(game),ground=game.terrain.height(anchor.x,anchor.z),roofY=highestRoof(game,anchor,ground),center={...anchor,roofY},root=new THREE.Group();root.name='hospital-rooftop-easter-egg-treves';
- // This slab intentionally covers the existing roof so the hospital next to Villa Treves
- // is unmistakably flat and playable from edge to edge.
- box(root,'#a9afb2',center.x,roofY-.22,center.z,center.width,.44,center.length,center.yaw,mat('#a9afb2',{roughness:.92}));
- const roofSurface={kind:'hospital-flat-roof',hospitalRoof:true,x:center.x,z:center.z,yaw:center.yaw,width:center.width-1,length:center.length-1,rise:0,baseY:roofY,topY:[roofY,roofY,roofY,roofY]};game.terrain.arcadeRamps=[...(game.terrain.arcadeRamps||[]),roofSurface];
- collisionBox(game,center.x,center.z,center.width,center.length,ground,Math.max(.5,roofY-ground),center.yaw,{hospitalRoof:true,driveTopMin:roofY});
- addParapet(game,root,center);makeHelipad(root,center);addHospitalMark(root,center);
- const stuntX=center.width*.18,span=Math.min(20,center.length*.35),ramps=[addRoofRamp(game,root,center,stuntX,-span,.02,1.25,3.6,7.7),addRoofRamp(game,root,center,center.width*.33,0,-.12,1.65,3.9,8.8),addRoofRamp(game,root,center,stuntX,span,.10,1.4,3.7,8.1)];
- addObstacle(game,root,center,center.width*.27,-span,4.5,1.2,.8,'#ca763d');addObstacle(game,root,center,center.width*.39,8,1.1,5.5,1.05,'#58646c');addObstacle(game,root,center,center.width*.13,3,2.3,2.3,.75,'#6b735f');addObstacle(game,root,center,center.width*.30,span,5.2,1,.7,'#bd9848');
+function collisionBox(game,x,z,width,length,y,h,yaw=0,flags={}){const p=vehicleFootprint(x,z,yaw,width,length),xs=p.map(v=>v[0]),zs=p.map(v=>v[1]);game.collision.add({p,minX:Math.min(...xs),maxX:Math.max(...xs),minZ:Math.min(...zs),maxZ:Math.max(...zs),minY:y,h,...flags},Math.min(...xs),Math.min(...zs),Math.max(...xs),Math.max(...zs));}
+function flatRoof(root,poly,y){const shape=new THREE.Shape();poly.forEach(([x,z],i)=>i?shape.lineTo(x,-z):shape.moveTo(x,-z));shape.closePath();const mesh=new THREE.Mesh(new THREE.ShapeGeometry(shape),material('#aeb8b9'));mesh.rotation.x=-Math.PI/2;mesh.position.y=y+.035;mesh.receiveShadow=true;mesh.name='monoblocco-whole-footprint-flat-roof';root.add(mesh);return mesh;}
+function parapets(game,root,poly,y){for(let i=0;i<poly.length;i++){const a=poly[i],b=poly[(i+1)%poly.length],len=Math.hypot(b[0]-a[0],b[1]-a[1]);if(len<.45)continue;const x=(a[0]+b[0])/2,z=(a[1]+b[1])/2,yaw=Math.atan2(b[0]-a[0],b[1]-a[1]);block(root,'#d1d5d1',x,y+.53,z,.40,1.06,len+.12,yaw);collisionBox(game,x,z,.40,len+.12,y,1.06,yaw,{hospitalRoofParapet:true});}}
+function helipad(root,p,y){const ring=new THREE.Mesh(new THREE.TorusGeometry(10.1,.38,8,48),material('#f7f7ed',true));ring.position.set(p.x,y+.14,p.z);ring.rotation.x=Math.PI/2;root.add(ring);for(const [dx,dz,w,l] of [[-3.2,0,1.2,8.2],[3.2,0,1.2,8.2],[0,0,7.6,1.2]])block(root,'#fafafa',p.x+dx,y+.12,p.z+dz,w,.08,l);for(let i=0;i<12;i++){const a=i/12*Math.PI*2,x=p.x+12.2*Math.cos(a),z=p.z+12.2*Math.sin(a),lamp=new THREE.Mesh(new THREE.CylinderGeometry(.2,.2,.09,8),material(i%2?'#56d7ff':'#ffffff',true));lamp.position.set(x,y+.14,z);root.add(lamp);}const sign=block(root,'#1a4848',p.x,y+.055,p.z+14.2,18,.08,.3);sign.userData.roofHelipad=true;}
+function ramp(game,root,y,p,rise=.82){const length=5.2,width=2.9,r={kind:'hospital-rooftop-ramp',hospitalRoof:true,x:p.x,z:p.z,yaw:p.yaw,width,length,rise,baseY:y,topY:[y,y,y+rise,y+rise]};game.terrain.arcadeRamps.push(r);const mesh=block(root,'#c47b3d',p.x,y+rise/2+.05,p.z,width,.18,length,p.yaw);mesh.rotation.order='YXZ';mesh.rotation.x=-Math.atan2(rise,length);return r;}
+function woodenBridge(game,root,y,p){const rise=.22,width=3.35,length=6.5,r={kind:'hospital-roof-wooden-bridge',hospitalRoof:true,x:p.x,z:p.z,yaw:p.yaw,width,length,rise,baseY:y,topY:[y+rise,y+rise,y+rise,y+rise]};game.terrain.arcadeRamps.push(r);block(root,'#936542',p.x,y+rise-.07,p.z,width,.15,length,p.yaw);for(let i=-3;i<=3;i++){const t=i/3*length*.46,x=p.x+Math.sin(p.yaw)*t,z=p.z+Math.cos(p.yaw)*t;block(root,'#b28a5a',x,y+rise+.025,z,width,.055,.13,p.yaw);}return r;}
+function addCourse(game,root,poly,layout,y){const ramps=[],bridges=[];for(let i=0;i<84;i++){const p=onTrack(layout,i/84);if(i%2===0)block(root,'#e2c47d',p.x,y+.049,p.z,.13,.022,1.35,p.yaw);}
+ for(const t of [.13,.43,.73])ramps.push(ramp(game,root,y,onTrack(layout,t),.70+t*.45));
+ for(const t of [.29,.87])bridges.push(woodenBridge(game,root,y,onTrack(layout,t)));
+ for(const t of [.05,.35,.60,.94]){const p=onTrack(layout,t),m=Math.hypot(p.dx,p.dz),x=p.x+p.dz/m*5,z=p.z-p.dx/m*5;if(!safe(poly,x,z,3))continue;block(root,'#ef9141',x,y+.30,z,.4,.6,.4);collisionBox(game,x,z,.4,.4,y,.6,0,{hospitalRoofObstacle:true});}
+ return {ramps,bridges};}
+function addBike(game,layout,t,y,occupied,name){const p=onTrack(layout,t),c=game.addCar(p.x,p.z,p.yaw,false,!occupied,'rooftrial');Object.assign(c,{x:p.x,z:p.z,y:y+.11,yaw:p.yaw,speed:0,health:100,parked:!occupied,fixedSpawn:true,missionUnit:true,budgetSleeping:false,hospitalRoofBike:true,name});c.mesh.visible=true;game.pose(c);if(c.rider)c.rider.visible=true;return c;}
+function bump(t,at,width=.046,height=.95){const d=Math.abs((((t-at)+.5)%1+1)%1-.5);return d>=width?0:Math.sin((1-d/width)*Math.PI/2)*height;}
+function update(game){const s=games.get(game);if(!s)return;
+ // A landed helicopter stays in the actual world, even after the player exits.
+ for(const c of game.cars)if(c.spec?.aircraft&&!c.spec.plane&&c.parked&&c.mesh?.visible&&c.y>=s.y-.5&&c.y<s.y+1.2&&safe(s.polygon,c.x,c.z,2)){
+  c.rooftopParked=true;c.fixedSpawn=false;c.missionUnit=true;c.abandonedAt=0;c.budgetSleeping=false;c.mesh.visible=true;
+ }
+ for(let i=0;i<s.moving.length;i++){
+  const c=s.moving[i];if(!c||!game.cars.includes(c)||game.state.car===c)continue;
+  const t=((game.state.elapsed*(i? .039:.044)+s.phases[i])%1+1)%1,p=onTrack(s.layout,t),jump=bump(t,.16,.040,.82)+bump(t,.46,.045,.98)+bump(t,.76,.043,.88);
+  Object.assign(c,{x:p.x,z:p.z,y:s.y+.11+jump,yaw:p.yaw,speed:i?12.5:14,parked:false,fixedSpawn:true,missionUnit:true,budgetSleeping:false,health:100});
+  c.mesh.visible=true;c.mesh.position.set(c.x,c.y,c.z);c.mesh.rotation.set(jump>.08?-.08:0,p.yaw,0,'YXZ');if(c.rider)c.rider.visible=true;
+ }
+}
+function install(game){if(games.has(game))return games.get(game);const hospital=resolveHospital(game);if(!hospital){console.warn('[Monoblocco trial] exact hospital footprint not found: refusing to use a substitute roof');return null;}const {building,polygon,roofY:y}=hospital,layout=findLayout(polygon,building);if(!layout){console.warn('[Monoblocco trial] no collision-safe loop and independent helipad on real polygon');return null;}
+ const root=new THREE.Group();root.name='ospedale-monoblocco-entire-roof-trial';flatRoof(root,polygon,y);parapets(game,root,polygon,y);helipad(root,layout.helipad,y);const course=addCourse(game,root,polygon,layout,y);
  game.scene.add(root);
- const bike1=addBike(game,center,'trail',center.width*.16,-8,.1,'Ragazzo rooftop · Trail'),bike2=addBike(game,center,'cruiser',center.width*.30,8,Math.PI,'Ragazzo rooftop · Cruiser'),bike3=addBike(game,center,'motorcycle',center.width*.08,center.length*.35,-Math.PI/2,'Moto rooftop · libera');
- for(const bike of [bike1,bike2]){bike.parked=false;bike.missionUnit=true;if(bike.rider)bike.rider.visible=true;}
- const entry={center,ground,roofY,root,roofSurface,ramps,bikes:[bike1,bike2,bike3],moving:[bike1,bike2],phase:[0,.46],installedAt:game.state.elapsed};stateByGame.set(game,entry);return entry;
+ // Rooftop height is reference-aware: ordinary people and traffic below the
+ // building still receive original terrain; bikes, pedestrians and helicopters
+ // approaching from above share exactly this collision and landing height.
+ const oldHeight=game.terrain.height.bind(game.terrain),oldSlope=game.terrain.slope.bind(game.terrain);
+ game.terrain.height=(x,z,reference=null)=>Number.isFinite(reference)&&reference>=y-2.25&&pointInside(x,z,polygon)?Math.max(y,oldHeight(x,z,reference)):oldHeight(x,z,reference);
+ game.terrain.slope=(x,z,yaw,wheelbase,reference=null)=>Number.isFinite(reference)&&reference>=y-2.25&&pointInside(x,z,polygon)?0:oldSlope(x,z,yaw,wheelbase,reference);
+ const riders=[addBike(game,layout,0,y,true,'Pro Trial · 01'),addBike(game,layout,.50,y,true,'Pro Trial · 02')];const playerBike=addBike(game,layout,.82,y,false,'Trial 125 · Moto disponibile');
+ const entry={name:TARGET,building,polygon,y,layout,root,helipad:layout.helipad,ramps:course.ramps,bridges:course.bridges,bikes:[...riders,playerBike],moving:riders,phases:[0,.5]};games.set(game,entry);return entry;
 }
-function bump(t,center,width=.055,height=1.25){const d=Math.abs((((t-center)+.5)%1+1)%1-.5);if(d>=width)return 0;return Math.sin((1-d/width)*Math.PI/2)*height;}
-function updateRiders(game){const h=stateByGame.get(game);if(!h)return;for(let i=0;i<h.moving.length;i++){const bike=h.moving[i];if(!bike||game.state.car===bike)continue;const t=((game.state.elapsed*.052+h.phase[i])%1+1)%1,a=t*Math.PI*2,rx=Math.min(18,h.center.width*.28)-i*1.8,rz=Math.min(15,h.center.length*.30)-i*.9,cx=h.center.width*.15+i*1.2,lx=cx+Math.cos(a)*rx,lz=Math.sin(a)*rz,p=worldPoint(h.center,lx,lz),dlx=-Math.sin(a)*rx,dlz=Math.cos(a)*rz,heading=worldPoint({x:0,z:0,yaw:h.center.yaw},dlx,dlz),jump=bump(t,.20,.045,1.25)+bump(t,.66,.052,1.0);bike.x=p.x;bike.z=p.z;bike.y=h.roofY+.10+jump;bike.yaw=Math.atan2(heading.x,heading.z);bike.speed=15+i*2;bike.parked=false;bike.fixedSpawn=true;bike.missionUnit=true;bike.budgetSleeping=false;bike.health=100;bike.mesh.visible=true;bike.mesh.position.set(bike.x,bike.y,bike.z);bike.mesh.rotation.set(jump>.08?-.08:0,bike.yaw,0,'YXZ');if(bike.rider)bike.rider.visible=true;}}
-const previousPopulate=ModernGameplay.prototype.populate;
-if(!ModernGameplay.prototype.__hospitalRooftopEasterEgg){ModernGameplay.prototype.__hospitalRooftopEasterEgg=true;ModernGameplay.prototype.populate=function(...args){const out=previousPopulate.apply(this,args);install(this);return out;};const previousUpdate=ModernGameplay.prototype.update;ModernGameplay.prototype.update=function(dt){const out=previousUpdate.call(this,dt);updateRiders(this);return out;};}
-
-export const HOSPITAL_ROOFTOP_EASTER_EGG={anchor:'actual hospital footprint beside Villa Treves',hint:HOSPITAL_HINT,searchRadius:SEARCH_RADIUS,helipad:true,bikes:3,movingRiders:2,ramps:3};
+const originalPopulate=ModernGameplay.prototype.populate;
+if(!ModernGameplay.prototype.__hospitalRooftopEasterEgg){
+ ModernGameplay.prototype.__hospitalRooftopEasterEgg=true;
+ ModernGameplay.prototype.populate=function(...args){const result=originalPopulate.apply(this,args);install(this);return result;};
+ const originalUpdate=ModernGameplay.prototype.update;
+ ModernGameplay.prototype.update=function(dt){const result=originalUpdate.call(this,dt);update(this);return result;};
+}
+export const HOSPITAL_ROOFTOP_EASTER_EGG={anchor:TARGET,wholeFootprint:true,helipad:true,bikes:3,movingRiders:2,ramps:3,woodenBridges:2};
+export {TARGET as HOSPITAL_MONOBLOCCO_NAME,resolveHospital,findLayout,onTrack};
