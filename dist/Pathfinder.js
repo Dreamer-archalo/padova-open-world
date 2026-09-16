@@ -17,7 +17,16 @@ export class TaxiPathfinder {
 
   nearestRoad(pos, {maxRadius = 520, maxCandidates = 2500, maxMs = 18} = {}) {
     if (!this.valid(pos)) return null;
-    return findTaxiRoad(pos, this.graph, this.terrain, {maxRadius, maxCandidates, maxMs});
+    const first=findTaxiRoad(pos, this.graph, this.terrain, {maxRadius, maxCandidates, maxMs});
+    if (first || maxRadius < 320) return first;
+    // A dense chunk can exhaust the initial 18 ms lookup before finding a
+    // connected drivable road. Retry once with a bounded, wider search rather
+    // than reporting an erroneous destination failure or blocking indefinitely.
+    return findTaxiRoad(pos, this.graph, this.terrain, {
+      maxRadius: Math.max(maxRadius, 520),
+      maxCandidates: Math.max(maxCandidates, 6000),
+      maxMs: Math.max(maxMs, 65),
+    });
   }
 
   route(from, to, {maxSteps = 12000, maxMs = 20} = {}) {
