@@ -19,4 +19,7 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
-      - run: node --check dist/gameplay-areas.js && node verify-airport-road-network.mjs
+      - name: Airport road topology diagnostic
+        run: node --check dist/gameplay-areas.js && node verify-airport-road-network.mjs
+      - name: Full airport vehicle, colliders and surface regression
+        run: npm run test:airport
