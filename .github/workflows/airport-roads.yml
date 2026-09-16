@@ -1,0 +1,22 @@
+name: Airport road-network audit
+on:
+  push:
+    branches: [fix/airport-access-road-network]
+  pull_request:
+    branches: [main]
+    paths:
+      - 'dist/gameplay-areas.js'
+      - 'verify-airport-road-network.mjs'
+      - '.github/workflows/airport-roads.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: node --check dist/gameplay-areas.js && node verify-airport-road-network.mjs
