@@ -41,15 +41,19 @@ export function prepareGameplayMap(map){
  // wholly internal paths leaves dangling nodes inside the villa/park pond.
  map.roads=map.roads.flatMap(r=>{if(!['footway','path','steps','cycleway'].includes(r.k))return r.p.every(inside)?[]:[r];let paths=[r.p];for(const a of zones)paths=paths.flatMap(p=>outsidePaths(p,a));return paths.map(p=>({...r,p}));});
  const roads=[];
- const road=(name,points,w=9)=>{const r={n:name,p:points.map(p=>[p.x,p.z]),w,k:'service',access:'private',layer:0,gameplay:true};roads.push(r);return r;};
- function connect(area,entry,name){
+ const road=(name,points,w=9,access='private')=>{const r={n:name,p:points.map(p=>[p.x,p.z]),w,k:'service',access,layer:0,gameplay:true};roads.push(r);return r;};
+ function connect(area,entry,name,{publicAccess=false,approach=null}={}){
   let best=null,d=Infinity;
-  for(const r of map.roads){if(!['service','residential','unclassified','tertiary','secondary','primary'].includes(r.k)||r.tunnel||r.b)continue;
+  for(const r of map.roads){if(!['service','residential','unclassified','tertiary','secondary','primary'].includes(r.k)||r.tunnel||r.b||(publicAccess&&['no','private'].includes(r.access)))continue;
    for(const p of r.p){if(insideArea(area,...p,2))continue;const n=Math.hypot(entry.x-p[0],entry.z-p[1]);if(n<d){best=p;d=n;}}
   }
-  if(best)road(name,[{x:best[0],z:best[1]},entry],8);
+  if(best)road(name,[{x:best[0],z:best[1]},...(approach?[approach]:[]),entry],8,publicAccess?'yes':'private');
  }
- connect(AIRPORT,AIRPORT_GATE,'Ingresso aeroporto');
+ // The only public airport approach must cross the fence through the authored
+ // 26 m entrance, not cut diagonally across it or inherit the flyover's deck.
+ // Airside service roads retain private access; the terminal gate is reachable
+ // by road navigation and taxi drop-off, without exposing runway/taxiways.
+ connect(AIRPORT,AIRPORT_GATE,'Ingresso aeroporto',{publicAccess:true,approach:areaPoint(AIRPORT,228,250)});
  connect(VILLA,areaPoint(VILLA,0,51),'Accesso villa Treves');
  road('Viale della villa',[areaPoint(VILLA,0,51),HOME],8);
  road('Servizi aeroportuali',[AIRPORT_GATE,areaPoint(AIRPORT,65,250),areaPoint(AIRPORT,65,-470)],12);
