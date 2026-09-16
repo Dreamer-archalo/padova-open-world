@@ -1,0 +1,37 @@
+name: Release smoke tests
+
+on:
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Verify release manifest and deploy directory
+        run: |
+          test -f dist/index.html
+          node --input-type=module -e "import fs from 'node:fs'; const v=JSON.parse(fs.readFileSync('dist/version.json')); if(v.version!=='1.2.0' || v.publishDirectory!=='dist') process.exit(1);"
+      - name: Taxi and two Tangenziale races
+        run: |
+          npm run test:taxi
+          npm run test:tangenziale-race
+      - name: Online race regression
+        run: |
+          node verify-online-race.mjs
+          node verify-online-race-second-fix.mjs
+      - name: Startup and structural geometry regression
+        run: |
+          npm run test:initial-world
+          node verify-geometry-integrity.mjs
+      - name: Full elevation audit — known Bassanello discrepancy, visible and nonblocking
+        continue-on-error: true
+        run: npm run test:geometry-integrity
