@@ -32,6 +32,5 @@ jobs:
         run: |
           npm run test:initial-world
           node verify-geometry-integrity.mjs
-      - name: Full elevation audit — known Bassanello discrepancy, visible and nonblocking
-        continue-on-error: true
+      - name: Full elevation audit — required
         run: npm run test:geometry-integrity
