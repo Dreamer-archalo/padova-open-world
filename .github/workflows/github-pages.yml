@@ -23,8 +23,14 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v6
+      - name: Use Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
       - name: Validate production runtime
         run: |
+          test -f dist/index.html
+          node --input-type=module -e "import fs from 'node:fs'; const v=JSON.parse(fs.readFileSync('dist/version.json')); if(!v.version || v.publishDirectory!=='dist') process.exit(1);"
           node --check dist/game.js
           node --check dist/core.js
           node --check dist/taxi-service.js
@@ -43,8 +49,14 @@ jobs:
           node --check dist/tangenziale-race-short-sprint.js
           node --check dist/online-race-v2.js
           node --check dist/online-race-second-fix.js
+      - name: Release smoke tests before publishing
+        run: |
+          npm run test:taxi
+          npm run test:tangenziale-race
           node verify-online-race.mjs
           node verify-online-race-second-fix.mjs
+          npm run test:initial-world
+          npm run test:geometry-integrity
       - name: Configure GitHub Pages
         uses: actions/configure-pages@v5
       - name: Upload dist
