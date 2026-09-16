@@ -1,21 +1,34 @@
 import {Terrain} from './terrain.js';
 import {RoadSurfaces} from './road-surfaces.js';
+import {VILLA,AIRPORT,areaLocal} from './gameplay-areas.js';
 
-// The historic centre of Padova is a very flat urban plain. Keep the river and
-// canal geometry independent: only the immediate bank remains outside the urban
-// levelling pass, while streets, piazzas and pavements return quickly to one
-// gentle city plane.
+// The historic plain must not overwrite the independently authored elevations of
+// Villa Treves and the airport. The old plain raised the Villa roads about 7 m
+// above its fixed platform, burying buildings and spawning actors in the ground.
 export const HISTORIC_CENTER_PLAIN={x:0,z:100,rx:1210,rz:1350,core:.62,strength:.985,slopeX:.000015,slopeZ:.00003};
 export const HISTORIC_RIVER_HARD_BUFFER=2.5;
 export const HISTORIC_RIVER_FEATHER=12;
-
+export const AUTHORED_AREA_FEATHER=240;
 const clamp=(n,a,b)=>Math.max(a,Math.min(b,n));
 const smooth=t=>{t=clamp(t,0,1);return t*t*(3-2*t);};
+
+// Zero inside an authored gameplay area, smoothly rising to one only 240 m
+// outside it. A 7 m difference across this distance has an ordinary road-grade
+// transition instead of a vertical lip at the villa fence or driveway.
+export function authoredAreaMask(x,z){
+ let mask=1;
+ for(const area of [VILLA,AIRPORT]){
+  const p=areaLocal(area,x,z),du=Math.max(area.minU-p.u,0,p.u-area.maxU),dv=Math.max(area.minV-p.v,0,p.v-area.maxV);
+  const distance=Math.hypot(du,dv);
+  if(distance<AUTHORED_AREA_FEATHER)mask=Math.min(mask,smooth(distance/AUTHORED_AREA_FEATHER));
+ }
+ return mask;
+}
 export function historicPlainMask(x,z,waterDistance=Infinity){
  const a=HISTORIC_CENTER_PLAIN,dx=(x-a.x)/a.rx,dz=(z-a.z)/a.rz,r=Math.hypot(dx,dz);if(r>=1)return 0;
  const land=r<=a.core?1:smooth((1-r)/(1-a.core));
  const river=waterDistance<=HISTORIC_RIVER_HARD_BUFFER?0:waterDistance>=HISTORIC_RIVER_FEATHER?1:smooth((waterDistance-HISTORIC_RIVER_HARD_BUFFER)/(HISTORIC_RIVER_FEATHER-HISTORIC_RIVER_HARD_BUFFER));
- return land*river*a.strength;
+ return land*river*authoredAreaMask(x,z)*a.strength;
 }
 
 const baseElevation=Terrain.prototype.elevation;
@@ -33,10 +46,8 @@ if(!Terrain.prototype.__historicCenterLevelPlane){
  };
 }
 
-// RoadSurfaces is solved after Terrain has been created. Reinforce the same flat
-// datum on ordinary historic-centre streets after the global road smoothing pass.
-// Bridges, tunnels and layered roads are deliberately excluded: their vertical
-// separation belongs to the river/structure system, not to ordinary paving.
+// Road heights inherit the same mask as the actual terrain, including the
+// authored-area exclusion. Elevated bridges, tunnels and layers stay separate.
 const baseRoadSmooth=RoadSurfaces.prototype.smoothProfiles;
 if(!RoadSurfaces.prototype.__historicCenterRoadPlane){
  RoadSurfaces.prototype.__historicCenterRoadPlane=true;
@@ -51,8 +62,6 @@ if(!RoadSurfaces.prototype.__historicCenterRoadPlane){
  };
 }
 
-// Diagnostic used when checking future terrain changes. It intentionally ignores
-// the river corridor because water level/banks are a separate vertical system.
 if(!Terrain.prototype.historicCenterLevelReport){
  Terrain.prototype.historicCenterLevelReport=function(step=60){
   let min=Infinity,max=-Infinity,maxNeighbourDelta=0,samples=0;
