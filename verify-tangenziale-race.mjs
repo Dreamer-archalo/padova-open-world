@@ -25,8 +25,8 @@ const checks=[
  ['real obstacles including truck',/style:'truck'/.test(race)&&/style:'wagon'/.test(race)&&/style:'utility'/.test(race)&&/tangenzialeObstacle:true/.test(race)],
  ['live four-car timing board',/finishTimes:\[null,null,null,null\]/.test(race)&&/TEMPI GARA/.test(race)&&/AUTO 1 · TU/.test(race)&&/formatRaceTime/.test(race)],
  ['finish grace and results',/firstFinishAt/.test(race)&&/resultsReady/.test(race)&&/phase='results'/.test(race)],
- ['underpass solid portal',/underpass-pier/.test(structures)&&/underpassPortal\(/.test(structures)&&/for\(const sign of \[-1,1\]\)/.test(structures)&&/add\(px,pz,lowerY-\.05,pierW,pierH\+\.05,depth,lowerYaw,'underpass-pier'/.test(structures)&&!/'underpass-arch'/.test(structures)&&!/'underpass-lintel'/.test(structures)],
- ['underpass lower carriageway unobstructed',/clearance<3\.2/.test(structures)&&/opening=Math\.max\(7\.4,lower\.road\.w\+3\.2\)/.test(structures)&&/side=opening\/2\+pierW\/2/.test(structures)&&/if\(\^underpass-/.test(structures)===false&&/if\(\/\^underpass-\/\.test\(b\.kind\)\)return true/.test(structures)],
+ ['physical underpass portal uses only side piers',/underpass-pier/.test(structures)&&/underpassPortal\(/.test(structures)&&/for\(const sign of \[-1,1\]\)/.test(structures)&&/add\(px,pz,lowerY-\.05,pierW,deckBottom-lowerY\+\.08,depth,lowerYaw,'underpass-pier'/.test(structures)&&!/'underpass-arch'|'underpass-lintel'/.test(structures)],
+ ['lower carriageway kept free by geometry-aware column exclusion',/deckBottom-lowerY<3\.2/.test(structures)&&/opening=Math\.max\(7\.4,lower\.road\.w\+3\.2\)/.test(structures)&&/roadConflict\(road,px,pz/.test(structures)&&/if\(\/\^underpass-\/\.test\(b\.kind\)\)return true/.test(structures)],
  ['rules module',/COUNTDOWN_SECONDS=5/.test(rules)&&/nextCheckpoint/.test(rules)&&/resultsReady/.test(rules)],
  ['snapshot restore',/snapshot\(\)/.test(race)&&/restoreSnapshot/.test(race)&&/gameGraceUntil/.test(race)],
  ['runtime import',/import '\.\/tangenziale-race\.js';/.test(upgrades)]
