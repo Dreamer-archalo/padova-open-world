@@ -1,0 +1,18 @@
+name: Diagnose Padova terrain and geometry (no deploy)
+on:
+  push:
+    branches:
+      - fix/geometry-contact-audit-20260916
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  diagnose:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v6
+      - name: Check diagnostic script
+        run: node --check verify-world-contact.mjs
+      - name: Measure actual world height and generated geometry
+        run: node --max-old-space-size=4096 verify-world-contact.mjs
