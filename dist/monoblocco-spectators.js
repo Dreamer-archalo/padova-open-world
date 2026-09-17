@@ -6,7 +6,7 @@ import {resolveHospital} from './hospital-rooftop-easter-egg.js';
 // Spectators are independent of the city pedestrian recycler and cannot be
 // teleported to a different location by normal traffic/population updates.
 const perGame=new WeakMap();
-const cheers=['Vai, vai!','Che salto!','Grande!','Forza trial!','Atterraggio perfetto!'];
+const cheers=['Vai, vai!','Che salto!','Grande!','Forza trial!','Atterraggio perfetto!','Ancora un giro!','Che rampa!','Dai, accelera!','Bravo, continua!'];
 const bodyGeo=new THREE.BoxGeometry(.52,.75,.32),armGeo=new THREE.BoxGeometry(.14,.66,.17),headGeo=new THREE.SphereGeometry(.19,8,6);
 const colours=['#e7ab3a','#4ba2bd','#d86b64','#7b8f51','#b78cd3','#d8d1be','#eeb98c'];
 function spectator(root,p,y,track,index){
@@ -21,9 +21,30 @@ function spectator(root,p,y,track,index){
  if(typeof document!=='undefined'&&document.createElement){const canvas=document.createElement('canvas');canvas.width=384;canvas.height=96;const ctx=canvas.getContext?.('2d');if(ctx){ctx.fillStyle='rgba(13,28,36,.87)';ctx.fillRect(4,6,376,82);ctx.fillStyle='#fff5d4';ctx.font='bold 32px system-ui';ctx.textAlign='center';ctx.fillText(group.userData.speech,192,60);const texture=new THREE.CanvasTexture(canvas),bubble=new THREE.Sprite(new THREE.SpriteMaterial({map:texture,transparent:true,depthWrite:false}));bubble.scale.set(3.3,.82,1);bubble.position.set(0,2.42,0);bubble.visible=false;bubble.userData.roofSpeechBubble=true;group.add(bubble);group.userData.bubble=bubble;}}
  root.add(group);return group;
 }
-export function selectRooftopSpectators(poly,layout,b,limit=7){const sampleCount=Math.max(96,Math.ceil(layout.total/3)),route=Array.from({length:sampleCount},(_,i)=>onTrack(layout,i/sampleCount)),choices=[];
- for(let x=b.minX+3;x<=b.maxX-3;x+=4)for(let z=b.minZ+3;z<=b.maxZ-3;z+=4){if(!roofClear(poly,x,z,2.9)||Math.hypot(x-layout.helipad.x,z-layout.helipad.z)<17)continue;let closest=null,d=Infinity;for(const p of route){const dd=Math.hypot(x-p.x,z-p.z);if(dd<d){d=dd;closest=p;}}if(d<3.8||d>13||!closest)continue;choices.push({x,z,closest,d,score:Math.abs(d-7)+Math.abs(x-(b.cx??(b.minX+b.maxX)/2))*.0001});}
- choices.sort((a,b)=>a.score-b.score);const chosen=[];for(const p of choices){if(chosen.every(q=>Math.hypot(p.x-q.x,p.z-q.z)>=8)){chosen.push(p);if(chosen.length===limit)break;}}return chosen;
+export function selectRooftopSpectators(poly,layout,b,limit=14){
+ const sampleCount=Math.max(96,Math.ceil(layout.total/3)),route=Array.from({length:sampleCount},(_,i)=>onTrack(layout,i/sampleCount)),choices=[];
+ for(let x=b.minX+3;x<=b.maxX-3;x+=4)for(let z=b.minZ+3;z<=b.maxZ-3;z+=4){
+  if(!roofClear(poly,x,z,2.9)||Math.hypot(x-layout.helipad.x,z-layout.helipad.z)<17)continue;
+  let closest=null,d=Infinity;for(const p of route){const dd=Math.hypot(x-p.x,z-p.z);if(dd<d){d=dd;closest=p;}}
+  if(d<4.8||d>13||!closest)continue;
+  choices.push({x,z,closest,d,score:Math.abs(d-7)});
+ }
+ choices.sort((a,b)=>a.score-b.score);
+ const chosen=[];
+ while(chosen.length<limit){
+  let candidate=null,best=-Infinity;
+  for(const p of choices){
+   const spacing=chosen.length?Math.min(...chosen.map(q=>Math.hypot(p.x-q.x,p.z-q.z))):100;
+   if(spacing<8)continue;
+   // Maximise distance from existing supporters: distribute the crowd along
+   // the whole loop rather than packing the best-scoring central candidates.
+   const score=chosen.length?spacing-p.score*.25:-p.score;
+   if(score>best){best=score;candidate=p;}
+  }
+  if(!candidate)break;
+  chosen.push(candidate);
+ }
+ return chosen;
 }
 function install(game){if(perGame.has(game))return;const site=resolveHospital(game);if(!site)return;
  const roof=game.scene.children.find(o=>o.name==='ospedale-monoblocco-entire-roof-trial');if(!roof)return;
