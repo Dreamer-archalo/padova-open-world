@@ -11,7 +11,7 @@ const content={style:{},buttons:new Map(),set innerHTML(value){this.buttons.clea
 const menu={open:true,style:{},close(){this.open=false;},showModal(){this.open=true;}},mapDialog={open:false,style:{},close(){this.open=false;},showModal(){this.open=true;}};
 let paused=false,executions=0,release;
 const pending=new Promise(resolve=>{release=resolve;});
-const controller=new TaxiMenuController({document:{getElementById:()=>({textContent:''})},menu,mapDialog,menuContent:content,mapPlaces:{style:{}},fullMap:null,overlay:{hidden:true,style:{}},status:{textContent:''},inputManager:{disable(){},enable(){}},bounds:{x:-100,z:-100,w:200,h:200},setPaused:v=>{paused=v;},drawFullMap(){},getFare:()=>25,executeTransition:async()=>{executions++;await pending;},onError:error=>{throw error;},onMapPickingChange(){},delayMs:1});
+const controller=new TaxiMenuController({document:{getElementById:()=>({textContent:''})},menu,mapDialog,menuContent:content,mapPlaces:{style:{}},fullMap:null,overlay:null,status:{textContent:''},inputManager:{disable(){},enable(){}},bounds:{x:-100,z:-100,w:200,h:200},setPaused:v=>{paused=v;},drawFullMap(){},getFare:()=>25,executeTransition:async()=>{executions++;await pending;},onError:error=>{throw error;},onMapPickingChange(){},delayMs:1});
 assert(controller.startTaxiTransition({x:20,z:30,name:'Piazza'},{}));
 const confirm=content.querySelector('#confirmTaxi');confirm.click();
 assert.equal(paused,true,'3D simulation must be paused as soon as the confirmation closes');
