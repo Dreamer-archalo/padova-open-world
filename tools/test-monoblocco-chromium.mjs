@@ -33,7 +33,8 @@ try{
   const roof=root?.children.find(o=>o.name==='monoblocco-whole-footprint-flat-roof');
   const bikes=game.cars.filter(c=>c.hospitalRoofBike),fans=[];root?.traverse(o=>{if(o.userData?.roofSpectator)fans.push(o);});
   const gl=document.getElementById('world')?.getContext('webgl2');
-  return {root:!!root,roof:!!roof,bikes:bikes.length,moving:bikes.filter(c=>!c.parked).length,fans:fans.length,gl:gl?.getParameter(gl.VERSION)||null,roofY:(roof?.position.y??0)-.035,available:bikes.some(c=>c.parked),positions:bikes.map(c=>[c.x,c.y,c.z])};
+  const ramps=game.terrain.arcadeRamps||[];
+  return {root:!!root,roof:!!roof,bikes:bikes.length,moving:bikes.filter(c=>!c.parked).length,fans:fans.length,gl:gl?.getParameter(gl.VERSION)||null,roofY:(roof?.position.y??0)-.035,available:bikes.some(c=>c.parked),positions:bikes.map(c=>[c.x,c.y,c.z]),coursePolish:root?.userData.coursePolish||null,extraRamps:ramps.filter(r=>r.kind==='hospital-rooftop-jump').length,realGapBridges:ramps.filter(r=>r.realGapBridge).length};
  });
  console.log('ROOF_BROWSER_SCENE '+JSON.stringify(rooftop));
  assert.equal(rooftop.root,true,'Whole Monoblocco roof missing from rendered scene');
@@ -41,6 +42,10 @@ try{
  assert.equal(rooftop.bikes,3);assert.equal(rooftop.moving,2);assert(rooftop.fans>=4);
  assert(rooftop.gl?.includes('WebGL'),'Actual WebGL2 context missing');
  assert.equal(rooftop.available,true);
+ assert.equal(rooftop.coursePolish?.rooftopSpikesCleaned,true,'Targeted rooftop cleanup must initialize in the browser');
+ assert(rooftop.extraRamps>=2,'Two or more additional driveable ramps must spawn in the browser');
+ assert.equal(rooftop.extraRamps,rooftop.coursePolish.extraRamps,'Visual ramp count must match physical contact ramps');
+ assert.equal(rooftop.realGapBridges,rooftop.coursePolish.realGapBridges,'Visual bridge count must match physical contact bridges');
  phase='rooftop camera and rider';
  await page.evaluate(()=>{const g=globalThis.__monobloccoTest,b=g.cars.find(c=>c.hospitalRoofBike&&c.parked),s=g.state;Object.assign(s,{x:b.x+.8,z:b.z,y:b.y,yaw:b.yaw,mode:'foot',car:null,speed:0,vy:0,wanted:0});});
  await page.waitForTimeout(1200);
@@ -59,7 +64,7 @@ try{
  assert(after.y>=rooftop.roofY-.8,'Bike fell through the roof');
  await page.screenshot({path:'test-artifacts/monoblocco-after-ride.png',timeout:20000});
  assert.equal(errors.length,0,'Browser errors: '+errors.join(' | '));
- console.log('PASS real WebGL2 roof loaded, 3 motorcycles, spectators, ride-by-keyboard and roof contact');
+ console.log('PASS real WebGL2 roof loaded, '+rooftop.extraRamps+' extra ramps, '+rooftop.realGapBridges+' actual gap bridges, 3 motorcycles, spectators, ride-by-keyboard and roof contact');
 }catch(error){
  console.error('ROOF_BROWSER_FAIL phase='+phase+' '+(error.stack||error));
  console.error('ROOF_BROWSER_STATUS '+JSON.stringify(await status()));
