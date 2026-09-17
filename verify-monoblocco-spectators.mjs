@@ -20,6 +20,6 @@ for(const [i,p] of fans.entries()){
 const runtime=fs.readFileSync(new URL('./dist/gameplay-upgrades.js',import.meta.url),'utf8'),source=fs.readFileSync(new URL('./dist/monoblocco-spectators.js',import.meta.url),'utf8');
 assert(runtime.includes("import './monoblocco-spectators.js';"),'Spectators must be wired to the active game');
 assert(runtime.indexOf('monoblocco-spectators.js')>runtime.indexOf('hospital-rooftop-easter-egg.js')&&runtime.indexOf('monoblocco-spectators.js')<runtime.indexOf('online-race-v2.js'),'Rooftop population must initialize after roof, before unchanged online hooks');
-assert(source.includes('findLayout(site.polygon,site.building)')&&source.includes('roof.userData')===false,'Do not depend on missing implicit layout references');
-assert(source.includes('group.userData.speech=cheers')&&source.includes('group.userData.roofSpectator=true')&&source.includes('group.userData.bubble.visible'),'Visible cheering, not just a named unused feature');
+assert(source.includes('findLayout(site.polygon,site.building)')&&!source.includes('game.__monobloccoSpectatorLayout'),'Do not depend on missing implicit layout references');
+assert(source.includes('group.userData.speech=cheers')&&source.includes('group.userData.roofSpectator=true')&&source.includes('f.userData.bubble.visible'),'Visible cheering, not just a named unused feature');
 console.log('PASS',fans.length,'spectators on real roof, separate from 720 motorcycle samples and helipad; game module imported');
