@@ -22,6 +22,10 @@ jobs:
           node --check dist/hospital-rooftop-easter-egg.js
           node --check dist/hospital-helipad-exit.js
           node verify-hospital-rooftop.mjs
+      - name: Verify spectator positions and active visual cheering
+        run: |
+          node --check dist/monoblocco-spectators.js
+          node verify-monoblocco-spectators.mjs
       - name: Verify previous taxi races and simulated online independently
         if: always()
         run: |
