@@ -1,4 +1,5 @@
 import {project,clamp,pointInside} from './core.js';
+import {buildAirportRoads} from './airport-road-network.js';
 
 // Original gameplay layouts. LIPU's published ARP and 04/22, 1122 x 30 m
 // runway fix the airport frame; buildings are deliberately fictional.
@@ -24,7 +25,7 @@ export function gameplayElevation(x,z,raw,patches=[]){
 }
 function outsidePaths(points,area){
  const paths=[];let current=[];
- const append=(a,b)=>{if(Math.hypot(a[0]-b[0],a[1]-b[1])<.01)return;if(current.length&&Math.hypot(current.at(-1)[0]-a[0],current.at(-1)[1]-a[1])>.01){paths.push(current);current=[];}if(!current.length)current.push(a);current.push(b);};
+ const append=(a,b)=>{if(Math.hypot(a[0]-b[0],a[1]-b[1])<.01)return;if(current.length&&Math.hypot(current.at(-1)[0]-a[0],current.at(-1)[1])>.01){paths.push(current);current=[];}if(!current.length)current.push(a);current.push(b);};
  for(let i=1;i<points.length;i++){const a=points[i-1],b=points[i],p=areaLocal(area,...a),q=areaLocal(area,...b);let lo=0,hi=1;
   for(const [start,delta,min,max] of [[p.u,q.u-p.u,area.minU,area.maxU],[p.v,q.v-p.v,area.minV,area.maxV]]){if(Math.abs(delta)<1e-9){if(start<min||start>max){lo=1;hi=0;break;}}else{const x=(min-start)/delta,y=(max-start)/delta;lo=Math.max(lo,Math.min(x,y));hi=Math.min(hi,Math.max(x,y));}}
   if(lo>=hi){append(a,b);continue;}const at=t=>[a[0]+(b[0]-a[0])*t,a[1]+(b[1]-a[1])*t];if(lo>0)append(a,at(lo));if(current.length){paths.push(current);current=[];}if(hi<1)append(at(hi),b);
@@ -52,7 +53,9 @@ export function prepareGameplayMap(map){
  connect(AIRPORT,AIRPORT_GATE,'Ingresso aeroporto');
  connect(VILLA,areaPoint(VILLA,0,51),'Accesso villa Treves');
  road('Viale della villa',[areaPoint(VILLA,0,51),HOME],8);
- road('Servizi aeroportuali',[AIRPORT_GATE,areaPoint(AIRPORT,65,250),areaPoint(AIRPORT,65,-470)],12);
+ // Road-going vehicles stay away from the runway and aircraft taxiway.
+ // Dedicated shared vertices join the existing entrance to the service loop.
+ roads.push(...buildAirportRoads(AIRPORT,areaPoint));
  map.roads.push(...roads);
  map.gameplay={areas:zones,roads};return map;
 }
