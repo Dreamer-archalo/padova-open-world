@@ -14,6 +14,7 @@ import './tangenziale-race-final-fixes.js';
 import './hospital-rooftop-easter-egg.js';
 import './hospital-helipad-exit.js';
 import './monoblocco-spectators.js';
+import './monoblocco-course-polish.js';
 import './taxi-loading-guard.js';
 // Must precede online ownership hooks so remote human cars are never AI-driven.
 import './tangenziale-race-difficulty.js';
