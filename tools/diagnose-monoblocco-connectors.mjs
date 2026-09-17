@@ -1,6 +1,6 @@
 import fs from 'node:fs';
 import {pointInside} from '../dist/core.js';
-import {findLayout,onTrack,roofClear} from '../dist/monoblocco-track.js';
+import {findLayout,roofClear} from '../dist/monoblocco-track.js';
 const map=JSON.parse(fs.readFileSync(new URL('../dist/data/padova.json',import.meta.url)));
 const b=map.buildings.find(o=>o.n==='Ospedale Civile - Monoblocco - Casse - Prenotazioni');
 if(!b)throw Error('Monoblocco missing');const xs=b.p.map(p=>p[0]),zs=b.p.map(p=>p[1]);Object.assign(b,{minX:Math.min(...xs),maxX:Math.max(...xs),minZ:Math.min(...zs),maxZ:Math.max(...zs)});
@@ -14,4 +14,6 @@ const score=outside*2+Math.min(arc-chord,45)-chord*.2-difference(incoming)*9-dif
 candidates.push({i,j,arc:+arc.toFixed(1),chord:+chord.toFixed(1),outside,contiguous,heading:+heading.toFixed(3),approach:+difference(incoming).toFixed(2),depart:+difference(outgoing).toFixed(2),score:+score.toFixed(1),a:[+a.x.toFixed(1),+a.z.toFixed(1)],b:[+q.x.toFixed(1),+q.z.toFixed(1)]});
 }
 candidates.sort((a,b)=>b.score-a.score);
-console.log('MONOBLOCCO_CONNECTOR_DIAGNOSTIC',JSON.stringify({track:Math.round(route.total),candidates:candidates.length,top:candidates.slice(0,8)},null,2));
+const smooth=candidates.filter(c=>c.approach<=.9&&c.depart<=.9).sort((a,b)=>b.score-a.score);
+const moderate=candidates.filter(c=>c.approach<=1.35&&c.depart<=1.35).sort((a,b)=>b.score-a.score);
+console.log('MONOBLOCCO_CONNECTOR_DIAGNOSTIC',JSON.stringify({track:Math.round(route.total),candidates:candidates.length,lowAngleCount:smooth.length,moderateAngleCount:moderate.length,lowAngle:smooth.slice(0,6),moderateAngle:moderate.slice(0,6),top:candidates.slice(0,5)},null,2));
