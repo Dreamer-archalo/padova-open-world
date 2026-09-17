@@ -1,69 +1,56 @@
 # PADOVA AFTER HOURS
 
-### Padova Open World · Versione 1.2 · Gioco 3D per browser
+**Padova Open World · Gioco 3D open world ambientato a Padova**  
+**Release dichiarata: 1.2 · Prossima versione: 2.1, in sviluppo**
 
-[**▶ GIOCA — GitHub Pages**](https://dreamer-archalo.github.io/padova-open-world/) &nbsp;·&nbsp; [Versione pubblicata](https://dreamer-archalo.github.io/padova-open-world/version.json) &nbsp;·&nbsp; [Codice e aggiornamenti](https://github.com/Dreamer-archalo/padova-open-world/commits/main)
+[**▶ GIOCA ONLINE — GitHub Pages**](https://dreamer-archalo.github.io/padova-open-world/) · [Verifica la versione pubblicata](https://dreamer-archalo.github.io/padova-open-world/version.json) · [Aggiornamenti](https://github.com/Dreamer-archalo/padova-open-world/commits/main)
 
-**La tua Padova, un mondo da esplorare.** *Padova After Hours* è un progetto open world ambientato nella Padova contemporanea: esplora il centro e i quartieri, guida, pilota, scopri luoghi e affronta missioni e gare. La città utilizza strade e sagome degli edifici derivate da OpenStreetMap, insieme a elementi 3D originali e ricostruzioni stilizzate.
+Esplora una reinterpretazione giocabile della **Padova contemporanea**: percorri il centro e i quartieri, guida e pilota veicoli, scopri i luoghi della città e affronta gare e missioni. La mappa combina strade e sagome degli edifici derivate da OpenStreetMap con ambienti tridimensionali originali e ricostruzioni stilizzate.
 
-> **Versione del progetto: 1.2.** Il link principale è la pubblicazione GitHub Pages collegata a questo repository (`main`): gli aggiornamenti diventano visibili solo dopo un deploy riuscito. Il [sito Netlify preesistente](https://padova-open-world.netlify.app/) è un'altra distribuzione e potrebbe mostrare codice meno recente finché i deploy non saranno sincronizzati. Controlla il file «Versione pubblicata» per la versione effettivamente online.
+> **Quale versione sto giocando?** Il collegamento principale porta alla pubblicazione GitHub Pages di questo repository. Il numero effettivamente distribuito è indicato nel file *Verifica la versione pubblicata*: un aggiornamento di `main` non equivale automaticamente a un deploy completato. L'[altro sito esistente su Netlify](https://padova-open-world.netlify.app/) può essere meno aggiornato; non viene indicato come versione più recente senza una verifica del deploy.
 
----
+## Il mondo di gioco
 
-## Il gioco in breve
+- **Padova da esplorare:** centro storico, quartieri, strade, ponti, corsi d'acqua, monumenti e navigazione sulla mappa.
+- **Mobilità:** automobili, moto, scooter, camion, elicotteri, piccoli aerei e carri armati; traffico, tram, pedoni e pattuglie.
+- **Luoghi e servizi:** aeroporto, villa iniziale nell'area di Parco Treves, taxi e punti di interesse.
+- **Attività:** consegne, portavalori, sfide in moto, due gare sulla Tangenziale, checkpoint e fughe dalla polizia.
+- **Online sperimentale:** cinque personaggi selezionabili, mappa condivisa e codice per lobby e gare. L'esperienza con più dispositivi e i risultati sincronizzati richiedono ancora collaudo.
 
-- **Esplorazione urbana:** una mappa estesa di Padova con strade, ponti, quartieri, monumenti, acqua e navigazione verso i punti di interesse.
-- **Veicoli e guida:** auto, moto, scooter, camion, elicotteri, piccoli aerei e carri armati; traffico, tram, pedoni e inseguimenti della polizia.
-- **Aeroporto e base:** hangar, mezzi aeroportuali giocabili e partenza dalla villa nell'area di Parco Treves.
-- **Attività:** consegne, missione portavalori, sfide in moto, **due gare sulla Tangenziale**, corse a checkpoint e fughe dalla polizia.
-- **Modalità online sperimentale:** mappa condivisa con cinque personaggi selezionabili e codice per lobby e gare con altri giocatori. Il funzionamento su due dispositivi e le partenze/risultati sincronizzati necessitano ancora di verifiche pratiche.
+**Personaggi:** Scando · Mattia · Marchese · Milo · Nico.
 
-**Personaggi disponibili:** Scando, Mattia, Marchese, Milo e Nico.
+## Verso la versione 2.1
 
-## Le principali novità della 1.2
+Il lavoro per la **2.1** si concentra su quattro interventi di rilievo, senza trasformare ogni correzione tecnica in una nuova funzione pubblicizzata:
 
-| Area | Cosa cambia |
+1. **Viabilità e geometria:** continuità tra terreno, strade, marciapiedi, ponti e collisioni; restano verifiche da completare, in particolare nella zona di Bassanello.
+2. **Aeroporto e spostamenti:** collegamento stradale effettivo con la città, navigazione e affidabilità del servizio taxi.
+3. **Gare e traffico:** due percorsi sulla Tangenziale, difficoltà dei bot e miglioramenti a partenza, gestione del traffico e stabilità.
+4. **Multiplayer:** selezione dei cinque personaggi, lobby e gare condivise; occorrono prove reali con due o più giocatori prima di considerarle completate.
+
+**Stato:** il ramo `main` contiene aggiornamenti successivi alla release 1.2, ma il [manifest di versione](dist/version.json) dichiara ancora `1.2.0`. **La 2.1 non viene presentata come una release già pubblicata o interamente collaudata.** La cronologia completa rimane nei [commit](https://github.com/Dreamer-archalo/padova-open-world/commits/main), non in questa presentazione.
+
+## Come giocare
+
+| Comando | Funzione |
 | --- | --- |
-| Mondo e mobilità | Padova moderna consolidata, veicoli e attività ampliati, trasporti e traffico più articolati. |
-| Gare | Due percorsi sulla Tangenziale, difficoltà dei bot nella prima gara e interventi su partenza e posizionamento. |
-| Online | Prima implementazione della mappa condivisa e delle lobby; multiplayer ancora da collaudare in condizioni reali. |
-| Servizi e luoghi | Taxi, aeroporto, villa iniziale, edifici e ambientazioni aggiornati, easter egg sul tetto dell'ospedale. |
-| Stabilità | Miglioramenti ai caricamenti, ai percorsi del taxi e ai controlli di geometria; restano difetti noti da correggere. |
+| `WASD` / frecce | Camminare e guidare |
+| `E` · `V` | Entrare/uscire · scegliere un veicolo |
+| `J` · `M` | Attività · mappa |
+| `Shift` · `Spazio` | Scatto/boost · salto/freno (variano in volo) |
+| `C` · `R` · `Esc` | Telecamera · recupero · pausa |
+| `Tab` · `F` | Turbo speciale/cannone · paracadute, secondo il mezzo |
 
-Il riepilogo raccoglie soltanto le modifiche di rilievo. Per la cronologia completa consulta i [commit di `main`](https://github.com/Dreamer-archalo/padova-open-world/commits/main); per lo stato verificato e le funzioni ancora mancanti consulta la [verifica della versione 1.2](docs/release-v1.2-completeness-audit.md).
+Serve un browser compatibile con **WebGL**. Progressi e impostazioni sono salvati localmente nel browser.
 
-## Comandi essenziali
+## Sviluppo e trasparenza
 
-| Tasto | Azione |
-| --- | --- |
-| `WASD` / frecce | Muoversi e guidare |
-| `E` · `V` | Entrare/uscire dal mezzo · selezionare veicoli |
-| `J` · `M` | Attività · mappa e destinazioni |
-| `Shift` · `Spazio` | Scatto/boost · salto/freno; in volo, discesa/salita secondo il mezzo |
-| `C` · `R` · `Esc` | Telecamera · recupero · pausa e impostazioni |
-| `Tab` · `F` | Turbo speciale / cannone del carro · paracadute in volo |
+Il progetto è in evoluzione: la presenza di una funzionalità nel codice non garantisce che sia stata provata graficamente o su più dispositivi. Lo [stato documentato della release 1.2](docs/release-v1.2-completeness-audit.md) distingue le funzioni integrate da quelle incomplete; i [problemi noti](docs/release-v1.2-known-issues.md) riportano i limiti ancora aperti. Conserviamo la documentazione tecnica e i test senza sovraccaricare questa pagina.
 
-Il gioco richiede un browser con WebGL. Progressi e impostazioni vengono salvati localmente nel browser.
+**Tecnologie:** JavaScript, Three.js, dati OpenStreetMap. Il gioco statico è in [`dist/`](dist/); i test, le istruzioni per contribuire e i dettagli di distribuzione sono in [`CONTRIBUTING.md`](CONTRIBUTING.md) e [`docs/`](docs/). Repository di riferimento: **`Dreamer-archalo/padova-open-world`, ramo `main`**.
 
-## Stato dello sviluppo
+## Crediti e attribuzioni
 
-La **1.2 identifica il codice del progetto**, non la garanzia che tutte le funzioni siano prive di errori. Sono ancora da validare completamente la continuità delle quote in alcune zone (in particolare Bassanello), la viabilità dell'accesso aeroportuale e le gare online su due dispositivi. Alcuni miglioramenti geometrici sono in rami di lavoro non ancora integrati: non vengono presentati come funzioni già pubblicate.
+**Una produzione di Federico Scandolara e Ricardo Roza Rui.** Progetto derivato dall'[originale `scandolo/padova-open-world`](https://github.com/scandolo/padova-open-world), di cui restano visibili attribuzione e cronologia.
 
-[Note di rilascio](docs/release-v1.2.md) · [Problemi noti](docs/release-v1.2-known-issues.md) · [Documentazione tecnica](docs/) · [Contribuire e pubblicare](CONTRIBUTING.md)
-
-## Per gli sviluppatori
-
-Il gioco usa **JavaScript e Three.js**. La cartella [`dist/`](dist/) contiene tutti i file della versione web, mentre [`dist/version.json`](dist/version.json) dichiara la versione distribuita. La branch di riferimento è **`Dreamer-archalo/padova-open-world:main`**; non pubblicare contenuti dell'altro repository o di un ramo non integrato.
-
-```bash
-npm run dev
-# Apri http://localhost:4173
-```
-
-Le verifiche automatiche sono descritte nel [documento di rilascio](docs/release-v1.2.md). Non sostituiscono prove visive WebGL, test su dispositivi reali e verifica delle prestazioni.
-
-## Crediti e licenze
-
-**Una produzione di Federico Scandolara e Ricardo Roza Rui.** Progetto sviluppato a partire dall'originale [`scandolo/padova-open-world`](https://github.com/scandolo/padova-open-world), di cui vengono mantenuti attribuzione e storia.
-
-Dati cartografici: © [OpenStreetMap contributors](https://www.openstreetmap.org/copyright), licenza ODbL 1.0. Elevazioni: fonti Mapzen / Copernicus EU-DEM / USGS documentate in [mobilità e terreno](docs/mobility-terrain.md). Three.js: licenza MIT, vedere [`dist/vendor/THREE-LICENSE.txt`](dist/vendor/THREE-LICENSE.txt). Non è dichiarata una licenza generale per il codice originale del progetto.
+Dati cartografici © [OpenStreetMap contributors](https://www.openstreetmap.org/copyright), ODbL 1.0. Fonti del terreno: Mapzen / Copernicus EU-DEM / USGS; dettagli in [`docs/mobility-terrain.md`](docs/mobility-terrain.md). Three.js: MIT, vedere [`dist/vendor/THREE-LICENSE.txt`](dist/vendor/THREE-LICENSE.txt). Non è stata dichiarata una licenza generale per il codice originale del progetto.
