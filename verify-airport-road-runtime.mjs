@@ -8,9 +8,10 @@ const roads=t.world.data.gameplay.roads.filter(r=>r.airportRoad);
 assert.equal(roads.length,13,'all new airport facility roads loaded into actual world');
 const segments=t.graph.segments.filter(s=>s.road.airportRoad);
 assert(segments.length>roads.length,'airport road graph must contain each route segment');
-const city=t.graph.segments.filter(s=>s.connected&&!s.road.gameplay).flatMap(s=>[t.graph.nodes[s.a],t.graph.nodes[s.b]].map(n=>({road:s.road.n,kind:s.road.k,x:n.x,z:n.z,d:Math.hypot(n.x-AIRPORT_GATE.x,n.z-AIRPORT_GATE.z)}))).sort((a,b)=>a.d-b.d).slice(0,4);
-const access=t.graph.segments.filter(s=>s.road.n==='Ingresso aeroporto');
-console.log('Airport city connection diagnostics',JSON.stringify({airportConnected:segments.filter(s=>s.connected).length,airportTotal:segments.length,cityAccess:access.map(s=>({connected:s.connected,from:t.graph.nodes[s.a],to:t.graph.nodes[s.b]})),nearestConnectedCity:city}));
+const candidate=t.graph.segments.filter(s=>s.connected&&!s.road.gameplay).flatMap(s=>[t.graph.nodes[s.a],t.graph.nodes[s.b]].map(n=>({road:s.road.n||'(unnamed)',kind:s.road.k,layer:s.road.layer||0,bridge:s.road.b||false,access:s.road.access||'',x:n.x,z:n.z,d:Math.hypot(n.x-AIRPORT_GATE.x,n.z-AIRPORT_GATE.z)}))).sort((a,b)=>a.d-b.d);
+const seen=new Set(),nearby=[];for(const c of candidate){const k=`${c.road}:${c.kind}:${c.layer}:${c.bridge}`;if(seen.has(k))continue;seen.add(k);nearby.push(c);if(nearby.length===18)break;}
+const access=t.graph.segments.filter(s=>s.road.n==='Ingresso aeroporto').map(s=>({connected:s.connected,from:[t.graph.nodes[s.a].x,t.graph.nodes[s.a].z],to:[t.graph.nodes[s.b].x,t.graph.nodes[s.b].z]}));
+console.log('Airport entrance graph diagnostic',JSON.stringify({airportConnected:segments.filter(s=>s.connected).length,airportTotal:segments.length,access,nearby}));
 assert(segments.every(s=>s.connected),'airport roads must connect to the primary Padova road graph, not an isolated island');
 let samples=0,maxGrade=0;
 for(const r of roads){
