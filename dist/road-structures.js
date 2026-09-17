@@ -12,7 +12,10 @@ export function roadStructures(terrain){
   return close&&s.height>=base-2&&s.height<top+2;
  });
  const support=(road,x,z,yaw,base,deckBottom,edge)=>{
-  if(!(deckBottom-base>2.25))return 0;
+  // The previous 2.25 m limit discarded short but visibly elevated spans.
+  // A >=1.8 m column still meets the actual deck bottom; crossing roads remain
+  // protected by roadConflict, rather than lowering road-clearance requirements.
+  if(!(deckBottom-base>1.8))return 0;
   let added=0;
   for(const side of [-1,1])for(const extra of [0,1.6,3.5,6.5,9.5,13]){
    const offset=(edge+extra)*side,px=x+Math.cos(yaw)*offset,pz=z-Math.sin(yaw)*offset;
@@ -38,13 +41,13 @@ export function roadStructures(terrain){
   const opening=Math.max(7.4,lower.road.w+3.2),depth=Math.max(2,Math.min(3.6,road.w*.3)),pierW=.62,side=opening/2+pierW/2;
   for(const sign of [-1,1]){
    const px=q.x+Math.cos(lowerYaw)*side*sign,pz=q.z-Math.sin(lowerYaw)*side*sign;
-   if(roadConflict(road,px,pz,lowerY-.05,deckBottom, pierW*.5))continue;
+   if(roadConflict(road,px,pz,lowerY-.05,deckBottom,pierW*.5))continue;
    add(px,pz,lowerY-.05,pierW,deckBottom-lowerY+.08,depth,lowerYaw,'underpass-pier',road,{color:'#8f918b'});
   }
  };
  for(const profile of terrain.roads.profiles.values()){
   const road=profile.road;if(!(road.crossing||road.b||Number(road.layer)>0)||road.k==='tram')continue;
-  let raisedRun=0, supports=0,possible=[];
+  let raisedRun=0,supports=0,possible=[];
   for(let i=1;i<profile.points.length;i++){
    const a=profile.points[i-1],b=profile.points[i],x=(a[0]+b[0])/2,z=(a[1]+b[1])/2;
    if(terrain.prato(x,z))continue;
