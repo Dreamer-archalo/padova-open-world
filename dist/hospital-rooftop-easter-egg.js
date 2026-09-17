@@ -1,12 +1,12 @@
 import * as THREE from './vendor/three.module.js';
 import {ModernGameplay} from './modern-gameplay.js';
-import {pointInside,nearestOnSegment,clamp} from './core.js';
+import {pointInside,nearestOnSegment} from './core.js';
 import {vehicleFootprint} from './movement.js';
 import {SPECIAL_VEHICLES,EXTRA_TRAFFIC} from './special-vehicles.js';
 import {VEHICLES} from './vehicles.js';
+import {findLayout,onTrack,roofClear} from './monoblocco-track.js';
 
-// The former Treves-side roof was the wrong building. The OSM Monoblocco is a
-// 90-vertex, irregular 245 x 200 m footprint; never replace it with its bounding box.
+// Use the exact irregular Monoblocco footprint, never its bounding rectangle.
 const TARGET='Ospedale Civile - Monoblocco - Casse - Prenotazioni';
 const TARGET_POINT={x:816,z:518};
 const trialSpec={name:'Trial 125 · Roof Edition',family:'motorcycle',width:.78,length:1.94,height:1.36,wheelbase:1.21,accel:18,brake:31,max:19,boost:21,reverse:3,steer:2.65,mass:.52,npcOnly:true,bike:true};
@@ -18,18 +18,6 @@ function footprint(box){const p=box.p||[];return p.length>3&&p[0][0]===p.at(-1)[
 function distanceToEdge(x,z,poly){let d=Infinity;for(let i=0;i<poly.length;i++){const p=nearestOnSegment(x,z,poly[i],poly[(i+1)%poly.length]);d=Math.min(d,Math.hypot(x-p.x,z-p.z));}return d;}
 function safe(poly,x,z,margin=5){return pointInside(x,z,poly)&&distanceToEdge(x,z,poly)>=margin;}
 function resolveHospital(game){const nearby=[...(game.collision?.near?.(TARGET_POINT.x,TARGET_POINT.z,250)||[])];const building=nearby.find(b=>b.n===TARGET&&Array.isArray(b.p)&&b.p.length>=3&&Number.isFinite(b.minY)&&Number.isFinite(b.h));if(!building)return null;return {building,polygon:footprint(building),roofY:building.minY+building.h+.13};}
-function onTrack(layout,t){const a=t*2*Math.PI,x=layout.x+Math.cos(a)*layout.rx,z=layout.z+Math.sin(a)*layout.rz,dx=-layout.rx*Math.sin(a),dz=layout.rz*Math.cos(a);return {x,z,yaw:Math.atan2(dx,dz),dx,dz};}
-function trackSafe(poly,layout){for(let i=0;i<48;i++){const p=onTrack(layout,i/48);if(!safe(poly,p.x,p.z,6))return false;}return true;}
-function findLayout(poly,building){const good=[];for(let x=building.minX+21;x<=building.maxX-21;x+=11)for(let z=building.minZ+21;z<=building.maxZ-21;z+=11){if(safe(poly,x,z,18))good.push({x,z});}
- let best=null;
- for(const c of good){for(const rx of [73,62,52,43,34,25])for(const rz of [57,47,38,29,21]){
-  if(c.x-rx<building.minX+5||c.x+rx>building.maxX-5||c.z-rz<building.minZ+5||c.z+rz>building.maxZ-5)continue;
-  const layout={...c,rx,rz};if(!trackSafe(poly,layout))continue;
-  const helipad=good.map(p=>{let d=Infinity;for(let i=0;i<36;i++){const q=onTrack(layout,i/36);d=Math.min(d,Math.hypot(p.x-q.x,p.z-q.z));}return {...p,d};}).filter(p=>p.d>=22).sort((a,b)=>b.d-a.d)[0];
-  if(!helipad)continue;const score=rx*rz;if(!best||score>best.score)best={...layout,helipad,score};
- }}
- return best;
-}
 function collisionBox(game,x,z,width,length,y,h,yaw=0,flags={}){const p=vehicleFootprint(x,z,yaw,width,length),xs=p.map(v=>v[0]),zs=p.map(v=>v[1]);game.collision.add({p,minX:Math.min(...xs),maxX:Math.max(...xs),minZ:Math.min(...zs),maxZ:Math.max(...zs),minY:y,h,...flags},Math.min(...xs),Math.min(...zs),Math.max(...xs),Math.max(...zs));}
 function flatRoof(root,poly,y){const shape=new THREE.Shape();poly.forEach(([x,z],i)=>i?shape.lineTo(x,-z):shape.moveTo(x,-z));shape.closePath();const mesh=new THREE.Mesh(new THREE.ShapeGeometry(shape),material('#aeb8b9'));mesh.rotation.x=-Math.PI/2;mesh.position.y=y+.035;mesh.receiveShadow=true;mesh.name='monoblocco-whole-footprint-flat-roof';root.add(mesh);return mesh;}
 function parapets(game,root,poly,y){for(let i=0;i<poly.length;i++){const a=poly[i],b=poly[(i+1)%poly.length],len=Math.hypot(b[0]-a[0],b[1]-a[1]);if(len<.45)continue;const x=(a[0]+b[0])/2,z=(a[1]+b[1])/2,yaw=Math.atan2(b[0]-a[0],b[1]-a[1]);block(root,'#d1d5d1',x,y+.53,z,.40,1.06,len+.12,yaw);collisionBox(game,x,z,.40,len+.12,y,1.06,yaw,{hospitalRoofParapet:true});}}
@@ -44,7 +32,7 @@ function addCourse(game,root,poly,layout,y){const ramps=[],bridges=[];for(let i=
 function addBike(game,layout,t,y,occupied,name){const p=onTrack(layout,t),c=game.addCar(p.x,p.z,p.yaw,false,!occupied,'rooftrial');Object.assign(c,{x:p.x,z:p.z,y:y+.11,yaw:p.yaw,speed:0,health:100,parked:!occupied,fixedSpawn:true,missionUnit:true,budgetSleeping:false,hospitalRoofBike:true,name});c.mesh.visible=true;game.pose(c);if(c.rider)c.rider.visible=true;return c;}
 function bump(t,at,width=.046,height=.95){const d=Math.abs((((t-at)+.5)%1+1)%1-.5);return d>=width?0:Math.sin((1-d/width)*Math.PI/2)*height;}
 function update(game){const s=games.get(game);if(!s)return;
- // A landed helicopter stays in the actual world, even after the player exits.
+ // Parked aircraft remain in the world; a parked helicopter is not a disposable traffic spawn.
  for(const c of game.cars)if(c.spec?.aircraft&&!c.spec.plane&&c.parked&&c.mesh?.visible&&c.y>=s.y-.5&&c.y<s.y+1.2&&safe(s.polygon,c.x,c.z,2)){
   c.rooftopParked=true;c.fixedSpawn=false;c.missionUnit=true;c.abandonedAt=0;c.budgetSleeping=false;c.mesh.visible=true;
  }
@@ -58,9 +46,6 @@ function update(game){const s=games.get(game);if(!s)return;
 function install(game){if(games.has(game))return games.get(game);const hospital=resolveHospital(game);if(!hospital){console.warn('[Monoblocco trial] exact hospital footprint not found: refusing to use a substitute roof');return null;}const {building,polygon,roofY:y}=hospital,layout=findLayout(polygon,building);if(!layout){console.warn('[Monoblocco trial] no collision-safe loop and independent helipad on real polygon');return null;}
  const root=new THREE.Group();root.name='ospedale-monoblocco-entire-roof-trial';flatRoof(root,polygon,y);parapets(game,root,polygon,y);helipad(root,layout.helipad,y);const course=addCourse(game,root,polygon,layout,y);
  game.scene.add(root);
- // Rooftop height is reference-aware: ordinary people and traffic below the
- // building still receive original terrain; bikes, pedestrians and helicopters
- // approaching from above share exactly this collision and landing height.
  const oldHeight=game.terrain.height.bind(game.terrain),oldSlope=game.terrain.slope.bind(game.terrain);
  game.terrain.height=(x,z,reference=null)=>Number.isFinite(reference)&&reference>=y-2.25&&pointInside(x,z,polygon)?Math.max(y,oldHeight(x,z,reference)):oldHeight(x,z,reference);
  game.terrain.slope=(x,z,yaw,wheelbase,reference=null)=>Number.isFinite(reference)&&reference>=y-2.25&&pointInside(x,z,polygon)?0:oldSlope(x,z,yaw,wheelbase,reference);
