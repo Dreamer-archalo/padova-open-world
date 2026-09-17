@@ -12,15 +12,12 @@ export function roadStructures(terrain){
   return close&&s.height>=base-2&&s.height<top+2;
  });
  const support=(road,x,z,yaw,base,deckBottom,edge)=>{
-  // The previous 2.25 m limit discarded short but visibly elevated spans.
-  // A >=1.8 m column still meets the actual deck bottom; crossing roads remain
-  // protected by roadConflict, rather than lowering road-clearance requirements.
+  // Short spans may be supported by low bank piers, but only outside roads.
   if(!(deckBottom-base>1.8))return 0;
   let added=0;
   for(const side of [-1,1])for(const extra of [0,1.6,3.5,6.5,9.5,13]){
    const offset=(edge+extra)*side,px=x+Math.cos(yaw)*offset,pz=z-Math.sin(yaw)*offset;
    if(roadConflict(road,px,pz,base,deckBottom,1.05))continue;
-   // One pier per bank is preferable to a fake arch across the lower carriageway.
    add(px,pz,base-.22,1.02,deckBottom-base+.24,1.02,yaw,'pier',road,{color:'#8f918b'});
    added++;break;
   }
@@ -37,13 +34,17 @@ export function roadStructures(terrain){
   const q=nearestOnSegment(x,z,lower.segment.a,lower.segment.b),lowerYaw=Math.atan2(lower.segment.b[0]-lower.segment.a[0],lower.segment.b[1]-lower.segment.a[1]),lowerY=lower.height+.05;
   if(deckBottom-lowerY<3.2)return;
   const key=(lower.road.surfaceId??lower.road.k)+':'+Math.round(q.x/9)+','+Math.round(q.z/9);
-  if(portals.has(key))return;portals.add(key);
+  if(portals.has(key))return;
   const opening=Math.max(7.4,lower.road.w+3.2),depth=Math.max(2,Math.min(3.6,road.w*.3)),pierW=.62,side=opening/2+pierW/2;
+  let created=0;
   for(const sign of [-1,1]){
    const px=q.x+Math.cos(lowerYaw)*side*sign,pz=q.z-Math.sin(lowerYaw)*side*sign;
    if(roadConflict(road,px,pz,lowerY-.05,deckBottom,pierW*.5))continue;
    add(px,pz,lowerY-.05,pierW,deckBottom-lowerY+.08,depth,lowerYaw,'underpass-pier',road,{color:'#8f918b'});
+   created++;
   }
+  // Do not suppress the next attempt when no column fitted this position.
+  if(created)portals.add(key);
  };
  for(const profile of terrain.roads.profiles.values()){
   const road=profile.road;if(!(road.crossing||road.b||Number(road.layer)>0)||road.k==='tram')continue;
@@ -68,8 +69,35 @@ export function roadStructures(terrain){
     if(raisedRun>=13||profile.points.length===2&&len>=4){supports+=support(road,x,z,yaw,base,deckBottom,edge);raisedRun=0;}
    }else raisedRun=0;
   }
-  // A bridge made of individually short spans must never end with a floating deck.
   if(!supports&&possible.length){for(const p of possible.sort((a,b)=>(b.deckBottom-b.base)-(a.deckBottom-a.base))){supports+=support(road,p.x,p.z,p.yaw,p.base,p.deckBottom,p.edge);if(supports)break;}}
+ }
+ // On the short Chiesanuova flyover the two divided Corso Australia roads lie
+ // directly below all possible central pier locations. The neighboring parallel
+ // bridge span (OSM surface 3959) already has two real underpass piers at the
+ // ends. A shallow cross-span girder joins those piers to the three decks of
+ // surface 3957 instead of obstructing either live carriageway with new piers.
+ // Geometry is selected and validated from the *generated* structures, not
+ // invented at arbitrary map coordinates; changing OSM topology safely disables
+ // this special transfer instead of leaving an unsupported floating beam.
+ if(terrain.modern){
+  const decks=boxes.filter(b=>b.kind==='deck'&&b.road.surfaceId===3957),anchors=boxes.filter(b=>b.kind==='underpass-pier'&&b.road.surfaceId===3959).sort((a,b)=>a.x-b.x);
+  if(decks.length===3&&anchors.length===2){
+   const [west,east]=anchors,deckBottom=Math.min(...decks.map(d=>d.minY)),beamHeight=.42,beamBottom=deckBottom-beamHeight;
+   const minDeckX=Math.min(...decks.map(d=>d.minX)),maxDeckX=Math.max(...decks.map(d=>d.maxX));
+   const endpointsOk=west.x<minDeckX&&east.x>maxDeckX&&minDeckX-west.x<5&&east.x-maxDeckX<5;
+   const altitudeOk=anchors.every(p=>p.minY+p.h>=deckBottom-.09&&p.minY+p.h<=deckBottom+.30);
+   const headingsOk=decks.every(d=>Math.abs(Math.sin(d.yaw-Math.PI/2))<.12);
+   const lower=terrain.roads.candidates((west.x+east.x)/2,(decks[1].z),11).filter(s=>s.road.n==='Corso Australia'&&s.d<=s.road.w/2+1);
+   const clearanceOk=lower.length>=2&&lower.every(s=>beamBottom-(s.height+.05)>=4.05);
+   if(endpointsOk&&altitudeOk&&headingsOk&&clearanceOk){
+    const left=Math.min(west.minX,minDeckX)-.15,right=Math.max(east.maxX,maxDeckX)+.15;
+    const bottom=Math.min(...decks.map(d=>d.minZ),...anchors.map(p=>p.minZ))-.15;
+    const top=Math.max(...decks.map(d=>d.maxZ),...anchors.map(p=>p.maxZ))+.15;
+    const girder=add((left+right)/2,(bottom+top)/2,beamBottom,top-bottom,beamHeight,right-left,Math.PI/2,'transfer-girder',decks[0].road,{color:'#969891',supportedBy:[west.road.surfaceId,east.road.surfaceId],verifiedOverpass:'chiesanuova-corso-australia'});
+    // Incomplete anchorage may not be counted as load-bearing by the audit.
+    if(girder&&(!anchors.every(p=>p.x>=girder.minX&&p.x<=girder.maxX&&p.z>=girder.minZ&&p.z<=girder.maxZ)))boxes.pop();
+   }
+  }
  }
  if(terrain.modern)return boxes.filter(b=>{
   if(/^underpass-/.test(b.kind))return true;
@@ -78,9 +106,8 @@ export function roadStructures(terrain){
    const x=b.x+Math.sin(b.yaw)*b.length*t,z=b.z+Math.cos(b.yaw)*b.length*t;
    for(const s of terrain.roads.candidates(x,z,b.kind==='deck'?0:1.3))if(s.road!==b.road&&!/footway|path|steps|cycleway|tram|pedestrian/.test(s.road.k))candidates.push(s);
   }
-  // Supports have already been placed outside actual lower-road envelopes. Do not
-  // discard them merely because a road lies a few metres away from the column.
   if(b.kind==='pier')return !roadConflict(b.road,b.x,b.z,b.minY,b.minY+b.h,Math.max(.5,b.w/2));
+  if(b.kind==='transfer-girder')return !candidates.some(s=>s.height<b.minY-1&&s.height+4.05>b.minY);
   if(b.kind!=='deck')return !candidates.some(s=>s.height+2>b.minY&&s.height<b.minY+b.h+.2);
   const adjacent=candidates.filter(s=>Math.abs(s.height-b.driveTopMin)<2);
   if(adjacent.length){b.driveTopMin=Math.min(b.driveTopMin,...adjacent.map(s=>s.height));b.minY=b.y=b.driveTopMin-.74;}
