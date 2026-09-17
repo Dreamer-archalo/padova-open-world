@@ -19,6 +19,8 @@ jobs:
           node --check dist/TaxiDispatcher.js
           node --check dist/taxi-confirmation-runtime.js
           node verify-taxi-main-thread-safety.mjs
+          node verify-taxi-transfer-pause.mjs
+          node verify-taxi-confirmation-runtime.mjs
           npm run test:taxi
           node verify-taxi-transition-recovery.mjs
       - name: Real Padova taxi destination stress test
