@@ -1,69 +1,69 @@
-# PADOVA / Open World
+# PADOVA AFTER HOURS
 
-## Dreamer-archalo edition
+### Padova Open World · Versione 1.2 · Gioco 3D per browser
 
-- Public game: https://padova-open-world.tfyudartuuyikgfdsgafrdyu.chatgpt.site
-- Source and Pull Requests: https://github.com/Dreamer-archalo/padova-open-world
-- Target branch for new Pull Requests: `Dreamer-archalo/padova-open-world:main`.
-- Publication uses the complete `dist/` directory from this repository. The Site identity is recorded in `.openai/hosting.json`.
-- Merging a Pull Request updates the source; publishing the Site is a separate operation. See [contribution and publication instructions](CONTRIBUTING.md).
+[**▶ GIOCA — GitHub Pages**](https://dreamer-archalo.github.io/padova-open-world/) &nbsp;·&nbsp; [Versione pubblicata](https://dreamer-archalo.github.io/padova-open-world/version.json) &nbsp;·&nbsp; [Codice e aggiornamenti](https://github.com/Dreamer-archalo/padova-open-world/commits/main)
 
-This edition continues the project from [scandolo/padova-open-world](https://github.com/scandolo/padova-open-world), retaining its history and credits.
+**La tua Padova, un mondo da esplorare.** *Padova After Hours* è un progetto open world ambientato nella Padova contemporanea: esplora il centro e i quartieri, guida, pilota, scopri luoghi e affronta missioni e gare. La città utilizza strade e sagome degli edifici derivate da OpenStreetMap, insieme a elementi 3D originali e ricostruzioni stilizzate.
 
-A self-contained Three.js browser game using actual OpenStreetMap streets and building footprints across Padua and its surroundings. Static files in `dist/` are the entire deployed app. No API key, build step, server-side state or live map service is needed while playing.
+> **Versione del progetto: 1.2.** Il link principale è la pubblicazione GitHub Pages collegata a questo repository (`main`): gli aggiornamenti diventano visibili solo dopo un deploy riuscito. Il [sito Netlify preesistente](https://padova-open-world.netlify.app/) è un'altra distribuzione e potrebbe mostrare codice meno recente finché i deploy non saranno sincronizzati. Controlla il file «Versione pubblicata» per la versione effettivamente online.
 
-## Play
+---
 
-- On foot: WASD / arrow keys move relative to the camera; drag to turn the view.
-- In a vehicle: WASD / arrow keys accelerate, reverse and steer.
-- E: enter a nearby parked / slow vehicle or exit when slow.
-- V or VEHICLES in the HUD: choose a MiTo-inspired compact, motorcycle, scooter or truck.
-- Shift: boost / sprint. Space: handbrake / jump.
-- TAB: Cinquecento special turbo, or fire the tank cannon (1.25 s cooldown).
-- Aircraft: W accelerates, A/D turn, Space climbs and Shift descends. F deploys a parachute above 10 m; E exits after landing.
-- C: three camera modes. Drag the world: orbit camera.
-- J: delivery, checkpoint race, police escape or **CATTURA PORTAVALORI — €1,000**.
-- M: map, waypoints and travel to landmarks.
-- R: recover and repair. Escape: pause and graphics settings.
+## Il gioco in breve
 
-Modern games start at the original gameplay villa in Parco Treves. Choose **Scando, Mattia, Marchese, Milo or Nico**. The expanded airport has four enterable hangars, two light aircraft, two helipads and three green tanks. Find them through **M → Aeroporto · ingresso**; these vehicles are not in the Vehicles menu. Five stars activate up to two hostile tanks, and defeat during that chase returns the selected character to the villa.
+- **Esplorazione urbana:** una mappa estesa di Padova con strade, ponti, quartieri, monumenti, acqua e navigazione verso i punti di interesse.
+- **Veicoli e guida:** auto, moto, scooter, camion, elicotteri, piccoli aerei e carri armati; traffico, tram, pedoni e inseguimenti della polizia.
+- **Aeroporto e base:** hangar, mezzi aeroportuali giocabili e partenza dalla villa nell'area di Parco Treves.
+- **Attività:** consegne, missione portavalori, sfide in moto, **due gare sulla Tangenziale**, corse a checkpoint e fughe dalla polizia.
+- **Modalità online sperimentale:** mappa condivisa con cinque personaggi selezionabili e codice per lobby e gare con altri giocatori. Il funzionamento su due dispositivi e le partenze/risultati sincronizzati necessitano ancora di verifiche pratiche.
 
-Progress (character, earned money and completed jobs) is saved to this browser's localStorage. Graphics default to Balanced; Performance reduces rendering distance and disables shadows. Map geometry streams into GPU memory by 320 m chunks and old chunks are disposed. Car meshes are batched to reduce draw calls. Parked aircraft and tanks do not run flight or pursuit simulation.
+**Personaggi disponibili:** Scando, Mattia, Marchese, Milo e Nico.
 
-See [airport gameplay, controls, technical limits and test instructions](docs/airport-gameplay.md). Run `npm run test:airport` for the new controller scenarios. A browser with WebGL is still required for visual gameplay and device performance checks.
+## Le principali novità della 1.2
 
-The driving HUD includes speed, gear, RPM, trip distance, heading, altitude, grade, vehicle condition and nearby traffic density. Traffic includes 24 original NPC car types in addition to the existing vehicles, with distinct motorcycle, scooter and truck handling; pedestrian and traffic density are selected from graphics quality at startup (reload after changing quality to update population). Gear and RPM are arcade display estimates, not a simulated transmission.
+| Area | Cosa cambia |
+| --- | --- |
+| Mondo e mobilità | Padova moderna consolidata, veicoli e attività ampliati, trasporti e traffico più articolati. |
+| Gare | Due percorsi sulla Tangenziale, difficoltà dei bot nella prima gara e interventi su partenza e posizionamento. |
+| Online | Prima implementazione della mappa condivisa e delle lobby; multiplayer ancora da collaudare in condizioni reali. |
+| Servizi e luoghi | Taxi, aeroporto, villa iniziale, edifici e ambientazioni aggiornati, easter egg sul tetto dell'ospedale. |
+| Stabilità | Miglioramenti ai caricamenti, ai percorsi del taxi e ai controlli di geometria; restano difetti noti da correggere. |
 
-## Reconstruction fidelity
+Il riepilogo raccoglie soltanto le modifiche di rilievo. Per la cronologia completa consulta i [commit di `main`](https://github.com/Dreamer-archalo/padova-open-world/commits/main); per lo stato verificato e le funzioni ancora mancanti consulta la [verifica della versione 1.2](docs/release-v1.2-completeness-audit.md).
 
-The map contains 87,881 mapped building footprints, 34,539 road/path ways, 1,080 water/park/pitch polygons and 770 waterway ways. Source bbox: latitude 45.35–45.465, longitude 11.80–11.97. This is a roughly 13 × 13 km rectangular extract, not a municipality boundary guarantee. Projection: local equirectangular around 45.4064, 11.8768; one world unit = one metre. Low local projection distortion; not a survey-grade projection.
+## Comandi essenziali
 
-Footprints and roads use OSM coordinates, with local replacement inside the authored airport and villa areas. Missing height data is estimated from floors or a deterministic building ID choice. Landmark roofs, domes, facades and Prato decoration are approximate interpretive geometry, not photogrammetry. Terrain uses a bundled, smoothed DEM without vertical exaggeration. Rivers, bridge ramps and layered underpasses follow approximate height models. The Overpass extract uses ways, not fully assembled relations; complex multipolygon courtyards / water / buildings can be incomplete. Hangars have simple open interiors; tank combat is arcade, with no structural building destruction. No multiplayer or commercial GTA content.
+| Tasto | Azione |
+| --- | --- |
+| `WASD` / frecce | Muoversi e guidare |
+| `E` · `V` | Entrare/uscire dal mezzo · selezionare veicoli |
+| `J` · `M` | Attività · mappa e destinazioni |
+| `Shift` · `Spazio` | Scatto/boost · salto/freno; in volo, discesa/salita secondo il mezzo |
+| `C` · `R` · `Esc` | Telecamera · recupero · pausa e impostazioni |
+| `Tab` · `F` | Turbo speciale / cannone del carro · paracadute in volo |
 
-## Urban appearance pass
+Il gioco richiede un browser con WebGL. Progressi e impostazioni vengono salvati localmente nel browser.
 
-Facade materials distinguish historic, residential and industrial buildings, using OSM building types and an approximate central-area boundary. Decorative arcade panels are selected procedurally; they are not surveyed or walkable porticoes. Bridge-tagged roads have parapets and raised driving surfaces. Pedestrian paving is warmer in the centre. Ragione, Scrovegni and Eremitani have authored façades and roofs oriented to their mapped footprints.
+## Stato dello sviluppo
 
-This is a first visual differentiation pass, not a building-by-building reconstruction. The mapped street and river alignments are preserved; rivers now have a lowered bed and water hazards. Landmark proportions, street-facing detail placement and the denser population still need visual/performance review in a real browser before merging.
+La **1.2 identifica il codice del progetto**, non la garanzia che tutte le funzioni siano prive di errori. Sono ancora da validare completamente la continuità delle quote in alcune zone (in particolare Bassanello), la viabilità dell'accesso aeroportuale e le gare online su due dispositivi. Alcuni miglioramenti geometrici sono in rami di lavoro non ancora integrati: non vengono presentati come funzioni già pubblicate.
 
-## Data and licenses
+[Note di rilascio](docs/release-v1.2.md) · [Problemi noti](docs/release-v1.2-known-issues.md) · [Documentazione tecnica](docs/) · [Contribuire e pubblicare](CONTRIBUTING.md)
 
-Map data and derived `dist/data/padova.json`: © OpenStreetMap contributors, [ODbL 1.0](https://www.openstreetmap.org/copyright). The derived data can be downloaded from the in-game About panel. `prepare_map.py` reproduces the conversion from an Overpass JSON extract with geometry. Data timestamp is embedded in the JSON.
+## Per gli sviluppatori
 
-Three.js 0.170.0 is bundled locally under MIT; see `dist/vendor/THREE-LICENSE.txt`. Fonts are optional Google Fonts with local system fallbacks. Game remains functional if fonts are unavailable.
+Il gioco usa **JavaScript e Three.js**. La cartella [`dist/`](dist/) contiene tutti i file della versione web, mentre [`dist/version.json`](dist/version.json) dichiara la versione distribuita. La branch di riferimento è **`Dreamer-archalo/padova-open-world:main`**; non pubblicare contenuti dell'altro repository o di un ramo non integrato.
 
-## Validation
+```bash
+npm run dev
+# Apri http://localhost:4173
+```
 
-JavaScript syntax, local asset references, geometry, real map navigation, collision placement and mission destination reachability are checked locally. No browser visual QA or measured MacBook frame-rate claim is made without running on an actual browser / device.
+Le verifiche automatiche sono descritte nel [documento di rilascio](docs/release-v1.2.md). Non sostituiscono prove visive WebGL, test su dispositivi reali e verifica delle prestazioni.
 
-## Stable movement and real-building imports
+## Crediti e licenze
 
-The game starts in Piazza delle Erbe. Simulation now runs at a fixed 60 Hz with interpolated actors. Walking slides along walls; camera obstruction is checked after smoothing; car collisions include the nose and tail. Hip and shoulder pivots replace ground-level limb rotation. These changes are covered by `node verify-stability.mjs`.
+**Una produzione di Federico Scandolara e Ricardo Roza Rui.** Progetto sviluppato a partire dall'originale [`scandolo/padova-open-world`](https://github.com/scandolo/padova-open-world), di cui vengono mantenuti attribuzione e storia.
 
-Real building models can replace named OSM buildings through `node tools/add-building.mjs --help`. The game vendors its GLTF loader and serves models locally, without paid map APIs. **No scanned Padua buildings are bundled yet:** the verified Palazzo della Ragione candidate requires an authenticated Sketchfab download. See [the build notes](docs/real-city.md) and [the in-game contributor guide](dist/model-guide.html) for the exact asset path, licensing references and remaining 2.5D collision limitations.
-
-## Terrain and new vehicles
-
-The first car is inspired by the Alfa Romeo MiTo. Motorcycles, scooters and trucks are also drivable and available through V or the HUD. Water triggers a fall and automatic return to a dry road; mapped bridges and Prato’s crossings remain usable. Altitude comes from open Mapzen/Copernicus/USGS terrain data, bundled in `dist/data/terrain.json`; river levels and bridge arches are gameplay approximations.
-
-See [implementation, source credits, reproduction and limitations](docs/mobility-terrain.md). Run `node verify-stability.mjs`, `node verify-terrain.mjs` and `node verify.mjs` for local regression checks.
+Dati cartografici: © [OpenStreetMap contributors](https://www.openstreetmap.org/copyright), licenza ODbL 1.0. Elevazioni: fonti Mapzen / Copernicus EU-DEM / USGS documentate in [mobilità e terreno](docs/mobility-terrain.md). Three.js: licenza MIT, vedere [`dist/vendor/THREE-LICENSE.txt`](dist/vendor/THREE-LICENSE.txt). Non è dichiarata una licenza generale per il codice originale del progetto.
