@@ -1,19 +1,13 @@
 import {TaxiMenuController} from './TaxiMenuController.js';
 
-// Runtime safety layer: every taxi destination must pass through an explicit
-// fare quote + confirmation before executeTransition can ever be called.
-// This patches the controller prototype, so it also protects an already-created
-// controller instance and older cached controller implementations.
+// Every destination requires an explicit fare quote and confirmation.
 const BASE_OPEN_LIST=TaxiMenuController.prototype.openList;
 
 function quoteFare(controller,target){
  try{
   const fare=Number(controller.getFare?.(target));
   return Number.isFinite(fare)?Math.max(0,Math.round(fare)):null;
- }catch(error){
-  controller.onError?.(error,'fare calculation');
-  return null;
- }
+ }catch(error){controller.onError?.(error,'fare calculation');return null;}
 }
 function escapeHtml(value){
  return String(value??'').replace(/[&<>"']/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
@@ -43,6 +37,10 @@ function runConfirmed(controller){
  controller.inputManager?.disable?.();
  controller.closeAllTaxiUI?.();
  controller.showFastFadeOverlay?.();
+ // closeAllTaxiUI unpauses the game. Pause it again IMMEDIATELY so the world
+ // streamer, traffic, simulation and GPU model builder cannot run concurrently
+ // with the teleport. The old flow resumed all of them while transferring.
+ controller.setPaused?.(true);
  const target={...targetCoords};
  const confirmedMeta={...meta,quotedFare:fare,confirmed:true};
  const delay=Math.max(0,Number(controller.delayMs)||50);
@@ -68,7 +66,6 @@ TaxiMenuController.prototype.openList=function(destinations=[]){
  this.__taxiConfirmDestinations=[...destinations];
  return BASE_OPEN_LIST.call(this,destinations);
 };
-
 TaxiMenuController.prototype.startTaxiTransition=function(targetCoords,meta={}){
  if(this.busy)return false;
  if(!this.validCoords?.(targetCoords)){
@@ -80,8 +77,7 @@ TaxiMenuController.prototype.startTaxiTransition=function(targetCoords,meta={}){
   this.onError?.(new Error('Unable to calculate taxi fare'),'fare calculation');
   return false;
  }
- const target={...targetCoords};
- const pending={targetCoords:target,meta:{...meta,quotedFare:fare},fare};
+ const target={...targetCoords},pending={targetCoords:target,meta:{...meta,quotedFare:fare},fare};
  this.__taxiConfirmPending=pending;
  this.pending=pending;
  this.setMapPicking?.(false);
@@ -94,12 +90,10 @@ TaxiMenuController.prototype.startTaxiTransition=function(targetCoords,meta={}){
  }
  const title=this.document?.getElementById?.('menuTitle');
  if(title)title.textContent='Conferma taxi';
- const name=escapeHtml(meta.name||target.name||'Destinazione');
- const tag=escapeHtml(meta.tag||'');
+ const name=escapeHtml(meta.name||target.name||'Destinazione'),tag=escapeHtml(meta.tag||'');
  this.menuContent.innerHTML=`<p class="about-copy"><strong>${name}</strong>${tag?`<br>${tag}`:''}<br><br>Tariffa: <strong>€${fare}</strong><br><small>Lo spostamento non partirà finché non confermi.</small></p><div class="menu-actions"><button type="button" class="primary" id="confirmTaxi">CONFERMA · €${fare}</button><button type="button" id="cancelTaxiConfirm">INDIETRO</button></div>`;
  try{if(!this.menu.open)this.menu.showModal();}catch(error){this.onError?.(error,'confirmation dialog');return false;}
- const confirm=this.menuContent.querySelector?.('#confirmTaxi');
- const back=this.menuContent.querySelector?.('#cancelTaxiConfirm');
+ const confirm=this.menuContent.querySelector?.('#confirmTaxi'),back=this.menuContent.querySelector?.('#cancelTaxiConfirm');
  confirm?.addEventListener('click',event=>{
   event.preventDefault();event.stopPropagation();
   if(confirm.disabled)return;
@@ -112,7 +106,5 @@ TaxiMenuController.prototype.startTaxiTransition=function(targetCoords,meta={}){
  },{once:true});
  return true;
 };
-
 TaxiMenuController.prototype.executeConfirmedTransition=function(){return runConfirmed(this);};
-
 export const TAXI_CONFIRMATION_RUNTIME=true;
