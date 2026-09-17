@@ -1,4 +1,5 @@
 import {project,clamp,pointInside} from './core.js';
+import {buildAirportRoads} from './airport-road-network.js';
 
 // Original gameplay layouts. LIPU's published ARP and 04/22, 1122 x 30 m
 // runway fix the airport frame; buildings are deliberately fictional.
@@ -52,7 +53,19 @@ export function prepareGameplayMap(map){
  connect(AIRPORT,AIRPORT_GATE,'Ingresso aeroporto');
  connect(VILLA,areaPoint(VILLA,0,51),'Accesso villa Treves');
  road('Viale della villa',[areaPoint(VILLA,0,51),HOME],8);
- road('Servizi aeroportuali',[AIRPORT_GATE,areaPoint(AIRPORT,65,250),areaPoint(AIRPORT,65,-470)],12);
+ // The nearest pre-existing entrance vertex belongs to an isolated stretch of
+ // Via Sorio. Link its OUTSIDE-fence endpoint to an actual connected city road;
+ // via the exterior waypoint the new connector crosses the fence only at the
+ // pre-existing gate (u=215,v=250), rather than cutting through the perimeter.
+ const entrance=roads.find(r=>r.n==='Ingresso aeroporto');
+ let cityAnchor=null,cityDistance=Infinity;
+ for(const r of map.roads){if(r.n!=='Via dei Colli'||r.b||r.tunnel||Number(r.layer)>0)continue;
+  for(const p of r.p){if(insideArea(AIRPORT,...p))continue;const d=Math.hypot(p[0]-AIRPORT_GATE.x,p[1]-AIRPORT_GATE.z);if(d<cityDistance){cityAnchor=p;cityDistance=d;}}
+ }
+ if(entrance&&cityAnchor&&cityDistance<700)road('Raccordo aeroporto · città',[{x:cityAnchor[0],z:cityAnchor[1]},areaPoint(AIRPORT,240,250),{x:entrance.p[0][0],z:entrance.p[0][1]}],8);
+ // Road-going vehicles stay away from the runway and aircraft taxiway.
+ // Dedicated shared vertices join the existing entrance to the service loop.
+ roads.push(...buildAirportRoads(AIRPORT,areaPoint));
  map.roads.push(...roads);
  map.gameplay={areas:zones,roads};return map;
 }

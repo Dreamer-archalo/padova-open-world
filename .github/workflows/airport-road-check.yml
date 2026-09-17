@@ -1,0 +1,28 @@
+name: Airport road regression
+
+on:
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  airport:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Airport road module syntax
+        run: |
+          node --check dist/airport-road-network.js
+          node --check dist/gameplay-areas.js
+          node --check verify-airport-mobility.mjs
+          node --check verify-airport-road-runtime.mjs
+      - name: Connected airport roads and building clearance
+        run: node verify-airport-mobility.mjs
+      - name: Actual airport terrain, city graph and vehicle collision regression
+        run: node verify-airport-road-runtime.mjs
