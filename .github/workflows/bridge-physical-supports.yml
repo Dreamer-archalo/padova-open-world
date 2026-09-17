@@ -13,15 +13,16 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
-      - name: Identify actual hospital blocks and largest roof
-        run: node tools/diagnose-hospital-footprints.mjs
       - name: Three raised bridges, columns, real 3D deck and underpass clearance
         run: |
           node --check dist/road-structures.js
           node verify-bridge-physical-supports.mjs
+      - name: Diagnose the remaining short unsupported structures
+        run: node tools/diagnose-short-bridges.mjs
       - name: Audit genuine elevated bridge spans from entire Padova map
         run: node --max-old-space-size=3072 verify-bridge-real-map.mjs
       - name: Existing structural and both Tangenziale race regressions
+        if: always()
         run: |
           node verify-geometry-integrity.mjs
           npm run test:tangenziale-race
