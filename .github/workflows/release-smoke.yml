@@ -33,6 +33,10 @@ jobs:
         run: |
           npm run test:initial-world
           node verify-geometry-integrity.mjs
+      - name: Portello micromobility and key gameplay wiring
+        run: |
+          npm run test:portello
+          node verify-feature-preservation.mjs
       - name: Full elevation audit — known Bassanello discrepancy, visible and nonblocking
         continue-on-error: true
         run: npm run test:geometry-integrity

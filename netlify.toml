@@ -1,9 +1,11 @@
 # Existing production site: padova-open-world.netlify.app
 # Canonical source: Dreamer-archalo/padova-open-world, branch main.
 # dist/ is committed, deploy-ready static output: no build/transpilation step.
+# This configuration takes effect only once the EXISTING Netlify site is linked
+# to this canonical repository; changing this file does not reconnect the site.
 [build]
   publish = "dist"
-  command = "npm run test:taxi && npm run test:tangenziale-race && node verify-online-race.mjs && node verify-online-race-second-fix.mjs"
+  command = "npm run test:taxi && npm run test:tangenziale-race && node verify-online-race.mjs && node verify-online-race-second-fix.mjs && npm run test:portello && node verify-feature-preservation.mjs"
 
 [build.environment]
   NODE_VERSION = "22"
