@@ -21,7 +21,8 @@ jobs:
           node --check dist/airport-road-network.js
           node --check dist/gameplay-areas.js
           node --check verify-airport-mobility.mjs
+          node --check verify-airport-road-runtime.mjs
       - name: Connected airport roads and building clearance
         run: node verify-airport-mobility.mjs
-      - name: Existing runway, driving, vehicle and collision regression
-        run: npm run test:airport
+      - name: Actual airport terrain, city graph and vehicle collision regression
+        run: node verify-airport-road-runtime.mjs
