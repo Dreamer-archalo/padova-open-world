@@ -1,0 +1,48 @@
+name: Airport road-network and 3D contact audit
+on:
+  push:
+    branches: [fix/airport-access-road-network]
+  pull_request:
+    branches: [main]
+    paths:
+      - 'dist/gameplay-areas.js'
+      - 'dist/terrain.js'
+      - 'dist/world.js'
+      - 'tools/diagnose-airport-junction.mjs'
+      - 'tools/probe-airport-ground-connector.mjs'
+      - 'tools/verify-five-star-timing.mjs'
+      - 'tools/controller-harness.mjs'
+      - 'verify-airport-road-network.mjs'
+      - 'verify-world-3d-contact.mjs'
+      - '.github/workflows/airport-roads.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Diagnose real junction candidates, heights and bridge levels
+        run: node tools/diagnose-airport-junction.mjs
+      - name: Reversible at-grade gate connector probe with taxi, slopes, dry land and collisions
+        if: always()
+        run: node tools/probe-airport-ground-connector.mjs
+      - name: Airport road topology, actual graph and taxi gate diagnostic
+        if: always()
+        run: node --check dist/gameplay-areas.js && node verify-airport-road-network.mjs
+      - name: Independent 3D verification of real map, physics and rendered ground triangles
+        if: always()
+        run: node --check verify-world-3d-contact.mjs && node --max-old-space-size=4096 verify-world-3d-contact.mjs
+      - name: Strict full-map elevation, shoulder, bridges and geometry integrity
+        if: always()
+        run: npm run test:geometry-integrity
+      - name: Five-star actual staggered military spawn timing
+        if: always()
+        run: node --check tools/verify-five-star-timing.mjs && node tools/verify-five-star-timing.mjs
+      - name: Full airport vehicle, colliders and surface regression
+        if: always()
+        run: npm run test:airport
