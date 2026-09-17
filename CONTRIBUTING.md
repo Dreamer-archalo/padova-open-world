@@ -1,27 +1,27 @@
-# Contributions and publication
+# Contribuire e pubblicare · Padova After Hours 1.2
 
-## Pull Request destination
+## Un solo repository di riferimento
 
-Open new work against **Dreamer-archalo/padova-open-world**, base branch **main**:
-https://github.com/Dreamer-archalo/padova-open-world/compare
+La sorgente ufficiale del progetto è **[`Dreamer-archalo/padova-open-world`](https://github.com/Dreamer-archalo/padova-open-world)**, ramo **`main`**. Questa edizione deriva da `scandolo/padova-open-world`, ma le nuove modifiche e le Pull Request devono avere come destinazione `Dreamer-archalo/padova-open-world:main`.
 
-This repository is a fork. GitHub can preselect the upstream repository when opening a cross-fork comparison: explicitly select `Dreamer-archalo/padova-open-world` as the base repository for this edition.
+Una modifica va proposta su un ramo derivato dall'ultimo `main`, verificata in modo mirato e integrata senza sovrascrivere modifiche successive. I rami sperimentali o non aggiornati non vanno uniti indiscriminatamente.
 
-Start feature branches from this repository's current `main`, preserve existing game modes and saves unless the task explicitly changes them, and describe the behavior changed and the tests performed. Existing checks are `npm test` and `npm run test:modern`.
+## Dove si gioca
 
-## Public Site
+- **[GitHub Pages](https://dreamer-archalo.github.io/padova-open-world/)** — pubblicazione collegata a `main`, tramite [workflow GitHub Pages](.github/workflows/github-pages.yml). [Controlla la versione effettivamente pubblicata](https://dreamer-archalo.github.io/padova-open-world/version.json).
+- **[Netlify — sito storico del progetto](https://padova-open-world.netlify.app/)** — destinazione ufficiale prevista dalla documentazione della release, ma da sincronizzare con il `main` canonico. Non dedurre che un deploy Pages aggiorni anche Netlify.
+- **ChatGPT Site precedente:** indirizzo separato, da non confondere con la distribuzione canonica o con il deploy Netlify.
 
-https://padova-open-world.tfyudartuuyikgfdsgafrdyu.chatgpt.site
+Non creare un altro sito per pubblicare questo progetto. Conservare gli identificativi e i domini degli ambienti esistenti.
 
-The hosting identity in `.openai/hosting.json` belongs to this edition. Preserve it to update the same public URL. Do not copy a hosting identity from upstream or from a private preview.
+## Flusso di aggiornamento
 
-The entire application is the tracked `dist/` directory: deploy its contents exactly, including the JavaScript modules, CSS, data and vendor assets. No application build is required. Keep map and third-party credits.
+1. Modificare il codice in un ramo creato dall'ultimo `main` di questo repository.
+2. Eseguire i test specifici e aprire una PR breve, indicando novità e limiti.
+3. Integrare in `main` solo i cambiamenti verificati. GitHub Pages si aggiorna tramite workflow **solo se il deploy supera i controlli**.
+4. Per Netlify, verificare che il progetto esistente sia collegato al repository e al ramo corretti; controllare che il suo commit pubblicato corrisponda al commit che si intende distribuire.
+5. Confrontare il commit effettivamente pubblicato e [`dist/version.json`](dist/version.json). I test automatici non sostituiscono il collaudo WebGL, il test su due dispositivi per l'online e le verifiche di geometria su strada.
 
-## Publication flow
+Il sito distribuisce l'intera cartella `dist/`, comprese dipendenze locali, dati, CSS e moduli. Non mescolare file appartenenti a commit diversi.
 
-1. Review and merge changes into `Dreamer-archalo/padova-open-world:main`.
-2. Request publication of that repository's current `main` to this Site.
-3. The publishing agent checks out that revision, validates the static assets, pushes the same source revision to the Site's managed source repository, packages `dist/`, and publishes the saved version.
-4. Confirm that deployment succeeded and retain the same public URL.
-
-GitHub remains the source of truth. The Sites managed source repository is the publication copy. No automatic deployment on merge and no GitHub Actions workflow are configured by this setup. A future publication should use the Site's existing public audience.
+Riferimenti: [documento di rilascio 1.2](docs/release-v1.2.md), [inventario delle funzionalità](docs/release-v1.2-completeness-audit.md), [problemi noti](docs/release-v1.2-known-issues.md).
