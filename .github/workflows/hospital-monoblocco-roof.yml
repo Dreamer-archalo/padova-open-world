@@ -24,6 +24,10 @@ jobs:
           node --check dist/hospital-rooftop-easter-egg.js
           node --check dist/hospital-helipad-exit.js
           node verify-hospital-rooftop.mjs
+      - name: Verify safe ramp approaches, landings and actual roof-gap bridges
+        run: |
+          node --check dist/monoblocco-course-polish.js
+          node verify-monoblocco-course-polish.mjs
       - name: Verify spectator positions and active visual cheering
         run: |
           node --check dist/monoblocco-spectators.js
