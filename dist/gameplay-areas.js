@@ -25,7 +25,7 @@ export function gameplayElevation(x,z,raw,patches=[]){
 }
 function outsidePaths(points,area){
  const paths=[];let current=[];
- const append=(a,b)=>{if(Math.hypot(a[0]-b[0],a[1]-b[1])<.01)return;if(current.length&&Math.hypot(current.at(-1)[0]-a[0],current.at(-1)[1])>.01){paths.push(current);current=[];}if(!current.length)current.push(a);current.push(b);};
+ const append=(a,b)=>{if(Math.hypot(a[0]-b[0],a[1]-b[1])<.01)return;if(current.length&&Math.hypot(current.at(-1)[0]-a[0],current.at(-1)[1]-a[1])>.01){paths.push(current);current=[];}if(!current.length)current.push(a);current.push(b);};
  for(let i=1;i<points.length;i++){const a=points[i-1],b=points[i],p=areaLocal(area,...a),q=areaLocal(area,...b);let lo=0,hi=1;
   for(const [start,delta,min,max] of [[p.u,q.u-p.u,area.minU,area.maxU],[p.v,q.v-p.v,area.minV,area.maxV]]){if(Math.abs(delta)<1e-9){if(start<min||start>max){lo=1;hi=0;break;}}else{const x=(min-start)/delta,y=(max-start)/delta;lo=Math.max(lo,Math.min(x,y));hi=Math.min(hi,Math.max(x,y));}}
   if(lo>=hi){append(a,b);continue;}const at=t=>[a[0]+(b[0]-a[0])*t,a[1]+(b[1]-a[1])*t];if(lo>0)append(a,at(lo));if(current.length){paths.push(current);current=[];}if(hi<1)append(at(hi),b);
@@ -53,6 +53,16 @@ export function prepareGameplayMap(map){
  connect(AIRPORT,AIRPORT_GATE,'Ingresso aeroporto');
  connect(VILLA,areaPoint(VILLA,0,51),'Accesso villa Treves');
  road('Viale della villa',[areaPoint(VILLA,0,51),HOME],8);
+ // The nearest pre-existing entrance vertex belongs to an isolated stretch of
+ // Via Sorio. Link its OUTSIDE-fence endpoint to an actual connected city road;
+ // via the exterior waypoint the new connector crosses the fence only at the
+ // pre-existing gate (u=215,v=250), rather than cutting through the perimeter.
+ const entrance=roads.find(r=>r.n==='Ingresso aeroporto');
+ let cityAnchor=null,cityDistance=Infinity;
+ for(const r of map.roads){if(r.n!=='Via dei Colli'||r.b||r.tunnel||Number(r.layer)>0)continue;
+  for(const p of r.p){if(insideArea(AIRPORT,...p))continue;const d=Math.hypot(p[0]-AIRPORT_GATE.x,p[1]-AIRPORT_GATE.z);if(d<cityDistance){cityAnchor=p;cityDistance=d;}}
+ }
+ if(entrance&&cityAnchor&&cityDistance<700)road('Raccordo aeroporto · città',[{x:cityAnchor[0],z:cityAnchor[1]},areaPoint(AIRPORT,240,250),{x:entrance.p[0][0],z:entrance.p[0][1]}],8);
  // Road-going vehicles stay away from the runway and aircraft taxiway.
  // Dedicated shared vertices join the existing entrance to the service loop.
  roads.push(...buildAirportRoads(AIRPORT,areaPoint));
