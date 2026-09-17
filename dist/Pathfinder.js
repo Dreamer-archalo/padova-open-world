@@ -31,8 +31,15 @@ export class TaxiPathfinder {
 
   route(from, to, {maxSteps = 12000, maxMs = 20} = {}) {
     if (!this.valid(from) || !this.valid(to)) return [];
+    // roadRoute's generic nearestRoad falls back to scanning *every segment*
+    // when no road is indexed within 100 metres. During a taxi accident or
+    // failed departure this used to run synchronously, possibly 24 times.
+    // Taxi routing must never enter that unbounded fallback: callers can
+    // safely despawn the empty cab or retry another pickup on a later frame.
+    const index=this.graph?.index;
+    if (!index || !index.near(from.x,from.z,100).size || !index.near(to.x,to.z,100).size) return [];
     try {
-      return roadRoute(from, to, this.graph, {maxSteps, maxMs});
+      return roadRoute(from, to, this.graph, {maxSteps: Math.min(maxSteps,4500), maxMs: Math.min(maxMs,12)});
     } catch (error) {
       console.warn('[Taxi Pathfinder] route failed', error);
       return [];
