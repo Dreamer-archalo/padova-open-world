@@ -57,6 +57,8 @@ jobs:
           node verify-online-race-second-fix.mjs
           npm run test:initial-world
           node verify-geometry-integrity.mjs
+          npm run test:portello
+          node verify-feature-preservation.mjs
       - name: Full elevation audit — pre-existing Bassanello discrepancy, visible and nonblocking
         continue-on-error: true
         run: npm run test:geometry-integrity
