@@ -1,0 +1,13 @@
+import fs from 'node:fs';
+globalThis.window=globalThis;globalThis.document={createElement:()=>({width:0,height:0,getContext:()=>({fillRect(){},fillText(){},beginPath(){},moveTo(){},lineTo(){},stroke(){},fill(){},arc(){},closePath(){}})})};
+await import('../dist/phase4-terrain-fixes.js');await import('../dist/historic-terrain-level.js');await import('../dist/historic-plaza-alignment.js');
+const [{Terrain},{applyCityData},{prepareGameplayMap}]=await Promise.all([import('../dist/terrain.js'),import('../dist/districts.js'),import('../dist/gameplay-areas.js')]);
+const read=n=>JSON.parse(fs.readFileSync(new URL(`../dist/data/${n}.json`,import.meta.url)));
+const data=read('padova');applyCityData(data,read('city'));prepareGameplayMap(data);const terrain=new Terrain(read('terrain'),data,{modern:true});
+const target=[...terrain.roads.profiles.values()].find(p=>p.road.n==='Cavalcavia Chiesanuova'&&p.points.some(v=>Math.hypot(v[0]+1904,v[1]+467)<18));if(!target)throw Error('Missing Chiesanuova 18m span');
+let report=[];
+for(let i=1;i<target.points.length;i++){const a=target.points[i-1],b=target.points[i],x=(a[0]+b[0])/2,z=(a[1]+b[1])/2;if(Math.hypot(x+1904,z+467)>19)continue;const h=terrain.roads.sample(target.road,x,z),base=terrain.elevation(x,z),yaw=Math.atan2(b[0]-a[0],b[1]-a[1]),deckBottom=Math.min(terrain.roads.sample(target.road,...a),terrain.roads.sample(target.road,...b),h)-.74;
+const lower=[...terrain.roads.candidates(x,z,42)].filter(s=>s.road!==target.road&&!/footway|path|steps|cycleway|tram|pedestrian/.test(s.road.k)).map(s=>({name:s.road.n||s.road.k,width:s.road.w,d:+s.d.toFixed(1),height:+s.height.toFixed(2),yaw:+Math.atan2(s.segment.b[0]-s.segment.a[0],s.segment.b[1]-s.segment.a[1]).toFixed(2)})).sort((a,b)=>a.d-b.d).slice(0,9);
+const edge=target.road.w/2+(/motorway|trunk/.test(target.road.k)?1.5:1.05),offsets=[];for(const sign of [-1,1])for(const extra of [0,3.5,9.5,13,16,20,25,30,36,44]){const d=(edge+extra)*sign,px=x+Math.cos(yaw)*d,pz=z-Math.sin(yaw)*d,conflicts=terrain.roads.candidates(px,pz,1.1).filter(s=>s.road!==target.road&&!/footway|path|steps|cycleway|tram|pedestrian/.test(s.road.k)&&s.d<=s.road.w/2+1.2&&s.height>=base-2&&s.height<deckBottom+2).map(s=>s.road.n||s.road.k);offsets.push({side:sign,extra,conflicts:[...new Set(conflicts)].slice(0,3),ground:+terrain.elevation(px,pz).toFixed(2)});}
+report.push({x:+x.toFixed(2),z:+z.toFixed(2),length:+Math.hypot(b[0]-a[0],b[1]-a[1]).toFixed(2),upperYaw:+yaw.toFixed(3),upperWidth:target.road.w,deckBottom:+deckBottom.toFixed(2),base:+base.toFixed(2),lower,offsets});}
+console.log('CHIESANUOVA_SPAN_CLEARANCE',JSON.stringify(report,null,2));
