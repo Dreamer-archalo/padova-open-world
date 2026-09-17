@@ -3,8 +3,7 @@
 // Car routes stay east of u=130; connections use identical vertices so the
 // road graph can route through the entrance, terminal, services and hangars.
 export const AIRPORT_ROAD_LAYOUT = [
-  {name:'Viale aeroporto · ingresso',width:5.2,points:[[205,250],[210,250]]},
-  {name:'Viale aeroporto · dorsale',width:5.2,points:[[210,-400],[210,-390],[210,-263],[210,-185],[210,-124],[210,80],[210,145],[210,250],[210,410],[210,535]]},
+  {name:'Viale aeroporto · dorsale',width:5.2,points:[[210,-400],[210,-390],[210,-263],[210,-185],[210,-124],[210,80],[210,145],[210,205],[205,220],[205,250],[205,280],[210,295],[210,410],[210,535]]},
   {name:'Terminal e parcheggi · anello',width:5.2,points:[[210,410],[134,410],[134,535],[210,535]]},
   {name:'Terminal · area sosta breve',width:5,points:[[210,410],[200,410],[200,420]]},
   {name:'Eliporto civile · accesso',width:5,points:[[134,410],[144,390],[144,380]]},
