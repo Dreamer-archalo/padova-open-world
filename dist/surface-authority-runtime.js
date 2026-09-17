@@ -1,16 +1,25 @@
 import {Terrain,safeTerrainHeight} from './terrain.js';
 import {RoadSurfaces} from './road-surfaces.js';
-import {ensureSurfaceResolver} from './world-surface-resolver.js';
+import {WorldSurfaceResolver,ensureSurfaceResolver} from './world-surface-resolver.js';
 
-// Keep the existing DEM/profile construction. Only the completed world's
-// geometric queries are routed through the same authoritative resolver.
+// A single resolver belongs to each Terrain instance, not to a chunk or a
+// renderer. Construction is deferred until the complete RoadSurfaces graph
+// has been assigned by Terrain's constructor.
+if(!Object.getOwnPropertyDescriptor(Terrain.prototype,'surfaceResolver')){
+  Object.defineProperty(Terrain.prototype,'surfaceResolver',{
+    configurable:true,
+    get(){if(!this.__surfaceResolver&&this.roads)this.__surfaceResolver=new WorldSurfaceResolver(this);return this.__surfaceResolver;},
+    set(value){this.__surfaceResolver=value;}
+  });
+}
+
+// Preserve the existing DEM/profile solver. Rendering and physics both
+// sample the resolved result, after the topology of the road graph is final.
 const nativeSegmentHeight=RoadSurfaces.prototype.segmentHeight;
 if(!RoadSurfaces.prototype.__worldSurfaceAuthority){
   RoadSurfaces.prototype.__worldSurfaceAuthority=true;
   RoadSurfaces.prototype.segmentHeight=function(segment,t){
     const solved=nativeSegmentHeight.call(this,segment,t);
-    // During the RoadSurfaces constructor terrain.roads is not yet assigned.
-    // Initialising the resolver then would observe an incomplete graph.
     if(!this.modern||this.terrain?.roads!==this)return solved;
     return ensureSurfaceResolver(this.terrain).resolveRoadSegment(segment,t,solved);
   };
