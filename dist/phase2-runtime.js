@@ -15,6 +15,7 @@ import './phase3-tram-fix.js';
 import './phase3-polish.js';
 import './geometry-audit-runtime.js';
 import './gameplay-upgrades.js';
+import './city-micromobility.js';
 import './historic-architecture-alignment.js';
 import './villa-spawn-alignment.js';
 
