@@ -22,9 +22,11 @@ export function roadsideHarmony(terrain,x,z,natural){
   const outside=Math.max(0,s.d-s.road.w/2);
   const blend=1-smooth(outside/EMBANKMENT_REACH);
   if(blend<=0)continue;
-  // Gradual cross-street transitions without the discontinuity of a nearest
-  // road selector at a carriageway edge.
-  const w=blend/(1+(outside/4)**2);
+  // Give the neighbouring carriageway its own supporting shoulder, rather
+  // than pulling a pavement several metres toward a second parallel road.
+  // Unlike choosing just one nearest road, positive continuous weights also
+  // blend safely at the point where their footprints become equidistant.
+  const w=blend/(1+(outside/2.3)**3);
   target+=s.height*w;weight+=w;influence=Math.max(influence,blend);
  }
  if(!weight)return natural;
