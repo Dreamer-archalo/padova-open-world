@@ -1,10 +1,36 @@
 // Airport integration based on the current main layout, with the original
 // structures/spawns retained in gameplay-areas-implementation.js.
-// Only the road graph is changed here; aircraft taxiways are not car roads.
+// Aircraft taxiways are not car roads.
 import {makeRoadGraph,nearestOnSegment,dist} from './core.js';
-import {prepareGameplayMap as prepareBase,AIRPORT,AIRPORT_GATE,areaPoint,areaLocal} from './gameplay-areas-implementation.js';
+import {prepareGameplayMap as prepareBase,gameplayStructures as originalStructures,AIRPORT,AIRPORT_GATE,areaPoint,areaLocal} from './gameplay-areas-implementation.js';
 import {buildAirportRoads} from './airport-road-network.js';
 export * from './gameplay-areas-implementation.js';
+
+// Replace the improvised fence posts flanking the access with a visibly wide
+// gateway. Its traffic aperture is +/-24 m around v=250, much wider than
+// the 8 m access road. The sign is elevated above every road vehicle.
+export function gameplayStructures(terrain){
+  const structures=originalStructures(terrain);
+  if(!structures.length)return structures;
+  const fenceColors=new Set(['#76867f','#596862','#555e60','#fff2bc']);
+  const result=structures.filter(s=>{
+    if(s.kind!=='gameplay'||!fenceColors.has(s.color))return true;
+    const p=areaLocal(AIRPORT,s.x,s.z);
+    return !(p.u>208&&p.u<218&&Math.abs(p.v-250)<=31);
+  });
+  function box(u,v,w,d,h,color,base=0,solid=true){
+    const centre=areaPoint(AIRPORT,u,v),y=terrain.elevation(centre.x,centre.z)+base;
+    const poly=[[-w/2,-d/2],[w/2,-d/2],[w/2,d/2],[-w/2,d/2]].map(([du,dv])=>{const p=areaPoint(AIRPORT,u+du,v+dv);return [p.x,p.z];});
+    result.push({x:centre.x,z:centre.z,p:poly,y,minY:y,h,color,solid,kind:'gameplay',minX:Math.min(...poly.map(p=>p[0])),maxX:Math.max(...poly.map(p=>p[0])),minZ:Math.min(...poly.map(p=>p[1])),maxZ:Math.max(...poly.map(p=>p[1]))});
+  }
+  // Robust supports and sidewalls outside the actual driving corridor.
+  for(const v of [226,274])box(211,v,1.7,1.7,7.2,'#d1d3cb');
+  for(const v of [217,283])box(215,v,1.1,18,1.2,'#adb6b4');
+  box(211,250,1.65,48,.75,'#526775',7.2,false);
+  box(211.9,250,.3,30,1.55,'#24566d',8,false);
+  for(const v of [228,272])box(211.4,v,.5,.6,1.55,'#e9dba2',8,false);
+  return result;
+}
 
 export function prepareGameplayMap(map){
   prepareBase(map);
