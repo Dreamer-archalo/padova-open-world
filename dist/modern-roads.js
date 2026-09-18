@@ -2,6 +2,15 @@ import {Color} from './vendor/three.module.js';
 import {nearestOnSegment} from './core.js';
 import {surfaceBatch} from './surface-layers.js';
 
+// A radial asphalt vertex can project onto another piece of the same OSM way.
+// Keep true junction fans within the solved road's physical maximum grade:
+// they join the intersection but cannot become a steep triangular roof.
+export function junctionFanHeight(centre,sampled,radius){
+ if(!Number.isFinite(sampled))return centre;
+ const change=Math.max(0,radius)*.061;
+ return Math.max(centre-change,Math.min(centre+change,sampled));
+}
+
 // Centreline sampling keeps both sides at the same cross-section elevation.
 // Paint and pavement use exactly the same smooth profile as vehicle physics.
 export function buildModernRoads(batch,segments,terrain){for(const _ of modernRoadSteps(batch,segments,terrain)){} }
@@ -49,7 +58,7 @@ export function* modernRoadSteps(batch,segments,terrain,{coarse=false}={}){
   // overlapping asphalt and stray upward triangles. Close only real graph
   // junctions, and only once per road / junction, not straight road seams.
   for(const p of [s.a,s.b]){if(coarse||!junction(p[0],p[1],.3))continue;const key=road.surfaceId+':'+p.join(',');if(joins.has(key))continue;joins.add(key);const y=terrain.roads.sample(road,...p)+.077;
-   for(let i=0;i<12;i++){const a=i*Math.PI/6,b=(i+1)*Math.PI/6,r=road.w/2+.15;const vertex=t=>{const x=p[0]+Math.cos(t)*r,z=p[1]+Math.sin(t)*r;return [x,terrain.roads.sample(road,x,z)+.077,z];};writer.tri([p[0],y,p[1]],vertex(b),vertex(a),asphalt);}
+   for(let i=0;i<12;i++){const a=i*Math.PI/6,b=(i+1)*Math.PI/6,r=road.w/2+.15;const vertex=t=>{const x=p[0]+Math.cos(t)*r,z=p[1]+Math.sin(t)*r;return [x,junctionFanHeight(y,terrain.roads.sample(road,x,z)+.077,r),z];};writer.tri([p[0],y,p[1]],vertex(b),vertex(a),asphalt);}
   }
   yield;
  }
