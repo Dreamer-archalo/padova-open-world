@@ -18,6 +18,8 @@ const separated={modern:true,roads:{candidates:()=>[{road:first,d:1,height:10},{
 assert.equal(roadsideHarmony(separated,0,0,12),9.95,'An upper footway must not create a wall across the lower carriageway');
 const isolated={modern:true,roads:{candidates:()=>[{road:footway,d:0,height:14}]}};
 assert.equal(roadsideHarmony(isolated,0,0,12),13.95,'An isolated ordinary walkway still needs supporting ground');
+const unmarked={modern:true,roads:{candidates:()=>[{road:first,d:0,height:10},{road:second,d:0,height:23}]}};
+assert(Math.abs(roadsideHarmony(unmarked,0,0,10)-9.95)<.5,'The lower road must retain grounded support even if an upper carriageway was not tagged as a bridge');
 
 // Exercise the actual modern Terrain API: the phase-four nearest-road override
 // must not replace the continuous solver between the centre and outer shoulder.
@@ -29,4 +31,4 @@ let maxActualJump=0,last=null;
 for(let x=-20;x<=36;x+=.25){const y=world.groundHeight(x,0);assert(Number.isFinite(y));if(last!==null)maxActualJump=Math.max(maxActualJump,Math.abs(y-last));last=y;assert(Math.abs(y-roadsideHarmony(terrain,x,0,12))<.001,'Modern ground diverges from the rendered corridor at '+x);}
 assert(maxActualJump<.45,'Actual terrain has a cliff at the edge of the road: '+maxActualJump);
 const historical=new Terrain(grid,map,{modern:false});assert(!Object.hasOwn(historical,'groundHeight'),'Keep historical terrain independent');
-console.log('PASS continuous modern ground, pedestrian/road grade separation and historical terrain; max 0.25 m-step '+maxActualJump.toFixed(3)+' m.');
+console.log('PASS continuous modern ground, overlapping levels, pedestrian separation and historical terrain; max 0.25 m-step '+maxActualJump.toFixed(3)+' m.');
