@@ -29,6 +29,21 @@ export class Terrain {
       for(let i=1;i<road.p.length;i++){const a=road.p[i-1],b=road.p[i];add(this.bridgeIndex,{a,b,w:road.w,offset,length:lengths[i-1],total},[a,b],road.w/2+2);offset+=lengths[i-1];}
     }
     this.pratoHeight=safeTerrainHeight(this.elevation(PRATO.x,PRATO.z),this.rawElevation(PRATO.x,PRATO.z));this.roads=new RoadSurfaces(map,this);
+    if(this.modern){
+      // The phase-four prototype override otherwise snaps to ONE closest street
+      // for a 7.5 m strip, while the original method snaps to a different road
+      // inside its footprint. Install one authoritative continuous ground
+      // solver per modern map; leave the legacy historical map unchanged.
+      this.groundHeight=(x,z)=>{
+        const platform=this.platformAt(x,z);if(platform)return safeTerrainHeight(platform.height,this.rawElevation(x,z));
+        const prato=this.prato(x,z);if(prato)return safeTerrainHeight(this.pratoHeight+(prato.canal?-3:0),this.pratoHeight);
+        const natural=safeTerrainHeight(this.elevation(x,z),this.rawElevation(x,z));
+        const raw=safeTerrainHeight(roadsideHarmony(this,x,z,natural),natural);
+        const d=this.waterDistance(x,z);if(d>10)return raw;
+        const water=this.waterHeight(x,z),channel=safeTerrainHeight(water-1.5,natural),bank=safeTerrainHeight(Math.max(raw,water+.8),natural);
+        return safeTerrainHeight(channel+(bank-channel)*smooth((d+1)/11),natural);
+      };
+    }
   }
   rawElevation(x,z){const g=this.grid,u=clamp((x-g.x0)/g.step,0,g.width-1),v=clamp((z-g.z0)/g.step,0,g.height-1),i=Math.min(g.width-2,Math.floor(u)),j=Math.min(g.height-2,Math.floor(v)),a=u-i,b=v-j,h=(i,j)=>g.heights[j*g.width+i],value=h(i,j)*(1-a)*(1-b)+h(i+1,j)*a*(1-b)+h(i,j+1)*(1-a)*b+h(i+1,j+1)*a*b;return safeTerrainHeight(value,h(i,j));}
   elevation(x,z){const raw=this.rawElevation(x,z),value=this.gameplayPatches?.length?gameplayElevation(x,z,raw,this.gameplayPatches):raw;return safeTerrainHeight(value,raw);}
@@ -47,16 +62,14 @@ export class Terrain {
     const platform=this.platformAt(x,z);if(platform)return safeTerrainHeight(platform.height,this.rawElevation(x,z));
     const prato=this.prato(x,z);if(prato)return safeTerrainHeight(this.pratoHeight+(prato.canal?-3:0),this.pratoHeight);
     const natural=safeTerrainHeight(this.elevation(x,z),this.rawElevation(x,z));let raw=natural;
-    // The exact road footprint remains authoritative. Outside its edge, blend
-    // *all* nearby ground-level road profiles continuously (not a discontinuous
-    // nearest-road switch), while keeping flyovers and tunnels independent.
+    // Smooth road/terrain carving: the road owns the centre, then influence
+    // decays with smoothstep across ROAD_FADE_DISTANCE back to the untouched DEM.
     const support=this.roads?.at(x,z,null,ROAD_FADE_DISTANCE);
     if(support&&!support.road.crossing&&!support.road.tunnel&&!support.road.b&&!(Number(support.road.layer)>0)){
       const roadY=safeTerrainHeight(support.height-.05,natural),factor=roadTerrainFactor(support.d,support.road.w,ROAD_FADE_DISTANCE);
       raw=safeTerrainHeight(natural*(1-factor)+roadY*factor,natural);
       if(support.d<=support.road.w/2)return raw;
     }
-    if(this.modern)raw=safeTerrainHeight(roadsideHarmony(this,x,z,natural),raw);
     const d=this.waterDistance(x,z);if(d>10)return raw;const water=this.waterHeight(x,z),channel=safeTerrainHeight(water-1.5,natural),bank=safeTerrainHeight(Math.max(raw,water+.8),natural);return safeTerrainHeight(channel+(bank-channel)*smooth((d+1)/11),natural);
   }
   height(x,z,referenceY=null){
