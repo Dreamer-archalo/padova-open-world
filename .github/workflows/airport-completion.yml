@@ -25,6 +25,7 @@ jobs:
           node --check dist/airport-traffic-enhancement.js
           node --check dist/phase2-runtime.js
           node --check tools/verify-airport-traffic.mjs
+          node --check tools/verify-airport-entrance.mjs
           node --check verify-airport-city-access.mjs
           node --check verify-airport-via-sorio.mjs
           node --check verify-airport-mobility.mjs
@@ -35,6 +36,9 @@ jobs:
       - name: Real city graph round trip, taxi destination and fence
         if: always()
         run: node verify-airport-city-access.mjs
+      - name: Full airport access and unobstructed architectural gate
+        if: always()
+        run: node --max-old-space-size=4096 tools/verify-airport-entrance.mjs
       - name: Via Sorio to airport and back on real roads
         if: always()
         run: node verify-airport-via-sorio.mjs
