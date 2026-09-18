@@ -16,7 +16,9 @@ jobs:
       - name: Validate candidate roof circuit independently
         run: |
           node --check dist/monoblocco-track.js
+          node --check dist/monoblocco-roof-network-plan.js
           node verify-monoblocco-track.mjs
+          node verify-monoblocco-roof-network.mjs
           node tools/diagnose-roof-regions.mjs
       - name: Identify actual roof gaps for elevated connectors
         run: node tools/diagnose-monoblocco-connectors.mjs
