@@ -35,6 +35,8 @@ jobs:
           npm run test:initial-world
           node verify-geometry-integrity.mjs
           node verify-road-support.mjs
+      - name: Entire-map bridge support and collision audit
+        run: node --max-old-space-size=3072 verify-road-support-map.mjs
       - name: Portello and citywide micromobility and key gameplay wiring
         run: |
           npm run test:portello
