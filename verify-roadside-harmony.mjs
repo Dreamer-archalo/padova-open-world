@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import {roadsideHarmony,EMBANKMENT_REACH} from './dist/roadside-harmony.js';
 import {Terrain} from './dist/terrain.js';
-const first={k:'residential',w:6},second={k:'secondary',w:6},flyover={k:'primary',w:10,crossing:true};
+const first={k:'residential',w:6},second={k:'secondary',w:6},flyover={k:'primary',w:10,crossing:true},footway={k:'footway',w:3};
 const candidates=(x,z,reach)=>{assert.equal(reach,EMBANKMENT_REACH);return [
  {road:first,d:Math.abs(x),height:10},
  {road:second,d:Math.abs(x-16),height:15},
@@ -14,6 +14,10 @@ assert(maxJump<.45,'Artificial ground cliff at a nearest-road ownership transiti
 assert(Math.abs(roadsideHarmony(terrain,0,0,12)-9.95)<.5,'Street embankment no longer meets its asphalt');
 assert(Math.abs(roadsideHarmony(terrain,16,0,12)-14.95)<.5,'Second street embankment no longer meets its asphalt');
 assert.equal(roadsideHarmony({modern:true,roads:{candidates:()=>[{road:flyover,height:28,d:0}]}},0,0,12),12,'Flyover must not drag the ground up to its deck');
+const separated={modern:true,roads:{candidates:()=>[{road:first,d:1,height:10},{road:footway,d:0,height:24}]}};
+assert.equal(roadsideHarmony(separated,0,0,12),9.95,'An upper footway must not create a wall across the lower carriageway');
+const isolated={modern:true,roads:{candidates:()=>[{road:footway,d:0,height:14}]}};
+assert.equal(roadsideHarmony(isolated,0,0,12),13.95,'An isolated ordinary walkway still needs supporting ground');
 
 // Exercise the actual modern Terrain API: the phase-four nearest-road override
 // must not replace the continuous solver between the centre and outer shoulder.
@@ -25,4 +29,4 @@ let maxActualJump=0,last=null;
 for(let x=-20;x<=36;x+=.25){const y=world.groundHeight(x,0);assert(Number.isFinite(y));if(last!==null)maxActualJump=Math.max(maxActualJump,Math.abs(y-last));last=y;assert(Math.abs(y-roadsideHarmony(terrain,x,0,12))<.001,'Modern ground diverges from the rendered corridor at '+x);}
 assert(maxActualJump<.45,'Actual terrain has a cliff at the edge of the road: '+maxActualJump);
 const historical=new Terrain(grid,map,{modern:false});assert(!Object.hasOwn(historical,'groundHeight'),'Keep historical terrain independent');
-console.log('PASS continuous modern roadway and sidewalk ground across ownership transitions; legacy terrain untouched; max 0.25 m-step '+maxActualJump.toFixed(3)+' m.');
+console.log('PASS continuous modern ground, pedestrian/road grade separation and historical terrain; max 0.25 m-step '+maxActualJump.toFixed(3)+' m.');
