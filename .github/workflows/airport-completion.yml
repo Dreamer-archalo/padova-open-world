@@ -21,10 +21,17 @@ jobs:
           node --check dist/gameplay-areas.js
           node --check dist/gameplay-areas-implementation.js
           node --check dist/airport-road-network.js
+          node --check dist/airport-air-traffic.js
+          node --check dist/airport-traffic-enhancement.js
+          node --check dist/phase2-runtime.js
+          node --check tools/verify-airport-traffic.mjs
           node --check verify-airport-city-access.mjs
           node --check verify-airport-via-sorio.mjs
           node --check verify-airport-mobility.mjs
           node --check verify-airport-road-runtime.mjs
+      - name: Simulated airport flight cycles, runway and air collision separation
+        if: always()
+        run: node tools/verify-airport-traffic.mjs
       - name: Real city graph round trip, taxi destination and fence
         if: always()
         run: node verify-airport-city-access.mjs
