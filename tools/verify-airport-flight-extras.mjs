@@ -14,7 +14,7 @@ const scene=new THREE.Scene(),owner={style:'airport-jet',spec:VEHICLES['airport-
 const state={started:true,paused:false,mode:'car',car:owner,elapsed:1,x:0,y:20,z:0};
 const victim={style:'airport-cargo',spec:VEHICLES['airport-cargo'],health:100,x:0,y:20,z:118,yaw:0,mesh:new THREE.Group()};
 let hits=0,impacts=0;
-const g={scene,state,cars:[owner,victim],collision:new SpatialIndex(30),terrain:{height:()=>0},toast(){},hit(car){car.health=0;car.mesh.visible=false;hits++;},cannon:{impact(){impacts++;}}};
+const g={scene,state,cars:[owner,victim],policeAir:[],collision:new SpatialIndex(30),terrain:{height:()=>0},toast(){},hit(car){car.health=0;car.mesh.visible=false;hits++;},cannon:{impact(){impacts++;}}};
 assert(launchAirportMissile(g),'TAB should launch from a boarded military jet');
 assert.equal(g.airportMissiles.length,1);
 assert(!launchAirportMissile(g),'missile cooldown ignored');
