@@ -1,42 +1,42 @@
-# Road and sidewalk continuity audit — 18 September 2026
+# Road, sidewalk and pedestrian continuity audit — 18 September 2026
 
-## Status
+## Release status
 
-The corrections proposed in PR #49 pass the targeted synthetic bridge/vehicle collision regression and a citywide generated-structure audit. The full road-to-ground elevation audit **does not pass** and must not be described as successful merely because an earlier GitHub Actions step used `continue-on-error: true`. The CI setting has been changed so the failure blocks the release check.
+PR #49 is a draft and MUST NOT be merged/published as a complete repair yet. Tests cover the real full-map road data, but not actual WebGL driving or a two-device multiplayer session. CI correctly fails on unresolved terrain discontinuities; never suppress or silently raise thresholds to force green.
 
-## Verified bridge structure results
+## Implemented in this branch
 
-Run `node --max-old-space-size=3072 verify-road-support-map.mjs`:
+- Bridge deck collision follows its own carriageway, support columns terminate on rendered ground and steep footbridges use shorter structural elements.
+- Pedestrian surfaces preserve paths passing below/above separate roads; a same-level intersection clips conflicting pavement instead.
+- `Terrain.height` chooses the sampled surface at the actual actor/vehicle level, matching the 1.2-metre generated sidewalk footprint.
+- Ground blends several ordinary road profiles continuously with a 36-metre embankment falloff, excluding explicitly tagged bridges/tunnels/nonzero layers; source DEM is retained outside the corridor.
+- Circular asphalt junction fans are generated only at graph nodes with degree above two, not every few metres at road segment endpoints.
 
-- 9,342 generated bridge deck boxes examined.
-- 709 main support piers, 886 underpass pier boxes, 11,327 parapets examined.
-- Maximum local deck-to-own-road-height difference: 0.309 m; the audited limit is 0.65 m (the difference includes slab slope within short spans).
-- Main-pier base relative to rendered ground: maximum difference 0 m under the audit definition.
-- Zero failed cases in the new generated-structure audit.
+## Actual automated measurements
 
-This is a **geometry consistency audit**, not evidence that the game has been visually driven everywhere in a WebGL browser.
+Baseline of this work: 247 pedestrian-contact errors and 2,005 sidewalk-contact errors in a 124,499-segment pedestrian sample and 418,603 sidewalk samples; shoulder geometry had 24,671 failures. After the current corrections and map-wide runs:
 
-## Still failing: `npm run test:geometry-integrity`
+- **0 pedestrian contact mismatches**, maximum deviation 0.080 m.
+- **0 sidewalk contact mismatches** under the defined 0.55 m test threshold; maximum deviation 0.436 m.
+- **239 conflicting road/ground ownership samples** remain where a different road at another height occupies the same 2D footprint. These may be genuine overpasses or inconsistent road topology: each must be distinguished, never flattened indiscriminately.
+- **10,670 / 527,194 sampled ordinary-road shoulders still fail**: 1,750 near-road height errors over 0.55 m, 9,014 transverse changes over 1.35 m; these categories overlap. Worst observed gap 10.85 m, transverse change 11.05 m.
+- 424,192 road segments audited for grade (0 grades above their road-type limit); 1,530 bridge-water samples passed; all 8 authored level-patch flatness checks passed.
+- Bridge structure scan: 9,342 deck boxes, approximately 680 main piers after ground harmonisation, 886 portal supports, 11,327 parapets; 0 issues under its structural consistency checks, maximum slab/own-road difference 0.309 m. A different ground field changes the number of supports, not the deck or underpass collision rules.
+- Taxi, both Tangenziale races, online race regressions, initial world, Portello and micromobility CI steps pass. This does not establish real browser driving quality.
 
-`verify-elevation-harmony.mjs` records **24,671 shoulder violations** in the whole-map sample and exits with assertion failure. The previously first-failing Bassanello core-variation assertion was no longer the first error after the southern plateau changes, but this does not prove Bassanello is visually perfect.
+## Evidence and reproducibility
 
-Examples from CI logs:
+`node --max-old-space-size=3072 verify-walkability.mjs` prints `WALKABILITY_AUDIT`. It deliberately returns an error while 239 conflicting-height ownership samples remain, even though ordinary pedestrian and sidewalk contact checks are clean.
 
-- Cavalcavia Stati Uniti near x=6209.8, z=2011.9: 4.646 m transverse change; samples of the same sequence reach 4.805 m.
-- Via Paolotti near x=765.6, z=-246.5: 1.338 m near-shoulder height gap.
-- Via San Massimo near x=1041.9, z=166.6: 3.618 m transverse change.
+`npm run test:geometry-integrity` executes `verify-elevation-harmony.mjs` and prints `ELEVATION_DIAGNOSTIC` before its release-blocking assertion, including the top offending roads, near/far height samples, and their owning road. The latest available diagnostic run counted 10,670 failures after widening the distance falloff; no tolerances were altered. See [measured CI run](https://github.com/Dreamer-archalo/padova-open-world/actions/runs/35301745448).
 
-## Source of investigation
+The diagnostic identifies recurring examples: Cavalcavia Stati Uniti over Viale della Regione Veneto, Via Paolotti overlapping a service road, Via San Massimo beside a footway, Cavalcavia Borgomagno, Lungargine Angelo Donati, Via Sant'Urbano, Ponte dell'Unità d'Italia and multiple argini. This is a distributed topology/level ownership problem, not simply one isolated terrain vertex.
 
-`Terrain.groundHeight()` and the override in `dist/phase4-terrain-fixes.js` independently select a nearby road to feather the surrounding terrain. At junctions, parallel carriageways, water boundaries or grade-separated crossings, distinct sample points can select different height references. This is a plausible mechanism, not a proven sole cause of all 24,671 failures.
+## Remaining acceptance conditions
 
-## Next acceptance criteria
+1. Classify the overlapping level pairs by actual connection: at-grade joins must share a smooth longitudinal and transverse profile; true flyovers and stairways must retain their distinct elevations and have explicit retaining/deck geometry.
+2. Repair the 10,670 remaining shoulder samples without destroying bank, river or bridge clearances; separately reconcile the 239 ownership cases. No automatic rule should turn a 6-metre bridge into an unintended terrain ramp.
+3. Keep the geometry and walkability audits as release blockers once their measured failures are resolved, without changing limits merely to hide defects.
+4. Test representative routes in actual WebGL with car, motorcycle and walking at named error coordinates, including overhead, underpass, bridge-water and loading transitions. Only then merge to `main` and verify the live site update.
 
-1. Verify and repair road-to-road and road-to-sidewalk height ownership at every mapped at-grade junction, without projecting underpasses up onto bridge decks.
-2. Keep visible triangles, collision/contact height, sidewalk edges and roadside terrain consistent, including the outer shoulder samples.
-3. Make `npm run test:geometry-integrity` pass without suppressing failures or increasing thresholds merely to hide them; preserve bridge and race regressions.
-4. Test actual car and motorcycle traversal in a rendered WebGL browser at the three named sites, Bassanello and a representative sample of other districts. Do not claim this browser test has occurred until it has.
-
-GitHub Issues are disabled for this repository; this document preserves the outstanding task with reproduction and acceptance conditions.
-
-[Failing diagnostic run](https://github.com/Dreamer-archalo/padova-open-world/actions/runs/35293190094) · [PR #49](https://github.com/Dreamer-archalo/padova-open-world/pull/49).
+GitHub Issues are disabled on the repository; this file and [PR #49](https://github.com/Dreamer-archalo/padova-open-world/pull/49) retain the outstanding findings.
