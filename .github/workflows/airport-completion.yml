@@ -22,11 +22,15 @@ jobs:
           node --check dist/gameplay-areas-implementation.js
           node --check dist/airport-road-network.js
           node --check verify-airport-city-access.mjs
+          node --check verify-airport-via-sorio.mjs
           node --check verify-airport-mobility.mjs
           node --check verify-airport-road-runtime.mjs
       - name: Real city graph round trip, taxi destination and fence
         if: always()
         run: node verify-airport-city-access.mjs
+      - name: Via Sorio to airport and back on real roads
+        if: always()
+        run: node verify-airport-via-sorio.mjs
       - name: Airport facility connectivity and building clearance
         if: always()
         run: node verify-airport-mobility.mjs
