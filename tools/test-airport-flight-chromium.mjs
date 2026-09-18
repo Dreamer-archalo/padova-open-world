@@ -35,9 +35,9 @@ try{
  await page.keyboard.up('Space');await page.keyboard.up('w');
  console.log('AIRPORT_FLIGHT_AIRBORNE '+JSON.stringify(airborne));assert(airborne.y-airborne.ground>8&&airborne.health>0,'Aircraft did not fly safely');
  await page.screenshot({path:'test-artifacts/airport-airborne.png',timeout:20000});
- phase='actual keyboard landing';await page.keyboard.down('Shift');
+ phase='actual keyboard landing';await page.keyboard.down('Control');
  await page.waitForFunction(()=>{const g=globalThis.__airportFlightTest,s=g?.state;return s?.car?.spec?.plane&&s.y<=g.terrain.height(s.x,s.z)+.18;},null,{timeout:30000});
- await page.keyboard.up('Shift');
+ await page.keyboard.up('Control');
  const landed=await page.evaluate(async()=>{const g=globalThis.__airportFlightTest,s=g.state,{AIRPORT,areaLocal}=await import('./gameplay-areas.js');return {x:s.x,z:s.z,y:s.y,ground:g.terrain.height(s.x,s.z),speed:s.speed,health:s.health,mode:s.mode,style:s.car?.style,local:areaLocal(AIRPORT,s.x,s.z)};});
  console.log('AIRPORT_FLIGHT_LANDING '+JSON.stringify(landed));
  assert(landed.style==='libellula'&&landed.mode==='car'&&landed.health>0,'Player or aircraft lost on landing');
@@ -45,5 +45,5 @@ try{
  assert(Math.abs(landed.y-landed.ground)<.2,'Airplane not supported by runway after landing');
  await page.screenshot({path:'test-artifacts/airport-after-landing.png',timeout:20000});
  assert.equal(errors.length,0,'Browser JS errors: '+errors.join(' | '));
- console.log('PASS actual WebGL keyboard boarding, takeoff and landing on runway');
-}catch(error){console.error('AIRPORT_FLIGHT_FAIL phase='+phase+' '+(error.stack||error));console.error('AIRPORT_FLIGHT_STATUS '+JSON.stringify(await status()));console.error('AIRPORT_FLIGHT_ERRORS '+JSON.stringify(errors.slice(-15)));try{await page.keyboard.up('w');await page.keyboard.up('Space');await page.keyboard.up('Shift');await page.screenshot({path:'test-artifacts/airport-flight-failure.png',timeout:15000});}catch{}process.exitCode=1;}finally{await browser.close();}
+ console.log('PASS actual WebGL keyboard boarding, takeoff and Ctrl landing on runway');
+}catch(error){console.error('AIRPORT_FLIGHT_FAIL phase='+phase+' '+(error.stack||error));console.error('AIRPORT_FLIGHT_STATUS '+JSON.stringify(await status()));console.error('AIRPORT_FLIGHT_ERRORS '+JSON.stringify(errors.slice(-15)));try{await page.keyboard.up('w');await page.keyboard.up('Space');await page.keyboard.up('Control');await page.screenshot({path:'test-artifacts/airport-flight-failure.png',timeout:15000});}catch{}process.exitCode=1;}finally{await browser.close();}
