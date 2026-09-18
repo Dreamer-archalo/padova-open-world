@@ -1,5 +1,6 @@
 import {vehicleFootprint,vehicleBlocked} from './movement.js';
 import {SpatialIndex} from './core.js';
+import {AIRPORT,areaPoint} from './gameplay-areas.js';
 
 // Four optional diversions on clear outer shoulders. Selection follows actual
 // guardrails and excludes junctions, bridges, water and occupied landing areas.
@@ -20,6 +21,26 @@ export function arcadeRamps(terrain,barriers,collision,structures=[]){
   for(let at=22;clear&&at<=50;at+=2){const px=x+s*at,pz=z+c*at,y=terrain.height(px,pz);if(vehicleBlocked(px,pz,yaw,rails,{width:3.8,length:5,height:2},y))clear=false;}
   if(!clear||vehicleBlocked(x,z,yaw,obstacles,{width,length,height:1.8},Math.min(...cornerY)))continue;
   const xs=p.map(q=>q[0]),zs=p.map(q=>q[1]);ramps.push({kind:'arcade-ramp',name:'Salto laterale',x,z,yaw,width,length,rise,p,cornerY,topY,y:Math.min(...cornerY),h:Math.max(...topY)-Math.min(...cornerY),solid:false,color:'#b08b4b',minX:Math.min(...xs),maxX:Math.max(...xs),minZ:Math.min(...zs),maxZ:Math.max(...zs)});
+ }
+ // Airport stunt ramps share the SAME surface, ground-contact interpolation,
+ // ballistic jump and city collision code as the established motorway ramps.
+ // Only use sites with an actual dry, unobstructed approach and landing.
+ const airportWidth=3.7,airportLength=12,airportRise=1.9,yaw=AIRPORT.yaw,s=Math.sin(yaw),c=Math.cos(yaw);
+ let north=false,south=false;
+ for(const [u,v] of [[182,278],[171,276],[183,-511],[175,-507],[168,260],[180,-522]]){
+  if(v>0&&north||v<0&&south)continue;
+  const at=areaPoint(AIRPORT,u,v),x=at.x,z=at.z;
+  const p=vehicleFootprint(x,z,yaw,airportWidth,airportLength),cornerY=p.map(q=>terrain.height(...q));
+  if(Math.max(...cornerY)-Math.min(...cornerY)>.4||p.some(q=>!terrain.dry(q[0],q[1],1)))continue;
+  let clear=!vehicleBlocked(x,z,yaw,collision,{width:airportWidth,length:airportLength,height:1.9},Math.min(...cornerY))&&!vehicleBlocked(x,z,yaw,obstacles,{width:airportWidth,length:airportLength,height:1.9},Math.min(...cornerY));
+  for(let ahead=-17;clear&&ahead<=37;ahead+=3){
+   const px=x+s*ahead,pz=z+c*ahead,y=terrain.height(px,pz);
+   if(!terrain.dry(px,pz,2,y)||vehicleBlocked(px,pz,yaw,collision,{width:3.7,length:3,height:2},y))clear=false;
+  }
+  if(!clear)continue;
+  const topY=cornerY.map((h,i)=>h+(i>1?airportRise:0)),xs=p.map(q=>q[0]),zs=p.map(q=>q[1]);
+  ramps.push({kind:'arcade-ramp',name:v>0?'Aeroporto · rampa cargo nord':'Aeroporto · rampa cargo sud',x,z,yaw,width:airportWidth,length:airportLength,rise:airportRise,p,cornerY,topY,y:Math.min(...cornerY),h:Math.max(...topY)-Math.min(...cornerY),solid:false,color:'#c0a04f',minX:Math.min(...xs),maxX:Math.max(...xs),minZ:Math.min(...zs),maxZ:Math.max(...zs)});
+  if(v>0)north=true;else south=true;
  }
  terrain.arcadeRamps=ramps;return ramps;
 }
