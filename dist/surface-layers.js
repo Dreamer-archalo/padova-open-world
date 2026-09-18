@@ -32,7 +32,10 @@ export function roadCorridors(poly, terrain, {pedestrian=false, exclude=null}={}
     if(Math.hypot(q.x-x,q.z-z)>r+w)continue;
     const y=s.render?terrain.roads.sample(road,q.x,q.z):terrain.roads.segmentHeight(s,q.t),base=terrain.elevation(q.x,q.z);
     if(!pedestrian && road.crossing && y>base+1.4)continue;
-    if(pedestrian && exclude && Math.abs(y-terrain.roads.sample(exclude,q.x,q.z))>3)continue;
+    // Only an actual same-level carriageway cuts a pedestrian corridor.
+    // A path above/below it must remain continuous in 3D even if their 2D
+    // footprints intersect (underpasses, bridges and stair landings).
+    if(pedestrian && exclude && Math.abs(y-terrain.roads.sample(exclude,q.x,q.z))>1)continue;
     const dx=s.b[0]-s.a[0],dz=s.b[1]-s.a[1],len=Math.hypot(dx,dz);if(len<1e-6)continue;
     const ux=dx/len,uz=dz/len,nx=-uz*w,nz=ux*w;
     const ax=s.a[0]-ux*.08,az=s.a[1]-uz*.08,bx=s.b[0]+ux*.08,bz=s.b[1]+uz*.08;
