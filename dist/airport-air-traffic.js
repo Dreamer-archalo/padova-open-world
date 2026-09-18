@@ -12,14 +12,14 @@ export const AIRPORT_FLEET=[
  {id:'jet-b',type:'jet',slot:[174,-295],start:'parked',initial:[174,-295],speed:112,width:12,delay:115},
  {id:'civil-a',type:'rondone',slot:[158,42],start:'parked',initial:[158,42],speed:75,width:9,delay:70},
  {id:'civil-b',type:'libellula',slot:[158,110],start:'parked',initial:[158,110],speed:70,width:10,delay:92},
- {id:'civil-c',type:'rondone',slot:[183,42],start:'parked',initial:[183,42],speed:74,width:9,delay:145},
- {id:'civil-d',type:'libellula',slot:[183,110],start:'parked',initial:[183,110],speed:67,width:10,delay:190}
+ {id:'civil-c',type:'rondone',slot:[183,55],start:'parked',initial:[183,55],speed:74,width:9,delay:145},
+ {id:'civil-d',type:'libellula',slot:[183,122],start:'parked',initial:[183,122],speed:67,width:10,delay:190}
 ];
 const local=(p)=>({u:p[0],v:p[1]});
 const TAXI=(a)=>[local([Math.min(a.u,130),a.slot[1]]),local([80,a.slot[1]]),local([65,a.slot[1]]),local([65,-475]),local([40,-475])];
 const RETURN=(a)=>[local([65,340]),local([65,a.slot[1]]),local([80,a.slot[1]]),local(a.slot)];
-export function createAirportTraffic(){return {time:0,runway:null,aircraft:AIRPORT_FLEET.map((spec,index)=>({
-  ...spec,index,slot:[...spec.slot],u:spec.initial[0],v:spec.initial[1],yAbove:spec.start==='cruise'?205:0,
+export function createAirportTraffic(){return {time:0,runway:null,taxiway:null,aircraft:AIRPORT_FLEET.map((spec,index)=>({
+  ...spec,index,slot:[...spec.slot],u:spec.initial[0],v:spec.initial[1],yAbove:spec.start==='cruise'?205+index*18:0,
   speedNow:spec.start==='cruise'?spec.speed:0,phase:spec.start,routeIndex:spec.start==='cruise'?Math.max(0,CYCLE.findIndex(p=>Math.hypot(p[0]-spec.initial[0],p[1]-spec.initial[1])<1)+1):0,
   waitUntil:spec.delay||0,heading:0,completed:0,collisionAt:-Infinity
  }))};}
@@ -38,16 +38,18 @@ function gotoRoute(a,route,dt,speed,accel=8){
 }
 function reserve(sim,a){if(sim.runway&&sim.runway!==a.id)return false;sim.runway=a.id;return true;}
 const release=(sim,a)=>{if(sim.runway===a.id)sim.runway=null;};
+const reserveTaxi=(sim,a)=>{if(sim.taxiway&&sim.taxiway!==a.id)return false;sim.taxiway=a.id;return true;};
+const releaseTaxi=(sim,a)=>{if(sim.taxiway===a.id)sim.taxiway=null;};
 export function tickAirportTraffic(sim,dt){
  if(!Number.isFinite(dt)||dt<=0)return sim;
  // Stable simulations even if a tab is throttled; no giant position jumps.
  dt=clamp(dt,0,.12);sim.time+=dt;
  for(const a of sim.aircraft){
-  if(a.phase==='wrecked'){if(sim.time>=a.waitUntil){a.u=a.slot[0];a.v=a.slot[1];a.phase='parked';a.yAbove=0;a.speedNow=0;a.waitUntil=sim.time+45;}continue;}
+  if(a.phase==='wrecked'){release(sim,a);releaseTaxi(sim,a);if(sim.time>=a.waitUntil){a.u=a.slot[0];a.v=a.slot[1];a.phase='parked';a.yAbove=0;a.speedNow=0;a.waitUntil=sim.time+45;}continue;}
   if(a.phase==='parked'){
    a.speedNow=0;a.yAbove=0;
    const taxiing=sim.aircraft.filter(b=>b!==a&&['taxi','hold','lineup'].includes(b.phase)).length;
-   if(sim.time>=a.waitUntil&&taxiing<2){a.phase='taxi';a.routeIndex=0;}continue;
+   if(sim.time>=a.waitUntil&&taxiing<2&&reserveTaxi(sim,a)){a.phase='taxi';a.routeIndex=0;}continue;
   }
   if(a.phase==='taxi'){
    // Hold behind any aircraft already occupying the same taxi lane.
@@ -61,7 +63,7 @@ export function tickAirportTraffic(sim,dt){
    a.speedNow=0;if(reserve(sim,a)){a.phase='lineup';a.routeIndex=0;}continue;
   }
   if(a.phase==='lineup'){
-   if(advance(a,{u:0,v:-475},dt,7,4)){a.phase='takeoff';a.speedNow=13;}
+   if(advance(a,{u:0,v:-475},dt,7,4)){a.phase='takeoff';a.speedNow=13;releaseTaxi(sim,a);}
    continue;
   }
   if(a.phase==='takeoff'){
@@ -71,27 +73,28 @@ export function tickAirportTraffic(sim,dt){
   }
   if(a.phase==='departure'){
    advance(a,{u:0,v:1670},dt,a.speed,8);
-   a.yAbove=clamp(75+(a.v-545)*.105,75,200);
+   a.yAbove=clamp(66+(a.v-545)*(.123+a.index*18/1125),66,390);
    if(a.v>=1669){a.phase='cruise';a.routeIndex=1;}continue;
   }
   if(a.phase==='cruise'){
-   a.yAbove=205+20*Math.sin(sim.time*.022+a.index);
+   a.yAbove=205+a.index*18+2*Math.sin(sim.time*.022+a.index);
    if(gotoRoute(a,CYCLE,dt,a.speed,9)){
     a.phase='arrival-hold';a.routeIndex=0;
    }continue;
   }
   if(a.phase==='arrival-hold'){
-   a.yAbove=200;
-   if(reserve(sim,a)){a.phase='approach';a.routeIndex=0;}
+   a.yAbove+=clamp(205+a.index*18-a.yAbove,-8*dt,8*dt);
+   if((!sim.runway||sim.runway===a.id)&&reserveTaxi(sim,a)&&reserve(sim,a)){a.phase='approach';a.routeIndex=0;}
    else{
-    const theta=sim.time*.12+a.index,r=240;
-    advance(a,{u:650+Math.cos(theta)*r,v:-1800+Math.sin(theta)*r},dt,a.speed*.68);
+    const theta=sim.time*.12+a.index,r=180;
+    advance(a,{u:1250+Math.cos(theta)*r,v:-2900+Math.sin(theta)*r},dt,a.speed*.68);
    }continue;
   }
   if(a.phase==='approach'){
    const route=[{u:0,v:-2400},{u:0,v:-800},{u:0,v:-520}];
    gotoRoute(a,route,dt,Math.min(a.speed,62),5);
-   a.yAbove=clamp(20+(-520-a.v)*.09,20,205);
+   const desired=clamp(20+(-520-a.v)*.09,20,235);
+   a.yAbove+=clamp(desired-a.yAbove,-8*dt,8*dt);
    if(a.routeIndex>=route.length){a.phase='landing';a.speedNow=Math.min(a.speedNow,50);}
    continue;
   }
@@ -101,7 +104,7 @@ export function tickAirportTraffic(sim,dt){
    if(a.v>=-201){a.phase='rollout';a.yAbove=0;}continue;
   }
   if(a.phase==='rollout'){
-   advance(a,{u:0,v:340},dt,24,8);a.yAbove=0;
+   advance(a,{u:0,v:340},dt,a.v<230?24:7,8);a.yAbove=0;
    if(a.v>=339){a.phase='exit';}continue;
   }
   if(a.phase==='exit'){
@@ -111,7 +114,7 @@ export function tickAirportTraffic(sim,dt){
   if(a.phase==='return'){
    a.yAbove=0;
    if(gotoRoute(a,RETURN(a),dt,a.type==='cargo'?7:9,4)){
-    a.phase='parked';a.speedNow=0;a.waitUntil=sim.time+25+(a.index%4)*20;a.completed++;
+    a.phase='parked';a.speedNow=0;a.waitUntil=sim.time+25+(a.index%4)*20;a.completed++;releaseTaxi(sim,a);
    }
   }
  }
