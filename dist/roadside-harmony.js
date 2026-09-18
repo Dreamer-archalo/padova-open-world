@@ -22,11 +22,13 @@ export function roadsideHarmony(terrain,x,z,natural){
   const outside=Math.max(0,s.d-s.road.w/2);
   const blend=1-smooth(outside/EMBANKMENT_REACH);
   if(blend<=0)continue;
-  // Give the neighbouring carriageway its own supporting shoulder, rather
-  // than pulling a pavement several metres toward a second parallel road.
-  // Unlike choosing just one nearest road, positive continuous weights also
-  // blend safely at the point where their footprints become equidistant.
-  const w=blend/(1+(outside/2.3)**3);
+  // Distance is continuous, so an edge between two roads cannot cause a
+  // nearest-profile switch. At overlapping, differently elevated carriageways,
+  // the native ground datum determines which road is physically supported:
+  // an upper deck cannot pull the lower street's terrain upward. Isolated
+  // embankments are unaffected because this weighting normalises to one road.
+  const vertical=Math.abs(s.height-natural)/4;
+  const w=blend/(1+(outside/2.3)**3)/(1+vertical**4);
   target+=s.height*w;weight+=w;influence=Math.max(influence,blend);
  }
  if(!weight)return natural;
