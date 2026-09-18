@@ -145,7 +145,7 @@ function buildPratoEdges(game){
  }
  const bridges=[{lx:0,lz:130.5,w:11,d:13},{lx:0,lz:-130.5,w:11,d:13},{lx:85.5,lz:0,w:13,d:10},{lx:-85.5,lz:0,w:13,d:10}],decks=[];for(const b of bridges){const p=pratoPoint(b.lx,b.lz);decks.push({x:p.x,y:game.terrain.pratoHeight+.17,z:p.z,w:b.w,h:.24,d:b.d,yaw:PRATO.yaw});}
  const root=new THREE.Group();root.name='phase4-prato-canal-edges';root.userData.phase4PratoEdges=true;
- const wallMesh=new THREE.InstancedMesh(cube,pratoWallMat,walls.length),curbMesh=new THREE.InstancedMesh(cube,pratoWallMat,curbs.length),deckMesh=new THREE.InstancedMesh(cube,pratoDeckMat,decks.length);walls.forEach((v,i)=>instance(wallMesh,i,v.x,v.y,v.z,v.w,v.h,v.d,v.yaw));curbs.forEach((v,i)=>instance(curbMesh,i,v.x,v.y,v.z,v.w,v.h,v.d,v.yaw));decks.forEach((v,i)=>instance(deckMesh,i,v.x,v.y,v.z,v.w,v.h,v.d,b.yaw));for(const m of [wallMesh,curbMesh,deckMesh]){m.instanceMatrix.needsUpdate=true;m.receiveShadow=true;root.add(m);}root.visible=false;game.scene.add(root);return root;
+ const wallMesh=new THREE.InstancedMesh(cube,pratoWallMat,walls.length),curbMesh=new THREE.InstancedMesh(cube,pratoWallMat,curbs.length),deckMesh=new THREE.InstancedMesh(cube,pratoDeckMat,decks.length);walls.forEach((v,i)=>instance(wallMesh,i,v.x,v.y,v.z,v.w,v.h,v.d,v.yaw));curbs.forEach((v,i)=>instance(curbMesh,i,v.x,v.y,v.z,v.w,v.h,v.d,v.yaw));decks.forEach((v,i)=>instance(deckMesh,i,v.x,v.y,v.z,v.w,v.h,v.d,v.yaw));for(const m of [wallMesh,curbMesh,deckMesh]){m.instanceMatrix.needsUpdate=true;m.receiveShadow=true;root.add(m);}root.visible=false;game.scene.add(root);return root;
 }
 let seals=null,pratoEdges=null;
 const baseGameplayUpdate=ModernGameplay.prototype.update;
