@@ -1,6 +1,5 @@
-// Keep the most recent controlled aircraft across the event-loop gap before F
-// changes state.car to null. The physics extension consumes this snapshot on
-// the next frame to simulate an actual falling/landing aircraft.
+// Preserve pilot identity across the F-key event before the game clears car.
+// Apply after the flight extension so its snapshot cannot be cleared midflight.
 import {ModernGameplay} from './modern-gameplay.js';
 const previous=ModernGameplay.prototype.update;
 if(!ModernGameplay.prototype.__airportEjectionSnapshot){
@@ -14,5 +13,7 @@ if(!ModernGameplay.prototype.__airportEjectionSnapshot){
   }else if(!s?.parachuting){
    this.flightLastPilot=null;
   }
+  // Legacy AI occasionally toggles claimed mesh visibility before this step.
+  for(const c of this.cars||[])if(c.flightAbandoned?.done&&c.health<=0)c.mesh.visible=false;
  };
 }
