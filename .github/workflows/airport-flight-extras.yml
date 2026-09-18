@@ -1,0 +1,22 @@
+name: Airport flight extras fast checks
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'dist/airport-flight-extras.js'
+      - 'dist/airport-air-traffic.js'
+      - 'tools/verify-airport-flight-extras.mjs'
+      - '.github/workflows/airport-flight-extras.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  flight-extras:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: node --check dist/airport-flight-extras.js && node --check tools/verify-airport-flight-extras.mjs
+      - run: node tools/verify-airport-flight-extras.mjs
