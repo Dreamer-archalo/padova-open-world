@@ -26,6 +26,7 @@ import './airport-combat-flight.js';
 import './airport-ejection-state.js';
 import './airport-dogfight-v2.js';
 import './airport-dogfight-jet-models.js';
+import './airport-golf-arcade.js';
 
 // UI-only Phase 2 feedback. It does not own gameplay state: it observes the
 // existing HUD, so it cannot interfere with saves, physics or streaming.
