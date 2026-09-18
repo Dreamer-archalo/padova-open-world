@@ -30,10 +30,11 @@ export function* modernRoadSteps(batch,segments,terrain,{coarse=false}={}){
     for(const side of [-1,1]){
      const edge=side*(road.w/2-.25);section(a,b,edge-.055,edge+.055,.082,colour('#d7d4c2'));
      if(urban&&!road.crossing){const off=side*(road.w/2+.65),x=mid[0]+nx*off,z=mid[1]+nz*off;
-      // The old +13 cm sidewalk slab could become a wall when a road profile
-      // disagreed with the terrain. Keep the generated pavement essentially
-      // flush with asphalt; real authored steps/curbs remain independent.
-      if(!terrain.roads.candidates(x,z).some(c=>c.road!==road)&&terrain.waterDistance(x,z)>1)section(a,b,Math.min(side*road.w/2,side*(road.w/2+1.2)),Math.max(side*road.w/2,side*(road.w/2+1.2)),.083,colour('#b7b5a8'));
+      // A bridge at a different height is not a junction: it must not erase
+      // the sidewalk beneath it. Suppress pavement only for roads sharing the
+      // actual walking/driving level, so it does not cover their intersection.
+      const intersectingAtGrade=terrain.roads.candidates(x,z).some(c=>c.road!==road&&Math.abs(c.height-height(mid))<1.2);
+      if(!intersectingAtGrade&&terrain.waterDistance(x,z)>1)section(a,b,Math.min(side*road.w/2,side*(road.w/2+1.2)),Math.max(side*road.w/2,side*(road.w/2+1.2)),.083,colour('#b7b5a8'));
      }
     }
     if(road.w>=6.5&&!road.oneway&&Math.floor((i/count*length)/5)%2===0)section(a,b,-.06,.06,.09,colour('#d7d4c2'));
