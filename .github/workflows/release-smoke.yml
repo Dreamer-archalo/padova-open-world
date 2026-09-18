@@ -34,6 +34,7 @@ jobs:
         run: |
           npm run test:initial-world
           node verify-geometry-integrity.mjs
+          node verify-road-support.mjs
       - name: Portello and citywide micromobility and key gameplay wiring
         run: |
           npm run test:portello
