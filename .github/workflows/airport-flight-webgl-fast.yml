@@ -6,9 +6,11 @@ on:
       - 'dist/airport-flight-extras.js'
       - 'dist/airport-combat-flight.js'
       - 'dist/airport-ejection-state.js'
+      - 'dist/airport-cockpit-tuning.js'
       - 'dist/phase2-runtime.js'
       - 'tools/test-airport-missile-map-chromium.mjs'
       - 'tools/test-airport-combat-flight-chromium.mjs'
+      - 'tools/test-airport-cockpit-chromium.mjs'
       - '.github/workflows/airport-flight-webgl-fast.yml'
   workflow_dispatch:
 permissions:
@@ -16,7 +18,7 @@ permissions:
 jobs:
   jet-radar-browser:
     runs-on: ubuntu-latest
-    timeout-minutes: 12
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v6
       - uses: actions/setup-node@v4
@@ -32,9 +34,12 @@ jobs:
           for i in $(seq 1 25); do if curl -fsS http://127.0.0.1:4173/ -o /dev/null; then break; fi; sleep 1; done
       - name: Test jet launch and aerial M map in Chromium WebGL
         run: node tools/test-airport-missile-map-chromium.mjs
-      - name: Test Blackbird flight, ejection, interception and radar colors
+      - name: Test Blackbird flight, ejection, three-star interception and radar colors
         if: always()
         run: node tools/test-airport-combat-flight-chromium.mjs
+      - name: Test cockpit HUD, reverse, civilian zero-star safety and smooth turbo
+        if: always()
+        run: node tools/test-airport-cockpit-chromium.mjs
       - name: Upload screenshots and failure diagnostics
         if: always()
         uses: actions/upload-artifact@v4
