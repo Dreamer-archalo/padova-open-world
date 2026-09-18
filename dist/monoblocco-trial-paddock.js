@@ -40,8 +40,10 @@ function sign(root,x,z,y,yaw){
  ctx.fillStyle='#142d39';ctx.fillRect(0,0,768,256);ctx.strokeStyle='#f4cf65';ctx.lineWidth=17;ctx.strokeRect(11,11,746,234);
  ctx.fillStyle='#f4cf65';ctx.textAlign='center';ctx.font='bold 71px sans-serif';ctx.fillText('MOTO TRIAL',384,114);ctx.fillStyle='#ffffff';ctx.font='bold 39px sans-serif';ctx.fillText('E  ·  SALI IN SELLA',384,183);
  const tex=new THREE.CanvasTexture(canvas);tex.colorSpace=THREE.SRGBColorSpace;
- const panel=new THREE.Mesh(new THREE.PlaneGeometry(5.6,1.87),new THREE.MeshBasicMaterial({map:tex,side:THREE.DoubleSide}));panel.position.set(x,y+2.5,z);panel.rotation.y=yaw;panel.name='monoblocco-motorcycle-parking-sign';root.add(panel);
- cube(root,dark,x,y+1.1,z,.14,2.2,.15);return panel;
+ // A restrained sign beyond the parking spaces, facing the rider. The original
+ // 5.6m double-sided billboard was mirrored and covered the entire camera.
+ const panel=new THREE.Mesh(new THREE.PlaneGeometry(2.8,.94),new THREE.MeshBasicMaterial({map:tex,side:THREE.FrontSide}));panel.position.set(x,y+2.75,z);panel.rotation.y=yaw;panel.name='monoblocco-motorcycle-parking-sign';root.add(panel);
+ cube(root,dark,x,y+1.12,z,.10,2.24,.10);return panel;
 }
 function parking(game,root,site,layout){
  const spot=choosePaddock(game,site,layout);if(!spot)return {available:0,reason:'No clear three-bike roof apron'};
@@ -55,9 +57,11 @@ function parking(game,root,site,layout){
   for(const side of [-1,1])cube(root,paint,p.x+Math.cos(p.yaw)*side*.86,site.roofY+.078,p.z-Math.sin(p.yaw)*side*.86,.08,.02,3,p.yaw);
  }
  const centre=spot.spots[1],s=Math.sin(centre.yaw),c=Math.cos(centre.yaw);
- const marker={x:centre.x+c*spot.side*3.0,z:centre.z-s*spot.side*3.0};
- sign(root,marker.x,marker.z,site.roofY,centre.yaw+Math.PI/2);
- root.userData.bikeStation={x:centre.x,z:centre.z,bikes:bikes.length,marked:true,offTrack:true};
+ const preferred={x:centre.x+c*spot.side*5.5,z:centre.z-s*spot.side*5.5};
+ const marker=roofClear(site.polygon,preferred.x,preferred.z,2)?preferred:{x:centre.x+c*spot.side*3.5,z:centre.z-s*spot.side*3.5};
+ const facing=Math.atan2(centre.x-marker.x,centre.z-marker.z);
+ sign(root,marker.x,marker.z,site.roofY,facing);
+ root.userData.bikeStation={x:centre.x,z:centre.z,bikes:bikes.length,marked:true,offTrack:true,signDistance:Math.hypot(marker.x-centre.x,marker.z-centre.z)};
  return {available:bikes.length,site:root.userData.bikeStation};
 }
 function slalom(game,root,site,layout){
