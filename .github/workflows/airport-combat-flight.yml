@@ -1,0 +1,29 @@
+name: Airport combat flight controls
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'dist/airport-combat-flight.js'
+      - 'dist/airport-ejection-state.js'
+      - 'dist/phase2-runtime.js'
+      - 'tools/verify-airport-combat-flight.mjs'
+      - '.github/workflows/airport-combat-flight.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  flight-controller:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Verify modules parse
+        run: |
+          node --check dist/airport-combat-flight.js
+          node --check dist/airport-ejection-state.js
+          node --check dist/phase2-runtime.js
+          node --check tools/verify-airport-combat-flight.mjs
+      - name: Exercise flight and abandoned aircraft physics
+        run: node tools/verify-airport-combat-flight.mjs
