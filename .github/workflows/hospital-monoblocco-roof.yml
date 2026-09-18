@@ -17,11 +17,14 @@ jobs:
         run: |
           node --check dist/monoblocco-track.js
           node --check dist/monoblocco-roof-network-plan.js
+          node --check dist/monoblocco-roof-exploration.js
           node verify-monoblocco-track.mjs
           node verify-monoblocco-roof-network.mjs
           node tools/diagnose-roof-regions.mjs
       - name: Identify actual roof gaps for elevated connectors
-        run: node tools/diagnose-monoblocco-connectors.mjs
+        run: |
+          node tools/diagnose-monoblocco-connectors.mjs
+          node tools/diagnose-roof-island-bridges.mjs
       - name: Validate rooftop source and exact real-map polygon route
         run: |
           node --check dist/hospital-rooftop-easter-egg.js
