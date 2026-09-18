@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import * as THREE from '../dist/vendor/three.module.js';
 import {SpatialIndex} from '../dist/core.js';
 import {VEHICLES} from '../dist/vehicles.js';
+import '../dist/airport-interactivity.js'; // Registers native jet/cargo specs before the standalone fixture.
 import {CIVIL_AIRCRAFT,missileJet,launchAirportMissile,tickAirportMissiles,flyingAirportMarkers} from '../dist/airport-flight-extras.js';
 import {createAirportTraffic,tickAirportTraffic} from '../dist/airport-air-traffic.js';
 
