@@ -9,9 +9,11 @@ export const MAX_TERRAIN_GRADE=.12;
 export const MIN_ADJACENT_DELTA=.5;
 export const ROAD_WATER_CLEARANCE=.55;
 const SOUTH_PATCHES=[
- {id:'bassanello',name:'Bassanello',p:project(45.3868,11.8722),rx:650,rz:520,core:.28,strength:.78,slopeZ:.00018,slopeX:.00005},
- {id:'guizza',name:'Guizza',p:project(45.3788,11.8703),rx:760,rz:620,core:.3,strength:.82,slopeZ:.00016,slopeX:.00004},
- {id:'albignasego',name:'Albignasego / capolinea sud',p:project(45.3560,11.8672),rx:1500,rz:1050,core:.36,strength:.9,slopeZ:.00014,slopeX:.00003}
+ // All points in the sampled playable core lie on the same gentle plane;
+ // smoothly fade that plane to the surrounding DEM outside the core.
+ {id:'bassanello',name:'Bassanello',p:project(45.3868,11.8722),rx:650,rz:520,core:.42,strength:1,slopeZ:.00018,slopeX:.00005},
+ {id:'guizza',name:'Guizza',p:project(45.3788,11.8703),rx:760,rz:620,core:.42,strength:1,slopeZ:.00016,slopeX:.00004},
+ {id:'albignasego',name:'Albignasego / capolinea sud',p:project(45.3560,11.8672),rx:1500,rz:1050,core:.42,strength:1,slopeZ:.00014,slopeX:.00003}
 ];
 const CENTRE_PATCHES=[
  {id:'piazza-signori',name:'Piazza dei Signori',p:{x:-282,z:-140},rx:78,rz:55,core:.72,strength:1},
@@ -143,7 +145,7 @@ function buildPratoEdges(game){
  }
  const bridges=[{lx:0,lz:130.5,w:11,d:13},{lx:0,lz:-130.5,w:11,d:13},{lx:85.5,lz:0,w:13,d:10},{lx:-85.5,lz:0,w:13,d:10}],decks=[];for(const b of bridges){const p=pratoPoint(b.lx,b.lz);decks.push({x:p.x,y:game.terrain.pratoHeight+.17,z:p.z,w:b.w,h:.24,d:b.d,yaw:PRATO.yaw});}
  const root=new THREE.Group();root.name='phase4-prato-canal-edges';root.userData.phase4PratoEdges=true;
- const wallMesh=new THREE.InstancedMesh(cube,pratoWallMat,walls.length),curbMesh=new THREE.InstancedMesh(cube,pratoWallMat,curbs.length),deckMesh=new THREE.InstancedMesh(cube,pratoDeckMat,decks.length);walls.forEach((v,i)=>instance(wallMesh,i,v.x,v.y,v.z,v.w,v.h,v.d,v.yaw));curbs.forEach((v,i)=>instance(curbMesh,i,v.x,v.y,v.z,v.w,v.h,v.d,v.yaw));decks.forEach((v,i)=>instance(deckMesh,i,v.x,v.y,v.z,v.w,v.h,v.d,v.yaw));for(const m of [wallMesh,curbMesh,deckMesh]){m.instanceMatrix.needsUpdate=true;m.receiveShadow=true;root.add(m);}root.visible=false;game.scene.add(root);return root;
+ const wallMesh=new THREE.InstancedMesh(cube,pratoWallMat,walls.length),curbMesh=new THREE.InstancedMesh(cube,pratoWallMat,curbs.length),deckMesh=new THREE.InstancedMesh(cube,pratoDeckMat,decks.length);walls.forEach((v,i)=>instance(wallMesh,i,v.x,v.y,v.z,v.w,v.h,v.d,v.yaw));curbs.forEach((v,i)=>instance(curbMesh,i,v.x,v.y,v.z,v.w,v.h,v.d,v.yaw));decks.forEach((v,i)=>instance(deckMesh,i,v.x,v.y,v.z,v.w,v.h,v.d,b.yaw));for(const m of [wallMesh,curbMesh,deckMesh]){m.instanceMatrix.needsUpdate=true;m.receiveShadow=true;root.add(m);}root.visible=false;game.scene.add(root);return root;
 }
 let seals=null,pratoEdges=null;
 const baseGameplayUpdate=ModernGameplay.prototype.update;
