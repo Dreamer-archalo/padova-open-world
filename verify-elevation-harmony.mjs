@@ -31,7 +31,7 @@ for(const profile of terrain.roads.profiles.values()){
    if(gap>.55||transition>1.35){
     report.shoulderViolations++;
     const road=profile.road.n||profile.road.k,entry=worstRoads.get(road)||{road,count:0,maxGap:0,maxTransition:0};entry.count++;entry.maxGap=Math.max(entry.maxGap,gap);entry.maxTransition=Math.max(entry.maxTransition,transition);worstRoads.set(road,entry);
-    if(badShoulders.length<20){const owner=this===null?null:terrain.roads.at(x2,z2,null,SHOULDER_FEATHER);badShoulders.push({road,gap:+gap.toFixed(3),transition:+transition.toFixed(3),x:+mx.toFixed(1),z:+mz.toFixed(1),deck:+deck.toFixed(3),nearGround:+h1.toFixed(3),farGround:+h2.toFixed(3),farOwner:owner?.road.n||owner?.road.k||null,farOwnerY:owner?+owner.height.toFixed(3):null});}
+    if(badShoulders.length<20){const owner=terrain.roads.at(x2,z2,null,SHOULDER_FEATHER);badShoulders.push({road,gap:+gap.toFixed(3),transition:+transition.toFixed(3),x:+mx.toFixed(1),z:+mz.toFixed(1),deck:+deck.toFixed(3),nearGround:+h1.toFixed(3),farGround:+h2.toFixed(3),farOwner:owner?.road.n||owner?.road.k||null,farOwnerY:owner?+owner.height.toFixed(3):null});}
    }
   }
  }
