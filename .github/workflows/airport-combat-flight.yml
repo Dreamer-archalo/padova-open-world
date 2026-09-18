@@ -7,6 +7,8 @@ on:
       - 'dist/airport-ejection-state.js'
       - 'dist/airport-cockpit-tuning.js'
       - 'dist/airport-dogfight-v2.js'
+      - 'dist/airport-dogfight-jet-models.js'
+      - 'dist/airport-golf-arcade.js'
       - 'dist/phase2-runtime.js'
       - 'tools/verify-airport-combat-flight.mjs'
       - 'tools/verify-airport-cockpit-tuning.mjs'
@@ -30,6 +32,8 @@ jobs:
           node --check dist/airport-ejection-state.js
           node --check dist/airport-cockpit-tuning.js
           node --check dist/airport-dogfight-v2.js
+          node --check dist/airport-dogfight-jet-models.js
+          node --check dist/airport-golf-arcade.js
           node --check dist/phase2-runtime.js
           node --check tools/verify-airport-combat-flight.mjs
           node --check tools/verify-airport-cockpit-tuning.mjs
