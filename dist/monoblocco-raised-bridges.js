@@ -27,8 +27,6 @@ function incline(game,root,roof,deck,x,z,yaw,width,length){
 }
 function candidateSafe(game,site,layout,p,deck){
  const s=Math.sin(p.yaw),c=Math.cos(p.yaw),w=3.5,run=5.8;
- // Original take-off ramps can sit nearby, but cannot physically intersect the
- // bridge approach. New ramps have been generated around reserved bridge ends.
  for(const end of [p.a,p.b])if((game.terrain.arcadeRamps||[]).some(r=>r.hospitalRoof&&Math.hypot(r.x-end.x,r.z-end.z)<7.5))return 'overlapping stunt ramp';
  for(let k=0;k<=16;k++){
   const t=k/16,d=t*run,height=site.roofY+(deck-site.roofY)*t;
@@ -43,8 +41,6 @@ function candidateSafe(game,site,layout,p,deck){
  }
  for(let k=0;k<=32;k++){
   const t=k/32,x=p.a.x+(p.b.x-p.a.x)*t,z=p.a.z+(p.b.z-p.a.z)*t;
-  // The deck must physically clear existing parapets: do not remove external
-  // parapets simply to make a visually convincing but unsafe bridge.
   if(vehicleBlocked(x,z,p.yaw,game.collision,{width:1,length:1.95,height:1.35},deck))return 'blocked elevated deck';
  }
  return null;
@@ -52,7 +48,6 @@ function candidateSafe(game,site,layout,p,deck){
 function raisedBridge(game,root,site,p,index){
  const y=site.roofY,deck=y+1.43,run=5.8,w=3.5,length=Math.hypot(p.b.x-p.a.x,p.b.z-p.a.z),s=Math.sin(p.yaw),c=Math.cos(p.yaw);
  incline(game,root,y,deck,p.a.x,p.a.z,p.yaw,w,run);
- // Reverse heading: the upper end must touch the span, the lower end the exit.
  incline(game,root,y,deck,p.b.x,p.b.z,p.yaw+Math.PI,w,run);
  game.terrain.arcadeRamps.push({kind:'hospital-roof-elevated-tibetan-bridge',hospitalRoof:true,realGapBridge:true,x:p.x,z:p.z,yaw:p.yaw,width:w,length:length+.3,rise:deck-y,baseY:y,topY:[deck,deck,deck,deck]});
  box(root,wood,p.x,deck-.08,p.z,w,.16,length+.3,p.yaw);
@@ -81,3 +76,4 @@ if(!ModernGameplay.prototype.__monobloccoRaisedBridges){
  ModernGameplay.prototype.__monobloccoRaisedBridges=true;
  ModernGameplay.prototype.populate=function(...args){const out=populate.apply(this,args);install(this);return out;};
 }
+export {candidateSafe,raisedBridge};
