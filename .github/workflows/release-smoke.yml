@@ -21,6 +21,14 @@ jobs:
           test -f dist/index.html
           node --input-type=module -e "import fs from 'node:fs'; const v=JSON.parse(fs.readFileSync('dist/version.json')); if(v.version!=='1.2.0' || v.publishDirectory!=='dist') process.exit(1);"
           node --check dist/city-micromobility.js
+      - name: Pedestrian, asphalt junction and continuous embankment regression
+        run: |
+          node --check dist/modern-roads.js
+          node --check dist/surface-layers.js
+          node --check dist/roadside-harmony.js
+          node verify-pedestrian-layering.mjs
+          node verify-roadside-harmony.mjs
+          node verify-junction-fans.mjs
       - name: Taxi and two Tangenziale races
         run: |
           npm run test:taxi
@@ -34,11 +42,16 @@ jobs:
         run: |
           npm run test:initial-world
           node verify-geometry-integrity.mjs
+          node verify-road-support.mjs
+      - name: Entire-map bridge support and collision audit
+        run: node --max-old-space-size=3072 verify-road-support-map.mjs
       - name: Portello and citywide micromobility and key gameplay wiring
         run: |
           npm run test:portello
           node verify-city-micromobility.mjs
           node verify-feature-preservation.mjs
-      - name: Full elevation audit — known Bassanello discrepancy, visible and nonblocking
+      - name: Citywide pedestrian and sidewalk audit — diagnostic
         continue-on-error: true
+        run: node --max-old-space-size=3072 verify-walkability.mjs
+      - name: Full elevation and road shoulder audit — release blocker
         run: npm run test:geometry-integrity
