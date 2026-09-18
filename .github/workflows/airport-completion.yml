@@ -24,8 +24,10 @@ jobs:
           node --check dist/airport-air-traffic.js
           node --check dist/airport-traffic-enhancement.js
           node --check dist/airport-interactivity.js
+          node --check dist/airport-flight-extras.js
           node --check dist/phase2-runtime.js
           node --check tools/verify-airport-traffic.mjs
+          node --check tools/verify-airport-flight-extras.mjs
           node --check tools/verify-airport-entrance.mjs
           node --check tools/verify-airport-fleet-clearance.mjs
           node --check tools/diagnose-airport-perimeter.mjs
@@ -34,6 +36,9 @@ jobs:
           node --check verify-airport-via-sorio.mjs
           node --check verify-airport-mobility.mjs
           node --check verify-airport-road-runtime.mjs
+      - name: Jet missile collision and cooldown, civilian fleet, flight map, cargo rotations
+        if: always()
+        run: node tools/verify-airport-flight-extras.mjs
       - name: Diagnose source-road crossings of airport perimeter
         if: always()
         run: node --max-old-space-size=4096 tools/diagnose-airport-perimeter.mjs
