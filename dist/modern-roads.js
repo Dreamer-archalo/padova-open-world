@@ -16,7 +16,7 @@ export function* modernRoadSteps(batch,segments,terrain,{coarse=false}={}){
   const writer=ped?surfaceBatch(batch,terrain,{pedestrian:true,exclude:road}):batch;
   const section=(a,b,left,right,offset,c)=>{const h0=height(a)+offset,h1=height(b)+offset;if(![h0,h1].every(Number.isFinite))return;writer.quad([a[0]+nx*right,h0,a[1]+nz*right],[b[0]+nx*right,h1,b[1]+nz*right],[b[0]+nx*left,h1,b[1]+nz*left],[a[0]+nx*left,h0,a[1]+nz*left],c);};
   const junctions=new Set();if(!coarse)for(const e of terrain.roads.index.near((s.a[0]+s.b[0])/2,(s.a[1]+s.b[1])/2,length/2+Math.max(12,road.w)))for(const id of [e.ia,e.ib])if(terrain.roads.nodes[id].degree>2)junctions.add(terrain.roads.nodes[id]);
-  const junction=(x,z)=>[...junctions].some(n=>Math.hypot(x-n.x,z-n.z)<Math.max(6,road.w));
+  const junction=(x,z,radius=Math.max(6,road.w))=>[...junctions].some(n=>Math.hypot(x-n.x,z-n.z)<radius);
   const count=Math.ceil(length/(coarse?6:3));
   for(let i=0;i<count;i++){
    const a=[s.a[0]+dx*i/count,s.a[1]+dz*i/count],b=[s.a[0]+dx*(i+1)/count,s.a[1]+dz*(i+1)/count],mid=[(a[0]+b[0])/2,(a[1]+b[1])/2],atJunction=junction(...mid);
@@ -45,7 +45,10 @@ export function* modernRoadSteps(batch,segments,terrain,{coarse=false}={}){
    if(i%4===0)yield;
    if(rail)for(const offset of [-.7,.7])section(a,b,offset-.055,offset+.055,.1,colour('#bdc8c9'));
   }
-  for(const p of [s.a,s.b]){const key=road.surfaceId+':'+p.join(',');if(joins.has(key))continue;joins.add(key);const y=terrain.roads.sample(road,...p)+.077;
+  // Old fan caps were emitted at EVERY 3–9 m segment end, producing circular
+  // overlapping asphalt and stray upward triangles. Close only real graph
+  // junctions, and only once per road / junction, not straight road seams.
+  for(const p of [s.a,s.b]){if(coarse||!junction(p[0],p[1],.3))continue;const key=road.surfaceId+':'+p.join(',');if(joins.has(key))continue;joins.add(key);const y=terrain.roads.sample(road,...p)+.077;
    for(let i=0;i<12;i++){const a=i*Math.PI/6,b=(i+1)*Math.PI/6,r=road.w/2+.15;const vertex=t=>{const x=p[0]+Math.cos(t)*r,z=p[1]+Math.sin(t)*r;return [x,terrain.roads.sample(road,x,z)+.077,z];};writer.tri([p[0],y,p[1]],vertex(b),vertex(a),asphalt);}
   }
   yield;
