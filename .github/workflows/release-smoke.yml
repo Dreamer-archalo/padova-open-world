@@ -21,6 +21,11 @@ jobs:
           test -f dist/index.html
           node --input-type=module -e "import fs from 'node:fs'; const v=JSON.parse(fs.readFileSync('dist/version.json')); if(v.version!=='1.2.0' || v.publishDirectory!=='dist') process.exit(1);"
           node --check dist/city-micromobility.js
+      - name: Pedestrian crossings and flyover sidewalk regression
+        run: |
+          node --check dist/modern-roads.js
+          node --check dist/surface-layers.js
+          node verify-pedestrian-layering.mjs
       - name: Taxi and two Tangenziale races
         run: |
           npm run test:taxi
