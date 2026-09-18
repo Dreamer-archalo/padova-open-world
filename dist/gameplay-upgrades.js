@@ -18,6 +18,7 @@ import './monoblocco-course-polish.js';
 import './monoblocco-raised-bridges.js';
 import './monoblocco-course-visuals.js';
 import './monoblocco-trial-paddock.js';
+import './monoblocco-roof-exploration.js';
 import './taxi-loading-guard.js';
 // Must precede online ownership hooks so remote human cars are never AI-driven.
 import './tangenziale-race-difficulty.js';
