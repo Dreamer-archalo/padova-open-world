@@ -6,6 +6,7 @@ on:
       - 'dist/**'
       - 'tools/test-airport-chromium.mjs'
       - 'tools/test-airport-flight-chromium.mjs'
+      - 'tools/test-airport-traffic-chromium.mjs'
       - '.github/workflows/airport-webgl.yml'
   workflow_dispatch:
 permissions:
@@ -13,7 +14,7 @@ permissions:
 jobs:
   airport-browser:
     runs-on: ubuntu-latest
-    timeout-minutes: 12
+    timeout-minutes: 14
     steps:
       - uses: actions/checkout@v6
       - uses: actions/setup-node@v4
@@ -32,6 +33,9 @@ jobs:
       - name: Board airplane, take off and land using real WebGL and keyboard
         if: always()
         run: node tools/test-airport-flight-chromium.mjs
+      - name: Simulate AI aircraft, render fleet and collide in real WebGL
+        if: always()
+        run: node tools/test-airport-traffic-chromium.mjs
       - name: Upload real browser screenshots and diagnostics
         if: always()
         uses: actions/upload-artifact@v4
