@@ -1,11 +1,11 @@
 import fs from 'node:fs';
 import assert from 'node:assert/strict';
-import {Terrain} from './dist/terrain.js';
-import {applyCityData} from './dist/districts.js';
-import {prepareGameplayMap} from './dist/gameplay-areas.js';
-import {roadStructures} from './dist/road-structures.js';
-import './dist/phase4-terrain-fixes.js';
 
+globalThis.window=globalThis;
+globalThis.document={createElement:()=>({width:0,height:0,getContext:()=>({fillRect(){},fillText(){},beginPath(){},moveTo(){},lineTo(){},stroke(){},fill(){},arc(){},closePath(){}})})};
+const [{Terrain},{applyCityData},{prepareGameplayMap},{roadStructures}]=await Promise.all([
+ import('./dist/terrain.js'),import('./dist/districts.js'),import('./dist/gameplay-areas.js'),import('./dist/road-structures.js'),import('./dist/phase4-terrain-fixes.js')
+]);
 const read=name=>JSON.parse(fs.readFileSync(new URL('./dist/data/'+name+'.json',import.meta.url)));
 const map=read('padova');applyCityData(map,read('city'));prepareGameplayMap(map);
 const terrain=new Terrain(read('terrain'),map,{modern:true});
