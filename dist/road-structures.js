@@ -20,28 +20,34 @@ export function roadStructures(terrain){const boxes=[],portals=new Set();
   for(const sign of [-1,1]){const px=q.x+Math.cos(lowerYaw)*side*sign,pz=q.z-Math.sin(lowerYaw)*side*sign;add(px,pz,lowerY-.05,pierW,pierH+.05,depth,lowerYaw,'underpass-pier',upperRoad,{color:'#8f918b'});}
  };
  for(const profile of terrain.roads.profiles.values()){const road=profile.road;if(!(road.crossing||road.b||Number(road.layer)>0)||road.k==='tram')continue;let run=0;
-  for(let i=1;i<profile.points.length;i++){const a=profile.points[i-1],b=profile.points[i],x=(a[0]+b[0])/2,z=(a[1]+b[1])/2;if(terrain.prato(x,z))continue;const h=terrain.roads.sample(road,x,z),base=terrain.elevation(x,z),len=Math.hypot(b[0]-a[0],b[1]-a[1]);if(h-base<.7&&!profile.wet[i]&&!profile.wet[i-1]&&!road.b&&Number(road.layer)<=0)continue;
-   const yaw=Math.atan2(b[0]-a[0],b[1]-a[1]),edge=road.w/2+(terrain.modern?(/motorway|trunk/.test(road.k)?1.5:1.05):.7);
-   for(const side of [-1,1]){const px=x+Math.cos(yaw)*edge*side,pz=z-Math.sin(yaw)*edge*side;
-    // Suppress barriers at junctions and do not plant a pier on another road.
-    if(terrain.roads.candidates(px,pz,terrain.modern?1.9:.25).some(s=>s.road!==road&&Math.abs(s.height-h)<(terrain.modern?3:1.5)))continue;
-    add(px,pz,h,.24,1.02,len+.04,yaw,'parapet',road);
-    // The source DEM is not the visible river bed or road shoulder: place the
-    // bottom of each pillar on the actual rendered ground at its own position.
-    const pierGround=terrain.modern?terrain.groundHeight(px,pz):terrain.elevation(px,pz);
-    if(run>=18&&h-pierGround>1.4&&!terrain.roads.candidates(px,pz,terrain.modern?2.4:1).some(s=>s.road!==road&&(terrain.modern||s.height<h-2))){add(px,pz,pierGround-.2,.9,h-pierGround+.2,.9,yaw,'pier',road);}
-   }run+=len;if(run>=24)run=0;
-   // The deck belongs to THIS road. A neighbouring carriageway must never
-   // translate its slab up/down independently of the surface and collision.
-   const deckTop=terrain.modern?Math.min(terrain.roads.sample(road,...a),terrain.roads.sample(road,...b),h)-.12:h-.05,deck=add(x,z,deckTop-.35,road.w+1.0,.35,len+.05,yaw,'deck',road);if(terrain.modern&&deck){deck.driveTopMin=deckTop+.12;underpassPortal(road,x,z,yaw,deckTop-.35);}
+  for(let i=1;i<profile.points.length;i++){
+   const from=profile.points[i-1],to=profile.points[i],dx=to[0]-from[0],dz=to[1]-from[1],total=Math.hypot(dx,dz);
+   // A steep OSM stairway can change height by metres across a six-metre road
+   // sample. Use one-metre slabs so neither their visible mass nor collision
+   // sits far below the actual footbridge surface.
+   const pieces=terrain.modern&&road.k==='steps'?Math.max(1,Math.ceil(total)):1;
+   for(let part=0;part<pieces;part++){
+    const a=[from[0]+dx*part/pieces,from[1]+dz*part/pieces],b=[from[0]+dx*(part+1)/pieces,from[1]+dz*(part+1)/pieces],x=(a[0]+b[0])/2,z=(a[1]+b[1])/2;
+    if(terrain.prato(x,z))continue;const h=terrain.roads.sample(road,x,z),base=terrain.elevation(x,z),len=Math.hypot(b[0]-a[0],b[1]-a[1]);if(h-base<.7&&!profile.wet[i]&&!profile.wet[i-1]&&!road.b&&Number(road.layer)<=0)continue;
+    const yaw=Math.atan2(b[0]-a[0],b[1]-a[1]),edge=road.w/2+(terrain.modern?(/motorway|trunk/.test(road.k)?1.5:1.05):.7);
+    for(const side of [-1,1]){const px=x+Math.cos(yaw)*edge*side,pz=z-Math.sin(yaw)*edge*side;
+     // Suppress barriers at junctions and do not plant a pier on another road.
+     if(terrain.roads.candidates(px,pz,terrain.modern?1.9:.25).some(s=>s.road!==road&&Math.abs(s.height-h)<(terrain.modern?3:1.5)))continue;
+     add(px,pz,h,.24,1.02,len+.04,yaw,'parapet',road);
+     // Anchor the bottom on the actual rendered river bed or shoulder.
+     const pierGround=terrain.modern?terrain.groundHeight(px,pz):terrain.elevation(px,pz);
+     if(run>=18&&h-pierGround>1.4&&!terrain.roads.candidates(px,pz,terrain.modern?2.4:1).some(s=>s.road!==road&&(terrain.modern||s.height<h-2))){add(px,pz,pierGround-.2,.9,h-pierGround+.2,.9,yaw,'pier',road);}
+    }run+=len;if(run>=24)run=0;
+    // The slab always belongs to its own road, never a nearby lower road.
+    const deckTop=terrain.modern?Math.min(terrain.roads.sample(road,...a),terrain.roads.sample(road,...b),h)-.12:h-.05,deck=add(x,z,deckTop-.35,road.w+1.0,.35,len+.05,yaw,'deck',road);if(terrain.modern&&deck){deck.driveTopMin=deckTop+.12;underpassPortal(road,x,z,yaw,deckTop-.35);}
+   }
   }
  }
  if(terrain.modern)return boxes.filter(b=>{
   if(/^underpass-/.test(b.kind))return true;
   const candidates=[];for(const t of [-.5,-.25,0,.25,.5]){const x=b.x+Math.sin(b.yaw)*b.length*t,z=b.z+Math.cos(b.yaw)*b.length*t;for(const s of terrain.roads.candidates(x,z,b.kind==='deck'?0:1.3))if(s.road!==b.road&&!/footway|path|steps|cycleway|tram|pedestrian/.test(s.road.k))candidates.push(s);}
   if(b.kind!=='deck')return !candidates.some(s=>s.height+2>b.minY&&s.height<b.minY+b.h+.2);
-  // Never move a slab to the height of a neighbouring road. Such a correction
-  // created gaps below its own asphalt and invisible collision at junctions.
+  // A neighbouring deck cannot move this slab independently of its asphalt.
   return true;
  });
  return boxes;
