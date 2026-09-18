@@ -24,11 +24,10 @@ import './airport-interactivity.js';
 import './airport-flight-extras.js';
 import './airport-combat-flight.js';
 import './airport-ejection-state.js';
-import './airport-cockpit-tuning.js';
+import './airport-dogfight-v2.js';
 
 // UI-only Phase 2 feedback. It does not own gameplay state: it observes the
 // existing HUD, so it cannot interfere with saves, physics or streaming.
-// Preview refresh marker: keep the canonical PR #6 deploy current with dist/.
 const playing=document.getElementById('playingUI');
 const healthValue=document.getElementById('healthValue');
 const vehicleName=document.getElementById('vehicleName');
@@ -49,6 +48,6 @@ function showCamera(){
   cameraTimer=setTimeout(()=>cameraBanner.hidden=true,240);
  },1250);
 }
-function updateDamage(){const value=parseFloat(healthValue?.textContent||'100'),inVehicle=(vehicleName?.textContent||'ON FOOT').trim()!=='ON FOOT',damage=inVehicle?Math.max(0,100-value):0;damageEdge.hidden=damage<8;damageEdge.style.setProperty('--damage',String(Math.min(.48,damage/150)));document.body.dataset.vehicleDamage=damage>=65?'critical':damage>=35?'damaged':damage>=8?'scratched':'none';}
+function updateDamage(){const value=parseFloat(healthValue?.textContent||'100'),inVehicle=(vehicleName?.textContent||'ON FOOT').trim()!=='ON FOOT',damage=inVehicle?Math.max(0,100-value):0;damageEdge.hidden=damage<8;document.body.dataset.vehicleDamage=damage>=65?'critical':damage>=35?'damaged':damage>=8?'scratched':'none';damageEdge.style.setProperty('--damage',String(Math.min(.48,damage/150)));}
 document.addEventListener('keydown',event=>{if(event.code!=='KeyC'||event.repeat||playing?.hidden||document.querySelector('dialog[open]'))return;cameraMode=(cameraMode+1)%3;showCamera();});
 const observer=new MutationObserver(updateDamage);if(healthValue)observer.observe(healthValue,{childList:true,subtree:true,characterData:true});if(vehicleName)observer.observe(vehicleName,{childList:true,subtree:true,characterData:true});updateDamage();
