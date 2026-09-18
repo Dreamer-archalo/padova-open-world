@@ -36,6 +36,9 @@ jobs:
       - name: Airport vehicle and aircraft controller regression
         if: always()
         run: npm run test:airport
+      - name: Independent current five-star staggered-spawn regression
+        if: always()
+        run: node tools/verify-five-star-timing.mjs
       - name: Taxi regression
         if: always()
         run: npm run test:taxi && node verify-taxi-transition-recovery.mjs
