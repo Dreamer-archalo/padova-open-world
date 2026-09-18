@@ -14,9 +14,10 @@ export function roadsideHarmony(terrain,x,z,natural){
   const outside=Math.max(0,s.d-s.road.w/2);
   const blend=1-smooth(outside/EMBANKMENT_REACH);
   if(blend<=0)continue;
-  // Distance weighting preserves road ownership close to the pavement, while
-  // blending continuously between adjacent ground-level corridors.
-  const w=blend/(1+(outside/2)**2);
+  // A four-metre distance falloff combines nearby same-ground streets without
+  // letting another road abruptly seize the terrain at a sidewalk's outer edge.
+  // Never mix marked flyovers, tunnels or layer-separated structures into it.
+  const w=blend/(1+(outside/4)**2);
   target+=s.height*w;weight+=w;influence=Math.max(influence,blend);
  }
  if(!weight)return natural;
