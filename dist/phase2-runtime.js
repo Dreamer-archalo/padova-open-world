@@ -31,6 +31,7 @@ import './airport-cargo-yard.js';
 import './airport-flight-refinement.js';
 import './airport-lock-upgrade.js';
 import './airport-life-v3.js';
+import './airport-blast-ballistics.js';
 
 // UI-only Phase 2 feedback. It does not own gameplay state: it observes the
 // existing HUD, so it cannot interfere with saves, physics or streaming.
