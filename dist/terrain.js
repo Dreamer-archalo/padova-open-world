@@ -2,6 +2,7 @@ import {RoadSurfaces} from './road-surfaces.js';
 import {SpatialIndex, nearestOnSegment, pointInside, clamp, safeRoadPoint} from './core.js';
 import {vehicleBlocked} from './movement.js';
 import {gameplayElevation,areaLocal} from './gameplay-areas.js';
+import {roadsideHarmony} from './roadside-harmony.js';
 
 const smooth=t=>{t=clamp(t,0,1);return t*t*(3-2*t);};
 export const SAFE_MIN_Y=-10,SAFE_MAX_Y=100,ROAD_FADE_DISTANCE=9;
@@ -46,14 +47,16 @@ export class Terrain {
     const platform=this.platformAt(x,z);if(platform)return safeTerrainHeight(platform.height,this.rawElevation(x,z));
     const prato=this.prato(x,z);if(prato)return safeTerrainHeight(this.pratoHeight+(prato.canal?-3:0),this.pratoHeight);
     const natural=safeTerrainHeight(this.elevation(x,z),this.rawElevation(x,z));let raw=natural;
-    // Smooth road/terrain carving: the road owns the centre, then influence
-    // decays with smoothstep across ROAD_FADE_DISTANCE back to the untouched DEM.
+    // The exact road footprint remains authoritative. Outside its edge, blend
+    // *all* nearby ground-level road profiles continuously (not a discontinuous
+    // nearest-road switch), while keeping flyovers and tunnels independent.
     const support=this.roads?.at(x,z,null,ROAD_FADE_DISTANCE);
     if(support&&!support.road.crossing&&!support.road.tunnel&&!support.road.b&&!(Number(support.road.layer)>0)){
       const roadY=safeTerrainHeight(support.height-.05,natural),factor=roadTerrainFactor(support.d,support.road.w,ROAD_FADE_DISTANCE);
       raw=safeTerrainHeight(natural*(1-factor)+roadY*factor,natural);
       if(support.d<=support.road.w/2)return raw;
     }
+    if(this.modern)raw=safeTerrainHeight(roadsideHarmony(this,x,z,natural),raw);
     const d=this.waterDistance(x,z);if(d>10)return raw;const water=this.waterHeight(x,z),channel=safeTerrainHeight(water-1.5,natural),bank=safeTerrainHeight(Math.max(raw,water+.8),natural);return safeTerrainHeight(channel+(bank-channel)*smooth((d+1)/11),natural);
   }
   height(x,z,referenceY=null){
@@ -62,18 +65,16 @@ export class Terrain {
     if(this.modern){
       let support=this.roads.at(x,z,referenceY);
       if(referenceY!==null){
-        // A road, footway and bridge may share the same x/z. Prefer the surface
-        // actually occupied by the player/vehicle, rather than the motor-road
-        // priority in an unreferenced map query. Do not snap across levels.
+        // At an x/z overlap choose the surface occupied by the actor, instead
+        // of snapping a lower pedestrian path onto a nearby higher carriageway.
         const matches=this.roads.candidates(x,z).filter(s=>Math.abs(s.height+.05-referenceY)<1.5);
         if(matches.length){matches.sort((a,b)=>Math.abs(a.height+.05-referenceY)-Math.abs(b.height+.05-referenceY)||a.d-b.d);
           if(!support||Math.abs(matches[0].height+.05-referenceY)+.08<Math.abs(support.height+.05-referenceY))support=matches[0];}
       }
-      if(support)return safeTerrainHeight(support.height+.05,this.groundHeight(x,z)+.05);
+      if(support&&(referenceY===null||Math.abs(support.height+.05-referenceY)<.55))return safeTerrainHeight(support.height+.05,this.groundHeight(x,z)+.05);
       if(referenceY!==null&&this.waterDistance(x,z)>1){
-        // Generated urban sidewalks extend 1.2 m outside the carriageway.
-        // Their collision/contact must extend just as far: a visible pavement
-        // must never be an unsupported strip over the source DEM.
+        // The exact 1.2 m visual sidewalk is driveable/walkable as a single
+        // surface. Prefer it over an unrelated overlapping road at another y.
         const sidewalks=this.roads.candidates(x,z,1.2).filter(s=>
           !/^(motorway|motorway_link|trunk|trunk_link|track|path|footway|cycleway|pedestrian|steps|tram)$/.test(s.road.k)
           &&!s.road.crossing&&s.d>s.road.w/2&&s.d<=s.road.w/2+1.2
@@ -81,6 +82,7 @@ export class Terrain {
         if(sidewalks.length){sidewalks.sort((a,b)=>Math.abs(a.height+.05-referenceY)-Math.abs(b.height+.05-referenceY)||a.d-b.d);
           return safeTerrainHeight(sidewalks[0].height+.083,this.groundHeight(x,z)+.05);}
       }
+      if(support)return safeTerrainHeight(support.height+.05,this.groundHeight(x,z)+.05);
     }
     const prato=this.prato(x,z);if(prato)return safeTerrainHeight(this.pratoHeight+(prato.bridge?.36:prato.canal?-3:.18),base);
     const road=this.roads?.at(x,z,referenceY);return safeTerrainHeight(road?road.height+.05:this.groundHeight(x,z)+.05,base);
