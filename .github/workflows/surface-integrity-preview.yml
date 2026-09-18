@@ -1,0 +1,32 @@
+name: Surface integrity preview
+on:
+  pull_request:
+    paths:
+      - 'dist/**'
+      - 'verify-world-surface-authority.mjs'
+      - '.github/workflows/surface-integrity-preview.yml'
+  push:
+    branches:
+      - fix/surface-integrity-preview-20260917
+permissions:
+  contents: read
+jobs:
+  verify-surface:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Syntax of every new module
+        run: |
+          for file in dist/{world-surface-resolver,river-builder,building-collision-manager,world-validator,world-self-tester,world-integrity-runtime,surface-authority-runtime,terrain,modern-roads,phase3-tram-fix,phase2-runtime}.js; do node --check "$file" || exit 1; done
+      - name: Quantitative full-map world surface assertions
+        run: node --max-old-space-size=3072 verify-world-surface-authority.mjs
+      - name: Existing geometry and boot regressions
+        run: npm run test:geometry-integrity && npm run test:initial-world
+      - name: Taxi and both tangenziale races
+        run: npm run test:taxi && npm run test:tangenziale-race && npm run test:tangenziale-race-2
+      - name: Online regression
+        run: node verify-online-race.mjs && node verify-online-race-second-fix.mjs
