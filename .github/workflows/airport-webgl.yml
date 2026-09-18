@@ -8,6 +8,7 @@ on:
       - 'tools/test-airport-flight-chromium.mjs'
       - 'tools/test-airport-traffic-chromium.mjs'
       - 'tools/test-airport-boardable-chromium.mjs'
+      - 'tools/test-airport-missile-map-chromium.mjs'
       - '.github/workflows/airport-webgl.yml'
   workflow_dispatch:
 permissions:
@@ -40,6 +41,9 @@ jobs:
       - name: Board cargo, military jets, airliner and drive crewed carts
         if: always()
         run: node tools/test-airport-boardable-chromium.mjs
+      - name: Verify jet TAB missiles, new civil planes and M flight map in WebGL
+        if: always()
+        run: node tools/test-airport-missile-map-chromium.mjs
       - name: Upload real browser screenshots and diagnostics
         if: always()
         uses: actions/upload-artifact@v4
