@@ -6,8 +6,10 @@ on:
       - 'dist/airport-flight-refinement.js'
       - 'dist/airport-lock-upgrade.js'
       - 'dist/airport-life-v3.js'
+      - 'dist/airport-blast-ballistics.js'
       - 'dist/phase2-runtime.js'
       - 'tools/verify-airport-refinement.mjs'
+      - 'tools/verify-airport-blast-ballistics.mjs'
       - '.github/workflows/airport-refinement.yml'
   workflow_dispatch:
 permissions:
@@ -25,7 +27,11 @@ jobs:
           node --check dist/airport-flight-refinement.js
           node --check dist/airport-lock-upgrade.js
           node --check dist/airport-life-v3.js
+          node --check dist/airport-blast-ballistics.js
           node --check dist/phase2-runtime.js
           node --check tools/verify-airport-refinement.mjs
+          node --check tools/verify-airport-blast-ballistics.mjs
       - name: Verify real damage, missile target and airport actors
         run: node tools/verify-airport-refinement.mjs
+      - name: Verify ballistic wreck rise, gravity and ground contact
+        run: node tools/verify-airport-blast-ballistics.mjs
