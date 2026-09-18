@@ -56,7 +56,35 @@ export class Terrain {
     }
     const d=this.waterDistance(x,z);if(d>10)return raw;const water=this.waterHeight(x,z),channel=safeTerrainHeight(water-1.5,natural),bank=safeTerrainHeight(Math.max(raw,water+.8),natural);return safeTerrainHeight(channel+(bank-channel)*smooth((d+1)/11),natural);
   }
-  height(x,z,referenceY=null){const base=this.rawElevation(x,z),platform=this.platformAt(x,z);if(platform){const road=this.roads?.at(x,z,referenceY),roadY=road?safeTerrainHeight(road.height+.05,platform.height+.05):SAFE_MIN_Y;return safeTerrainHeight(Math.max(platform.height+.05,roadY),base);}if(this.modern){const support=this.roads.at(x,z,referenceY);if(support)return safeTerrainHeight(support.height+.05,this.groundHeight(x,z)+.05);}const prato=this.prato(x,z);if(prato)return safeTerrainHeight(this.pratoHeight+(prato.bridge?.36:prato.canal?-3:.18),base);const road=this.roads?.at(x,z,referenceY);return safeTerrainHeight(road?road.height+.05:this.groundHeight(x,z)+.05,base);}
+  height(x,z,referenceY=null){
+    const base=this.rawElevation(x,z),platform=this.platformAt(x,z);
+    if(platform){const road=this.roads?.at(x,z,referenceY),roadY=road?safeTerrainHeight(road.height+.05,platform.height+.05):SAFE_MIN_Y;return safeTerrainHeight(Math.max(platform.height+.05,roadY),base);}
+    if(this.modern){
+      let support=this.roads.at(x,z,referenceY);
+      if(referenceY!==null){
+        // A road, footway and bridge may share the same x/z. Prefer the surface
+        // actually occupied by the player/vehicle, rather than the motor-road
+        // priority in an unreferenced map query. Do not snap across levels.
+        const matches=this.roads.candidates(x,z).filter(s=>Math.abs(s.height+.05-referenceY)<1.5);
+        if(matches.length){matches.sort((a,b)=>Math.abs(a.height+.05-referenceY)-Math.abs(b.height+.05-referenceY)||a.d-b.d);
+          if(!support||Math.abs(matches[0].height+.05-referenceY)+.08<Math.abs(support.height+.05-referenceY))support=matches[0];}
+      }
+      if(support)return safeTerrainHeight(support.height+.05,this.groundHeight(x,z)+.05);
+      if(referenceY!==null&&this.waterDistance(x,z)>1){
+        // Generated urban sidewalks extend 1.2 m outside the carriageway.
+        // Their collision/contact must extend just as far: a visible pavement
+        // must never be an unsupported strip over the source DEM.
+        const sidewalks=this.roads.candidates(x,z,1.2).filter(s=>
+          !/^(motorway|motorway_link|trunk|trunk_link|track|path|footway|cycleway|pedestrian|steps|tram)$/.test(s.road.k)
+          &&!s.road.crossing&&s.d>s.road.w/2&&s.d<=s.road.w/2+1.2
+          &&Math.abs(s.height+.05-referenceY)<1.3);
+        if(sidewalks.length){sidewalks.sort((a,b)=>Math.abs(a.height+.05-referenceY)-Math.abs(b.height+.05-referenceY)||a.d-b.d);
+          return safeTerrainHeight(sidewalks[0].height+.083,this.groundHeight(x,z)+.05);}
+      }
+    }
+    const prato=this.prato(x,z);if(prato)return safeTerrainHeight(this.pratoHeight+(prato.bridge?.36:prato.canal?-3:.18),base);
+    const road=this.roads?.at(x,z,referenceY);return safeTerrainHeight(road?road.height+.05:this.groundHeight(x,z)+.05,base);
+  }
   slope(x,z,yaw,wheelbase=2.5,referenceY=null){const dx=Math.sin(yaw)*wheelbase/2,dz=Math.cos(yaw)*wheelbase/2,a=this.height(x+dx,z+dz,referenceY),b=this.height(x-dx,z-dz,referenceY);return -Math.atan2(safeTerrainHeight(a,b)-b,wheelbase);}
   dry(x,z,radius=.4,referenceY=null){for(const [dx,dz] of [[0,0],[radius,0],[-radius,0],[0,radius],[0,-radius]])if(this.waterAt(x+dx,z+dz,0,referenceY)!==null)return false;return true;}
 }
