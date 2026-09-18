@@ -8,7 +8,7 @@ export const AIRPORT_FLEET=[
  {id:'cargo-b',type:'cargo',slot:[100,245],start:'cruise',initial:[-1300,-2500],speed:78,width:33},
  {id:'cargo-c',type:'cargo',slot:[100,325],start:'parked',initial:[100,325],speed:82,width:33,delay:16},
  {id:'cargo-d',type:'cargo',slot:[100,405],start:'parked',initial:[100,405],speed:78,width:33,delay:54},
- {id:'jet-a',type:'jet',slot:[174,-228],start:'parked',initial:[174,-228],speed:117,width:12,delay:35},
+ {id:'jet-a',type:'jet',slot:[174,-228],start:'parked',initial:[174,-228],speed:117,width:12},
  {id:'jet-b',type:'jet',slot:[174,-295],start:'parked',initial:[174,-295],speed:112,width:12,delay:115},
  {id:'civil-a',type:'rondone',slot:[158,42],start:'parked',initial:[158,42],speed:75,width:9,delay:70},
  {id:'civil-b',type:'libellula',slot:[158,110],start:'parked',initial:[158,110],speed:70,width:10,delay:92},
@@ -49,7 +49,11 @@ export function tickAirportTraffic(sim,dt){
   if(a.phase==='parked'){
    a.speedNow=0;a.yAbove=0;
    const taxiing=sim.aircraft.filter(b=>b!==a&&['taxi','hold','lineup'].includes(b.phase)).length;
-   if(sim.time>=a.waitUntil&&taxiing<2&&reserveTaxi(sim,a)){a.phase='taxi';a.routeIndex=0;}continue;
+   // Cargo departures rotate with arrivals: retain at least two transports at
+   // the airport until a flying transport has landed and vacated the runway.
+   const airborneCargo=sim.aircraft.filter(b=>b.type==='cargo'&&
+    ['takeoff','departure','cruise','arrival-hold','approach','landing'].includes(b.phase)).length;
+   if(sim.time>=a.waitUntil&&taxiing<2&&(a.type!=='cargo'||airborneCargo<2)&&reserveTaxi(sim,a)){a.phase='taxi';a.routeIndex=0;}continue;
   }
   if(a.phase==='taxi'){
    // Hold behind any aircraft already occupying the same taxi lane.
@@ -120,4 +124,4 @@ export function tickAirportTraffic(sim,dt){
  }
  return sim;
 }
-export function destroyAirportAircraft(sim,a){release(sim,a);a.phase='wrecked';a.speedNow=0;a.waitUntil=sim.time+65;a.yAbove=0;}
+export function destroyAirportAircraft(sim,a){release(sim,a);releaseTaxi(sim,a);a.phase='wrecked';a.speedNow=0;a.waitUntil=sim.time+65;a.yAbove=0;}
