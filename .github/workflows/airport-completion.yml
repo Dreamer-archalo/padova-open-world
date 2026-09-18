@@ -1,0 +1,44 @@
+name: Airport completion release gate
+
+on:
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  airport-integration:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Airport integration syntax
+        run: |
+          node --check dist/gameplay-areas.js
+          node --check dist/gameplay-areas-implementation.js
+          node --check dist/airport-road-network.js
+          node --check verify-airport-city-access.mjs
+          node --check verify-airport-mobility.mjs
+          node --check verify-airport-road-runtime.mjs
+      - name: Real city graph round trip, taxi destination and fence
+        if: always()
+        run: node verify-airport-city-access.mjs
+      - name: Airport facility connectivity and building clearance
+        if: always()
+        run: node verify-airport-mobility.mjs
+      - name: Actual runtime terrain, water, collision and grades
+        if: always()
+        run: node --max-old-space-size=4096 verify-airport-road-runtime.mjs
+      - name: Airport vehicle and aircraft controller regression
+        if: always()
+        run: npm run test:airport
+      - name: Taxi regression
+        if: always()
+        run: npm run test:taxi && node verify-taxi-transition-recovery.mjs
+      - name: Strict full-city geometry and altitude regression
+        if: always()
+        run: npm run test:geometry-integrity
