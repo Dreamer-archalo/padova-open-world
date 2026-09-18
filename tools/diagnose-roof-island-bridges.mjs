@@ -1,0 +1,12 @@
+import fs from 'node:fs';
+import {roofClear,findLayout} from '../dist/monoblocco-track.js';
+import {pointInside} from '../dist/core.js';
+const map=JSON.parse(fs.readFileSync(new URL('../dist/data/padova.json',import.meta.url)));
+const b=map.buildings.find(q=>q.n==='Ospedale Civile - Monoblocco - Casse - Prenotazioni'),poly=b.p,xs=poly.map(p=>p[0]),zs=poly.map(p=>p[1]);Object.assign(b,{minX:Math.min(...xs),maxX:Math.max(...xs),minZ:Math.min(...zs),maxZ:Math.max(...zs)});const layout=findLayout(poly,b);
+const step=4,cells=new Map();for(let i=0;b.minX+2+i*step<b.maxX-2;i++)for(let j=0;b.minZ+2+j*step<b.maxZ-2;j++){const x=b.minX+2+i*step,z=b.minZ+2+j*step;if(roofClear(poly,x,z,4.6))cells.set(i+','+j,{i,j,x,z,key:i+','+j});}
+const groups=[],remaining=new Set(cells.keys());while(remaining.size){const queue=[remaining.values().next().value];remaining.delete(queue[0]);for(let i=0;i<queue.length;i++){const c=cells.get(queue[i]);for(const [di,dj] of [[1,0],[-1,0],[0,1],[0,-1]]){const key=(c.i+di)+','+(c.j+dj),p=cells.get(key);if(p&&remaining.has(key)&&[.25,.5,.75].every(t=>roofClear(poly,c.x+(p.x-c.x)*t,c.z+(p.z-c.z)*t,3.5))){remaining.delete(key);queue.push(key);}}}groups.push(queue.map(k=>cells.get(k)));}groups.sort((a,b)=>b.length-a.length);
+function approach(p,v,sign){for(let i=0;i<=12;i++){const d=i/12*6;for(const side of [-1,0,1]){const x=p.x+v.x*sign*d+v.z*side*1.75,z=p.z+v.z*sign*d-v.x*side*1.75;if(!roofClear(poly,x,z,1.2))return false;if(Math.hypot(x-layout.helipad.x,z-layout.helipad.z)<19)return false;}}return true;}
+const report=[];for(const [index,group] of groups.entries()){if(index===0||group.length<8)continue;const possible=[];let gapPairs=0;for(const a of groups[0])for(const b of group){const dx=b.x-a.x,dz=b.z-a.z,len=Math.hypot(dx,dz);if(len<10||len>44)continue;let outside=0,continuous=0,bestRun=0;const sample=Math.ceil(len);for(let i=1;i<sample;i++){const t=i/sample;if(!pointInside(a.x+dx*t,a.z+dz*t,poly)){outside++;continuous++;bestRun=Math.max(bestRun,continuous);}else continuous=0;}if(bestRun<4)continue;gapPairs++;const v={x:dx/len,z:dz/len};if(!approach(a,v,-1)||!approach(b,v,1))continue;possible.push({a:[a.x,a.z],b:[b.x,b.z],length:Math.round(len*10)/10,gap:bestRun,outside});}
+ possible.sort((a,b)=>b.gap-a.gap||a.length-b.length);report.push({wing:index,gridCells:group.length,gapPairs,physicalApproachCandidates:possible.length,candidates:possible.slice(0,5)});
+}
+console.log('ROOF_ISLAND_BRIDGE_DIAGNOSTIC',JSON.stringify({regions:groups.map(g=>g.length),report}));
