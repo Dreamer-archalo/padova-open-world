@@ -42,5 +42,8 @@ jobs:
           npm run test:portello
           node verify-city-micromobility.mjs
           node verify-feature-preservation.mjs
+      - name: Citywide pedestrian and sidewalk audit — diagnostic
+        continue-on-error: true
+        run: node --max-old-space-size=3072 verify-walkability.mjs
       - name: Full elevation and road shoulder audit — release blocker
         run: npm run test:geometry-integrity
