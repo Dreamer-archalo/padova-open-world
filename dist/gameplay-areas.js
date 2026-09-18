@@ -1,14 +1,10 @@
-// Airport integration based on the current main layout, with the original
-// structures/spawns retained in gameplay-areas-implementation.js.
-// Aircraft taxiways are not car roads.
+// Airport integration based on current main. Retain existing authored facilities
+// and the single graph-connected vehicle entrance; aircraft taxiways aren't car roads.
 import {makeRoadGraph,nearestOnSegment,dist} from './core.js';
 import {prepareGameplayMap as prepareBase,gameplayStructures as originalStructures,AIRPORT,AIRPORT_GATE,areaPoint,areaLocal} from './gameplay-areas-implementation.js';
 import {buildAirportRoads} from './airport-road-network.js';
 export * from './gameplay-areas-implementation.js';
 
-// Replace the improvised fence posts flanking the access with a visibly wide
-// gateway. Its traffic aperture is +/-24 m around v=250, much wider than
-// the 8 m access road. The sign is elevated above every road vehicle.
 export function gameplayStructures(terrain){
   const structures=originalStructures(terrain);
   if(!structures.length)return structures;
@@ -23,13 +19,54 @@ export function gameplayStructures(terrain){
     const poly=[[-w/2,-d/2],[w/2,-d/2],[w/2,d/2],[-w/2,d/2]].map(([du,dv])=>{const p=areaPoint(AIRPORT,u+du,v+dv);return [p.x,p.z];});
     result.push({x:centre.x,z:centre.z,p:poly,y,minY:y,h,color,solid,kind:'gameplay',minX:Math.min(...poly.map(p=>p[0])),maxX:Math.max(...poly.map(p=>p[0])),minZ:Math.min(...poly.map(p=>p[1])),maxZ:Math.max(...poly.map(p=>p[1]))});
   }
-  // Robust supports and sidewalls outside the actual driving corridor.
+  // Wide, collision-free entrance portal with physically separated supports.
   for(const v of [226,274])box(211,v,1.7,1.7,7.2,'#d1d3cb');
   for(const v of [217,283])box(215,v,1.1,18,1.2,'#adb6b4');
   box(211,250,1.65,48,.75,'#526775',7.2,false);
   box(211.9,250,.3,30,1.55,'#24566d',8,false);
   for(const v of [228,272])box(211.4,v,.5,.6,1.55,'#e9dba2',8,false);
+  // Three separated airport facilities, using the same real collision and
+  // chunk-render pipeline as the original structures. Keep away from roads,
+  // flight corridors, existing buildings and all gate/fence openings.
+  for(const [u,v,w,d,h,wall] of [
+    [170,562,24,13,5,'#bec8c3'], // northern terminal logistics annex
+    [172,-442,26,17,5.5,'#71816b'], // southern military equipment shed
+    [188,-35,16,14,5,'#9baba6'] // airport maintenance substation
+  ]){
+    box(u,v,w,d,h,wall);
+    box(u,v,w+1,d+1,.3,'#52656a',h);
+    box(u,v+d/2+.12,w*.55,.12,2.25,'#47677b',1.2,false);
+  }
   return result;
+}
+
+// Source OSM roads formerly continued straight through the hangars and eight
+// physical fence sections. Only the authored entrance may cross this fence.
+// Clip ALL original road types against a footprint buffered 8-9 m beyond the
+// actual fence, so their rendered lane width cannot protrude into a wall.
+// Keep external portions and road metadata; do not delete the city road or
+// attach an inaccessible runway route to the drivable city graph.
+const CLIP={minU:-94,maxU:223,minV:-584,maxV:584};
+function outsideAirport(points){
+  const paths=[];let current=[];
+  const flush=()=>{if(current.length>1)paths.push(current);current=[];};
+  const add=(a,b)=>{
+    if(Math.hypot(a[0]-b[0],a[1]-b[1])<.01)return;
+    if(current.length&&Math.hypot(current.at(-1)[0]-a[0],current.at(-1)[1]-a[1])>.01)flush();
+    if(!current.length)current.push(a);current.push(b);
+  };
+  for(let i=1;i<points.length;i++){
+    const a=points[i-1],b=points[i],p=areaLocal(AIRPORT,...a),q=areaLocal(AIRPORT,...b);
+    let lo=0,hi=1;
+    for(const [start,delta,min,max] of [[p.u,q.u-p.u,CLIP.minU,CLIP.maxU],[p.v,q.v-p.v,CLIP.minV,CLIP.maxV]]){
+      if(Math.abs(delta)<1e-9){if(start<min||start>max){lo=1;hi=0;break;}}
+      else{const x=(min-start)/delta,y=(max-start)/delta;lo=Math.max(lo,Math.min(x,y));hi=Math.min(hi,Math.max(x,y));}
+    }
+    if(lo>=hi){add(a,b);continue;}
+    const at=t=>[a[0]+(b[0]-a[0])*t,a[1]+(b[1]-a[1])*t];
+    if(lo>0)add(a,at(lo));flush();if(hi<1)add(at(hi),b);
+  }
+  flush();return paths;
 }
 
 export function prepareGameplayMap(map){
@@ -37,43 +74,33 @@ export function prepareGameplayMap(map){
   if(map.gameplay.airportRoadIntegration)return map;
   const entry=map.gameplay.roads.find(r=>r.n==='Ingresso aeroporto');
   const oldService=map.gameplay.roads.find(r=>r.n==='Servizi aeroportuali');
-  // Retire ONLY the old car route that ran across the aircraft taxiway.
   if(oldService){map.gameplay.roads=map.gameplay.roads.filter(r=>r!==oldService);map.roads=map.roads.filter(r=>r!==oldService);}
+  // Do this BEFORE selecting the actual external junction or constructing the
+  // road surfaces; all non-airport city pieces stop short of the perimeter.
+  map.roads=map.roads.flatMap(r=>r.gameplay?[r]:outsideAirport(r.p).map(p=>({...r,p,airportClipped:true})));
   const added=buildAirportRoads(AIRPORT,areaPoint);
-  map.gameplay.roads.push(...added);
-  map.roads.push(...added);
+  map.gameplay.roads.push(...added);map.roads.push(...added);
   if(!entry){map.gameplay.airportRoadIntegration={status:'missing-entrance',connected:false};return map;}
-  // Keep a single real gap in the airport fence, at local (215,250).
-  // The outside approach is a distinct vertex; its endpoint is exactly the
-  // existing entrance at (205,250) and the road network's internal spine.
   const outside=areaPoint(AIRPORT,228,250);
-  entry.access='yes';
-  entry.p=[[outside.x,outside.z],[AIRPORT_GATE.x,AIRPORT_GATE.z]];
+  entry.access='yes';entry.p=[[outside.x,outside.z],[AIRPORT_GATE.x,AIRPORT_GATE.z]];
   const graph=makeRoadGraph(map.roads,{separateLevels:true});
-  // Never select a nearest road merely by 2D distance. Require the primary
-  // connected graph, ground-level public access and an OUTSIDE-fence point.
   const choices=graph.segments.filter(s=>s.connected&&s.road!==entry&&!s.road.gameplay&&!s.road.b&&!s.road.tunnel&&!s.road.crossing&&!Number(s.road.layer)&&!['private','no'].includes(s.road.access)&&['secondary','tertiary','residential','unclassified','service','primary'].includes(s.road.k)).map(s=>{
     const a=graph.nodes[s.a],b=graph.nodes[s.b],point=nearestOnSegment(outside.x,outside.z,[a.x,a.z],[b.x,b.z]);
     return {segment:s,a,b,point,distance:dist(outside,point)};
-  }).filter(c=>c.distance<40&&areaLocal(AIRPORT,c.point.x,c.point.z).u>220).sort((a,b)=>a.distance-b.distance);
+  }).filter(c=>c.distance<40&&areaLocal(AIRPORT,c.point.x,c.point.z).u>223).sort((a,b)=>a.distance-b.distance);
   let junction=null;
   for(const c of choices){
-    const road=c.segment.road;
-    let at=-1;
+    const road=c.segment.road;let at=-1;
     for(let i=1;i<road.p.length;i++){
       const a=road.p[i-1],b=road.p[i];
       if((Math.hypot(a[0]-c.a.x,a[1]-c.a.z)<.11&&Math.hypot(b[0]-c.b.x,b[1]-c.b.z)<.11)||
          (Math.hypot(a[0]-c.b.x,a[1]-c.b.z)<.11&&Math.hypot(b[0]-c.a.x,b[1]-c.a.z)<.11)){at=i;break;}
     }
     if(at<1)continue;
-    // Split the real road polyline at the precise projected junction. Merely
-    // crossing it on screen would leave disconnected graph components.
     if(dist(c.a,c.point)>.11&&dist(c.b,c.point)>.11)road.p.splice(at,0,[c.point.x,c.point.z]);
     junction={road:road.n||road.k,point:[c.point.x,c.point.z],distance:c.distance};break;
   }
   if(junction)entry.p.unshift(junction.point);
-  // This flag is diagnostic, not a release certificate: actual geometry,
-  // driving, collision, Taxi and WebGL tests must still pass.
-  map.gameplay.airportRoadIntegration={connected:!!junction,cityJunction:junction,visualValidationPending:true};
+  map.gameplay.airportRoadIntegration={connected:!!junction,cityJunction:junction,visualValidationPending:true,sourceRoadsClipped:true};
   return map;
 }
