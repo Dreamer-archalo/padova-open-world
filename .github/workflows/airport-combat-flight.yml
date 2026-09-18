@@ -9,6 +9,7 @@ on:
       - 'dist/phase2-runtime.js'
       - 'tools/verify-airport-combat-flight.mjs'
       - 'tools/verify-airport-cockpit-tuning.mjs'
+      - 'tools/verify-airport-jet-two-hit.mjs'
       - '.github/workflows/airport-combat-flight.yml'
   workflow_dispatch:
 permissions:
@@ -29,7 +30,10 @@ jobs:
           node --check dist/phase2-runtime.js
           node --check tools/verify-airport-combat-flight.mjs
           node --check tools/verify-airport-cockpit-tuning.mjs
+          node --check tools/verify-airport-jet-two-hit.mjs
       - name: Exercise flight and abandoned aircraft physics
         run: node tools/verify-airport-combat-flight.mjs
       - name: Civilian safety, guided target cone, ground reverse and collisions
         run: node tools/verify-airport-cockpit-tuning.mjs
+      - name: First-hit smoke, second-hit jet destruction and one confirmed kill
+        run: node tools/verify-airport-jet-two-hit.mjs
