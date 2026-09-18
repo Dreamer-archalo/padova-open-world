@@ -42,6 +42,5 @@ jobs:
           npm run test:portello
           node verify-city-micromobility.mjs
           node verify-feature-preservation.mjs
-      - name: Full elevation audit — known Bassanello discrepancy, visible and nonblocking
-        continue-on-error: true
+      - name: Full elevation and road shoulder audit — release blocker
         run: npm run test:geometry-integrity
