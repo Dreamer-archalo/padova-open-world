@@ -47,7 +47,9 @@ try{
   return {count:points.length,cargo:true,heli:true,rgba,paused:g.state.paused,dialog:document.getElementById('mapDialog').open};
  });
  console.log('AIRCRAFT_MAP_WEBGL '+JSON.stringify(map));
- assert(map.dialog&&map.paused&&map.cargo&&map.heli&&map.count>=4,'air radar missing flying aircraft');
+ // At the first frame the scheduled flight comprises two cargo and one
+ // helicopter. The second helicopter has not taken off yet.
+ assert(map.dialog&&map.paused&&map.cargo&&map.heli&&map.count>=3,'air radar missing initial flying aircraft');
  assert(map.rgba?.[0]>180&&map.rgba?.[1]>150&&map.rgba?.[2]<190,'airborne cargo dot was not painted on map');
  await page.screenshot({path:'test-artifacts/airport-flight-radar.png',timeout:20000});
  assert.equal(errors.length,0,'WebGL errors '+errors.join(' | '));
