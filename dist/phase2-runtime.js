@@ -23,6 +23,7 @@ import './airport-traffic-enhancement.js';
 import './airport-interactivity.js';
 import './airport-flight-extras.js';
 import './airport-combat-flight.js';
+import './airport-ejection-state.js';
 
 // UI-only Phase 2 feedback. It does not own gameplay state: it observes the
 // existing HUD, so it cannot interfere with saves, physics or streaming.
