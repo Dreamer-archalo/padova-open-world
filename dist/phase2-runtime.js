@@ -36,6 +36,8 @@ import './airport-life-v3.js';
 import './airport-blast-ballistics.js';
 // Installed last so its enemy arrows, mission HUD and control hints win visually.
 import './airport-air-hunt.js';
+// Decorative estate details are separate from the collision-aware garage shell.
+import './villa-treves-estate.js';
 
 // UI-only Phase 2 feedback. It does not own gameplay state: it observes the
 // existing HUD, so it cannot interfere with saves, physics or streaming.
