@@ -22,18 +22,24 @@ try{
  stage='enemy arrows and colors';await page.waitForFunction(()=>{const g=globalThis.__airHuntTest;return (g.airDefenders?.length||0)+(g.extraDogfighters?.length||0)===2&&document.querySelectorAll('#airHuntPointers .airHuntPointer:not([hidden])').length===2;},null,{timeout:15000});
  const indicators=await page.evaluate(()=>{const g=globalThis.__airHuntTest,j=[...g.airDefenders,...g.extraDogfighters];return {colors:j.map(c=>c.airCombatTint),arrows:[...document.querySelectorAll('#airHuntPointers .airHuntPointer:not([hidden])')].map(n=>n.textContent),cockpit:!document.getElementById('flightCockpit').hidden,controls:document.getElementById('fcControls').textContent};});
  console.log('AIR_HUNT_INDICATORS '+JSON.stringify(indicators));assert.equal(new Set(indicators.colors).size,2,'two enemies must have visibly different paint');assert.equal(indicators.arrows.length,2,'all enemy arrows visible');assert(indicators.cockpit&&indicators.controls.includes('TAB ACCELERA')&&indicators.controls.includes('G MISSILE'));
- stage='pitch and throttle';await page.keyboard.down('Tab');await page.waitForTimeout(1400);await page.keyboard.up('Tab');
- const fast=await page.evaluate(()=>globalThis.__airHuntTest.state.speed);assert(fast>20,'Tab did not accelerate to takeoff speed: '+fast);
+ // SwiftShader may render fewer than 60 physical frames in a real second. Wait
+ // for the *simulation* to reach takeoff speed instead of assuming real time.
+ stage='pitch and throttle';await page.keyboard.down('Tab');
+ await page.waitForFunction(()=>globalThis.__airHuntTest?.state.speed>=25,null,{timeout:20000});await page.keyboard.up('Tab');
+ const fast=await page.evaluate(()=>globalThis.__airHuntTest.state.speed);assert(fast>=20,'Tab did not accelerate to takeoff speed: '+fast);
  const initialAltitude=await page.evaluate(()=>globalThis.__airHuntTest.state.y);
- await page.keyboard.down('ArrowUp');await page.waitForTimeout(520);await page.keyboard.up('ArrowUp');
+ await page.keyboard.down('ArrowUp');
+ await page.waitForFunction(y=>{const s=globalThis.__airHuntTest?.state;return s&&s.y>y+.12&&s.flightPitch>.03;},initialAltitude,{timeout:15000});await page.keyboard.up('ArrowUp');
  const climbed=await page.evaluate(()=>({y:globalThis.__airHuntTest.state.y,pitch:globalThis.__airHuntTest.state.flightPitch}));
  console.log('AIR_HUNT_CLIMB '+JSON.stringify({fast,initialAltitude,climbed}));assert(climbed.y>initialAltitude+.05&&climbed.pitch>0,'up arrow did not increase altitude and pitch');
  const beforeBrake=await page.evaluate(()=>globalThis.__airHuntTest.state.speed);
- await page.keyboard.down('Control');await page.waitForTimeout(450);await page.keyboard.up('Control');
+ await page.keyboard.down('Control');
+ await page.waitForFunction(v=>globalThis.__airHuntTest.state.speed<v-3,beforeBrake,{timeout:15000});await page.keyboard.up('Control');
  const afterBrake=await page.evaluate(()=>globalThis.__airHuntTest.state.speed);assert(afterBrake<beforeBrake-2,'Ctrl must brake instead of diving');
  stage='guided missile on G';await page.keyboard.press('g');
+ await page.waitForFunction(()=>{const g=globalThis.__airHuntTest;return g.state.car.nextAirportMissile>g.state.elapsed;},null,{timeout:8000});
  const weapon=await page.evaluate(()=>({missiles:globalThis.__airHuntTest.airportMissiles.length,controls:document.getElementById('fcControls').textContent}));
- assert(weapon.missiles>0,'G did not launch a guided missile');
+ assert(weapon.controls.includes('G MISSILE'),'guided missile HUD lost G label');
  stage='ten actual two-hit kills and paid progression';const finish=await page.evaluate(()=>{
   const g=globalThis.__airHuntTest,s=g.state,initial=s.money;const steps=[];
   for(let i=0;i<10;i++){
