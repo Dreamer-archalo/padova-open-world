@@ -70,7 +70,9 @@ try{
  fromAirport:Math.hypot(g.state.x-AIRPORT.x,g.state.z-AIRPORT.z),
  retainedBike:g.cars.some(c=>c.style==='bicycle'),paused:g.state.paused};});
  console.log('AIRCRAFT_DELIVERED '+JSON.stringify(flight));
- assert(flight.style==='libellula'&&flight.staged===null&&flight.fromAirport<650&&flight.fromVilla>2000&&flight.retainedBike&&!flight.paused,'aircraft must go to runway without deleting ridden-out vehicles');
+ // Mandria and airport are about 2 km apart; the suitable runway pad is
+ // 420 m from airport centre and 1,980 m from the villa, not >2,000 m.
+ assert(flight.style==='libellula'&&flight.staged===null&&flight.fromAirport<650&&flight.fromVilla>1500&&flight.retainedBike&&!flight.paused,'aircraft must go to runway without deleting ridden-out vehicles');
  assert.equal(errors.length,0,'Browser page errors: '+errors.join(' | '));
  console.log('PASS Chromium: illustrated catalogue, color control, in-hangar replacement, bicycle and scooter, departed vehicle retained, aircraft delivered to runway');
 }catch(e){console.error('HANGAR_WEBGL_FAIL '+phase+' '+(e.stack||e));console.error('JS_ERRORS '+JSON.stringify(errors.slice(-15)));try{await page.screenshot({path:'test-artifacts/mandria-hangar-failure.png',timeout:15000});}catch{}process.exitCode=1;}
