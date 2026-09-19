@@ -1,14 +1,19 @@
 // Airport integration retains its single graph-connected vehicle entrance.
 // The fictional estate lives at Mandria; the real Parco Treves is untouched.
 import {makeRoadGraph,nearestOnSegment,dist} from './core.js';
-import {prepareGameplayMap as prepareBase,gameplayStructures as originalStructures,gameplaySpawns as baseSpawns,AIRPORT,AIRPORT_GATE,areaPoint,areaLocal} from './gameplay-areas-implementation.js';
+import {prepareGameplayMap as prepareBase,gameplayStructures as originalStructures,gameplaySpawns as baseSpawns,AIRPORT,AIRPORT_GATE,VILLA,areaPoint,areaLocal} from './gameplay-areas-implementation.js';
 import {buildAirportRoads} from './airport-road-network.js';
 import {villaGarageStructures} from './villa-treves-layout.js';
 import {relocateVillaToMandria,verifyParkAndVillaMap,VILLA_PUBLIC_NAME} from './villa-mandria-relocation.js';
 export * from './gameplay-areas-implementation.js';
 
+const WEST_PARKING=Object.freeze([[-35,14],[-35,41],[-14,15],[-14,26],[-14,38],[-8,15],[-8,28]]);
 export function gameplaySpawns(){
- return baseSpawns().map(s=>s.name==='Villa Treves'?{...s,name:VILLA_PUBLIC_NAME}:s);
+ let index=0;
+ return baseSpawns().map(s=>{
+  if(s.name!=='Villa Treves')return s;
+  const [u,v]=WEST_PARKING[index++];return {...s,...areaPoint(VILLA,u,v),name:VILLA_PUBLIC_NAME};
+ });
 }
 
 export function gameplayStructures(terrain){
@@ -40,7 +45,7 @@ export function gameplayStructures(terrain){
     box(u,v,w+1,d+1,.3,'#52656a',h);
     box(u,v+d/2+.12,w*.55,.12,2.25,'#47677b',1.2,false);
   }
-  // Collision-aware garage now follows the new villa coordinates.
+  // Collision-aware hangar follows the relocated villa, not public Parco Treves.
   result.push(...villaGarageStructures(terrain));
   return result;
 }
@@ -106,7 +111,7 @@ export function prepareGameplayMap(map){
     for(let i=1;i<road.p.length;i++){
       const a=road.p[i-1],b=road.p[i];
       if((Math.hypot(a[0]-c.a.x,a[1]-c.a.z)<.11&&Math.hypot(b[0]-c.b.x,b[1]-c.b.z)<.11)||
-         (Math.hypot(a[0]-c.b.x,a[1]-c.b.z)<.11&&Math.hypot(b[0]-c.a.x,b[1]-c.a.z)<.11)){at=i;break;}
+         (Math.hypot(a[0]-c.b.x,a[1]-c.a.z)<.11&&Math.hypot(b[0]-c.a.x,b[1]-c.b.z)<.11)){at=i;break;}
     }
     if(at<1)continue;
     if(dist(c.a,c.point)>.11&&dist(c.b,c.point)>.11)road.p.splice(at,0,[c.point.x,c.point.z]);
