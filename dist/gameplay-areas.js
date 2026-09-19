@@ -1,9 +1,9 @@
 // Airport integration retains its single graph-connected vehicle entrance.
 // The fictional estate lives at Mandria; the real Parco Treves is untouched.
 import {makeRoadGraph,nearestOnSegment,dist} from './core.js';
-import {prepareGameplayMap as prepareBase,gameplayStructures as originalStructures,gameplaySpawns as baseSpawns,AIRPORT,AIRPORT_GATE,VILLA,areaPoint,areaLocal} from './gameplay-areas-implementation.js';
+import {prepareGameplayMap as prepareBase,gameplayStructures as originalStructures,gameplaySpawns as baseSpawns,gameplayVegetation as originalVegetation,AIRPORT,AIRPORT_GATE,VILLA,areaPoint,areaLocal} from './gameplay-areas-implementation.js';
 import {buildAirportRoads} from './airport-road-network.js';
-import {villaGarageStructures} from './villa-treves-layout.js';
+import {villaGarageStructures,VILLA_GARAGE} from './villa-treves-layout.js';
 import {relocateVillaToMandria,verifyParkAndVillaMap,VILLA_PUBLIC_NAME} from './villa-mandria-relocation.js';
 export * from './gameplay-areas-implementation.js';
 
@@ -13,6 +13,17 @@ export function gameplaySpawns(){
  return baseSpawns().map(s=>{
   if(s.name!=='Villa Treves')return s;
   const [u,v]=WEST_PARKING[index++];return {...s,...areaPoint(VILLA,u,v),name:VILLA_PUBLIC_NAME};
+ });
+}
+
+export function gameplayVegetation(terrain){
+ const g=VILLA_GARAGE;
+ return originalVegetation(terrain).filter(tree=>{
+  const p=areaLocal(VILLA,tree.x,tree.z);
+  // Remove only the villa's own decorative tree instances that would otherwise
+  // pass through the hangar's east wall, roof or standing aircraft. Never touch
+  // the city/Parco Treves's native mapped trees or greenery.
+  return !(p.u>g.u-g.w/2-2&&p.u<g.u+g.w/2+2&&p.v>g.v-g.d/2-2&&p.v<g.v+g.d/2+2);
  });
 }
 
@@ -30,7 +41,6 @@ export function gameplayStructures(terrain){
     const poly=[[-w/2,-d/2],[w/2,-d/2],[w/2,d/2],[-w/2,d/2]].map(([du,dv])=>{const p=areaPoint(AIRPORT,u+du,v+dv);return [p.x,p.z];});
     result.push({x:centre.x,z:centre.z,p:poly,y,minY:y,h,color,solid,kind:'gameplay',minX:Math.min(...poly.map(p=>p[0])),maxX:Math.max(...poly.map(p=>p[0])),minZ:Math.min(...poly.map(p=>p[1])),maxZ:Math.max(...poly.map(p=>p[1]))});
   }
-  // Wide, collision-free airport entrance.
   for(const v of [226,274])box(211,v,1.7,1.7,7.2,'#d1d3cb');
   for(const v of [217,283])box(215,v,1.1,18,1.2,'#adb6b4');
   box(211,250,1.65,48,.75,'#526775',7.2,false);
