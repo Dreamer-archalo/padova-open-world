@@ -65,12 +65,41 @@ jobs:
       - name: Full elevation audit — pre-existing Bassanello discrepancy, visible and nonblocking
         continue-on-error: true
         run: npm run test:geometry-integrity
+      # Keep the production game exactly as checked out from main. The PR game
+      # is an independent static build beneath /preview/pr-51/ with its own
+      # relative URLs and data files. No PR source is merged into main.
+      - name: Checkout unmerged PR 51 for isolated preview
+        uses: actions/checkout@v6
+        with:
+          ref: feat/villa-treves-phase1-20260919
+          path: .preview-pr51-source
+          persist-credentials: false
+      - name: Assemble PR preview without overwriting production files
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -f .preview-pr51-source/dist/index.html
+          test -f .preview-pr51-source/dist/villa-mandria-catalog-ui.js
+          test -f .preview-pr51-source/dist/villa-mandria-hangar.js
+          test -f .preview-pr51-source/dist/villa-mandria-relocation.js
+          node --check .preview-pr51-source/dist/villa-mandria-catalog-ui.js
+          node --check .preview-pr51-source/dist/villa-mandria-hangar.js
+          node .preview-pr51-source/tools/verify-mandria-catalog-ui.mjs
+          mkdir -p dist/preview/pr-51
+          cp -a .preview-pr51-source/dist/. dist/preview/pr-51/
+          touch dist/.nojekyll
+          cmp .preview-pr51-source/dist/index.html dist/preview/pr-51/index.html
+          test -f dist/preview/pr-51/data/padova.json
+          test -f dist/preview/pr-51/vendor/three.module.js
+          echo 'Main production root untouched; PR 51 game isolated in /preview/pr-51/.'
       - name: Configure GitHub Pages
         uses: actions/configure-pages@v5
-      - name: Upload dist
+      - name: Upload dist plus isolated preview
         uses: actions/upload-pages-artifact@v4
         with:
           path: dist
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
+      - name: Show public preview link
+        run: echo "PR 51 preview ${{ steps.deployment.outputs.page_url }}preview/pr-51/"
