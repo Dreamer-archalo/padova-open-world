@@ -1,11 +1,14 @@
-name: Villa Treves phase 1
+name: Mandria villa and Treves park restoration
 on:
   pull_request:
     paths:
       - 'dist/villa-treves-*.js'
+      - 'dist/villa-mandria-*.js'
+      - 'dist/villa-spawn-alignment.js'
       - 'dist/gameplay-areas.js'
       - 'dist/phase2-runtime.js'
       - 'tools/verify-villa-phase1.mjs'
+      - 'tools/verify-villa-mandria-relocation.mjs'
       - 'tools/test-villa-treves-chromium.mjs'
       - '.github/workflows/villa-treves-phase1.yml'
   push:
@@ -24,10 +27,14 @@ jobs:
         run: |
           node --check dist/villa-treves-layout.js
           node --check dist/villa-treves-estate.js
+          node --check dist/villa-mandria-relocation.js
+          node --check dist/villa-spawn-alignment.js
           node --check dist/gameplay-areas.js
           node --check dist/phase2-runtime.js
       - name: Garage access, existing spawns and visual culling
         run: node tools/verify-villa-phase1.mjs
+      - name: Real Padova source map: one Mandria villa, untouched Parco Treves
+        run: node tools/verify-villa-mandria-relocation.mjs
       - name: Preserve game features
         run: node verify-feature-preservation.mjs
   estate-webgl:
@@ -46,12 +53,12 @@ jobs:
         run: |
           node tools/serve.mjs --host 127.0.0.1 --port 4173 &
           for i in $(seq 1 25); do if curl -fsS http://127.0.0.1:4173/ -o /dev/null; then break; fi; sleep 1; done
-      - name: Real WebGL villa scene, original vehicle parking and garage approach
+      - name: Real WebGL relocated villa and restored park
         run: node tools/test-villa-treves-chromium.mjs
-      - name: Preserve entrance and garage screenshots
+      - name: Preserve Mandria screenshots and diagnostics
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: villa-treves-webgl
+          name: villa-mandria-webgl
           path: test-artifacts/
           if-no-files-found: ignore
