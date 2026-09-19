@@ -3,6 +3,7 @@ import * as THREE from '../dist/vendor/three.module.js';
 import {VILLA,HOME,areaPoint,gameplaySpawns,gameplayStructures} from '../dist/gameplay-areas.js';
 import {villaGarageStructures,VILLA_GARAGE,VILLA_GARAGE_BAYS} from '../dist/villa-treves-layout.js';
 import {villaEstateUpdate} from '../dist/villa-treves-estate.js';
+import {VILLA_PUBLIC_NAME} from '../dist/villa-mandria-relocation.js';
 import {vehicleBlocked} from '../dist/movement.js';
 
 const elevation=10,terrain={modern:true,gameplayPatches:[{height:elevation}],
@@ -21,18 +22,18 @@ const index={near:()=>garage.filter(s=>s.solid)};
 const car={width:2.1,length:4.6,height:1.85};
 for(const v of [51,49,42,35,26]){
  const p=areaPoint(VILLA,0,v);
- assert(!vehicleBlocked(p.x,p.z,0,index,car,elevation),`original driveway must remain clear at ${v}`);
+ assert(!vehicleBlocked(p.x,p.z,0,index,car,elevation),`driveway must remain clear at ${v}`);
 }
 for(const u of [4,10,16,20,24,27,30,33,35]){
  const p=areaPoint(VILLA,u,26);
  assert(!vehicleBlocked(p.x,p.z,Math.PI/2,index,car,elevation),`garage must be drive-in accessible at ${u}`);
 }
-for(const p of gameplaySpawns().filter(p=>p.name==='Villa Treves')){
+for(const p of gameplaySpawns().filter(p=>p.name===VILLA_PUBLIC_NAME)){
  const spec=p.style==='tank'?{width:3.3,length:7,height:2.7}:
  ['motorcycle','cruiser'].includes(p.style)?{width:1.15,length:2.5,height:1.4}:car;
  assert(!vehicleBlocked(p.x,p.z,p.yaw,index,spec,elevation),`preserve ${p.style} at villa`);
 }
-assert(Math.hypot(HOME.x-VILLA.x,HOME.z-VILLA.z)<32,'existing respawn unchanged');
+assert(Math.hypot(HOME.x-VILLA.x,HOME.z-VILLA.z)<32,'respawn inside villa');
 let welcomes=0;
 const game={state:{started:true,x:VILLA.x,z:VILLA.z,elapsed:1},terrain,
  scene:new THREE.Group(),toast(){welcomes++;}};
