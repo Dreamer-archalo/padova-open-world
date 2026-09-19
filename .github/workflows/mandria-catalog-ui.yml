@@ -10,6 +10,7 @@ on:
       - 'dist/phase2-runtime.js'
       - 'tools/verify-mandria-catalog-ui.mjs'
       - 'tools/test-mandria-catalog-ui-chromium.mjs'
+      - 'tools/debug-mandria-model-picture.mjs'
       - '.github/workflows/mandria-catalog-ui.yml'
   workflow_dispatch:
 jobs:
@@ -41,6 +42,8 @@ jobs:
         run: |
           node tools/serve.mjs --host 127.0.0.1 --port 4173 &
           for i in $(seq 1 25); do if curl -fsS http://127.0.0.1:4173/ -o /dev/null; then break; fi; sleep 1; done
+      - name: Diagnose model preview pixels
+        run: node tools/debug-mandria-model-picture.mjs
       - name: Exercise categories, preview images, color and selection
         run: node tools/test-mandria-catalog-ui-chromium.mjs
       - name: Upload screenshots
