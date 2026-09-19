@@ -1,0 +1,39 @@
+name: Airport air hunt WebGL
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'dist/airport-air-controls.js'
+      - 'dist/airport-air-hunt.js'
+      - 'dist/phase2-runtime.js'
+      - 'tools/test-air-hunt-chromium.mjs'
+      - '.github/workflows/airport-air-hunt-webgl.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  air-hunt-browser:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install Chromium WebGL
+        run: |
+          npm install --no-save playwright@1.55.1
+          npx playwright install --with-deps chromium
+      - name: Start local game server
+        run: |
+          node tools/serve.mjs --host 127.0.0.1 --port 4173 &
+          for i in $(seq 1 25); do if curl -fsS http://127.0.0.1:4173/ -o /dev/null; then break; fi; sleep 1; done
+      - name: Test mission, colored enemy arrows, takeoff and ten paid kills
+        run: node tools/test-air-hunt-chromium.mjs
+      - name: Upload actual screenshot and diagnostics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: air-hunt-webgl
+          path: test-artifacts/
+          if-no-files-found: ignore
