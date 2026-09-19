@@ -6,6 +6,7 @@ on:
       - 'dist/gameplay-areas.js'
       - 'dist/phase2-runtime.js'
       - 'tools/verify-villa-phase1.mjs'
+      - 'tools/test-villa-treves-chromium.mjs'
       - '.github/workflows/villa-treves-phase1.yml'
   push:
     branches:
@@ -29,3 +30,28 @@ jobs:
         run: node tools/verify-villa-phase1.mjs
       - name: Preserve game features
         run: node verify-feature-preservation.mjs
+  estate-webgl:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install browser
+        run: |
+          npm install --no-save playwright@1.55.1
+          npx playwright install --with-deps chromium
+      - name: Start game server
+        run: |
+          node tools/serve.mjs --host 127.0.0.1 --port 4173 &
+          for i in $(seq 1 25); do if curl -fsS http://127.0.0.1:4173/ -o /dev/null; then break; fi; sleep 1; done
+      - name: Real WebGL villa scene, original vehicle parking and garage approach
+        run: node tools/test-villa-treves-chromium.mjs
+      - name: Preserve entrance and garage screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: villa-treves-webgl
+          path: test-artifacts/
+          if-no-files-found: ignore
