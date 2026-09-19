@@ -7,10 +7,13 @@ on:
       - 'dist/airport-combat-flight.js'
       - 'dist/airport-ejection-state.js'
       - 'dist/airport-cockpit-tuning.js'
+      - 'dist/airport-air-controls.js'
+      - 'dist/airport-air-hunt.js'
       - 'dist/phase2-runtime.js'
       - 'tools/test-airport-missile-map-chromium.mjs'
       - 'tools/test-airport-combat-flight-chromium.mjs'
       - 'tools/test-airport-cockpit-chromium.mjs'
+      - 'tools/test-air-hunt-chromium.mjs'
       - '.github/workflows/airport-flight-webgl-fast.yml'
   workflow_dispatch:
 permissions:
@@ -18,7 +21,7 @@ permissions:
 jobs:
   jet-radar-browser:
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v6
       - uses: actions/setup-node@v4
@@ -40,6 +43,9 @@ jobs:
       - name: Test cockpit HUD, reverse, civilian zero-star safety and smooth turbo
         if: always()
         run: node tools/test-airport-cockpit-chromium.mjs
+      - name: Test air hunt from activities, two-hit kills and remapped controls in WebGL
+        if: always()
+        run: node tools/test-air-hunt-chromium.mjs
       - name: Upload screenshots and failure diagnostics
         if: always()
         uses: actions/upload-artifact@v4
