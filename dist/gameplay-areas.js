@@ -55,7 +55,7 @@ function outsideAirport(points){
   const flush=()=>{if(current.length>1)paths.push(current);current=[];};
   const add=(a,b)=>{
     if(Math.hypot(a[0]-b[0],a[1]-b[1])<.01)return;
-    if(current.length&&Math.hypot(current.at(-1)[0]-a[0],a[1]-a[1])>.01)flush();
+    if(current.length&&Math.hypot(current.at(-1)[0]-a[0],current.at(-1)[1]-a[1])>.01)flush();
     if(!current.length)current.push(a);current.push(b);
   };
   for(let i=1;i<points.length;i++){
