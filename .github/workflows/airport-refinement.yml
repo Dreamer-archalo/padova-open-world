@@ -7,9 +7,12 @@ on:
       - 'dist/airport-lock-upgrade.js'
       - 'dist/airport-life-v3.js'
       - 'dist/airport-blast-ballistics.js'
+      - 'dist/airport-air-controls.js'
+      - 'dist/airport-air-hunt.js'
       - 'dist/phase2-runtime.js'
       - 'tools/verify-airport-refinement.mjs'
       - 'tools/verify-airport-blast-ballistics.mjs'
+      - 'tools/verify-air-hunt.mjs'
       - '.github/workflows/airport-refinement.yml'
   workflow_dispatch:
 permissions:
@@ -28,10 +31,15 @@ jobs:
           node --check dist/airport-lock-upgrade.js
           node --check dist/airport-life-v3.js
           node --check dist/airport-blast-ballistics.js
+          node --check dist/airport-air-controls.js
+          node --check dist/airport-air-hunt.js
           node --check dist/phase2-runtime.js
           node --check tools/verify-airport-refinement.mjs
           node --check tools/verify-airport-blast-ballistics.mjs
+          node --check tools/verify-air-hunt.mjs
       - name: Verify real damage, missile target and airport actors
         run: node tools/verify-airport-refinement.mjs
       - name: Verify ballistic wreck rise, gravity and ground contact
         run: node tools/verify-airport-blast-ballistics.mjs
+      - name: Verify flight remapping, colored indicators and air hunt startup
+        run: node tools/verify-air-hunt.mjs
