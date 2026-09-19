@@ -36,10 +36,12 @@ import './airport-life-v3.js';
 import './airport-blast-ballistics.js';
 // Installed last so its enemy arrows, mission HUD and control hints win visually.
 import './airport-air-hunt.js';
-// Decorative estate details are separate from the collision-aware garage shell.
+// Decorative estate details are separate from the collision-aware hangar shell.
 import './villa-treves-estate.js';
-// Correct the former Treves wording in the core respawn toast only.
 import './villa-mandria-respawn-label.js';
+// Installed after existing aircraft catalogue additions so every playable style
+// is available, along with bicycles and kick scooters, without modifying main.
+import './villa-mandria-hangar.js';
 
 // UI-only Phase 2 feedback. It does not own gameplay state: it observes the
 // existing HUD, so it cannot interfere with saves, physics or streaming.
@@ -58,9 +60,7 @@ function showCamera(){
  void cameraBanner.offsetWidth;
  cameraBanner.classList.add('camera-banner-show');
  clearTimeout(cameraTimer);
- cameraTimer=setTimeout(()=>{
-  cameraBanner.classList.remove('camera-banner-show');
-  cameraTimer=setTimeout(()=>cameraBanner.hidden=true,240);
+ cameraTimer=setTimeout(()=>cameraBanner.hidden=true,240);
  },1250);
 }
 function updateDamage(){const value=parseFloat(healthValue?.textContent||'100'),inVehicle=(vehicleName?.textContent||'ON FOOT').trim()!=='ON FOOT',damage=inVehicle?Math.max(0,100-value):0;damageEdge.hidden=damage<8;document.body.dataset.vehicleDamage=damage>=65?'critical':damage>=35?'damaged':damage>=8?'scratched':'none';damageEdge.style.setProperty('--damage',String(Math.min(.48,damage/150)));}
