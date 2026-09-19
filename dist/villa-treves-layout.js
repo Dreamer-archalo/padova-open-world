@@ -1,10 +1,12 @@
-// Villa Treves phase 1: garage shell uses the world's authored structure pipeline.
-// The driveway (u=-5..5), existing vehicle spawns, front gate and pond stay free.
+// Mandria's one hangar replaces the old three-bay shed.  It fits the widest
+// playable cargo aircraft (33 m span), the 31 m Blackbird and articulated trucks.
+// West face (u=5) has no solid door: a decorative animated shutter is managed
+// by villa-mandria-hangar.js and cannot trap a player or a vehicle.
 import {VILLA,areaPoint} from './gameplay-areas-implementation.js';
 
-export const VILLA_GARAGE=Object.freeze({u:30,v:26,w:18,d:26,entranceU:21,roofHeight:5.1});
+export const VILLA_GARAGE=Object.freeze({u:24,v:26,w:38,d:42,entranceU:5,roofHeight:10.8});
 export const VILLA_GARAGE_BAYS=Object.freeze([
- Object.freeze({u:31,v:17}),Object.freeze({u:31,v:26}),Object.freeze({u:31,v:35})
+ Object.freeze({u:24,v:14}),Object.freeze({u:24,v:26}),Object.freeze({u:24,v:38})
 ]);
 
 export function villaGarageStructures(terrain){
@@ -20,14 +22,16 @@ export function villaGarageStructures(terrain){
    minZ:Math.min(...p.map(a=>a[1])),maxZ:Math.max(...p.map(a=>a[1]))});
  }
  const g=VILLA_GARAGE;
- // Three accessible vehicle bays: open to the west and south, no front wall.
- box(g.u,g.v,g.w-.35,g.d-.35,.025,'#777e74',.04,false);
- box(g.u,g.v,g.w+.4,g.d+.4,.38,'#59665b',g.roofHeight);
- for(const u of [22,38])for(const v of [14,38])box(u,v,.55,.55,g.roofHeight,'#d0c3a5');
- box(38.15,26,.55,23,g.roofHeight,'#a9ac98');
- box(30,13.25,16,.5,g.roofHeight,'#a9ac98');
- // Flat surface marks are not colliders and do not create vertical kerbs.
- for(const v of [12.9,21.5,30.5,39.1])box(30,v,15,.13,.02,'#e7dfc5',.075,false);
- for(const u of [23,37])box(u,26,.13,25,.02,'#e7dfc5',.075,false);
+ box(g.u,g.v,g.w-.55,g.d-.55,.025,'#777e74',.04,false);
+ box(g.u,g.v,g.w+.35,g.d+.35,.38,'#59665b',g.roofHeight);
+ // Posts only at the outer corners; no posts or solid wall across the open west portal.
+ for(const u of [g.u-g.w/2+.5,g.u+g.w/2-.5])for(const v of [g.v-g.d/2+.5,g.v+g.d/2-.5])box(u,v,.65,.65,g.roofHeight,'#d0c3a5');
+ box(g.u+g.w/2-.25,g.v,.55,g.d-1,g.roofHeight,'#a9ac98');
+ box(g.u,g.v-g.d/2+.25,g.w-1,.55,g.roofHeight,'#a9ac98');
+ box(g.u,g.v+g.d/2-.25,g.w-1,.55,g.roofHeight,'#a9ac98');
+ // Three non-solid floor lines, plus a dedicated central staging marker.
+ for(const v of [6.1,19.5,32.5,45.8])box(g.u,v,g.w-2,.12,.02,'#e7dfc5',.075,false);
+ for(const u of [6.2,41.8])box(u,g.v,.12,g.d-2,.02,'#e7dfc5',.075,false);
+ box(g.u,g.v,3,.12,.02,'#e5bc51',.085,false);
  return result;
 }
