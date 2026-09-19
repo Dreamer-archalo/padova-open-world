@@ -8,8 +8,7 @@ const errors=[];let phase='boot';
 page.on('pageerror',error=>errors.push(error.message));page.on('crash',()=>errors.push('Chromium crashed'));
 const state=()=>page.evaluate(()=>{const g=globalThis.__hangarTest,h=g.mandriaHangar;return {
  paused:g.state.paused,mode:g.state.mode,playerStyle:g.state.car?.style||null,
- staged:h?.staged?.style||null,stagedColor:h?.staged?.mesh?.children?.[0]?.material?.color?.getHexString()||null,
- stagedCount:g.cars.filter(c=>c.hangarInventory).length,cars:g.cars.length,
+ staged:h?.staged?.style||null,stagedCount:g.cars.filter(c=>c.hangarInventory).length,cars:g.cars.length,
  styles:g.cars.filter(c=>['mito','bicycle','kick-scooter','libellula'].includes(c.style)).map(c=>c.style),
  displayed:h?.staged?.name||null,x:g.state.x,z:g.state.z,doorY:h?.door?.position.y};});
 try{
@@ -40,7 +39,7 @@ try{
  await page.waitForFunction(()=>globalThis.__hangarTest?.mandriaHangar?.staged?.style==='mito'&&!globalThis.__hangarTest.mandriaHangar.busy,null,{timeout:30000});
  const first=await state();console.log('FIRST_CAR '+JSON.stringify(first));
  assert(first.staged==='mito'&&!first.paused&&first.mode==='foot','first car must be visible and player must be nearby on foot');
- const old=await page.evaluate(()=>globalThis.__hangarTest.mandriaHangar.staged);
+ await page.evaluate(()=>{globalThis.__originalHangarObject=globalThis.__hangarTest.mandriaHangar.staged;});
  phase='swap to bicycle';await page.locator('#mandriaHangarButton').click();
  await page.locator('#hangarPaint').fill('#397084');
  await page.locator('#hangarSearch').fill('bicicletta');
@@ -50,7 +49,7 @@ try{
  bike:globalThis.__hangarTest.mandriaHangar.staged.style,mode:globalThis.__hangarTest.state.mode,
  stagedCount:globalThis.__hangarTest.cars.filter(c=>c.hangarInventory).length,paused:globalThis.__hangarTest.state.paused}));
  console.log('SWAPPED '+JSON.stringify(swapped));
- assert(swapped.bike==='bicycle'&&swapped.stagedCount===1&&!swapped.paused,'swap left duplicate or paused player');
+ assert(swapped.oldRemoved&&swapped.bike==='bicycle'&&swapped.stagedCount===1&&!swapped.paused,'swap left duplicate or paused player');
  phase='deliver bicycle';await page.locator('#mandriaHangarButton').click();
  await page.locator('#hangarDeliver').click();
  const bike=await state();console.log('BIKE_DELIVERED '+JSON.stringify(bike));
@@ -73,6 +72,6 @@ try{
  console.log('AIRCRAFT_DELIVERED '+JSON.stringify(flight));
  assert(flight.style==='libellula'&&flight.staged===null&&flight.fromAirport<650&&flight.fromVilla>2000&&flight.retainedBike&&!flight.paused,'aircraft must go to runway without deleting ridden-out vehicles');
  assert.equal(errors.length,0,'Browser page errors: '+errors.join(' | '));
- console.log('PASS Chromium: 52-style illustrated catalog, color control, in-hangar replacement, bicycle and scooter, departing vehicle retained, aircraft delivered to runway');
+ console.log('PASS Chromium: illustrated catalogue, color control, in-hangar replacement, bicycle and scooter, departed vehicle retained, aircraft delivered to runway');
 }catch(e){console.error('HANGAR_WEBGL_FAIL '+phase+' '+(e.stack||e));console.error('JS_ERRORS '+JSON.stringify(errors.slice(-15)));try{await page.screenshot({path:'test-artifacts/mandria-hangar-failure.png',timeout:15000});}catch{}process.exitCode=1;}
 finally{await browser.close();}
