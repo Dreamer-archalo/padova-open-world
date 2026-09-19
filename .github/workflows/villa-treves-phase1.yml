@@ -1,4 +1,4 @@
-name: Mandria villa and Treves park restoration
+name: Villa Treves phase 1
 on:
   pull_request:
     paths:
