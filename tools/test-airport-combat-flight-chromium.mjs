@@ -17,23 +17,22 @@ try{
  phase='spawn Blackbird';const spawn=await page.evaluate(async()=>{
   const g=globalThis.__flightTest,{AIRPORT,areaPoint}=await import('./gameplay-areas.js'),p=areaPoint(AIRPORT,130,-410),s=g.state;
   Object.assign(s,{mode:'foot',car:null,x:p.x,z:p.z,y:g.terrain.height(p.x,p.z),speed:0,vy:0,wanted:0,parachuting:false});g.update(1/60);
-  const c=g.flightBlackbird;if(!c)return {spawned:false,nearby:g.cars.filter(a=>a.spec.aircraft).map(a=>({style:a.style,x:a.x,z:a.z}))};
+  const c=g.flightBlackbird;if(!c)return {spawned:false};
   const side=c.spec.width*.5+1.1,x=c.x+Math.cos(c.yaw)*side,z=c.z-Math.sin(c.yaw)*side;
   Object.assign(s,{x,z,y:g.terrain.height(x,z),yaw:c.yaw});c.speed=0;c.parked=true;c.mesh.visible=true;
-  return {spawned:true,style:c.style,name:c.name,x:c.x,z:c.z};
+  return {spawned:true,style:c.style,name:c.name};
  });console.log('BLACKBIRD_SPAWN '+JSON.stringify(spawn));assert(spawn.spawned,'Blackbird did not spawn in a clear airport bay');
  await page.keyboard.press('e');await page.waitForFunction(()=>globalThis.__flightTest?.state?.car?.style==='airport-blackbird',null,{timeout:12000});
  const before=await page.evaluate(()=>{const g=globalThis.__flightTest,s=g.state,y=g.terrain.height(s.x,s.z)+95;Object.assign(s,{y,speed:95,vy:0});s.car.y=y;s.car.speed=95;s.car.parked=false;g.pose(s.car);return {y:s.y,speed:s.speed,yaw:s.yaw};});
- phase='dive and afterburner';await page.keyboard.down('Control');await page.keyboard.down('Shift');await page.keyboard.down('w');await page.keyboard.down('a');await page.waitForTimeout(650);
- const dive=await page.evaluate(()=>{const g=globalThis.__flightTest,s=g.state;return {y:s.y,speed:s.speed,yaw:s.yaw,pitch:s.flightPitch,modelPitch:s.car.mesh.rotation.x,boost:s.car.airBoost,cruise:s.car.airCruise,ui:document.getElementById('flightPanel')?.textContent,cockpit:!document.getElementById('flightCockpit')?.hidden,kmh:document.getElementById('fcSpeed')?.textContent};});
- console.log('BLACKBIRD_DIVE '+JSON.stringify({before,dive}));assert(dive.pitch<-.1&&dive.y<before.y&&dive.speed>before.speed&&dive.modelPitch>0&&dive.yaw!==before.yaw,'independent dive, model pitch or Shift steering/throttle failed');
- assert(dive.ui.includes('CTRL PICCHIATA')&&dive.ui.includes('SHIFT TURBO')&&dive.cockpit&&Number(dive.kmh)>0,'military cockpit with readable speed missing');
- await page.keyboard.up('Control');await page.keyboard.up('Shift');await page.keyboard.up('w');await page.keyboard.up('a');
- phase='560 kmh effect';await page.evaluate(async()=>{const {BLACKBIRD_EFFECT}=await import('./airport-combat-flight.js'),g=globalThis.__flightTest,s=g.state;s.speed=BLACKBIRD_EFFECT-.5;s.car.speed=s.speed;s.car.lastBlackbirdSpeed=s.speed;});
- await page.keyboard.down('w');await page.keyboard.down('Shift');await page.waitForTimeout(250);
+ phase='ArrowDown dive and Tab throttle';await page.keyboard.down('ArrowDown');await page.keyboard.down('Tab');await page.keyboard.down('a');await page.waitForTimeout(650);
+ const dive=await page.evaluate(()=>{const s=globalThis.__flightTest.state;return {y:s.y,speed:s.speed,yaw:s.yaw,pitch:s.flightPitch,modelPitch:s.car.mesh.rotation.x,boost:s.car.airBoost,cruise:s.car.airCruise,cockpit:!document.getElementById('flightCockpit')?.hidden,kmh:document.getElementById('fcSpeed')?.textContent,controls:document.getElementById('fcControls')?.textContent};});
+ console.log('BLACKBIRD_DIVE '+JSON.stringify({before,dive}));assert(dive.pitch<-.07&&dive.y<before.y&&dive.speed>before.speed&&dive.modelPitch>0&&dive.yaw!==before.yaw,'ArrowDown, Tab throttle, aircraft pitch or steering failed');
+ assert(dive.controls.includes('↓ SCENDI')&&dive.controls.includes('CTRL FRENA')&&dive.cockpit&&Number(dive.kmh)>0,'military HUD or remapped controls missing');
+ await page.keyboard.up('ArrowDown');await page.keyboard.up('Tab');await page.keyboard.up('a');
+ phase='560 kmh effect';await page.evaluate(async()=>{const {BLACKBIRD_EFFECT}=await import('./airport-combat-flight.js'),s=globalThis.__flightTest.state;s.speed=BLACKBIRD_EFFECT-.5;s.car.speed=s.speed;s.car.lastBlackbirdSpeed=s.speed;});
+ await page.keyboard.down('Tab');await page.waitForTimeout(280);
  const shock=await page.evaluate(()=>{const g=globalThis.__flightTest,s=g.state;return {kmh:s.speed*3.6,shockwaves:g.flightShockwaves?.length||0,trails:s.car.mesh.userData.flightTrails?.filter(m=>m.visible).length||0};});
- console.log('BLACKBIRD_SHOCKWAVE '+JSON.stringify(shock));assert(shock.kmh>=560&&shock.kmh<=600.01&&shock.trails===2&&shock.shockwaves>=1,'560 km/h shockwave and 600 km/h cap missing');
- await page.keyboard.up('w');await page.keyboard.up('Shift');
+ console.log('BLACKBIRD_SHOCKWAVE '+JSON.stringify(shock));assert(shock.kmh>=560&&shock.kmh<=600.01&&shock.trails===2&&shock.shockwaves>=1,'560 km/h visual shockwave and 600 km/h cap missing');await page.keyboard.up('Tab');
  phase='F parachute and abandoned plane';await page.keyboard.press('f');await page.waitForFunction(()=>globalThis.__flightTest?.state?.parachuting&&globalThis.__flightTest?.flightBlackbird?.flightAbandoned,null,{timeout:12000});
  const abandoned=await page.evaluate(()=>{const g=globalThis.__flightTest,c=g.flightBlackbird;return {chute:g.state.parachuting,falling:!!c.flightAbandoned,mesh:c.mesh.visible,initialAltitude:c.flightAbandoned.startAltitude};});
  console.log('BLACKBIRD_ABANDONED '+JSON.stringify(abandoned));assert(abandoned.chute&&abandoned.falling&&abandoned.initialAltitude>10,'parachute does not release live aircraft');
@@ -51,10 +50,10 @@ try{
  await page.evaluate(()=>{const g=globalThis.__flightTest,s=g.state;s.y=g.terrain.height(s.x,s.z)+85;s.speed=60;s.car.y=s.y;s.car.speed=60;s.car.parked=false;s.wanted=3;g.wantedLevel=3;g.pose(s.car);g.update(1/60);});
  await page.waitForFunction(()=>globalThis.__flightTest?.airDefenders?.length>=3&&globalThis.__flightTest?.extraDogfighters?.length>=1,null,{timeout:12000});
  const threat=await page.evaluate(()=>{const g=globalThis.__flightTest,s=g.state;return {jets:g.airDefenders.length+g.extraDogfighters.length,wanted:s.wanted,cockpit:!document.getElementById('flightCockpit').hidden,ratio:document.getElementById('fcEnemies')?.textContent};});
- console.log('JET_INTERCEPTION '+JSON.stringify(threat));assert(threat.jets===4&&threat.wanted===3&&threat.cockpit,'three-star flight must have four visible hostile jets');
- phase='guided missile';await page.keyboard.press('Tab');await page.waitForFunction(()=>globalThis.__flightTest?.airportMissiles?.length>0,null,{timeout:12000});
+ console.log('JET_INTERCEPTION '+JSON.stringify(threat));assert(threat.jets===4&&threat.wanted===3&&threat.cockpit,'three-star flight must have four hostile jets');
+ phase='G guided missile';await page.keyboard.press('g');await page.waitForFunction(()=>globalThis.__flightTest?.airportMissiles?.length>0,null,{timeout:12000});
  phase='Q mega missile';await page.evaluate(()=>{const g=globalThis.__flightTest;g.state.car.nextAirportMissile=g.state.elapsed-.1;});await page.keyboard.down('q');await page.waitForTimeout(160);await page.keyboard.up('q');
- const special=await page.evaluate(()=>{const g=globalThis.__flightTest;return {special:g.airportMissiles?.filter(m=>m.special).length||0,cooldown:g.state.car.nextAirportMissile-g.state.elapsed,gun:g.flightGunTracers?.length||0};});
+ const special=await page.evaluate(()=>{const g=globalThis.__flightTest;return {special:g.airportMissiles?.filter(m=>m.special).length||0,cooldown:g.state.car.nextAirportMissile-g.state.elapsed};});
  console.log('JET_MEGA_MISSILE '+JSON.stringify(special));assert(special.special>0&&special.cooldown>3,'Q must fire a special missile, not the machine gun');
  phase='radar colors';await page.keyboard.press('m');await page.waitForFunction(()=>document.getElementById('mapDialog')?.open,null,{timeout:10000});
  const radar=await page.evaluate(async()=>{const g=globalThis.__flightTest,{flyingAirportMarkers}=await import('./airport-flight-extras.js'),p=flyingAirportMarkers(g),canvas=document.getElementById('fullmap'),ctx=canvas.getContext('2d');const color=kind=>{const m=p.find(m=>m.kind===kind);if(!m)return null;const x=Math.round((m.x+6050)/13400*canvas.width),y=Math.round((m.z+6550)/12900*canvas.height);return [...ctx.getImageData(x,y,1,1).data];};return {cargo:color('C'),helicopter:color('H'),jet:color('J'),count:p.length,dialog:document.getElementById('mapDialog').open};});
@@ -62,5 +61,5 @@ try{
  assert(radar.cargo[1]>radar.cargo[0]&&radar.cargo[1]>radar.cargo[2],'cargo marker is not green');assert(radar.helicopter[2]>radar.helicopter[0]&&radar.helicopter[1]>radar.helicopter[0],'helicopter marker is not cyan');
  await page.screenshot({path:'test-artifacts/airport-blackbird-interceptor-radar.png',timeout:20000});
  assert.equal(errors.length,0,'unhandled WebGL errors '+errors.join(' | '));
- console.log('PASS WebGL Blackbird flight, civilian HUD/safety, four three-star jets, Q mega missile and aerial radar');
+ console.log('PASS WebGL Blackbird ArrowDown/Tab, civilian HUD, four three-star jets, G guided/Q mega weapons and radar');
 }catch(error){console.error('ADVANCED_FLIGHT_FAIL '+phase+' '+(error.stack||error));console.error('JS_ERRORS '+JSON.stringify(errors.slice(-12)));try{await page.screenshot({path:'test-artifacts/airport-advanced-flight-failure.png',timeout:15000});}catch{}process.exitCode=1;}finally{await browser.close();}
