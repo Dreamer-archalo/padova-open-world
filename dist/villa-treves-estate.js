@@ -1,4 +1,4 @@
-// Villa Treves phase 1: lazily instantiated, culled visual detailing.
+// Single fictional Mandria estate: lazily instantiated, culled visual detailing.
 // Structural garage colliders live in villa-treves-layout.js, never in these ornaments.
 import * as THREE from './vendor/three.module.js';
 import {ModernGameplay} from './modern-gameplay.js';
@@ -18,9 +18,9 @@ function lamp(g,x,z){
  box(g,x,3.61,z,.75,.13,.75,'#4a4f4a');
 }
 function buildEstate(g){
- const root=new THREE.Group();root.name='Villa Treves · architettura, giardino e rimessa';
+ const root=new THREE.Group();root.name='Villa della Mandria · architettura, giardino e rimessa';
  root.position.set(VILLA.x,g.terrain.height(VILLA.x,VILLA.z),VILLA.z);root.rotation.y=VILLA.yaw;
- // The historic mansion, garage and perimeter already have real world colliders.
+ // The fictional mansion, garage and perimeter already have real world colliders.
  // This set only adds visual facade details, not ghost walls in the driveway.
  box(root,0,13.25,-7.78,45,.48,1.05,'#f1dfb9');
  box(root,0,12.58,-7.84,44,.26,.9,'#9e8468');
@@ -94,7 +94,7 @@ export function villaEstateUpdate(g,dt){
  estate.fountain.rotation.y+=Math.min(dt,.05)*.16;
  if(!g.villaTrevesWelcome&&distance<68){
   g.villaTrevesWelcome=true;
-  g.toast?.('VILLA TREVES · Rimessa a destra, giardino e fontana a sinistra.',4);
+  g.toast?.('VILLA DELLA MANDRIA · Rimessa a destra, giardino e fontana a sinistra.',4);
  }
 }
 const previousPopulate=ModernGameplay.prototype.populate,previousUpdate=ModernGameplay.prototype.update;
