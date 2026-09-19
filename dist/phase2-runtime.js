@@ -44,6 +44,9 @@ import './villa-mandria-hangar.js';
 // Final populate/addCar wrapper creates distinct military models both at the
 // airport and when selecting one from the Mandria hangar.
 import './airport-military-fleet.js';
+// Home screen groups air, ground and urban vehicles. Boat slot is future-only;
+// actual vehicle previews render lazily from 3-D meshes, not generic icons.
+import './villa-mandria-catalog-ui.js';
 
 // UI-only Phase 2 feedback. It does not own gameplay state: it observes the
 // existing HUD, so it cannot interfere with saves, physics or streaming.
