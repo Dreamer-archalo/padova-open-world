@@ -1,5 +1,5 @@
-// Category-first UI for the Mandria showroom. The existing hangar continues
-// to control spawning, shutter, vehicle replacement and delivery.
+// Category-first presentation only; the original Mandria hangar still owns
+// spawning, shutters, paint controls, replacement and delivery.
 import * as THREE from './vendor/three.module.js';
 import {ModernGameplay} from './modern-gameplay.js';
 import {VEHICLES,createVehicle} from './vehicles.js';
@@ -21,15 +21,15 @@ export function hangarSection(id,spec=VEHICLES[id]){
 }
 const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const cube=new THREE.BoxGeometry(1,1,1),cylinder=new THREE.CylinderGeometry(1,1,1,10);
-function block(g,x,y,z,w,h,l,color){const mesh=new THREE.Mesh(cube,new THREE.MeshStandardMaterial({color,roughness:.7}));mesh.position.set(x,y,z);mesh.scale.set(w,h,l);g.add(mesh);return mesh;}
+function block(g,x,y,z,w,h,l,color){const m=new THREE.Mesh(cube,new THREE.MeshStandardMaterial({color,roughness:.7}));m.position.set(x,y,z);m.scale.set(w,h,l);g.add(m);return m;}
 function urbanModel(id,color){
  const g=new THREE.Group(),kick=id==='kick-scooter',length=kick?1.25:1.85,r=kick?.18:.31;
- for(const z of [-length*.36,length*.36]){const m=new THREE.Mesh(cylinder,new THREE.MeshStandardMaterial({color:'#273036'}));m.position.set(0,r,z);m.rotation.z=Math.PI/2;m.scale.set(r,.09,r);g.add(m);}
+ for(const z of [-length*.36,length*.36]){const m=new THREE.Mesh(cylinder,new THREE.MeshStandardMaterial({color:'#263137'}));m.position.set(0,r,z);m.rotation.z=Math.PI/2;m.scale.set(r,.09,r);g.add(m);}
  if(kick){block(g,0,.15,0,.24,.09,.9,color);block(g,0,.78,.41,.075,1.12,.07,color);block(g,0,1.33,.41,.65,.07,.1,'#34434c');}
  else{block(g,0,.64,0,.09,.09,1.02,color);block(g,0,.88,-.24,.09,.65,.1,color);block(g,0,.9,.35,.09,.65,.1,color);block(g,0,1.24,.42,.69,.08,.08,'#34434c');block(g,0,1.05,-.29,.48,.08,.22,'#34434c');}
  g.name=id;return g;
 }
-function genericGround(id,s,color){
+function groundModel(id,s,color){
  if(s.width<1.2)return urbanModel(id,color);
  const g=new THREE.Group(),w=s.width,l=s.length,h=s.height,truck=l>7||h>2.6;
  block(g,0,h*.3,0,w*.9,h*.38,l*.95,color);
@@ -38,43 +38,40 @@ function genericGround(id,s,color){
  for(const side of [-1,1])for(const z of [-l*.32,l*.32]){const m=new THREE.Mesh(cylinder,new THREE.MeshStandardMaterial({color:'#222c30'}));m.position.set(side*w*.46,.32,z);m.rotation.z=Math.PI/2;m.scale.set(.34,.18,.34);g.add(m);}
  g.name=s.name;return g;
 }
-// A jet, commuter and cargo jet must not have the same silhouette when the
-// airport has not streamed their live meshes yet. Use type-specific dimensions.
+// For an airport variant without an exported model builder, draw its particular
+// aircraft shape/dimensions rather than using the generic vehicle-category icon.
 function aircraftModel(id,s,color){
  const g=new THREE.Group(),w=s.width,l=s.length,h=s.height;
  if(!s.plane){
   block(g,0,h*.54,l*.08,w*.53,h*.43,l*.44,color);block(g,0,h*.71,l*.28,w*.45,.45,l*.13,'#31576a');
-  block(g,0,h*.64,-l*.37,.24,.35,l*.45,color);
-  block(g,0,h*.94,0,Math.max(w,l*.92),.07,.18,'#879a9c');block(g,0,h*.95,0,.18,.07,Math.max(w,l*.92),'#879a9c');
+  block(g,0,h*.64,-l*.37,.24,.35,l*.45,color);block(g,0,h*.94,0,Math.max(w,l*.92),.07,.18,'#879a9c');
+  block(g,0,h*.95,0,.18,.07,Math.max(w,l*.92),'#879a9c');
   for(const side of [-1,1])block(g,side*w*.24,.19,0,.12,.15,l*.63,'#353f43');
  }else{
-  const fighter=/jet|strike|interceptor|blackbird|fighter/i.test(id),cargo=/cargo|transport/i.test(id),bodyW=Math.min(w*(fighter?.13:.17),cargo?4.8:2.9);
-  block(g,0,h*.48,0,bodyW,h*(fighter?.3:.42),l*.81,color);
-  block(g,0,h*.57,l*.26,bodyW*.64,h*.2,l*.15,'#31576a');
+  const fighter=/jet|strike|interceptor|blackbird|fighter/i.test(id),cargo=/cargo|transport/i.test(id),bw=Math.min(w*(fighter?.13:.17),cargo?4.8:2.9);
+  block(g,0,h*.48,0,bw,h*(fighter?.3:.42),l*.81,color);block(g,0,h*.57,l*.26,bw*.64,h*.2,l*.15,'#31576a');
   block(g,0,h*.43,-l*.04,w*(fighter?.90:.98),.18,l*(fighter?.24:.13),color);
   block(g,0,h*.54,-l*.37,w*.35,.14,l*.1,color);
-  for(const side of fighter?[-1,1]:[0]){
-   block(g,side*bodyW*.27,h*.78,-l*.4,.16,h*.36,l*.11,color);
-   if(fighter)block(g,side*bodyW*.38,h*.31,-l*.25,.55,.48,l*.16,'#505e66');
-  }
+  for(const side of fighter?[-1,1]:[0]){block(g,side*bw*.27,h*.78,-l*.4,.16,h*.36,l*.11,color);if(fighter)block(g,side*bw*.38,h*.31,-l*.25,.55,.48,l*.16,'#505e66');}
   if(cargo)for(const side of [-1,1])block(g,side*w*.23,h*.32,0,1.3,.65,2.6,'#5b6666');
  }
  g.name=s.name;return g;
 }
 export function hangarPreviewModel(id,color='#b52f3d',game=null){
  const spec=VEHICLES[id];if(!spec)return null;
- // Live vehicles retain their exact detailed model; a far-away parked vehicle
- // may be culled (mesh.visible=false). Its cloned preview MUST be unculled.
- const live=game?.cars?.find(c=>c.style===id&&c.mesh);
- if(live){const copy=live.mesh.clone(true);copy.visible=true;return copy;}
+ // IMPORTANT: world actor positions can be kilometres from the camera.
+ // Their live meshes have culling flags and world transforms. Always prefer
+ // fresh, local-space geometry over a far-away or invisible clone.
  if(MILITARY_FLEET[id])return militaryFleetModel(id);
  if(id==='bicycle'||id==='kick-scooter')return urbanModel(id,color);
  if(NPC_VEHICLES[id])return createNPCCar(id,color);
  if(id==='airone')return createHelicopter();
- if(id.startsWith('airport-'))return aircraftModel(id,spec,color);
- if(SPECIAL_VEHICLES[id])return createSpecialVehicle(id);
  if(['mito','cinquecento','motorcycle','scooter','truck','taxi'].includes(id))return createVehicle(id,color);
- return genericGround(id,spec,color);
+ if(SPECIAL_VEHICLES[id])return createSpecialVehicle(id);
+ const live=game?.cars?.find(c=>c.style===id&&c.mesh);
+ if(live){const copy=live.mesh.clone(true);copy.position.set(0,0,0);copy.rotation.set(0,0,0);copy.visible=true;copy.traverse(o=>{o.visible=true;});return copy;}
+ if(spec.aircraft)return aircraftModel(id,spec,color);
+ return groundModel(id,spec,color);
 }
 const $=id=>document.getElementById(id);
 let dialog=null,home=null,nav=null,mode='home',game=null,renderer=null,scene=null,camera=null,observer=null;
@@ -92,21 +89,23 @@ function picture(id,color){
    const sun=new THREE.DirectionalLight(0xffffff,2.1);sun.position.set(20,30,25);scene.add(sun);
   }
   root=hangarPreviewModel(id,color,game);if(!root)throw new Error('Model unavailable '+id);
-  root.visible=true;
-  // Every preview gets private geometry/material copies. Parked/world meshes
-  // and their shared materials must never be recolored or disposed here.
-  paintHangarVehicle(root,color);root.updateMatrixWorld(true);
+  root.visible=true;paintHangarVehicle(root,color);root.updateMatrixWorld(true);
   const bounds=new THREE.Box3().setFromObject(root);if(bounds.isEmpty())throw new Error('Empty model '+id);
   const centre=bounds.getCenter(new THREE.Vector3()),radius=Math.max(.75,bounds.getSize(new THREE.Vector3()).length()*.5);
   const distance=radius/Math.sin(34*Math.PI/360)*1.18;
   camera.position.copy(centre).add(new THREE.Vector3(distance*.72,distance*.43,distance*.69));
   camera.lookAt(centre);camera.near=Math.max(.01,distance*.004);camera.far=distance*5;camera.updateProjectionMatrix();
   scene.add(root);renderer.render(scene,camera);url=renderer.domElement.toDataURL('image/webp',.84);scene.remove(root);
+  // A valid WEBP data URL can still contain nothing but background if a
+  // streamed actor is culled or a GPU fails. Do not silently treat it as art.
+  const gl=renderer.getContext(),pixels=new Uint8Array(256*176*4);
+  gl.readPixels(0,0,256,176,gl.RGBA,gl.UNSIGNED_BYTE,pixels);
+  let occupied=0;
+  for(let i=0;i<pixels.length;i+=16){if(Math.abs(pixels[i]-23)+Math.abs(pixels[i+1]-37)+Math.abs(pixels[i+2]-50)>40)occupied++;}
+  if(occupied<100)throw new Error('Blank GPU thumbnail: '+id);
  }catch(error){
   if(root?.parent)root.parent.remove(root);
-  console.warn('Hangar 3-D preview fallback',id,error?.message||error);
-  // Failure is explicit: draw a uniquely named, dimension-labelled placeholder,
-  // not an identical category silhouette falsely described as the real model.
+  console.warn('Hangar preview fallback',id,error?.message||error);
   const s=VEHICLES[id],svg=`<svg xmlns="http://www.w3.org/2000/svg" width="256" height="176"><rect width="256" height="176" rx="12" fill="#172532"/><path d="M24 105L44 66h168l20 39Z" fill="${color}"/><text x="128" y="145" fill="#fff" font-family="Arial" font-size="11" text-anchor="middle">${esc(s?.name||id).slice(0,29)}</text></svg>`;
   url='data:image/svg+xml;charset=utf-8,'+encodeURIComponent(svg);
  }
@@ -114,8 +113,7 @@ function picture(id,color){
  if(cached.size>=MAX_CACHE)cached.delete(cached.keys().next().value);cached.set(key,url);return url;
 }
 function enqueue(img,id,color){
- const key=id+'/'+color;if(img.dataset.previewReady===key)return;
- if(img.dataset.previewPending===key)return;
+ const key=id+'/'+color;if(img.dataset.previewReady===key||img.dataset.previewPending===key)return;
  img.dataset.previewPending=key;queue.push({img,id,color});
  if(!working){working=true;requestAnimationFrame(drain);}
 }
@@ -129,9 +127,8 @@ function drain(){
 }
 function refresh(){
  if(!dialog||!home)return;
- const grid=$('hangarGrid'),controls=dialog.querySelector('.hangar-controls'),count=$('hangarCount');
- const isHome=mode==='home';home.hidden=!isHome;nav.hidden=isHome;
- controls.hidden=isHome;count.hidden=isHome;grid.hidden=isHome;
+ const grid=$('hangarGrid'),controls=dialog.querySelector('.hangar-controls'),count=$('hangarCount'),isHome=mode==='home';
+ home.hidden=!isHome;nav.hidden=isHome;controls.hidden=isHome;count.hidden=isHome;grid.hidden=isHome;
  if(isHome){observer?.disconnect();queue.length=0;return;}
  nav.querySelector('strong').textContent=HANGAR_SECTIONS.find(s=>s.id===mode).title;
  const color=$('hangarPaint').value;
@@ -149,11 +146,7 @@ function refresh(){
  count.textContent=`${matches} risultati · ${category.length} mezzi nella categoria`;
 }
 function goHome(){mode='home';observer?.disconnect();queue.length=0;refresh();}
-function enter(id){
- if(id==='water')return;mode=id;
- $('hangarSearch').value='';$('hangarFilter').value='all';
- $('hangarFilter').dispatchEvent(new Event('change',{bubbles:true}));refresh();
-}
+function enter(id){if(id==='water')return;mode=id;$('hangarSearch').value='';$('hangarFilter').value='all';$('hangarFilter').dispatchEvent(new Event('change',{bubbles:true}));refresh();}
 function install(g){
  game=g;if(dialog||typeof document==='undefined')return;
  dialog=$('mandriaHangarDialog');if(!dialog)return;
@@ -178,18 +171,12 @@ function install(g){
  home.querySelectorAll('[data-section]:not(:disabled)').forEach(b=>b.addEventListener('click',()=>enter(b.dataset.section)));
  nav.querySelector('button').addEventListener('click',goHome);
  observer=typeof IntersectionObserver==='undefined'?null:new IntersectionObserver(entries=>{
-  const color=$('hangarPaint').value;
-  for(const e of entries)if(e.isIntersecting){observer.unobserve(e.target);const card=e.target.closest('[data-hangar-id]');if(card&&!card.hidden)enqueue(e.target,card.dataset.hangarId,color);}
+  const color=$('hangarPaint').value;for(const e of entries)if(e.isIntersecting){observer.unobserve(e.target);const card=e.target.closest('[data-hangar-id]');if(card&&!card.hidden)enqueue(e.target,card.dataset.hangarId,color);}
  },{root:dialog,rootMargin:'80px'});
- // The underlying catalogue owns card onclick and vehicle physics. Observe
- // only DOM card replacement to preserve its handlers and avoid a feedback loop.
  new MutationObserver(()=>{if(mode!=='home')refresh();}).observe($('hangarGrid'),{childList:true});
  for(const event of ['input','change'])for(const id of ['hangarSearch','hangarFilter','hangarPaint'])$(id).addEventListener(event,()=>{if(mode!=='home')refresh();});
  new MutationObserver(()=>{if(dialog.open)goHome();else{observer?.disconnect();queue.length=0;}}).observe(dialog,{attributes:true,attributeFilter:['open']});
  goHome();
 }
 const update=ModernGameplay.prototype.update;
-if(!ModernGameplay.prototype.__mandriaCatalogCategories){
- ModernGameplay.prototype.__mandriaCatalogCategories=true;
- ModernGameplay.prototype.update=function(dt){update.call(this,dt);if(this.state?.started)install(this);};
-}
+if(!ModernGameplay.prototype.__mandriaCatalogCategories){ModernGameplay.prototype.__mandriaCatalogCategories=true;ModernGameplay.prototype.update=function(dt){update.call(this,dt);if(this.state?.started)install(this);};}
