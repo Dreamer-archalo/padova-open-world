@@ -6,14 +6,30 @@ export const airControlHeld=new Set();
 const military=c=>!!c&&['airport-jet','airport-interceptor','airport-strike','airport-blackbird'].includes(c.style);
 let activeGame=null;
 const previousPopulate=ModernGameplay.prototype.populate;
+const previousUpdate=ModernGameplay.prototype.update;
 if(!ModernGameplay.prototype.__airControls20260919){
  ModernGameplay.prototype.__airControls20260919=true;
  ModernGameplay.prototype.populate=function(...args){const result=previousPopulate.apply(this,args);activeGame=this;return result;};
+ ModernGameplay.prototype.update=function(dt){
+  const c=this.state?.car;
+  if(military(c))selectFlightCruise(c,airControlHeld);
+  return previousUpdate.call(this,dt);
+ };
 }
 export const flightCommand=held=>({climb:held.has('ArrowUp'),dive:held.has('ArrowDown'),throttle:held.has('Tab'),brake:held.has('ControlLeft')||held.has('ControlRight')});
 export function controlSpeed(speed,{throttle=false,brake=false}={},dt=0,accel=15,decel=32,limit=130){
  if(!Number.isFinite(dt)||dt<=0)return speed;
  return Math.max(0,Math.min(limit,speed+(throttle?accel*dt:0)-(brake?decel*dt:0)));
+}
+// The older jet controller slows every frame toward its cruise speed when
+// Shift is not pressed. Tab replaces Shift as thrust: temporarily lift its
+// cruise ceiling while Tab is held so the new throttle can actually reach the
+// 560 km/h effect and 600 km/h Blackbird limit. Restore on release. Never
+// alter civilian aircraft or the original boost/flight mechanics.
+export function selectFlightCruise(car,held){
+ if(!car||!Number.isFinite(car.airCruise)||!Number.isFinite(car.airBoost))return;
+ car.airControlBaseCruise??=car.airCruise;
+ car.airCruise=held.has('Tab')?car.airBoost:car.airControlBaseCruise;
 }
 function inMilitaryFlight(){const s=activeGame?.state;return !!s?.started&&!s.paused&&s.mode==='car'&&military(s.car);}
 if(typeof window!=='undefined'){
