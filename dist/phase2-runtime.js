@@ -22,6 +22,8 @@ import './airport-operations.js';
 import './airport-traffic-enhancement.js';
 import './airport-interactivity.js';
 import './airport-flight-extras.js';
+// Must precede legacy key listeners: Tab is throttle, Ctrl brake, G missile.
+import './airport-air-controls.js';
 import './airport-combat-flight.js';
 import './airport-ejection-state.js';
 import './airport-dogfight-v2.js';
@@ -32,6 +34,8 @@ import './airport-flight-refinement.js';
 import './airport-lock-upgrade.js';
 import './airport-life-v3.js';
 import './airport-blast-ballistics.js';
+// Installed last so its enemy arrows, mission HUD and control hints win visually.
+import './airport-air-hunt.js';
 
 // UI-only Phase 2 feedback. It does not own gameplay state: it observes the
 // existing HUD, so it cannot interfere with saves, physics or streaming.
