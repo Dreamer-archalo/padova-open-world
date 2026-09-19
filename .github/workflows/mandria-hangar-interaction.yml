@@ -1,0 +1,39 @@
+name: Mandria hangar interactive WebGL
+on:
+  push:
+    branches: [feat/villa-treves-phase1-20260919]
+  pull_request:
+    branches: [main]
+    paths:
+      - 'dist/villa-mandria-hangar.js'
+      - 'dist/villa-treves-layout.js'
+      - 'dist/gameplay-areas.js'
+      - 'tools/test-mandria-hangar-chromium.mjs'
+      - '.github/workflows/mandria-hangar-interaction.yml'
+  workflow_dispatch:
+jobs:
+  showroom:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install browser
+        run: |
+          npm install --no-save playwright@1.55.1
+          npx playwright install --with-deps chromium
+      - name: Start server
+        run: |
+          node tools/serve.mjs --host 127.0.0.1 --port 4173 &
+          for i in $(seq 1 25); do if curl -fsS http://127.0.0.1:4173/ -o /dev/null; then break; fi; sleep 1; done
+      - name: Open hangar, repaint and replace car, retain departed bike and deliver aircraft
+        run: node tools/test-mandria-hangar-chromium.mjs
+      - name: Store catalogue and in-world hangar screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: mandria-hangar-browser
+          path: test-artifacts/
+          if-no-files-found: ignore
