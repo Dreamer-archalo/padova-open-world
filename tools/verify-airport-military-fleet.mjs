@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import '../dist/modern-vehicles.js';
 import {VEHICLES} from '../dist/vehicles.js';
 import {SPECIAL_VEHICLES} from '../dist/special-vehicles.js';
 import {AIRPORT,areaPoint,areaLocal,gameplaySpawns,gameplayStructures} from '../dist/gameplay-areas.js';
@@ -38,7 +39,10 @@ for(const s of MILITARY_PARKING){
  const p=areaPoint(AIRPORT,s.u,s.v),spec=VEHICLES[s.id];
  assert(s.u>=85&&s.u<=125&&s.v>=-370&&s.v<=-135,'must park INSIDE existing military apron, not runway/terminal');
  assert(!vehicleBlocked(p.x,p.z,AIRPORT.yaw-Math.PI/2,collision,spec,10),'colliding hangar wall/fence at '+s.id);
- for(const q of previous)assert(Math.hypot(p.x-q.x,p.z-q.z)>(spec.length+VEHICLES[q.style]?.length)*.55,'overlap existing airport vehicle '+s.id+' and '+q.style);
+ for(const q of previous){
+  const other=VEHICLES[q.style];assert(other,'legacy airport spec missing in fixture: '+q.style);
+  assert(Math.hypot(p.x-q.x,p.z-q.z)>(spec.length+other.length)*.55,'overlap existing airport vehicle '+s.id+' and '+q.style);
+ }
  for(const t of MILITARY_PARKING.filter(t=>t!==s)){
   const q=areaPoint(AIRPORT,t.u,t.v);
   assert(Math.hypot(p.x-q.x,p.z-q.z)>(spec.length+VEHICLES[t.id].length)*.55,'new parking overlap '+s.id+' / '+t.id);
