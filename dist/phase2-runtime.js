@@ -38,6 +38,8 @@ import './airport-blast-ballistics.js';
 import './airport-air-hunt.js';
 // Decorative estate details are separate from the collision-aware garage shell.
 import './villa-treves-estate.js';
+// Correct the former Treves wording in the core respawn toast only.
+import './villa-mandria-respawn-label.js';
 
 // UI-only Phase 2 feedback. It does not own gameplay state: it observes the
 // existing HUD, so it cannot interfere with saves, physics or streaming.
