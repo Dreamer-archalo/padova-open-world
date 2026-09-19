@@ -1,8 +1,9 @@
 // Single fictional Mandria estate: lazily instantiated, culled visual detailing.
-// Structural garage colliders live in villa-treves-layout.js, never in these ornaments.
+// Hangar colliders live in villa-treves-layout.js, never in these ornaments.
 import * as THREE from './vendor/three.module.js';
 import {ModernGameplay} from './modern-gameplay.js';
 import {VILLA} from './gameplay-areas.js';
+import {VILLA_GARAGE} from './villa-treves-layout.js';
 
 const cube=new THREE.BoxGeometry(1,1,1),cylinder=new THREE.CylinderGeometry(.095,.15,1,8);
 const sphere=new THREE.SphereGeometry(1,10,8),materials=new Map();
@@ -18,10 +19,8 @@ function lamp(g,x,z){
  box(g,x,3.61,z,.75,.13,.75,'#4a4f4a');
 }
 function buildEstate(g){
- const root=new THREE.Group();root.name='Villa della Mandria · architettura, giardino e rimessa';
+ const root=new THREE.Group();root.name='Villa della Mandria · architettura, giardino e hangar';
  root.position.set(VILLA.x,g.terrain.height(VILLA.x,VILLA.z),VILLA.z);root.rotation.y=VILLA.yaw;
- // The fictional mansion, garage and perimeter already have real world colliders.
- // This set only adds visual facade details, not ghost walls in the driveway.
  box(root,0,13.25,-7.78,45,.48,1.05,'#f1dfb9');
  box(root,0,12.58,-7.84,44,.26,.9,'#9e8468');
  for(const u of [-17,-10,10,17]){
@@ -36,7 +35,6 @@ function buildEstate(g){
   box(root,u,.22,-3,1.6,.4,1.6,'#e8d6b1');
   box(root,u,7.55,-3,1.62,.44,1.6,'#e8d6b1');
  }
- // Two pitched roof planes replace the box-like silhouette at eye level.
  for(const side of [-1,1]){
   const tile=box(root,side*11,15.2,-19,23,.65,23.6,'#91573f');
   tile.rotation.z=-side*.215;
@@ -49,13 +47,11 @@ function buildEstate(g){
    box(root,x,3.3,8.30,3.08,.24,.44,'#e7d4ac');
   }
  }
- // Fronton at the open colonnade: a flat gable, no invisible collision plane.
  const pediment=new THREE.BufferGeometry();
  pediment.setAttribute('position',new THREE.Float32BufferAttribute([-20.2,8.03,1.08,20.2,8.03,1.08,0,12.25,1.08],3));
  pediment.computeVertexNormals();
  root.add(new THREE.Mesh(pediment,new THREE.MeshStandardMaterial({color:'#e1cca8',side:THREE.DoubleSide,roughness:.95})));
  box(root,0,8.04,1.13,42,.38,.65,'#f1dfbf');
- // The existing basin is at (-27,29), off the central 10 m drive corridor.
  const fountain=new THREE.Group();fountain.position.set(-27,.22,29);
  const rim=new THREE.Mesh(new THREE.TorusGeometry(2.6,.19,6,32),mat('#d9ccab'));
  rim.rotation.x=-Math.PI/2;fountain.add(rim);
@@ -68,15 +64,17 @@ function buildEstate(g){
    new THREE.LineBasicMaterial({color:'#9cdae2',transparent:true,opacity:.82})));
  }
  root.add(fountain);
- for(const u of [-36,36])for(const v of [9,43])lamp(root,u,v);
- for(const u of [-35,-30,-25]){
-  box(root,u,.24,41,2.2,.42,2.5,'#3d6747');
-  box(root,u,.58,41,1.5,.12,1.5,'#bd8a63');
+ // West-side lamp posts and garden never overlap the seven original vehicle bays.
+ for(const v of [8,46])lamp(root,-39,v);
+ for(const u of [-30,-26,-22]){
+  box(root,u,.24,45,2.2,.42,2.5,'#3d6747');
+  box(root,u,.58,45,1.5,.12,1.5,'#bd8a63');
  }
- // Garage signage and roof trim: west entrance is entirely open.
- box(root,30,5.43,26,18.5,.25,26.5,'#414d44');
- box(root,21.48,4.69,26,.16,.54,8.3,'#dbbd86');
- box(root,30,5.58,26,17,.15,24,'#9d674a');
+ const h=VILLA_GARAGE;
+ // Hangar roof/portal trim follows the actual enlarged collider instead of the old shed.
+ box(root,h.u,h.roofHeight+.42,h.v,h.w+.4,.2,h.d+.4,'#414d44');
+ box(root,h.entranceU+.18,h.roofHeight-.53,h.v,.28,.68,h.d-2.2,'#dbbd86');
+ box(root,h.u,h.roofHeight+.54,h.v,h.w-.6,.12,h.d-.6,'#9d674a');
  root.traverse(o=>{if(o.isMesh){o.castShadow=false;o.receiveShadow=false;}});
  g.scene.add(root);
  return {root,fountain};
@@ -90,11 +88,10 @@ export function villaEstateUpdate(g,dt){
   g.villaEstate=buildEstate(g);
  }
  const estate=g.villaEstate;estate.root.visible=true;
- // Fountain motion stays extremely cheap; no extra collision or shadow passes.
  estate.fountain.rotation.y+=Math.min(dt,.05)*.16;
  if(!g.villaTrevesWelcome&&distance<68){
   g.villaTrevesWelcome=true;
-  g.toast?.('VILLA DELLA MANDRIA · Rimessa a destra, giardino e fontana a sinistra.',4);
+  g.toast?.('VILLA DELLA MANDRIA · Hangar a destra: avvicinati e premi H.',4);
  }
 }
 const previousPopulate=ModernGameplay.prototype.populate,previousUpdate=ModernGameplay.prototype.update;
