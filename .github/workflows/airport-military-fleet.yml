@@ -1,0 +1,52 @@
+name: Airport military fleet and selector
+on:
+  push:
+    branches: [feat/villa-treves-phase1-20260919]
+  pull_request:
+    branches: [main]
+    paths:
+      - 'dist/airport-military-fleet.js'
+      - 'dist/phase2-runtime.js'
+      - 'tools/verify-airport-military-fleet.mjs'
+      - 'tools/test-airport-military-fleet-chromium.mjs'
+      - '.github/workflows/airport-military-fleet.yml'
+  workflow_dispatch:
+jobs:
+  military-static:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Verify syntax and seven unique registered military models
+        run: |
+          node --check dist/airport-military-fleet.js
+          node --check dist/phase2-runtime.js
+          node tools/verify-airport-military-fleet.mjs
+  military-browser:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install Chromium
+        run: |
+          npm install --no-save playwright@1.55.1
+          npx playwright install --with-deps chromium
+      - name: Start game
+        run: |
+          node tools/serve.mjs --host 127.0.0.1 --port 4173 &
+          for i in $(seq 1 25); do if curl -fsS http://127.0.0.1:4173/ -o /dev/null; then break; fi; sleep 1; done
+      - name: Test seven military airport spawns and in-game selection
+        run: node tools/test-airport-military-fleet-chromium.mjs
+      - name: Save screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: military-fleet-evidence
+          path: test-artifacts/military-*
+          if-no-files-found: ignore
