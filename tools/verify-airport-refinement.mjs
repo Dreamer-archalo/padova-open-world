@@ -1,0 +1,30 @@
+import assert from 'node:assert/strict';
+import * as THREE from '../dist/vendor/three.module.js';
+import {VEHICLES} from '../dist/vehicles.js';
+import {SpatialIndex} from '../dist/core.js';
+import {totalWantedJets,steerGuidedMissile,blastDamage,applyMegaBlast} from '../dist/airport-flight-refinement.js';
+import {selectReticleTarget} from '../dist/airport-lock-upgrade.js';
+import {baggageRoute,citySkyPose} from '../dist/airport-life-v3.js';
+
+for(let star=0;star<=5;star++)assert.equal(totalWantedJets(star),star?star+1:0,`wanted ${star}`);
+assert.equal(Math.round(VEHICLES.falco.max*3.6),220,'yellow Falco helicopter in km/h');
+const player={style:'airport-jet',health:100,spec:{aircraft:true,height:4},mesh:new THREE.Group(),x:0,y:100,z:0,yaw:0};
+const enemy={style:'airport-interceptor',health:100,spec:{aircraft:true,height:4},mesh:new THREE.Group(),x:0,y:100,z:300,yaw:1,speed:70};
+const helicopter={style:'falco',health:100,spec:{aircraft:true,height:3},mesh:new THREE.Group(),x:48,y:100,z:75};
+const g={state:{started:true,mode:'car',car:player,wanted:1,elapsed:5,x:0,y:100,z:0,yaw:0,flightPitch:0},cars:[player,helicopter,enemy],cops:[],people:[],scene:new THREE.Group(),collision:new SpatialIndex(),terrain:{height:()=>0,elevation:()=>0},hit(){},airDefenders:[]};
+assert.equal(selectReticleTarget(g),enemy,'jet under reticle wins over closer offset helicopter');
+const missile={p:{x:0,y:100,z:0},dir:new THREE.Vector3(0,0,1),speed:125,target:enemy};
+assert(steerGuidedMissile(missile,1/60));assert(missile.speed>=155,'guided missile receives arcade catch-up speed');
+enemy.x=70;assert(steerGuidedMissile(missile,1/60));assert(missile.dir.x>0,'missile turns toward moving locked target');
+assert(blastDamage(0)>blastDamage(20));assert(blastDamage(20)>blastDamage(75));assert.equal(blastDamage(93),0);
+const car={x:12,z:0,y:0,yaw:0,health:100,spec:{width:2,length:4,height:2,armor:1},mesh:new THREE.Group(),parked:false};
+const person={x:6,z:0,y:0,yaw:0,health:100,mesh:new THREE.Group()};
+g.cars=[player,car];g.people=[person];g.scene.add(person.mesh,car.mesh);
+applyMegaBlast(g,{x:0,y:1,z:0},player);
+assert.equal(car.health,0,'special blast must truly destroy nearby vehicle');
+assert.equal(person.health,0,'special blast must truly damage NPC');
+assert(person.koUntil>g.state.elapsed,'blast NPC incapacitation');
+assert(g.megaBlastBodies.length>=2,'blast must create physically moving wreck and body');
+const first=baggageRoute(0),later=baggageRoute(40);assert(Number.isFinite(first.u+later.v+first.yaw));assert.notDeepEqual([first.u,first.v],[later.u,later.v],'bag train moves along an actual route');
+for(let i=0;i<10;i++){const p=citySkyPose(i,90,g.terrain);assert(Number.isFinite(p.x+p.y+p.z+p.yaw)&&p.y>=125,'city sky route valid '+i);}
+console.log('PASS airport refinement: 0-5 wanted count, Falco 220, crosshair targeting, missile turn, blast damage/impulse, bag route and 10 city aircraft');

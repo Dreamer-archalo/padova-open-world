@@ -1,0 +1,37 @@
+import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import {makeRoadGraph,roadRoute,dist} from './dist/core.js';
+import {AIRPORT,AIRPORT_GATE,areaLocal,prepareGameplayMap} from './dist/gameplay-areas.js';
+import {findTaxiRoad} from './dist/taxi-service.js';
+const read=name=>JSON.parse(fs.readFileSync(new URL(`./dist/data/${name}.json`,import.meta.url)));
+const map=read('padova');prepareGameplayMap(map);
+const airport=map.gameplay,entry=airport.roads.find(r=>r.n==='Ingresso aeroporto');
+assert(entry,'airport entrance missing');
+assert.equal(entry.access,'yes','airport arrival must be public');
+assert.equal(entry.p.length,3,'missing city junction, outer bend or gate');
+assert(airport.airportRoadIntegration.connected,'no connected city road junction: do not deploy');
+assert.equal(airport.roads.filter(r=>r.airportRoad).length,13,'not all airport facilities have road access');
+assert(!airport.roads.some(r=>r.n==='Servizi aeroportuali'),'old road across aircraft taxiway remains');
+const graph=makeRoadGraph(map.roads,{separateLevels:true});
+const segments=graph.segments.filter(s=>s.road.airportRoad);
+assert(segments.length>20,'airport road network incomplete');
+assert(segments.every(s=>s.connected),'airport facilities not connected to main city road graph');
+assert(graph.segments.filter(s=>s.road===entry).every(s=>s.connected),'city entrance disconnected');
+const taxi=findTaxiRoad(AIRPORT_GATE,graph,{roads:{sample:()=>0},height:()=>0},{maxMs:500,maxCandidates:8000});
+assert.equal(taxi?.segment?.road,entry,'Taxi is not routed to airport gate');
+const start=graph.segments.filter(s=>s.connected&&!s.road.gameplay&&!s.road.b&&!s.road.tunnel).map(s=>graph.nodes[s.a]).find(n=>dist(n,AIRPORT_GATE)>400&&dist(n,AIRPORT_GATE)<1200);
+assert(start,'no usable city road origin');
+const forward=roadRoute(start,AIRPORT_GATE,graph,{maxMs:4000,maxSteps:200000});
+const backward=roadRoute(AIRPORT_GATE,start,graph,{maxMs:4000,maxSteps:200000});
+assert(forward.length>=5&&backward.length>=5,'city-to-airport round trip is not navigable');
+const fence=[];
+for(const r of airport.roads)for(let i=1;i<r.p.length;i++){
+ const a=areaLocal(AIRPORT,...r.p[i-1]),b=areaLocal(AIRPORT,...r.p[i]);
+ if((a.u-215)*(b.u-215)>=0)continue;
+ const v=a.v+(b.v-a.v)*(215-a.u)/(b.u-a.u);fence.push({road:r.n,v});
+}
+assert.equal(fence.length,1,'wrong number of airport fence crossings');
+assert.equal(fence[0].road,entry.n,'road cuts through airport fence');
+assert(Math.abs(fence[0].v-250)<.01,'entry outside designated fence opening');
+for(const r of airport.roads.filter(r=>r.airportRoad))for(const p of r.p)assert(areaLocal(AIRPORT,...p).u>=130,'car road overlaps aircraft taxiway');
+console.log('PASS real map: city-gate-city routes, connected facilities, taxi entrance, one fence crossing and runway separation',JSON.stringify({roads:13,segments:segments.length,forwardPoints:forward.length,returnPoints:backward.length,junction:airport.airportRoadIntegration.cityJunction}));

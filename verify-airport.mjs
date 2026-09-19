@@ -14,7 +14,7 @@ import {Cannon,COMBAT_LIMITS,predictiveAim,staticHit} from './dist/combat.js';
 import {vehicleBlocked} from './dist/movement.js';
 import {dist,SpatialIndex} from './dist/core.js';
 const api=vm.runInContext('({gameplay,poseVehicle,raiseWanted,explodePlayer,respawnAtVilla,ejectParachute,selectCharacter,incidents,updateTraffic,updatePeople,updatePolice,animate})',ctx);
-const report={browser:{rendered:false,reason:'Cloud Chrome reports GL_RENDERER=Disabled; GPU/device FPS and visual flight QA remain pending.'}};
+const report={browser:{rendered:false,reason:'Node controller harness has no WebGL rendering; see separate Chromium airport browser CI.'}};
 const gp=api.gameplay;
 const hide=()=>{t.clearPolice();t.cancelMission(false);t.waterRecovery.reset();api.incidents.recovery=null;t.keys.clear();for(const c of t.cars)c.mesh.visible=false;for(const p of t.people)p.mesh.visible=false;gp.cannon.clear();gp.graceUntil=0;Object.assign(t.state,{parachuting:false,respawnHome:false,health:100,speed:0,knockX:0,knockZ:0,spin:0});};
 function board(c){c.mesh.visible=true;c.health=100;c.speed=0;Object.assign(t.state,{mode:'foot',car:null,x:c.x+Math.cos(c.yaw)*(c.spec.width/2+1),z:c.z-Math.sin(c.yaw)*(c.spec.width/2+1),y:c.y,speed:0,health:100});t.toggleVehicle();assert(t.state.car===c,'E boards '+c.style+' / mode='+t.state.mode+' / '+els.get('toast').textContent);}
@@ -49,8 +49,22 @@ hide();placeCar(plane,areaPoint(AIRPORT,0,-450));board(plane);step(280,['KeyW','
 const heli=t.cars.find(c=>c.style==='airone'&&insideArea(AIRPORT,c.home.x,c.home.z));hide();placeCar(heli,heli.home,heli.home.yaw);board(heli);const rotor=heli.mesh.userData.rotor.rotation.y;step(150,['Space'],true);assert(t.state.y>heli.home.y+10);step(300,['ShiftLeft'],true);assert(Math.abs(t.state.y-t.terrain.height(t.state.x,t.state.z))<.1);t.toggleVehicle();assert.equal(t.state.mode,'foot');const asleep=heli.mesh.userData.rotor.rotation.y;step(60,[],true);assert.equal(heli.mesh.userData.rotor.rotation.y,asleep,'parked rotor sleeps');assert.notEqual(asleep,rotor);
 hide();const roof=areaPoint(AIRPORT,180,431);placeCar(plane,roof);plane.y=t.terrain.height(roof.x,roof.z)+28;api.poseVehicle(plane);board(plane);api.ejectParachute();for(let i=0;i<800&&t.state.parachuting;i++)step(1,['KeyS']);const roofY=t.state.y;assert(roofY>t.terrain.elevation(t.state.x,t.state.z)+5,'parachute lands on the terminal roof');step(60);assert(Math.abs(t.state.y-roofY)<.01,'walking player remains supported on roof');
 report.flight={takeoff:true,landing:true,parachute:true,roofLanding:true,helicopter:true,parkedRotorSleeps:true};console.log('PASS plane, parachute and helicopter controller');
-// The wanted level is reached through repeated real cannon input, not a HUD-only value.
-hide();t.travel({x:-900,z:-500,name:'Pursuit test'});gp.graceUntil=0;const road=t.dryRoad(t.state,VEHICLES.tank);assert(road);placeCar(tank,road,road.yaw);board(tank);tank.fireAt=0;step(330,['Tab']);assert.equal(t.state.wanted,5);t.updateUI();assert.equal(els.get('wanted').textContent,'★★★★★');gp.nextMilitary=0;gp.update(1/60);assert.equal(gp.military.length,2,'two military units at five stars');const positions=gp.military.map(c=>({c,x:c.x,z:c.z}));for(let i=0;i<360;i++){t.state.elapsed+=1/60;gp.update(1/60);if(api.incidents.recovery)break;}assert(positions.some(p=>dist(p,p.c)>5),'military must pursue');
+// Level five must be reached by the real timed wanted state machine. Earlier
+// versions of this test incorrectly demanded two tanks immediately at five stars.
+hide();t.travel({x:-900,z:-500,name:'Pursuit test'});gp.graceUntil=0;const road=t.dryRoad(t.state,VEHICLES.tank);assert(road);placeCar(tank,road,road.yaw);board(tank);tank.fireAt=0;step(330,['Tab']);assert.equal(t.state.wanted,5);
+for(let level=1;level<=5;level++){
+ t.state.wanted=5;
+ if(level>1)t.state.elapsed=Math.max(t.state.elapsed,gp.wantedHoldUntil)+.02;
+ gp.paceWanted();assert.equal(gp.wantedLevel,level,'wanted level must advance through level '+level);
+}
+t.updateUI();assert.equal(els.get('wanted').textContent,'★★★★★');assert.equal(gp.military.length,0,'military must not appear during grace');
+const firstMilitaryAt=Math.max(gp.graceUntil,gp.nextMilitary);
+assert(firstMilitaryAt-gp.fiveStarAt>=8.9,'first military delay too short');
+t.state.elapsed=firstMilitaryAt-.02;gp.update(1/60);assert.equal(gp.military.length,0,'premature military spawn');
+t.state.elapsed=firstMilitaryAt+.02;gp.update(1/60);assert.equal(gp.military.length,1,'first scheduled military tank missing');
+const secondMilitaryAt=Math.max(gp.nextMilitary,gp.fiveStarAt+18.02);
+t.state.elapsed=secondMilitaryAt+.02;gp.update(1/60);assert.equal(gp.military.length,2,'second scheduled military tank missing');
+const positions=gp.military.map(c=>({c,x:c.x,z:c.z}));for(let i=0;i<360;i++){t.state.elapsed+=1/60;gp.update(1/60);if(api.incidents.recovery)break;}assert(positions.some(p=>dist(p,p.c)>5),'military must pursue');
 api.selectCharacter('nico');assert.equal(t.state.character,'nino');
 const attacker=gp.military[0];assert(attacker);const exposed=areaPoint(AIRPORT,0,-180),targetRide=t.addCar(exposed.x,exposed.z,AIRPORT.yaw,false,true,'sedan');board(targetRide);placeCar(attacker,areaPoint(AIRPORT,0,-280));attacker.path=[];attacker.pathIndex=0;attacker.routeAt=t.state.elapsed+30;attacker.fireAt=0;gp.cannon.clear();const enemyShots=gp.cannon.stats.fired;
 for(let i=0;i<240&&!api.incidents.recovery;i++){t.state.elapsed+=1/60;gp.update(1/60);}assert(gp.cannon.stats.fired>enemyShots,'military actually fires');assert(api.incidents.recovery,'enemy projectile destroys exposed player car');step(120);assert.equal(t.state.mode,'foot');assert(dist(t.state,HOME)<8);assert.equal(t.state.health,100);assert.equal(t.state.wanted,0);assert.equal(gp.military.length,0);assert.equal(t.state.character,'nino');assert.equal(gp.cannon.shots.filter(s=>s.active).length,0);assert.equal(vm.runInContext('cops.length',ctx),0);api.raiseWanted(5);assert.equal(t.state.wanted,0,'respawn grace');assert.equal(CHARACTERS.length,5);assert.deepEqual(CHARACTERS.map(c=>c.name),['Fede','Mattia','Marchese','Milo','Nino']);

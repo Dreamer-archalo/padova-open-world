@@ -1,0 +1,16 @@
+import assert from 'node:assert/strict';
+import * as THREE from '../dist/vendor/three.module.js';
+import {ModernGameplay} from '../dist/modern-gameplay.js';
+import '../dist/airport-cockpit-tuning.js';
+const pilot={style:'airport-interceptor',spec:{aircraft:true,plane:true},health:100};
+const hostile={airDefender:true,x:10,y:40,z:200,spec:{height:4,length:15,width:11},health:100,speed:70,mesh:new THREE.Group()};
+let retired=0,explosions=0;
+const g={state:{car:pilot,elapsed:13,wanted:3},airDefenders:[hostile],scene:new THREE.Scene(),cannon:{impact:()=>explosions++},raiseWanted:level=>{g.state.wanted=level;},retire:()=>retired++,toast:()=>{}};
+g.scene.add(hostile.mesh);
+ModernGameplay.prototype.hit.call(g,hostile,pilot,false);
+assert.equal(hostile.flightMissileHits,1);assert.equal(hostile.health,48);assert(hostile.flightSmoke?.children.length>=3,'first missile must create visible smoke');
+assert.equal(retired,0,'first missile cannot destroy the interceptor');assert.equal(g.confirmedAirKills||0,0);
+ModernGameplay.prototype.hit.call(g,hostile,pilot,false);
+assert.equal(hostile.health,0);assert.equal(hostile.mesh.visible,false);assert.equal(g.confirmedAirKills,1);assert.equal(retired,1);assert.equal(explosions,1);assert.equal(g.airDefenders.length,0);
+ModernGameplay.prototype.hit.call(g,hostile,pilot,false);assert.equal(g.confirmedAirKills,1,'cannot double-count the same kill');
+console.log('PASS first missile smoke, second missile explosion, one confirmed kill, no double counting');

@@ -1,0 +1,77 @@
+name: Airport completion release gate
+
+on:
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  airport-integration:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Airport integration syntax
+        run: |
+          node --check dist/gameplay-areas.js
+          node --check dist/gameplay-areas-implementation.js
+          node --check dist/airport-road-network.js
+          node --check dist/airport-air-traffic.js
+          node --check dist/airport-traffic-enhancement.js
+          node --check dist/airport-interactivity.js
+          node --check dist/airport-flight-extras.js
+          node --check dist/phase2-runtime.js
+          node --check tools/verify-airport-traffic.mjs
+          node --check tools/verify-airport-flight-extras.mjs
+          node --check tools/verify-airport-entrance.mjs
+          node --check tools/verify-airport-fleet-clearance.mjs
+          node --check tools/diagnose-airport-perimeter.mjs
+          node --check tools/test-airport-boardable-chromium.mjs
+          node --check verify-airport-city-access.mjs
+          node --check verify-airport-via-sorio.mjs
+          node --check verify-airport-mobility.mjs
+          node --check verify-airport-road-runtime.mjs
+      - name: Jet missile collision and cooldown, civilian fleet, flight map, cargo rotations
+        if: always()
+        run: node tools/verify-airport-flight-extras.mjs
+      - name: Diagnose source-road crossings of airport perimeter
+        if: always()
+        run: node --max-old-space-size=4096 tools/diagnose-airport-perimeter.mjs
+      - name: Simulated airport flight cycles, runway and air collision separation
+        if: always()
+        run: node tools/verify-airport-traffic.mjs
+      - name: Real city graph round trip, taxi destination and fence
+        if: always()
+        run: node verify-airport-city-access.mjs
+      - name: Full airport access and unobstructed architectural gate
+        if: always()
+        run: node --max-old-space-size=4096 tools/verify-airport-entrance.mjs
+      - name: Physical clearance of ten aircraft hangar and apron bays
+        if: always()
+        run: node --max-old-space-size=4096 tools/verify-airport-fleet-clearance.mjs
+      - name: Via Sorio to airport and back on real roads
+        if: always()
+        run: node verify-airport-via-sorio.mjs
+      - name: Airport facility connectivity and building clearance
+        if: always()
+        run: node verify-airport-mobility.mjs
+      - name: Actual runtime terrain, water, collision and grades
+        if: always()
+        run: node --max-old-space-size=4096 verify-airport-road-runtime.mjs
+      - name: Airport vehicle and aircraft controller regression
+        if: always()
+        run: npm run test:airport
+      - name: Independent current five-star staggered-spawn regression
+        if: always()
+        run: node tools/verify-five-star-timing.mjs
+      - name: Taxi regression
+        if: always()
+        run: npm run test:taxi && node verify-taxi-transition-recovery.mjs
+      - name: Strict full-city geometry and altitude regression
+        if: always()
+        run: npm run test:geometry-integrity
