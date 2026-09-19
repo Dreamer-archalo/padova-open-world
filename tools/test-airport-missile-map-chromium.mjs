@@ -34,10 +34,10 @@ try{
  assert(!ready.error,'jet preparation failed '+JSON.stringify(ready));
  await page.keyboard.press('e');
  await page.waitForFunction(()=>globalThis.__airportMissileGame?.state?.car?.style==='airport-interceptor',null,{timeout:12000});
- phase='TAB missile';await page.keyboard.press('Tab');
+ phase='G guided missile';await page.keyboard.press('g');
  await page.waitForFunction(()=>globalThis.__airportMissileGame?.state?.car?.nextAirportMissile>globalThis.__airportMissileGame?.state?.elapsed,null,{timeout:10000});
  const fired=await page.evaluate(()=>{const g=globalThis.__airportMissileGame;return {style:g.state.car.style,next:g.state.car.nextAirportMissile,time:g.state.elapsed,projectiles:g.airportMissiles?.length||0};});
- console.log('JET_MISSILE_WEBGL '+JSON.stringify(fired));assert(fired.next>fired.time,'TAB failed to fire missile');
+ console.log('JET_MISSILE_WEBGL '+JSON.stringify(fired));assert(fired.next>fired.time,'G failed to fire guided missile');
  phase='M aircraft map';await page.keyboard.press('m');await page.waitForFunction(()=>document.getElementById('mapDialog')?.open,null,{timeout:10000});
  const map=await page.evaluate(async()=>{
   const {flyingAirportMarkers}=await import('./airport-flight-extras.js'),g=globalThis.__airportMissileGame,c=document.getElementById('fullmap'),ctx=c.getContext('2d');
@@ -47,11 +47,9 @@ try{
   return {count:points.length,cargo:true,heli:true,rgba,paused:g.state.paused,dialog:document.getElementById('mapDialog').open};
  });
  console.log('AIRCRAFT_MAP_WEBGL '+JSON.stringify(map));
- // At the first frame the scheduled flight comprises two cargo and one
- // helicopter. The second helicopter has not taken off yet.
  assert(map.dialog&&map.paused&&map.cargo&&map.heli&&map.count>=3,'air radar missing initial flying aircraft');
  assert(map.rgba?.[1]>map.rgba?.[0]&&map.rgba?.[1]>map.rgba?.[2],'airborne cargo dot was not painted green on map');
  await page.screenshot({path:'test-artifacts/airport-flight-radar.png',timeout:20000});
  assert.equal(errors.length,0,'WebGL errors '+errors.join(' | '));
- console.log('PASS WebGL new civil fleet, keyboard TAB jet missile, M-map cargo and helicopter markers');
+ console.log('PASS WebGL new civil fleet, keyboard G guided missile, M-map cargo and helicopter markers');
 }catch(error){console.error('AIRPORT_MISSILE_MAP_FAIL phase='+phase+' '+(error.stack||error));console.error('JS_ERRORS '+JSON.stringify(errors.slice(-12)));try{await page.screenshot({path:'test-artifacts/airport-missile-map-failure.png',timeout:15000});}catch{}process.exitCode=1;}finally{await browser.close();}
