@@ -1,13 +1,12 @@
-// Progressive catalogue UI for the single Mandria hangar. This module changes
-// only presentation: the existing hangar keeps ownership of spawning, painting,
-// shutter animation, disposal and vehicle delivery.
+// Category-first UI for the Mandria showroom. The existing hangar continues
+// to control spawning, shutter, vehicle replacement and delivery.
 import * as THREE from './vendor/three.module.js';
 import {ModernGameplay} from './modern-gameplay.js';
 import {VEHICLES,createVehicle} from './vehicles.js';
 import {NPC_VEHICLES,createNPCCar,createHelicopter} from './modern-vehicles.js';
 import {SPECIAL_VEHICLES,createSpecialVehicle} from './special-vehicles.js';
 import {MILITARY_FLEET,militaryFleetModel} from './airport-military-fleet.js';
-import {hangarCatalogue,hangarThumbnail,paintHangarVehicle} from './villa-mandria-hangar.js';
+import {hangarCatalogue,paintHangarVehicle} from './villa-mandria-hangar.js';
 
 export const HANGAR_SECTIONS=Object.freeze([
  {id:'air',title:'Aerei e velivoli',subtitle:'Aerei, jet ed elicotteri',symbol:'✈',enabled:true},
@@ -18,61 +17,42 @@ export const HANGAR_SECTIONS=Object.freeze([
 export function hangarSection(id,spec=VEHICLES[id]){
  if(!spec)return null;
  if(id==='bicycle'||id==='kick-scooter')return 'urban';
- if(spec.aircraft)return 'air';
- return 'land';
+ return spec.aircraft?'air':'land';
 }
-const escape=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const cube=new THREE.BoxGeometry(1,1,1),cylinder=new THREE.CylinderGeometry(1,1,1,10);
-function block(g,x,y,z,w,h,l,color){
- const m=new THREE.Mesh(cube,new THREE.MeshStandardMaterial({color,roughness:.75}));
- m.position.set(x,y,z);m.scale.set(w,h,l);g.add(m);return m;
-}
-function micro(id,color){
+function block(g,x,y,z,w,h,l,color){const mesh=new THREE.Mesh(cube,new THREE.MeshStandardMaterial({color,roughness:.7}));mesh.position.set(x,y,z);mesh.scale.set(w,h,l);g.add(mesh);return mesh;}
+function urbanModel(id,color){
  const g=new THREE.Group(),kick=id==='kick-scooter',length=kick?1.25:1.85,r=kick?.18:.31;
- for(const z of [-length*.36,length*.36]){
-  const wheel=new THREE.Mesh(cylinder,new THREE.MeshStandardMaterial({color:'#202a31'}));
-  wheel.position.set(0,r,z);wheel.rotation.z=Math.PI/2;wheel.scale.set(r,.085,r);g.add(wheel);
- }
- if(kick){block(g,0,.15,0,.24,.09,.91,color);block(g,0,.78,.41,.075,1.12,.07,color);block(g,0,1.33,.41,.65,.07,.1,'#34434c');}
- else{
-  for(const [a,b] of [[-.64,.10],[0,.55],[.53,.12]])block(g,0,.7+(a+b)*.08,(a+b)*.5,.075,.075,.85,color);
-  block(g,0,.93,-.25,.14,.56,.08,color);block(g,0,.98,.38,.12,.59,.08,color);
-  block(g,0,1.24,.42,.69,.08,.08,'#465661');block(g,0,1.06,-.29,.48,.08,.22,'#323e44');
- }
+ for(const z of [-length*.36,length*.36]){const m=new THREE.Mesh(cylinder,new THREE.MeshStandardMaterial({color:'#273036'}));m.position.set(0,r,z);m.rotation.z=Math.PI/2;m.scale.set(r,.09,r);g.add(m);}
+ if(kick){block(g,0,.15,0,.24,.09,.9,color);block(g,0,.78,.41,.075,1.12,.07,color);block(g,0,1.33,.41,.65,.07,.1,'#34434c');}
+ else{block(g,0,.64,0,.09,.09,1.02,color);block(g,0,.88,-.24,.09,.65,.1,color);block(g,0,.9,.35,.09,.65,.1,color);block(g,0,1.24,.42,.69,.08,.08,'#34434c');block(g,0,1.05,-.29,.48,.08,.22,'#34434c');}
  g.name=id;return g;
 }
 function genericGround(id,s,color){
- const g=new THREE.Group(),truck=s.length>7||s.height>2.6,bike=s.width<1.2;
- if(bike)return micro(id,color);
- const w=s.width,l=s.length,h=s.height;
+ if(s.width<1.2)return urbanModel(id,color);
+ const g=new THREE.Group(),w=s.width,l=s.length,h=s.height,truck=l>7||h>2.6;
  block(g,0,h*.3,0,w*.9,h*.38,l*.95,color);
  block(g,0,h*.67,truck?l*.26:-l*.11,w*.79,h*.53,truck?Math.min(2.9,l*.39):l*.53,color);
  block(g,0,h*.72,truck?l*.49:l*.2,w*.65,h*.22,.08,'#345667');
- for(const side of [-1,1])for(const z of [-l*.32,l*.32]){
-  const wheel=new THREE.Mesh(cylinder,new THREE.MeshStandardMaterial({color:'#222c30'}));
-  wheel.position.set(side*w*.46,.32,z);wheel.rotation.z=Math.PI/2;wheel.scale.set(.34,.18,.34);g.add(wheel);
- }
+ for(const side of [-1,1])for(const z of [-l*.32,l*.32]){const m=new THREE.Mesh(cylinder,new THREE.MeshStandardMaterial({color:'#222c30'}));m.position.set(side*w*.46,.32,z);m.rotation.z=Math.PI/2;m.scale.set(.34,.18,.34);g.add(m);}
  g.name=s.name;return g;
 }
-// Aircraft not yet loaded as live airport actors receive dimensions and a
-// *model-specific* local reconstruction (jets/airliners/rotorcraft differ).
-// This is an illustration, never presented as a photograph or manufacturer asset.
-function airportPreview(id,s,color){
+// A jet, commuter and cargo jet must not have the same silhouette when the
+// airport has not streamed their live meshes yet. Use type-specific dimensions.
+function aircraftModel(id,s,color){
  const g=new THREE.Group(),w=s.width,l=s.length,h=s.height;
  if(!s.plane){
-  block(g,0,h*.54,l*.08,w*.53,h*.43,l*.44,color);
-  block(g,0,h*.71,l*.28,w*.45,.45,l*.13,'#31576a');
+  block(g,0,h*.54,l*.08,w*.53,h*.43,l*.44,color);block(g,0,h*.71,l*.28,w*.45,.45,l*.13,'#31576a');
   block(g,0,h*.64,-l*.37,.24,.35,l*.45,color);
-  block(g,0,h*.94,0,Math.max(w,l*.92),.07,.18,'#879a9c');
-  block(g,0,h*.95,0,.18,.07,Math.max(w,l*.92),'#879a9c');
+  block(g,0,h*.94,0,Math.max(w,l*.92),.07,.18,'#879a9c');block(g,0,h*.95,0,.18,.07,Math.max(w,l*.92),'#879a9c');
   for(const side of [-1,1])block(g,side*w*.24,.19,0,.12,.15,l*.63,'#353f43');
  }else{
-  const fighter=/jet|strike|interceptor|blackbird|fighter/i.test(id),cargo=/cargo|transport/i.test(id),
-   wings=w*(fighter?.90:.98),bodyW=Math.min(w*(fighter?.13:.17),cargo?4.8:2.9);
+  const fighter=/jet|strike|interceptor|blackbird|fighter/i.test(id),cargo=/cargo|transport/i.test(id),bodyW=Math.min(w*(fighter?.13:.17),cargo?4.8:2.9);
   block(g,0,h*.48,0,bodyW,h*(fighter?.3:.42),l*.81,color);
   block(g,0,h*.57,l*.26,bodyW*.64,h*.2,l*.15,'#31576a');
-  block(g,0,h*.43,-l*.04,wings,.18,l*(fighter?.24:.13),color);
-  block(g,0,h*.54,-l*.37,w*.35,.14,l*.10,color);
+  block(g,0,h*.43,-l*.04,w*(fighter?.90:.98),.18,l*(fighter?.24:.13),color);
+  block(g,0,h*.54,-l*.37,w*.35,.14,l*.1,color);
   for(const side of fighter?[-1,1]:[0]){
    block(g,side*bodyW*.27,h*.78,-l*.4,.16,h*.36,l*.11,color);
    if(fighter)block(g,side*bodyW*.38,h*.31,-l*.25,.55,.48,l*.16,'#505e66');
@@ -82,24 +62,27 @@ function airportPreview(id,s,color){
  g.name=s.name;return g;
 }
 export function hangarPreviewModel(id,color='#b52f3d',game=null){
- const s=VEHICLES[id];if(!s)return null;
+ const spec=VEHICLES[id];if(!spec)return null;
+ // Live vehicles retain their exact detailed model; a far-away parked vehicle
+ // may be culled (mesh.visible=false). Its cloned preview MUST be unculled.
  const live=game?.cars?.find(c=>c.style===id&&c.mesh);
- if(live)return live.mesh.clone(true);
+ if(live){const copy=live.mesh.clone(true);copy.visible=true;return copy;}
  if(MILITARY_FLEET[id])return militaryFleetModel(id);
- if(id==='bicycle'||id==='kick-scooter')return micro(id,color);
+ if(id==='bicycle'||id==='kick-scooter')return urbanModel(id,color);
  if(NPC_VEHICLES[id])return createNPCCar(id,color);
  if(id==='airone')return createHelicopter();
- if(id.startsWith('airport-'))return airportPreview(id,s,color);
+ if(id.startsWith('airport-'))return aircraftModel(id,spec,color);
  if(SPECIAL_VEHICLES[id])return createSpecialVehicle(id);
  if(['mito','cinquecento','motorcycle','scooter','truck','taxi'].includes(id))return createVehicle(id,color);
- return genericGround(id,s,color);
+ return genericGround(id,spec,color);
 }
-let installed=false,dialog=null,home=null,nav=null,mode='home',game=null,renderer=null,scene=null,camera=null,previewObserver=null;
-const cache=new Map(),MAX_CACHE=140;
-let shownColor='',queue=[],busy=false;
-function thumbnail(id,color){
- const key=id+'/'+color;if(cache.has(key))return cache.get(key);
- let url=null,object=null;
+const $=id=>document.getElementById(id);
+let dialog=null,home=null,nav=null,mode='home',game=null,renderer=null,scene=null,camera=null,observer=null;
+let lastColor='',queue=[],working=false;
+const cached=new Map(),MAX_CACHE=120;
+function picture(id,color){
+ const key=id+'/'+color;if(cached.has(key))return cached.get(key);
+ let root=null,url=null;
  try{
   if(!renderer){
    renderer=new THREE.WebGLRenderer({canvas:document.createElement('canvas'),antialias:false,preserveDrawingBuffer:true,powerPreference:'low-power'});
@@ -108,85 +91,72 @@ function thumbnail(id,color){
    scene.add(new THREE.HemisphereLight(0xffffff,0x657184,2.1));
    const sun=new THREE.DirectionalLight(0xffffff,2.1);sun.position.set(20,30,25);scene.add(sun);
   }
-  object=hangarPreviewModel(id,color,game);
-  if(!object)throw new Error('Unavailable preview model '+id);
-  paintHangarVehicle(object,color);
-  object.updateMatrixWorld(true);
-  const bounds=new THREE.Box3().setFromObject(object);
-  if(bounds.isEmpty())throw new Error('Empty preview '+id);
+  root=hangarPreviewModel(id,color,game);if(!root)throw new Error('Model unavailable '+id);
+  root.visible=true;
+  // Every preview gets private geometry/material copies. Parked/world meshes
+  // and their shared materials must never be recolored or disposed here.
+  paintHangarVehicle(root,color);root.updateMatrixWorld(true);
+  const bounds=new THREE.Box3().setFromObject(root);if(bounds.isEmpty())throw new Error('Empty model '+id);
   const centre=bounds.getCenter(new THREE.Vector3()),radius=Math.max(.75,bounds.getSize(new THREE.Vector3()).length()*.5);
   const distance=radius/Math.sin(34*Math.PI/360)*1.18;
   camera.position.copy(centre).add(new THREE.Vector3(distance*.72,distance*.43,distance*.69));
   camera.lookAt(centre);camera.near=Math.max(.01,distance*.004);camera.far=distance*5;camera.updateProjectionMatrix();
-  scene.add(object);renderer.render(scene,camera);
-  url=renderer.domElement.toDataURL('image/webp',.84);
-  scene.remove(object);
+  scene.add(root);renderer.render(scene,camera);url=renderer.domElement.toDataURL('image/webp',.84);scene.remove(root);
  }catch(error){
-  if(object?.parent)object.parent.remove(object);
-  console.warn('Hangar image: low-cost fallback',id,error?.message||error);
-  // Never show the old identical category silhouette as though it were the exact model.
-  // Unique labels/dimensions remain visible on the fallback illustration.
-  const spec=VEHICLES[id],svg=`<svg xmlns="http://www.w3.org/2000/svg" width="256" height="176"><rect width="256" height="176" rx="12" fill="#172532"/><rect x="24" y="59" width="208" height="53" rx="9" fill="${color}"/><path d="M35 60L68 37h119l34 23" fill="${color}" stroke="#cedae0" stroke-width="3"/><text x="128" y="146" text-anchor="middle" fill="#fff" font-size="11" font-family="Arial">${escape(spec?.name||id).slice(0,31)}</text></svg>`;
+  if(root?.parent)root.parent.remove(root);
+  console.warn('Hangar 3-D preview fallback',id,error?.message||error);
+  // Failure is explicit: draw a uniquely named, dimension-labelled placeholder,
+  // not an identical category silhouette falsely described as the real model.
+  const s=VEHICLES[id],svg=`<svg xmlns="http://www.w3.org/2000/svg" width="256" height="176"><rect width="256" height="176" rx="12" fill="#172532"/><path d="M24 105L44 66h168l20 39Z" fill="${color}"/><text x="128" y="145" fill="#fff" font-family="Arial" font-size="11" text-anchor="middle">${esc(s?.name||id).slice(0,29)}</text></svg>`;
   url='data:image/svg+xml;charset=utf-8,'+encodeURIComponent(svg);
  }
- if(object){object.traverse(o=>{if(o.isMesh){o.geometry.dispose();if(Array.isArray(o.material))o.material.forEach(m=>m.dispose());else o.material?.dispose();}});}
- if(cache.size>=MAX_CACHE)cache.delete(cache.keys().next().value);
- cache.set(key,url);return url;
+ if(root)root.traverse(o=>{if(o.isMesh){o.geometry?.dispose();if(Array.isArray(o.material))o.material.forEach(m=>m.dispose());else o.material?.dispose();}});
+ if(cached.size>=MAX_CACHE)cached.delete(cached.keys().next().value);cached.set(key,url);return url;
 }
-function schedule(img,id,color){
- if(img.dataset.previewReady===id+'/'+color)return;
- img.dataset.previewPending=id+'/'+color;queue.push({img,id,color});
- if(!busy){busy=true;requestAnimationFrame(processQueue);}
+function enqueue(img,id,color){
+ const key=id+'/'+color;if(img.dataset.previewReady===key)return;
+ if(img.dataset.previewPending===key)return;
+ img.dataset.previewPending=key;queue.push({img,id,color});
+ if(!working){working=true;requestAnimationFrame(drain);}
 }
-function processQueue(){
+function drain(){
  for(let n=0;n<2&&queue.length;n++){
-  const {img,id,color}=queue.shift();
-  if(!img.isConnected||!dialog?.open||mode==='home'||img.dataset.previewPending!==id+'/'+color)continue;
-  img.src=thumbnail(id,color);img.alt='Anteprima 3D del modello '+VEHICLES[id].name;
-  img.dataset.previewReady=id+'/'+color;
+  const {img,id,color}=queue.shift(),key=id+'/'+color;
+  if(!img.isConnected||!dialog?.open||mode==='home'||img.dataset.previewPending!==key)continue;
+  img.src=picture(id,color);img.alt='Anteprima tridimensionale del modello '+VEHICLES[id].name;img.dataset.previewReady=key;
  }
- if(queue.length)requestAnimationFrame(processQueue);else busy=false;
+ if(queue.length)requestAnimationFrame(drain);else working=false;
 }
-function applyView(){
- if(!dialog)return;
- const controls=dialog.querySelector('.hangar-controls'),count=document.getElementById('hangarCount'),grid=document.getElementById('hangarGrid');
- if(!controls||!grid||!home||!nav)return;
- const landing=mode==='home';home.hidden=!landing;nav.hidden=landing;
- controls.hidden=landing;count.hidden=landing;grid.hidden=landing;
- if(landing){previewObserver?.disconnect();queue.length=0;return;}
- const section=HANGAR_SECTIONS.find(c=>c.id===mode);nav.querySelector('strong').textContent=section.title;
- const color=document.getElementById('hangarPaint').value;
- if(color!==shownColor){shownColor=color;queue.length=0;previewObserver?.disconnect();cache.clear();}
- const allowed=hangarCatalogue().filter(item=>hangarSection(item.id,item.spec)===mode);
- const allowedIds=new Set(allowed.map(v=>v.id));let visible=0;
+function refresh(){
+ if(!dialog||!home)return;
+ const grid=$('hangarGrid'),controls=dialog.querySelector('.hangar-controls'),count=$('hangarCount');
+ const isHome=mode==='home';home.hidden=!isHome;nav.hidden=isHome;
+ controls.hidden=isHome;count.hidden=isHome;grid.hidden=isHome;
+ if(isHome){observer?.disconnect();queue.length=0;return;}
+ nav.querySelector('strong').textContent=HANGAR_SECTIONS.find(s=>s.id===mode).title;
+ const color=$('hangarPaint').value;
+ if(color!==lastColor){lastColor=color;cached.clear();queue.length=0;observer?.disconnect();}
+ const category=hangarCatalogue().filter(e=>hangarSection(e.id,e.spec)===mode),ids=new Set(category.map(e=>e.id));
+ let matches=0;
  for(const card of grid.querySelectorAll('[data-hangar-id]')){
-  const id=card.dataset.hangarId,show=allowedIds.has(id);
-  card.hidden=!show;if(!show)continue;visible++;
-  const img=card.querySelector('img');if(!img)continue;
-  if(img.dataset.previewReady===id+'/'+color){img.src=cache.get(id+'/'+color)||img.src;continue;}
-  img.dataset.previewReady='';img.dataset.previewPending='';
-  img.alt='Anteprima 3D di '+VEHICLES[id].name;
-  // Real mesh previews are rendered only when cards become visible to avoid
-  // 60 simultaneous WebGL renders, especially on phones.
-  if(previewObserver)previewObserver.observe(img);else schedule(img,id,color);
+  const id=card.dataset.hangarId,show=ids.has(id);card.hidden=!show;if(!show)continue;
+  matches++;const img=card.querySelector('img');if(!img)continue;
+  const key=id+'/'+color;
+  if(img.dataset.previewReady===key&&cached.has(key)){img.src=cached.get(key);continue;}
+  img.dataset.previewReady='';img.dataset.previewPending='';img.alt='Anteprima tridimensionale del modello '+VEHICLES[id].name;
+  if(observer)observer.observe(img);else enqueue(img,id,color);
  }
- count.textContent=`${visible} risultati · ${allowed.length} mezzi nella categoria`;
+ count.textContent=`${matches} risultati · ${category.length} mezzi nella categoria`;
 }
-function showHome(){mode='home';previewObserver?.disconnect();queue.length=0;applyView();}
-function enter(section){
- if(section==='water')return;
- mode=section;
- document.getElementById('hangarSearch').value='';
- document.getElementById('hangarFilter').value='all';
- document.getElementById('hangarFilter').dispatchEvent(new Event('change',{bubbles:true}));
- applyView();
+function goHome(){mode='home';observer?.disconnect();queue.length=0;refresh();}
+function enter(id){
+ if(id==='water')return;mode=id;
+ $('hangarSearch').value='';$('hangarFilter').value='all';
+ $('hangarFilter').dispatchEvent(new Event('change',{bubbles:true}));refresh();
 }
 function install(g){
- if(typeof document==='undefined')return;
- game=g;
- if(installed)return;
- dialog=document.getElementById('mandriaHangarDialog');if(!dialog)return;
- installed=true;
+ game=g;if(dialog||typeof document==='undefined')return;
+ dialog=$('mandriaHangarDialog');if(!dialog)return;
  const style=document.createElement('style');style.textContent=`
  #mandriaHangarDialog .hangar-sections{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:13px;margin:15px 0}
  #mandriaHangarDialog .hangar-section{display:flex;flex-direction:column;align-items:flex-start;text-align:left;min-height:137px;gap:7px;background:linear-gradient(135deg,#29485b,#19323f);color:#fff;border:1px solid #738d9b;border-radius:12px;padding:16px;cursor:pointer}
@@ -200,28 +170,26 @@ function install(g){
  #mandriaHangarDialog .hangar-card img{object-fit:contain;background:#172532;aspect-ratio:256/176}
  @media(max-width:550px){#mandriaHangarDialog .hangar-sections{grid-template-columns:1fr 1fr;gap:8px}#mandriaHangarDialog .hangar-section{min-height:115px;padding:10px}#mandriaHangarDialog .hangar-section strong{font-size:15px}#mandriaHangarDialog .hangar-section-icon{font-size:23px}}
  `;document.head.appendChild(style);
- home=document.createElement('div');home.className='hangar-sections';home.id='hangarSections';home.setAttribute('aria-label','Scegli la tipologia di mezzo');
+ home=document.createElement('div');home.id='hangarSections';home.className='hangar-sections';home.setAttribute('aria-label','Scegli la tipologia di mezzo');
  home.innerHTML=HANGAR_SECTIONS.map(s=>`<button type="button" class="hangar-section" data-section="${s.id}" ${s.enabled?'':'disabled aria-disabled="true"'}><span class="hangar-section-icon" aria-hidden="true">${s.symbol}</span><strong>${s.title}</strong><small>${s.subtitle}</small></button>`).join('');
- nav=document.createElement('nav');nav.className='hangar-navigation';nav.id='hangarNavigation';nav.hidden=true;
+ nav=document.createElement('nav');nav.id='hangarNavigation';nav.className='hangar-navigation';nav.hidden=true;
  nav.innerHTML='<button type="button" class="hangar-back" id="hangarBack">← Categorie</button><strong></strong>';
- const controls=dialog.querySelector('.hangar-controls');controls.before(home,nav);
+ dialog.querySelector('.hangar-controls').before(home,nav);
  home.querySelectorAll('[data-section]:not(:disabled)').forEach(b=>b.addEventListener('click',()=>enter(b.dataset.section)));
- nav.querySelector('button').addEventListener('click',showHome);
- previewObserver=typeof IntersectionObserver==='undefined'?null:new IntersectionObserver(entries=>{
-  const color=document.getElementById('hangarPaint')?.value||'#b52f3d';
-  for(const entry of entries)if(entry.isIntersecting){previewObserver.unobserve(entry.target);const card=entry.target.closest('[data-hangar-id]');if(card&&!card.hidden)schedule(entry.target,card.dataset.hangarId,color);}
+ nav.querySelector('button').addEventListener('click',goHome);
+ observer=typeof IntersectionObserver==='undefined'?null:new IntersectionObserver(entries=>{
+  const color=$('hangarPaint').value;
+  for(const e of entries)if(e.isIntersecting){observer.unobserve(e.target);const card=e.target.closest('[data-hangar-id]');if(card&&!card.hidden)enqueue(e.target,card.dataset.hangarId,color);}
  },{root:dialog,rootMargin:'80px'});
- // The original catalogue owns search/filter and card click callbacks.
- // Observe only child changes, never re-render its cards ourselves.
- new MutationObserver(()=>{if(mode!=='home')applyView();}).observe(document.getElementById('hangarGrid'),{childList:true});
- document.getElementById('hangarPaint').addEventListener('input',()=>{if(mode!=='home')applyView();});
- document.getElementById('hangarFilter').addEventListener('change',()=>{if(mode!=='home')applyView();});
- document.getElementById('hangarSearch').addEventListener('input',()=>{if(mode!=='home')applyView();});
- new MutationObserver(()=>{if(dialog.open)showHome();else{previewObserver?.disconnect();queue.length=0;}}).observe(dialog,{attributes:true,attributeFilter:['open']});
- showHome();
+ // The underlying catalogue owns card onclick and vehicle physics. Observe
+ // only DOM card replacement to preserve its handlers and avoid a feedback loop.
+ new MutationObserver(()=>{if(mode!=='home')refresh();}).observe($('hangarGrid'),{childList:true});
+ for(const event of ['input','change'])for(const id of ['hangarSearch','hangarFilter','hangarPaint'])$(id).addEventListener(event,()=>{if(mode!=='home')refresh();});
+ new MutationObserver(()=>{if(dialog.open)goHome();else{observer?.disconnect();queue.length=0;}}).observe(dialog,{attributes:true,attributeFilter:['open']});
+ goHome();
 }
-const priorUpdate=ModernGameplay.prototype.update;
+const update=ModernGameplay.prototype.update;
 if(!ModernGameplay.prototype.__mandriaCatalogCategories){
  ModernGameplay.prototype.__mandriaCatalogCategories=true;
- ModernGameplay.prototype.update=function(dt){priorUpdate.call(this,dt);if(this.state?.started)install(this);};
+ ModernGameplay.prototype.update=function(dt){update.call(this,dt);if(this.state?.started)install(this);};
 }
