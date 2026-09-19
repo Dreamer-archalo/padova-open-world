@@ -31,9 +31,18 @@ if(typeof window!=='undefined'){
   event.preventDefault();event.stopImmediatePropagation();airControlHeld.add(code);
  },true);
  window.addEventListener('keyup',event=>{
-  if(!airControlHeld.has(event.code))return;
+  // Let legacy keyup listeners clear their own sets, even if the key was held
+  // while switching between a car and a jet.
   airControlHeld.delete(event.code);
-  if(inMilitaryFlight()){event.preventDefault();event.stopImmediatePropagation();}
+ },true);
+ // The legacy mobile descent button fires both ControlLeft and touchDive.
+ // Capture it before those handlers so its NEW brake label really brakes.
+ document.addEventListener('pointerdown',event=>{
+  if(!inMilitaryFlight()||!event.target?.closest?.('#touchDescend'))return;
+  event.preventDefault();event.stopImmediatePropagation();airControlHeld.add('ControlLeft');
+ },true);
+ for(const type of ['pointerup','pointercancel','lostpointercapture'])document.addEventListener(type,event=>{
+  if(event.target?.closest?.('#touchDescend'))airControlHeld.delete('ControlLeft');
  },true);
  window.addEventListener('blur',()=>airControlHeld.clear());
 }
