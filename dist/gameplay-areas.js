@@ -3,6 +3,7 @@
 import {makeRoadGraph,nearestOnSegment,dist} from './core.js';
 import {prepareGameplayMap as prepareBase,gameplayStructures as originalStructures,AIRPORT,AIRPORT_GATE,areaPoint,areaLocal} from './gameplay-areas-implementation.js';
 import {buildAirportRoads} from './airport-road-network.js';
+import {villaGarageStructures} from './villa-treves-layout.js';
 export * from './gameplay-areas-implementation.js';
 
 export function gameplayStructures(terrain){
@@ -37,6 +38,8 @@ export function gameplayStructures(terrain){
     box(u,v,w+1,d+1,.3,'#52656a',h);
     box(u,v+d/2+.12,w*.55,.12,2.25,'#47677b',1.2,false);
   }
+  // Keep real garage walls/roof in the world geometry and collision index.
+  result.push(...villaGarageStructures(terrain));
   return result;
 }
 
@@ -52,7 +55,7 @@ function outsideAirport(points){
   const flush=()=>{if(current.length>1)paths.push(current);current=[];};
   const add=(a,b)=>{
     if(Math.hypot(a[0]-b[0],a[1]-b[1])<.01)return;
-    if(current.length&&Math.hypot(current.at(-1)[0]-a[0],current.at(-1)[1]-a[1])>.01)flush();
+    if(current.length&&Math.hypot(current.at(-1)[0]-a[0],a[1]-a[1])>.01)flush();
     if(!current.length)current.push(a);current.push(b);
   };
   for(let i=1;i<points.length;i++){
