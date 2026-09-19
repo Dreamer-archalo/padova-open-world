@@ -1,0 +1,31 @@
+name: Villa Treves phase 1
+on:
+  pull_request:
+    paths:
+      - 'dist/villa-treves-*.js'
+      - 'dist/gameplay-areas.js'
+      - 'dist/phase2-runtime.js'
+      - 'tools/verify-villa-phase1.mjs'
+      - '.github/workflows/villa-treves-phase1.yml'
+  push:
+    branches:
+      - feat/villa-treves-phase1-20260919
+  workflow_dispatch:
+jobs:
+  estate-safety:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Check syntax and imported runtime
+        run: |
+          node --check dist/villa-treves-layout.js
+          node --check dist/villa-treves-estate.js
+          node --check dist/gameplay-areas.js
+          node --check dist/phase2-runtime.js
+      - name: Garage access, existing spawns and visual culling
+        run: node tools/verify-villa-phase1.mjs
+      - name: Preserve game features
+        run: node verify-feature-preservation.mjs
