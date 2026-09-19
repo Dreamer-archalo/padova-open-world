@@ -1,0 +1,53 @@
+name: Airport combat flight controls
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'dist/airport-combat-flight.js'
+      - 'dist/airport-ejection-state.js'
+      - 'dist/airport-cockpit-tuning.js'
+      - 'dist/airport-dogfight-v2.js'
+      - 'dist/airport-dogfight-jet-models.js'
+      - 'dist/airport-golf-arcade.js'
+      - 'dist/airport-cargo-yard.js'
+      - 'dist/arcade-ramps.js'
+      - 'dist/phase2-runtime.js'
+      - 'tools/verify-airport-combat-flight.mjs'
+      - 'tools/verify-airport-cockpit-tuning.mjs'
+      - 'tools/verify-airport-jet-two-hit.mjs'
+      - 'tools/verify-airport-dogfight-v2.mjs'
+      - '.github/workflows/airport-combat-flight.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  flight-controller:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Verify modules parse
+        run: |
+          node --check dist/airport-combat-flight.js
+          node --check dist/airport-ejection-state.js
+          node --check dist/airport-cockpit-tuning.js
+          node --check dist/airport-dogfight-v2.js
+          node --check dist/airport-dogfight-jet-models.js
+          node --check dist/airport-golf-arcade.js
+          node --check dist/airport-cargo-yard.js
+          node --check dist/arcade-ramps.js
+          node --check dist/phase2-runtime.js
+          node --check tools/verify-airport-combat-flight.mjs
+          node --check tools/verify-airport-cockpit-tuning.mjs
+          node --check tools/verify-airport-jet-two-hit.mjs
+          node --check tools/verify-airport-dogfight-v2.mjs
+      - name: Exercise flight and abandoned aircraft physics
+        run: node tools/verify-airport-combat-flight.mjs
+      - name: Civilian safety, guided target cone, ground reverse and collisions
+        run: node tools/verify-airport-cockpit-tuning.mjs
+      - name: First-hit smoke, second-hit jet destruction and one confirmed kill
+        run: node tools/verify-airport-jet-two-hit.mjs
+      - name: Dogfight V2 1-5 jets, crosshair lock, two-hit and wanted progression
+        run: node tools/verify-airport-dogfight-v2.mjs

@@ -18,10 +18,27 @@ import './gameplay-upgrades.js';
 import './city-micromobility.js';
 import './historic-architecture-alignment.js';
 import './villa-spawn-alignment.js';
+import './airport-operations.js';
+import './airport-traffic-enhancement.js';
+import './airport-interactivity.js';
+import './airport-flight-extras.js';
+// Must precede legacy key listeners: Tab is throttle, Ctrl brake, G missile.
+import './airport-air-controls.js';
+import './airport-combat-flight.js';
+import './airport-ejection-state.js';
+import './airport-dogfight-v2.js';
+import './airport-dogfight-jet-models.js';
+import './airport-golf-arcade.js';
+import './airport-cargo-yard.js';
+import './airport-flight-refinement.js';
+import './airport-lock-upgrade.js';
+import './airport-life-v3.js';
+import './airport-blast-ballistics.js';
+// Installed last so its enemy arrows, mission HUD and control hints win visually.
+import './airport-air-hunt.js';
 
 // UI-only Phase 2 feedback. It does not own gameplay state: it observes the
 // existing HUD, so it cannot interfere with saves, physics or streaming.
-// Preview refresh marker: keep the canonical PR #6 deploy current with dist/.
 const playing=document.getElementById('playingUI');
 const healthValue=document.getElementById('healthValue');
 const vehicleName=document.getElementById('vehicleName');
@@ -30,7 +47,18 @@ const cameraBanner=document.createElement('div');cameraBanner.id='cameraBanner';
 const damageEdge=document.createElement('div');damageEdge.id='damageEdge';damageEdge.className='damage-edge';damageEdge.hidden=true;document.body.appendChild(damageEdge);
 let cameraMode=0,cameraTimer=0;
 const cameraNames=['DINAMICA','RAVVICINATA','ALTA'];
-function showCamera(){cameraBanner.textContent='CAMERA · '+cameraNames[cameraMode];cameraBanner.hidden=false;cameraBanner.classList.remove('camera-banner-show');void cameraBanner.offsetWidth;cameraBanner.classList.add('camera-banner-show');clearTimeout(cameraTimer);cameraTimer=setTimeout(()=>{cameraBanner.classList.remove('camera-banner-show');cameraTimer=setTimeout(()=>cameraBanner.hidden=true,240);},1250);}
-function updateDamage(){const value=parseFloat(healthValue?.textContent||'100'),inVehicle=(vehicleName?.textContent||'ON FOOT').trim()!=='ON FOOT',damage=inVehicle?Math.max(0,100-value):0;damageEdge.hidden=damage<8;damageEdge.style.setProperty('--damage',String(Math.min(.48,damage/150)));document.body.dataset.vehicleDamage=damage>=65?'critical':damage>=35?'damaged':damage>=8?'scratched':'none';}
+function showCamera(){
+ cameraBanner.textContent='CAMERA · '+cameraNames[cameraMode];
+ cameraBanner.hidden=false;
+ cameraBanner.classList.remove('camera-banner-show');
+ void cameraBanner.offsetWidth;
+ cameraBanner.classList.add('camera-banner-show');
+ clearTimeout(cameraTimer);
+ cameraTimer=setTimeout(()=>{
+  cameraBanner.classList.remove('camera-banner-show');
+  cameraTimer=setTimeout(()=>cameraBanner.hidden=true,240);
+ },1250);
+}
+function updateDamage(){const value=parseFloat(healthValue?.textContent||'100'),inVehicle=(vehicleName?.textContent||'ON FOOT').trim()!=='ON FOOT',damage=inVehicle?Math.max(0,100-value):0;damageEdge.hidden=damage<8;document.body.dataset.vehicleDamage=damage>=65?'critical':damage>=35?'damaged':damage>=8?'scratched':'none';damageEdge.style.setProperty('--damage',String(Math.min(.48,damage/150)));}
 document.addEventListener('keydown',event=>{if(event.code!=='KeyC'||event.repeat||playing?.hidden||document.querySelector('dialog[open]'))return;cameraMode=(cameraMode+1)%3;showCamera();});
 const observer=new MutationObserver(updateDamage);if(healthValue)observer.observe(healthValue,{childList:true,subtree:true,characterData:true});if(vehicleName)observer.observe(vehicleName,{childList:true,subtree:true,characterData:true});updateDamage();
