@@ -45,12 +45,10 @@ export function gameplayStructures(terrain){
     box(u,v,w+1,d+1,.3,'#52656a',h);
     box(u,v+d/2+.12,w*.55,.12,2.25,'#47677b',1.2,false);
   }
-  // Collision-aware hangar follows the relocated villa, not public Parco Treves.
   result.push(...villaGarageStructures(terrain));
   return result;
 }
 
-// Clip only source roads crossing the actual AIRPORT footprint, not the park.
 const CLIP={minU:-94,maxU:223,minV:-584,maxV:584};
 function outsideAirport(points){
   const paths=[];let current=[];
@@ -75,8 +73,6 @@ function outsideAirport(points){
 }
 
 export function prepareGameplayMap(map){
-  // Select empty land and move VILLA/HOME before prepareBase modifies the map.
-  // The old Treves location therefore keeps its original OSM structures/paths.
   const relocation=map.gameplay?null:relocateVillaToMandria(map);
   prepareBase(map);
   if(relocation){
@@ -111,7 +107,7 @@ export function prepareGameplayMap(map){
     for(let i=1;i<road.p.length;i++){
       const a=road.p[i-1],b=road.p[i];
       if((Math.hypot(a[0]-c.a.x,a[1]-c.a.z)<.11&&Math.hypot(b[0]-c.b.x,b[1]-c.b.z)<.11)||
-         (Math.hypot(a[0]-c.b.x,a[1]-c.a.z)<.11&&Math.hypot(b[0]-c.a.x,b[1]-c.b.z)<.11)){at=i;break;}
+         (Math.hypot(a[0]-c.b.x,a[1]-c.b.z)<.11&&Math.hypot(b[0]-c.a.x,b[1]-c.a.z)<.11)){at=i;break;}
     }
     if(at<1)continue;
     if(dist(c.a,c.point)>.11&&dist(c.b,c.point)>.11)road.p.splice(at,0,[c.point.x,c.point.z]);
