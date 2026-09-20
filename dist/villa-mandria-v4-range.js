@@ -52,10 +52,11 @@ function start(g){const r=g?.villaRange;if(!r?.ready||!g.state.started||g.state.
 }
 function fire(g){const r=g?.villaRange;if(!r?.active||!r.aiming||g.state.mode!=='foot'||g.state.paused)return false;
  if(g.state.elapsed-r.lastShot<.28)return true;r.lastShot=g.state.elapsed;r.shots++;
- // The crosswind has a small, predictable arcade influence on horizontal aim.
+ // Shrunk bottles demand a genuinely narrower angular hit than the old props.
+ // A limited crosswind gives readable challenge without random unrepeatable hits.
  const wind=Math.sin(g.state.elapsed*.31+r.started*.3)*.8;r.wind=wind;
  const direction=g.state.yaw+wind*.008,ranges=r.targets.filter(t=>!t.hit).map(t=>({target:t,angle:Math.abs(angleDiff(Math.atan2(t.x-g.state.x,t.z-g.state.z),direction)),distance:Math.hypot(t.x-g.state.x,t.z-g.state.z)})).filter(t=>t.distance<48).sort((a,b)=>a.angle-b.angle);
- const hit=ranges[0];if(hit&&hit.angle<.053){hit.target.hit=true;hit.target.group.visible=false;r.hitCount++;r.reward+=25;g.state.money+=25;persist(g.state);
+ const hit=ranges[0];if(hit&&hit.angle<.023){hit.target.hit=true;hit.target.group.visible=false;r.hitCount++;r.reward+=25;g.state.money+=25;persist(g.state);
   g.toast?.('Bottiglia '+r.hitCount+'/5 · +€25',1.4);
   if(r.hitCount===5){r.active=false;r.aiming=false;r.completedAt=g.state.elapsed;g.state.jobs++;persist(g.state);g.toast?.('MISSIONE COMPLETATA · 5 bottiglie · +€125',5);}
  }else if(r.shots%3===0)g.toast?.('Mancato! Correggi la mira con A/D.',1.3);
