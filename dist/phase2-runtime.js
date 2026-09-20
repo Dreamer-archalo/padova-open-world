@@ -58,9 +58,9 @@ import './villa-mandria-catalog-ui.js';
 // Protect the aircraft cards from displaying stale ground placeholders while
 // their per-model GPU thumbnails are still being generated.
 import './villa-mandria-air-preview-guard.js';
-// Visible H / E interaction prompts, expanded safe estate perimeter, speech
-// bubbles, workers' cottages and mounted/three-wheel private patrols.
+// High-visibility H/E controls, estate border, speech bubbles, horses and Ape patrols.
 import './villa-mandria-estate-v3.js';
+import './villa-mandria-horse-rider.js';
 
 // UI-only Phase 2 feedback. It does not own gameplay state: it observes the
 // existing HUD, so it cannot interfere with saves, physics or streaming.
