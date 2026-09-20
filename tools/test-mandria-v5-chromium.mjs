@@ -14,16 +14,19 @@ try{
  await page.waitForFunction(()=>document.documentElement.dataset.initialWorldReady==='true'||!document.getElementById('initialLoaderError')?.hidden,null,{timeout:220000});
  assert.equal(await page.evaluate(()=>document.documentElement.dataset.initialWorldReady),'true');
  await page.locator('#confirmCharacter').click({timeout:20000});
- phase='workers and dialogue';
- await page.waitForFunction(()=>!!globalThis.__mandriaV5Test?.villaLife?.people.some(p=>p.role==='worker')&&!!globalThis.__mandriaV5Test?.villaV4,null,{timeout:60000});
+ phase='workers and one-topic dialogue';
+ await page.waitForFunction(()=>!!globalThis.__mandriaV5Test?.villaLife?.people.some(p=>p.role==='worker')&&!!globalThis.__mandriaV5Test?.villaV6,null,{timeout:60000});
  await page.evaluate(()=>{const g=globalThis.__mandriaV5Test,p=g.villaLife.people.find(p=>p.role==='worker');Object.assign(g.state,{mode:'foot',car:null,x:p.obj.position.x,z:p.obj.position.z,y:g.terrain.height(p.obj.position.x,p.obj.position.z),speed:0,vy:0});});
  await page.waitForFunction(()=>{const p=document.getElementById('mandriaWorkerPrompt');return p&&!p.hidden;},null,{timeout:20000});
  await page.locator('#mandriaWorkerPrompt').click();
  assert.equal(await page.locator('#mandriaWorkerDialog').evaluate(d=>d.open),true);
  assert.equal(await page.locator('#mwChoices button').count(),4);
  await page.locator('#mwChoices button').first().click();assert.equal(await page.locator('#mwReply').isVisible(),true);
- await page.locator('.mw-next').click();assert.equal(await page.locator('#mwChoices button:visible').count(),4);
- await page.locator('#mandriaWorkerDialog .mw-close').click();assert.equal(await page.locator('#mandriaWorkerDialog').evaluate(d=>d.open),false);
+ assert.equal(await page.locator('.mw-next').textContent(),'Concludi ✓');
+ await page.locator('.mw-next').click();assert.equal(await page.locator('#mandriaWorkerDialog').evaluate(d=>d.open),false,'one reply should finish a conversation');
+ await page.waitForFunction(()=>!document.getElementById('mandriaWorkerPrompt').hidden,null,{timeout:10000});
+ await page.locator('#mandriaWorkerPrompt').click();assert.equal(await page.locator('#mwChoices button:visible').count(),4);
+ await page.keyboard.press('KeyX');assert.equal(await page.locator('#mandriaWorkerDialog').evaluate(d=>d.open),false,'X closes dialogue');
  phase='scope';
  const ready=await page.evaluate(()=>{const g=globalThis.__mandriaV5Test,r=g.villaRange;if(!r?.ready)return false;
   Object.assign(g.state,{x:r.station.x,z:r.station.z,y:g.terrain.height(r.station.x,r.station.z),mode:'foot',car:null,speed:0,vy:0,mission:null});return true;});
@@ -32,14 +35,15 @@ try{
  await page.keyboard.press('Tab');await page.waitForFunction(()=>document.body.classList.contains('mandria-sniper'),null,{timeout:10000});
  assert.equal(await page.locator('#mandriaSniperScope').isVisible(),true);
  assert.equal(await page.locator('#playingUI .minimap').evaluate(e=>getComputedStyle(e).visibility),'hidden');
- await page.screenshot({path:'test-artifacts/mandria-v5-scope.png',timeout:25000});
- await page.keyboard.press('Tab');await page.waitForFunction(()=>!document.body.classList.contains('mandria-sniper'),null,{timeout:10000});
+ await page.screenshot({path:'test-artifacts/mandria-v6-scope.png',timeout:25000});
+ await page.keyboard.press('KeyX');await page.waitForFunction(()=>!globalThis.__mandriaV5Test.villaRange.active,null,{timeout:10000});
+ assert.equal(await page.locator('#mandriaSniperScope').isVisible(),false);
  phase='horse jump';
  const mounted=await page.evaluate(()=>{const g=globalThis.__mandriaV5Test,c=g.villaV3?.patrols.find(c=>c.estateHorse);if(!c)return false;
   Object.assign(g.state,{mode:'car',car:c,x:c.x,z:c.z,y:c.y,yaw:c.yaw,speed:3,vy:0});c.speed=3;c.jump={airborne:false,vx:0,vz:0,vy:0,ramp:null,groundVy:0};return true;});
  assert(mounted,'no mountable paddock horse');await page.keyboard.down('Space');
  assert.equal(await page.evaluate(()=>!!globalThis.__mandriaV5Test.state.car?.jump?.airborne),true,'Space did not initiate horse jump');
  await page.keyboard.up('Space');assert.deepEqual(errors,[],'runtime JS errors');
- console.log('PASS Mandria v5 Chromium: four-option worker dialogue, close, scope without HUD, TAB exit, SPACE horse jump');
-}catch(error){console.error('MANDRIA_V5_FAIL '+phase+' '+(error.stack||error));console.error('JS_ERRORS '+JSON.stringify(errors.slice(-10)));try{await page.screenshot({path:'test-artifacts/mandria-v5-failure.png',timeout:12000});}catch{}process.exitCode=1;}
+ console.log('PASS Mandria v6 Chromium: single-topic four-option dialogue, X close, scope, X holster, SPACE horse jump');
+}catch(error){console.error('MANDRIA_V6_INTERACTION_FAIL '+phase+' '+(error.stack||error));console.error('JS_ERRORS '+JSON.stringify(errors.slice(-10)));try{await page.screenshot({path:'test-artifacts/mandria-v6-interaction-failure.png',timeout:12000});}catch{}process.exitCode=1;}
 finally{await browser.close();}
