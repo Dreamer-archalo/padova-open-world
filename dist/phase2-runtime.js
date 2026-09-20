@@ -69,6 +69,7 @@ import './villa-mandria-v4-grounds.js';
 import './villa-mandria-v4-roof.js';
 import './villa-mandria-v4-vehicles.js';
 import './villa-mandria-v4-range.js';
+import './villa-mandria-v4-polish.js';
 
 // UI-only Phase 2 feedback. It does not own gameplay state: it observes the
 // existing HUD, so it cannot interfere with saves, physics or streaming.
