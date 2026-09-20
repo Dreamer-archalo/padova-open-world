@@ -61,6 +61,9 @@ import './villa-mandria-air-preview-guard.js';
 // High-visibility H/E controls, estate border, speech bubbles, horses and Ape patrols.
 import './villa-mandria-estate-v3.js';
 import './villa-mandria-horse-rider.js';
+// SpatialIndex.near returns bucket candidates: confirm exact polygon collisions
+// before rejecting a house, a poplar or a moving patrol.
+import './villa-mandria-placement-fix.js';
 
 // UI-only Phase 2 feedback. It does not own gameplay state: it observes the
 // existing HUD, so it cannot interfere with saves, physics or streaming.
