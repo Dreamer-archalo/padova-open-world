@@ -4,12 +4,15 @@ on:
     branches: [feat/villa-treves-phase1-20260919]
     paths:
       - 'dist/villa-mandria-*.js'
+      - 'dist/gameplay-areas.js'
       - 'dist/phase2-runtime.js'
       - 'tools/verify-villa-mandria-estate-v2.mjs'
+      - 'tools/verify-mandria-v5-private-road.mjs'
       - 'tools/test-mandria-estate-v2-chromium.mjs'
       - 'tools/test-mandria-estate-v3-chromium.mjs'
       - 'tools/verify-mandria-v5.mjs'
       - 'tools/test-mandria-v5-chromium.mjs'
+      - 'tools/test-mandria-v5-estate-chromium.mjs'
       - '.github/workflows/mandria-complete-preview.yml'
   workflow_dispatch:
 permissions:
@@ -23,8 +26,7 @@ jobs:
   check-and-preview:
     runs-on: ubuntu-latest
     timeout-minutes: 24
-    # Public main stays untouched. Publish an isolated PR preview only after
-    # actual WebGL estate, dialogue and vehicle tests pass.
+    # Do not touch public main or overwrite the tested PR preview on failure.
     steps:
       - name: Checkout unmerged Mandria source
         uses: actions/checkout@v6
@@ -33,17 +35,22 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
-      - name: Verify estate, hangar, v5 imports, and 25 conversations
+      - name: Verify all estate modules, mapped public road privacy, and 25 conversations
         run: |
           node --check dist/villa-mandria-estate-v2.js
           node --check dist/villa-mandria-estate-v3.js
           node --check dist/villa-mandria-horse-rider.js
           node --check dist/villa-mandria-air-preview-guard.js
+          node --check dist/villa-mandria-v5-estate-polish.js
+          node --check dist/villa-mandria-v5-greetings.js
+          node --check dist/villa-mandria-v4-range.js
           node --check dist/phase2-runtime.js
           node tools/verify-mandria-catalog-ui.mjs
           node tools/verify-villa-mandria-life.mjs
           node tools/verify-villa-mandria-estate-v2.mjs
           node tools/verify-mandria-v5.mjs
+          node tools/verify-mandria-v5-private-road.mjs
+          node tools/verify-villa-mandria-relocation.mjs
       - name: Install Chromium
         run: |
           npm install --no-save playwright@1.55.1
@@ -59,6 +66,8 @@ jobs:
         run: node tools/test-mandria-estate-v3-chromium.mjs
       - name: Test WebGL v5 interactive workers, sniper scope and horse Space jump
         run: node tools/test-mandria-v5-chromium.mjs
+      - name: Test WebGL private security, Ape patrols, oval horses, roofs, cars and privacy
+        run: node tools/test-mandria-v5-estate-chromium.mjs
       - name: Save walkthrough/screenshots
         if: always()
         uses: actions/upload-artifact@v4
@@ -83,6 +92,7 @@ jobs:
           test -f .production-source/dist/preview/pr-51/villa-mandria-horse-rider.js
           test -f .production-source/dist/preview/pr-51/villa-mandria-v5-dialogues.js
           test -f .production-source/dist/preview/pr-51/villa-mandria-v5-controls.js
+          test -f .production-source/dist/preview/pr-51/villa-mandria-v5-estate-polish.js
           test -f .production-source/dist/preview/pr-51/data/padova.json
           test -f .production-source/dist/preview/pr-51/vendor/three.module.js
           cmp dist/index.html .production-source/dist/preview/pr-51/index.html
