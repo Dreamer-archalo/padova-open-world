@@ -1,4 +1,4 @@
-// Keep the fictional Mandria tenuta private without moving or erasing public
+// Keep the fictional Mandria estate private without moving or erasing public
 // streets outside its perimeter. Split crossing source-road polylines exactly
 // at the estate boundary; the villa's authored private driveway is exempt.
 import {VILLA,areaLocal} from './gameplay-areas-implementation.js';
@@ -25,6 +25,10 @@ function outsideParts(points,limits=MANDRIA_PRIVATE_LIMITS){
 }
 export function privatizeMandriaRoads(map){
  if(!map?.gameplay?.villaRelocation||!Array.isArray(map.roads))return {split:0,removed:0,pieces:0};
+ // The old approach was tagged access=yes, which let civil AI choose the
+ // authored driveway even after the intrusive public OSM road was clipped.
+ const privateAccess=map.gameplay.roads.filter(r=>/^(Accesso Villa della Mandria|Viale Villa della Mandria)$/.test(r.n||''));
+ for(const road of privateAccess){road.access='private';road.estateAuthorized=true;if(road.n==='Accesso Villa della Mandria')road.w=5.5;}
  let split=0,removed=0,pieces=0;
  map.roads=map.roads.flatMap(road=>{
   if(road.gameplay||!Array.isArray(road.p)||road.p.length<2)return [road];
@@ -33,7 +37,7 @@ export function privatizeMandriaRoads(map){
   split++;pieces+=paths.length;
   return paths.map(p=>({...road,p,estateClipped:true}));
  });
- map.gameplay.mandriaPublicRoads={split,removed,pieces,privateLimits:MANDRIA_PRIVATE_LIMITS};
+ map.gameplay.mandriaPublicRoads={split,removed,pieces,privateDriveways:privateAccess.length,privateLimits:MANDRIA_PRIVATE_LIMITS};
  return map.gameplay.mandriaPublicRoads;
 }
 export function segmentEntersMandria(a,b){
