@@ -18,7 +18,9 @@ for(const road of map.roads){if(road.gameplay)continue;for(let i=1;i<road.p.leng
 }}
 const inner=map.roads.filter(r=>r.gameplay&&/Villa della Mandria/.test(r.n||''));
 assert(inner.length>=2,'the private authored driveway and villa road must remain');
+assert(inner.every(r=>r.access==='private'&&r.estateAuthorized===true),'civil NPCs can still enter an access=yes villa road');
+assert(map.gameplay.roads.filter(r=>/Villa della Mandria/.test(r.n||'')).every(r=>r.access==='private'),'the gameplay graph reused a public villa road');
 assert(map.roads.filter(r=>r.p.some(p=>Math.hypot(p[0]-TREVES_PUBLIC_PARK.x,p[1]-TREVES_PUBLIC_PARK.z)<100)).length>=parks.length*.65,'Parco Treves geometry unexpectedly changed');
 assert(map.roads.length>villaPublic*.35,'road filtering erased excessive parts of Padova');
 assert(areaLocal(VILLA,VILLA.x,VILLA.z).u===0,'villa coordinates changed');
-console.log('PASS Mandria mapped street clipping '+JSON.stringify({sourceRoads:villaPublic,publicRoads:map.roads.filter(r=>!r.gameplay).length,report,privateDriveways:inner.length}));
+console.log('PASS Mandria mapped street clipping and private driveway access '+JSON.stringify({sourceRoads:villaPublic,publicRoads:map.roads.filter(r=>!r.gameplay).length,report,privateDriveways:inner.length}));
