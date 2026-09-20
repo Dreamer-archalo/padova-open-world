@@ -38,6 +38,8 @@ import './airport-blast-ballistics.js';
 import './airport-air-hunt.js';
 // Decorative estate details are separate from the collision-aware hangar shell.
 import './villa-treves-estate.js';
+// Poplars follow the access road; optional plots and staff are proximity-loaded.
+import './villa-mandria-life.js';
 import './villa-mandria-respawn-label.js';
 // All models registered before the hangar catalogue is first opened.
 import './villa-mandria-hangar.js';
