@@ -1,0 +1,46 @@
+name: Mandria v3 standalone WebGL acceptance
+on:
+  push:
+    branches: [feat/villa-treves-phase1-20260919]
+    paths:
+      - 'dist/villa-mandria-*.js'
+      - 'dist/phase2-runtime.js'
+      - 'tools/test-mandria-estate-v3-chromium.mjs'
+      - '.github/workflows/mandria-v3-standalone-webgl.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  estate-and-horses:
+    runs-on: ubuntu-latest
+    timeout-minutes: 18
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: feat/villa-treves-phase1-20260919
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Syntax and runtime modules
+        run: |
+          node --check dist/villa-mandria-estate-v3.js
+          node --check dist/villa-mandria-horse-rider.js
+          node --check dist/phase2-runtime.js
+      - name: Install browser
+        run: |
+          npm install --no-save playwright@1.55.1
+          npx playwright install --with-deps chromium
+      - name: Start game
+        run: |
+          node tools/serve.mjs --host 127.0.0.1 --port 4173 &
+          for i in $(seq 1 30); do if curl -fsS http://127.0.0.1:4173/ -o /dev/null; then exit 0; fi; sleep 1; done
+          exit 1
+      - name: Test gate, speech bubbles, patrols and player riding in Chromium WebGL
+        run: node tools/test-mandria-estate-v3-chromium.mjs
+      - name: Save screenshots even on failure
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: mandria-v3-standalone-browser
+          path: test-artifacts/
+          if-no-files-found: ignore
