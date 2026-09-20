@@ -32,8 +32,10 @@ export function poplarPositions(points,step=13,offset=8.6){
 }
 function clear(g,x,z,r=1){
  if(!g.terrain?.dry(x,z,Math.min(r,2),g.terrain.height(x,z)))return false;
+ // Collision.near returns an iterable spatial-query result, not necessarily an Array.
  const collisions=g.collision?.near?.(x,z,r)||[];
- return !collisions.some(o=>o.solid!==false&&o.kind!=='road');
+ for(const o of collisions)if(o.solid!==false&&o.kind!=='road')return false;
+ return true;
 }
 function poplar(root,g,x,z,index){
  if(!clear(g,x,z,1.5))return false;
