@@ -55,22 +55,24 @@ function aircraftModel(id,s,color){
   for(const side of fighter?[-1,1]:[0]){block(g,side*bw*.27,h*.78,-l*.4,.16,h*.36,l*.11,color);if(fighter)block(g,side*bw*.38,h*.31,-l*.25,.55,.48,l*.16,'#505e66');}
   if(cargo)for(const side of [-1,1])block(g,side*w*.23,h*.32,0,1.3,.65,2.6,'#5b6666');
  }
- g.name=s.name;return g;
+ g.name=s.name;g.userData.previewCategory='air';return g;
 }
 export function hangarPreviewModel(id,color='#b52f3d',game=null){
  const spec=VEHICLES[id];if(!spec)return null;
- // IMPORTANT: world actor positions can be kilometres from the camera.
- // Their live meshes have culling flags and world transforms. Always prefer
- // fresh, local-space geometry over a far-away or invisible clone.
+ // Always select an aircraft model before considering any live actor clone:
+ // streamed aircraft can be represented by ground placeholder meshes in the world.
+ // Preserve the dedicated original models for legacy aeroplanes/helicopters.
+ if(spec.aircraft){
+  const model=id==='airone'?createHelicopter():SPECIAL_VEHICLES[id]?createSpecialVehicle(id):aircraftModel(id,spec,color);
+  model.userData.previewCategory='air';return model;
+ }
  if(MILITARY_FLEET[id])return militaryFleetModel(id);
  if(id==='bicycle'||id==='kick-scooter')return urbanModel(id,color);
  if(NPC_VEHICLES[id])return createNPCCar(id,color);
- if(id==='airone')return createHelicopter();
  if(['mito','cinquecento','motorcycle','scooter','truck','taxi'].includes(id))return createVehicle(id,color);
  if(SPECIAL_VEHICLES[id])return createSpecialVehicle(id);
  const live=game?.cars?.find(c=>c.style===id&&c.mesh);
  if(live){const copy=live.mesh.clone(true);copy.position.set(0,0,0);copy.rotation.set(0,0,0);copy.visible=true;copy.traverse(o=>{o.visible=true;});return copy;}
- if(spec.aircraft)return aircraftModel(id,spec,color);
  return groundModel(id,spec,color);
 }
 const $=id=>document.getElementById(id);
@@ -106,10 +108,16 @@ function picture(id,color){
  }catch(error){
   if(root?.parent)root.parent.remove(root);
   console.warn('Hangar preview fallback',id,error?.message||error);
-  const s=VEHICLES[id],svg=`<svg xmlns="http://www.w3.org/2000/svg" width="256" height="176"><rect width="256" height="176" rx="12" fill="#172532"/><path d="M24 105L44 66h168l20 39Z" fill="${color}"/><text x="128" y="145" fill="#fff" font-family="Arial" font-size="11" text-anchor="middle">${esc(s?.name||id).slice(0,29)}</text></svg>`;
+  const s=VEHICLES[id];
+  const silhouette=s?.aircraft?(s.plane
+   ?'<path d="M128 29 140 72 215 100 215 110 141 98 142 128 167 143 167 150 128 141 89 150 89 143 114 128 115 98 41 110 41 100 116 72Z"/>'
+   :'<path d="M72 90Q72 64 107 64H148Q184 64 184 90L161 109H92Z"/><path d="M28 48H228V54H28ZM124 48H132V113H124ZM124 100H134V133H124ZM111 134H145V138H111Z"/>')
+   :'<path d="M24 105L44 66h168l20 39Z"/>';
+  const svg=`<svg xmlns="http://www.w3.org/2000/svg" width="256" height="176"><rect width="256" height="176" rx="12" fill="#172532"/><g fill="${color}">${silhouette}</g><text x="128" y="160" fill="#fff" font-family="Arial" font-size="11" text-anchor="middle">${esc(s?.name||id).slice(0,29)}</text></svg>`;
   url='data:image/svg+xml;charset=utf-8,'+encodeURIComponent(svg);
  }
- if(root)root.traverse(o=>{if(o.isMesh){o.geometry?.dispose();if(Array.isArray(o.material))o.material.forEach(m=>m.dispose());else o.material?.dispose();}});
+ // Factory models may share cached geometry and materials with live vehicles.
+ // Disposing shared resources here corrupts later previews and game objects.
  if(cached.size>=MAX_CACHE)cached.delete(cached.keys().next().value);cached.set(key,url);return url;
 }
 function enqueue(img,id,color){
@@ -157,10 +165,6 @@ function install(g){
  #mandriaHangarDialog .hangar-section:disabled{opacity:.55;cursor:not-allowed;border-style:dashed}
  #mandriaHangarDialog .hangar-section-icon{font-size:29px;line-height:1;color:#e7c184}
  #mandriaHangarDialog .hangar-section strong{font-size:19px}#mandriaHangarDialog .hangar-section small{color:#d3e1e9;font-size:12px}
- #mandriaHangarDialog .hangar-navigation{display:flex;align-items:center;gap:14px;margin:13px 0}
- #mandriaHangarDialog .hangar-back{background:#244457;border:1px solid #e7bd76;border-radius:9px;padding:9px 13px;color:#fff;cursor:pointer}
- #mandriaHangarDialog [hidden],#mandriaHangarDialog .hangar-card[hidden]{display:none!important}
- #mandriaHangarDialog .hangar-card img{object-fit:contain;background:#172532;aspect-ratio:256/176}
  @media(max-width:550px){#mandriaHangarDialog .hangar-sections{grid-template-columns:1fr 1fr;gap:8px}#mandriaHangarDialog .hangar-section{min-height:115px;padding:10px}#mandriaHangarDialog .hangar-section strong{font-size:15px}#mandriaHangarDialog .hangar-section-icon{font-size:23px}}
  `;document.head.appendChild(style);
  home=document.createElement('div');home.id='hangarSections';home.className='hangar-sections';home.setAttribute('aria-label','Scegli la tipologia di mezzo');
