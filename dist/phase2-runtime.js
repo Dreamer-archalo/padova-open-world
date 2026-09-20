@@ -40,6 +40,9 @@ import './airport-air-hunt.js';
 import './villa-treves-estate.js';
 // Poplars follow the access road; optional plots and staff are proximity-loaded.
 import './villa-mandria-life.js';
+// Existing estate life owns its NPCs; this adds safe farm structures, lanes,
+// low-cost patrol routes and a moving escort without replacing original logic.
+import './villa-mandria-estate-v2.js';
 import './villa-mandria-respawn-label.js';
 // All models registered before the hangar catalogue is first opened.
 import './villa-mandria-hangar.js';
@@ -49,6 +52,9 @@ import './airport-military-fleet.js';
 // Home screen groups air, ground and urban vehicles. Boat slot is future-only;
 // actual vehicle previews render lazily from 3-D meshes, not generic icons.
 import './villa-mandria-catalog-ui.js';
+// Protect the aircraft cards from displaying stale ground placeholders while
+// their per-model GPU thumbnails are still being generated.
+import './villa-mandria-air-preview-guard.js';
 
 // UI-only Phase 2 feedback. It does not own gameplay state: it observes the
 // existing HUD, so it cannot interfere with saves, physics or streaming.
