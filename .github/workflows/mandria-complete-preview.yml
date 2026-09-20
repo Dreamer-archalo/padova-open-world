@@ -20,9 +20,9 @@ jobs:
   check-and-preview:
     runs-on: ubuntu-latest
     timeout-minutes: 18
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
+    # GitHub Pages production environment only allows main. The PR's browser
+    # verification must run without that environment; deployment is attempted
+    # after all tests pass, with the isolated preview retaining the main root.
     steps:
       - name: Checkout unmerged Mandria source
         uses: actions/checkout@v6
@@ -31,7 +31,7 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
-      - name: Verify all 16 aircraft and estate life without replacing existing systems
+      - name: Verify aircraft and estate life without replacing existing systems
         run: |
           node --check dist/villa-mandria-estate-v2.js
           node --check dist/villa-mandria-air-preview-guard.js
@@ -63,7 +63,7 @@ jobs:
           ref: main
           path: .production-source
           persist-credentials: false
-      - name: Assemble isolated preview without merging PR or changing production root
+      - name: Assemble preview without merging or changing production root
         run: |
           set -euo pipefail
           test -f .production-source/dist/index.html
@@ -76,7 +76,7 @@ jobs:
           test -f .production-source/dist/preview/pr-51/vendor/three.module.js
           cmp dist/index.html .production-source/dist/preview/pr-51/index.html
           touch .production-source/dist/.nojekyll
-          echo 'Production root remains main; PR #51 is separately published at /preview/pr-51/'
+          echo 'Main root untouched; PR #51 isolated in /preview/pr-51/'
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v4
         with:
