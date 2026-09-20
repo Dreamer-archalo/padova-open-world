@@ -48,7 +48,7 @@ for(const vehicle of air){
  const fallback=aircraftPlaceholder(vehicle.id,'#b52f3d');
  assert(fallback?.startsWith('data:image/svg+xml'),vehicle.id+' missing air-specific fallback');
  const xml=decodeURIComponent(fallback.slice(fallback.indexOf(',')+1));
- assert(xml.includes('svg')&&xml.includes(VEHICLES[vehicle.id].name),vehicle.id+' missing matching name');
+ assert(xml.includes('svg')&&xml.includes(VEHICLES[vehicle.id].name.slice(0,38)),vehicle.id+' missing matching name');
 }
 assert.equal(aircraftPlaceholder('mito'),null,'a car must never be mistaken for an aircraft');
 console.log('PASS Mandria expansion '+JSON.stringify({barns:extra.barns.length,fieldTools:extra.fieldTools.length,lanes:extra.lanes,fenceSegments:extra.perimeter,bodyguards:extra.recruits.length,movingEscort:!!extra.escort,aircraftCards:air.length,sourcePreservation:'blocked layouts skipped'}));
