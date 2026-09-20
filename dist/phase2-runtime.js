@@ -64,6 +64,11 @@ import './villa-mandria-horse-rider.js';
 // SpatialIndex.near returns bucket candidates: confirm exact polygon collisions
 // before rejecting a house, a poplar or a moving patrol.
 import './villa-mandria-placement-fix.js';
+// v4 is strictly estate-scoped. The public city and aircraft catalog stay intact.
+import './villa-mandria-v4-grounds.js';
+import './villa-mandria-v4-roof.js';
+import './villa-mandria-v4-vehicles.js';
+import './villa-mandria-v4-range.js';
 
 // UI-only Phase 2 feedback. It does not own gameplay state: it observes the
 // existing HUD, so it cannot interfere with saves, physics or streaming.
