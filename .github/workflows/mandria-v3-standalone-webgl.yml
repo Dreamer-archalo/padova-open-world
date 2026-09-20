@@ -6,12 +6,14 @@ on:
       - 'dist/villa-mandria-*.js'
       - 'dist/phase2-runtime.js'
       - 'tools/test-mandria-estate-v3-chromium.mjs'
+      - 'tools/test-mandria-placement-diagnostic.mjs'
       - '.github/workflows/mandria-v3-standalone-webgl.yml'
   pull_request:
     paths:
       - 'dist/villa-mandria-*.js'
       - 'dist/phase2-runtime.js'
       - 'tools/test-mandria-estate-v3-chromium.mjs'
+      - 'tools/test-mandria-placement-diagnostic.mjs'
       - '.github/workflows/mandria-v3-standalone-webgl.yml'
   workflow_dispatch:
 permissions:
@@ -41,6 +43,8 @@ jobs:
           node tools/serve.mjs --host 127.0.0.1 --port 4173 &
           for i in $(seq 1 30); do if curl -fsS http://127.0.0.1:4173/ -o /dev/null; then exit 0; fi; sleep 1; done
           exit 1
+      - name: Inspect terrain and obstacles at candidate farm and patrol locations
+        run: node tools/test-mandria-placement-diagnostic.mjs
       - name: Test gate, speech bubbles, patrols and player riding in Chromium WebGL
         run: node tools/test-mandria-estate-v3-chromium.mjs
       - name: Save screenshots even on failure
