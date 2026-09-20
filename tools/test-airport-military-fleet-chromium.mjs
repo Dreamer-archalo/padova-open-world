@@ -6,6 +6,10 @@ const browser=await chromium.launch({headless:true,args:['--enable-webgl','--use
 const page=await browser.newPage({viewport:{width:1280,height:800},deviceScaleFactor:1});
 const errors=[];let stage='boot';
 page.on('pageerror',e=>errors.push(e.message));page.on('crash',()=>errors.push('Chromium crashed'));
+async function enterLand(){
+ await page.locator('#hangarSections [data-section="land"]').click();
+ await page.locator('#hangarSearch').waitFor({state:'visible'});
+}
 try{
  const response=await page.goto('http://127.0.0.1:4173/',{waitUntil:'domcontentloaded',timeout:45000});
  assert.equal(response.status(),200);
@@ -40,8 +44,9 @@ try{
  assert(airport.catalogued&&airport.models.every(m=>m.meshes>0&&m.tank===m.turret&&m.parked&&m.inAirport&&m.clear&&m.original),'real airport model, collision or spawn failure');
  assert(airport.regularTanks>=3,'keep original three tanks');
  stage='catalogue';await page.locator('#mandriaHangarButton').click();
+ await enterLand();
  await page.locator('#hangarSearch').fill('militare');
- const catalogue=await page.evaluate(()=>[...document.querySelectorAll('#hangarGrid [data-hangar-id]')].map(b=>b.dataset.hangarId));
+ const catalogue=await page.evaluate(()=>[...document.querySelectorAll('#hangarGrid [data-hangar-id]')].filter(b=>!b.hidden).map(b=>b.dataset.hangarId));
  console.log('MILITARY_CATALOGUE '+JSON.stringify(catalogue));
  assert.equal(catalogue.filter(id=>id.startsWith('mil-')).length,7,'seven user-selectable entries with names and illustrations');
  await page.screenshot({path:'test-artifacts/military-catalogue.png',timeout:25000});
@@ -59,6 +64,7 @@ try{
  stage='replace with truck';
  await page.evaluate(()=>globalThis.__oldMilitaryTank=globalThis.__militaryTest.mandriaHangar.staged);
  await page.locator('#mandriaHangarButton').click();
+ await enterLand();
  await page.locator('#hangarSearch').fill('militare');
  await page.locator('[data-hangar-id="mil-truck-carrier"]').click();
  await page.waitForFunction(()=>globalThis.__militaryTest?.mandriaHangar?.staged?.style==='mil-truck-carrier'&&!globalThis.__militaryTest.mandriaHangar.busy,null,{timeout:30000});
