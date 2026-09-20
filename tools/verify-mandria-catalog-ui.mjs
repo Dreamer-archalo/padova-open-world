@@ -1,5 +1,10 @@
 import assert from 'node:assert/strict';
 import '../dist/modern-vehicles.js';
+// All 16 aircraft are registered across the airport modules at runtime.
+// Import their registration side effects here instead of counting a partial fleet.
+import '../dist/airport-interactivity.js';
+import '../dist/airport-flight-extras.js';
+import '../dist/airport-combat-flight.js';
 import '../dist/airport-military-fleet.js';
 import {VEHICLES} from '../dist/vehicles.js';
 import {hangarCatalogue} from '../dist/villa-mandria-hangar.js';
