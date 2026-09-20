@@ -5,6 +5,7 @@ import {prepareGameplayMap as prepareBase,gameplayStructures as originalStructur
 import {buildAirportRoads} from './airport-road-network.js';
 import {villaGarageStructures,VILLA_GARAGE} from './villa-treves-layout.js';
 import {relocateVillaToMandria,verifyParkAndVillaMap,VILLA_PUBLIC_NAME} from './villa-mandria-relocation.js';
+import {privatizeMandriaRoads} from './villa-mandria-road-privacy.js';
 export * from './gameplay-areas-implementation.js';
 
 const WEST_PARKING=Object.freeze([[-35,14],[-35,41],[-14,15],[-14,26],[-14,38],[-8,15],[-8,28]]);
@@ -95,7 +96,7 @@ export function prepareGameplayMap(map){
     const central=map.gameplay.roads.find(r=>r.n==='Viale della villa');
     if(central)central.n='Viale Villa della Mandria';
   }
-  if(map.gameplay.airportRoadIntegration)return map;
+  if(map.gameplay.airportRoadIntegration){if(relocation){verifyParkAndVillaMap(map,relocation);privatizeMandriaRoads(map);}return map;}
   const entry=map.gameplay.roads.find(r=>r.n==='Ingresso aeroporto');
   const oldService=map.gameplay.roads.find(r=>r.n==='Servizi aeroportuali');
   if(oldService){map.gameplay.roads=map.gameplay.roads.filter(r=>r!==oldService);map.roads=map.roads.filter(r=>r!==oldService);}
@@ -103,7 +104,7 @@ export function prepareGameplayMap(map){
   const added=buildAirportRoads(AIRPORT,areaPoint);
   map.gameplay.roads.push(...added);map.roads.push(...added);
   if(!entry){map.gameplay.airportRoadIntegration={status:'missing-entrance',connected:false};
-    if(relocation)verifyParkAndVillaMap(map,relocation);return map;}
+    if(relocation){verifyParkAndVillaMap(map,relocation);privatizeMandriaRoads(map);}return map;}
   const outside=areaPoint(AIRPORT,228,250);
   entry.access='yes';entry.p=[[outside.x,outside.z],[AIRPORT_GATE.x,AIRPORT_GATE.z]];
   const graph=makeRoadGraph(map.roads,{separateLevels:true});
@@ -117,7 +118,7 @@ export function prepareGameplayMap(map){
     for(let i=1;i<road.p.length;i++){
       const a=road.p[i-1],b=road.p[i];
       if((Math.hypot(a[0]-c.a.x,a[1]-c.a.z)<.11&&Math.hypot(b[0]-c.b.x,b[1]-c.b.z)<.11)||
-         (Math.hypot(a[0]-c.b.x,a[1]-c.b.z)<.11&&Math.hypot(b[0]-c.a.x,b[1]-c.a.z)<.11)){at=i;break;}
+         (Math.hypot(a[0]-c.b.x,a[1]-c.b.z)<.11&&Math.hypot(b[0]-c.a.x,b[1]-c.b.z)<.11)){at=i;break;}
     }
     if(at<1)continue;
     if(dist(c.a,c.point)>.11&&dist(c.b,c.point)>.11)road.p.splice(at,0,[c.point.x,c.point.z]);
@@ -125,6 +126,6 @@ export function prepareGameplayMap(map){
   }
   if(junction)entry.p.unshift(junction.point);
   map.gameplay.airportRoadIntegration={connected:!!junction,cityJunction:junction,visualValidationPending:true,sourceRoadsClipped:true};
-  if(relocation)verifyParkAndVillaMap(map,relocation);
+  if(relocation){verifyParkAndVillaMap(map,relocation);privatizeMandriaRoads(map);}
   return map;
 }
