@@ -43,6 +43,9 @@ import './villa-mandria-life.js';
 // Existing estate life owns its NPCs; this adds safe farm structures, lanes,
 // low-cost patrol routes and a moving escort without replacing original logic.
 import './villa-mandria-estate-v2.js';
+// When old gate parking coordinates intersect real buildings, search for clear
+// alternate locations instead of placing black cars inside colliders.
+import './villa-mandria-security-placement.js';
 import './villa-mandria-respawn-label.js';
 // All models registered before the hangar catalogue is first opened.
 import './villa-mandria-hangar.js';
