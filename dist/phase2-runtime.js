@@ -82,6 +82,7 @@ import './villa-mandria-v6-scope.js';
 import './villa-mandria-v6-estate.js';
 import './villa-mandria-v6-stairs.js';
 import './villa-mandria-v6-dialogue-flow.js';
+import './villa-mandria-v6-horse-track.js';
 
 // UI-only Phase 2 feedback. It does not own gameplay state: it observes the
 // existing HUD, so it cannot interfere with saves, physics or streaming.
