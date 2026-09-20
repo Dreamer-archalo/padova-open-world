@@ -41,7 +41,15 @@ try{
  await page.waitForFunction(()=>globalThis.__mandriaWalkthrough?.villaLife.people.some(p=>p.role==='servant'&&p.until>globalThis.__mandriaWalkthrough.state.elapsed),null,{timeout:12000});
  assert(greeting.name.includes('servant'));
  phase='aircraft thumbnails';
- await page.locator('#mandriaHangarButton').click();await page.waitForFunction(()=>document.getElementById('hangarSections')&&!document.getElementById('hangarSections').hidden,null,{timeout:20000});
+ // The public HANGAR button is intentionally proximity-gated. Return from the
+ // servant outside the gate to the villa spawn before attempting to open it.
+ await page.evaluate(async()=>{
+  const g=globalThis.__mandriaWalkthrough,{HOME}=await import('./gameplay-areas.js');
+  Object.assign(g.state,{x:HOME.x,z:HOME.z,y:g.terrain.height(HOME.x,HOME.z),mode:'foot',car:null,speed:0,vy:0});
+ });
+ await page.waitForFunction(()=>document.getElementById('mandriaHangarButton')&&!document.getElementById('mandriaHangarButton').hidden,null,{timeout:20000});
+ await page.locator('#mandriaHangarButton').click();
+ await page.waitForFunction(()=>document.getElementById('mandriaHangarDialog')?.open&&document.getElementById('hangarSections')&&!document.getElementById('hangarSections').hidden,null,{timeout:20000});
  await page.locator('[data-section="air"]').click();
  const ids=await page.locator('#hangarGrid [data-hangar-id]:visible').evaluateAll(cards=>cards.map(c=>c.dataset.hangarId));
  assert.equal(ids.length,16,'the aircraft selection must contain all 16 models');
