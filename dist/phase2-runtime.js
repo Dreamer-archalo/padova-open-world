@@ -70,6 +70,9 @@ import './villa-mandria-v4-roof.js';
 import './villa-mandria-v4-vehicles.js';
 import './villa-mandria-v4-range.js';
 import './villa-mandria-v4-polish.js';
+// Post-publication feedback: optional dialogues and estate-only input/visual changes.
+import './villa-mandria-v5-dialogues.js';
+import './villa-mandria-v5-controls.js';
 
 // UI-only Phase 2 feedback. It does not own gameplay state: it observes the
 // existing HUD, so it cannot interfere with saves, physics or streaming.
