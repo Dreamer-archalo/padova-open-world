@@ -22,12 +22,14 @@ try{
  await page.waitForFunction(()=>!!globalThis.__mandriaWalkthrough?.villaLife?.expansion&&globalThis.__mandriaWalkthrough?.villaLife?.root?.visible,null,{timeout:45000});
  const start=await page.evaluate(()=>{
   const g=globalThis.__mandriaWalkthrough,l=g.villaLife,e=l.expansion;
-  return {barns:e.barns.length,fieldTools:e.fieldTools.length,lanes:e.lanes,perimeter:e.perimeter,recruits:e.recruits.length,guards:l.people.filter(p=>p.role==='gate'&&p.obj.userData.armed).length,cars:l.cars.length,movingEscort:!!e.escort,carPosition:e.escort?.car.position.toArray(),workerPosition:l.fields[0]?.worker.obj.position.toArray()};
+  return {barns:e.barns.length,fieldTools:e.fieldTools.length,lanes:e.lanes,perimeter:e.perimeter,recruits:e.recruits.length,guards:l.people.filter(p=>p.role==='gate'&&p.obj.userData.armed).length,bodyguards:l.people.filter(p=>p.role==='bodyguard').length,cars:l.cars.length,movingEscort:!!e.escort,carPosition:e.escort?.car.position.toArray(),workerPosition:l.fields[0]?.worker.obj.position.toArray()};
  });
  console.log('ESTATE_EXPANSION '+JSON.stringify(start));
  assert(start.barns>=1&&start.fieldTools>=1,'farm and fields not populated in real world');
  assert(start.lanes>0&&start.perimeter>0,'estate service-lane and boundary detail absent');
- assert(start.recruits>=1&&start.guards===2&&start.cars===2&&start.movingEscort,'private security deployment incomplete');
+ // V4 deliberately replaces the second tactical gate guard with a suited bodyguard.
+ // The old requirement of exactly two armed gate guards conflicts with the new brief.
+ assert(start.recruits>=1&&start.guards>=1&&start.bodyguards>=1&&start.cars===2&&start.movingEscort,'private security deployment incomplete');
  await page.waitForTimeout(1600);
  const motion=await page.evaluate(()=>{const g=globalThis.__mandriaWalkthrough,e=g.villaLife.expansion;return {car:e.escort?.car.position.toArray(),worker:g.villaLife.fields[0]?.worker.obj.position.toArray()};});
  assert.notDeepEqual(motion.car,start.carPosition,'black security car did not move');
