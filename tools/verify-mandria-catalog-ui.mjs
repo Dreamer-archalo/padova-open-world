@@ -23,4 +23,15 @@ for(const id of examples){
  let count=0;object.traverse(o=>{if(o.isMesh)count++;});
  assert(count>0,'preview model has no renderable geometry '+id);
 }
-console.log('PASS hangar sections: '+JSON.stringify({total:ids.length,air:ids.filter(id=>hangarSection(id)==='air').length,land:ids.filter(id=>hangarSection(id)==='land').length,urban:ids.filter(id=>hangarSection(id)==='urban').length,boats:'disabled',modelFactories:examples.length}));
+const aircraft=ids.filter(id=>hangarSection(id)==='air');
+assert.equal(aircraft.length,16,'verify all 16 currently catalogued aircraft');
+for(const id of aircraft){
+ // In the reported bug a live world actor could be a truck placeholder. Its
+ // clone must never be used when a dedicated aircraft preview is requested.
+ const badLiveActor={cars:[{style:id,mesh:{clone(){throw Error('cloned ground placeholder for '+id);}}}]};
+ const object=hangarPreviewModel(id,'#b52f3d',badLiveActor);
+ assert.equal(object?.userData.previewCategory,'air','aircraft card uses a ground preview: '+id);
+ let meshes=0;object.traverse(o=>{if(o.isMesh)meshes++;});
+ assert(meshes>0,'aircraft preview has no mesh: '+id);
+}
+console.log('PASS hangar sections: '+JSON.stringify({total:ids.length,air:aircraft.length,land:ids.filter(id=>hangarSection(id)==='land').length,urban:ids.filter(id=>hangarSection(id)==='urban').length,boats:'disabled',modelFactories:examples.length,aircraftPlaceholderRegressions:aircraft.length}));
