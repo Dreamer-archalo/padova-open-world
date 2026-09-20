@@ -82,9 +82,12 @@ jobs:
           test -f .preview-pr51-source/dist/villa-mandria-catalog-ui.js
           test -f .preview-pr51-source/dist/villa-mandria-hangar.js
           test -f .preview-pr51-source/dist/villa-mandria-relocation.js
+          test -f .preview-pr51-source/dist/villa-mandria-life.js
           node --check .preview-pr51-source/dist/villa-mandria-catalog-ui.js
           node --check .preview-pr51-source/dist/villa-mandria-hangar.js
+          node --check .preview-pr51-source/dist/villa-mandria-life.js
           node .preview-pr51-source/tools/verify-mandria-catalog-ui.mjs
+          node .preview-pr51-source/tools/verify-villa-mandria-life.mjs
           mkdir -p dist/preview/pr-51
           cp -a .preview-pr51-source/dist/. dist/preview/pr-51/
           touch dist/.nojekyll
