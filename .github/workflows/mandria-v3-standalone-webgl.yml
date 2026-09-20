@@ -7,6 +7,12 @@ on:
       - 'dist/phase2-runtime.js'
       - 'tools/test-mandria-estate-v3-chromium.mjs'
       - '.github/workflows/mandria-v3-standalone-webgl.yml'
+  pull_request:
+    paths:
+      - 'dist/villa-mandria-*.js'
+      - 'dist/phase2-runtime.js'
+      - 'tools/test-mandria-estate-v3-chromium.mjs'
+      - '.github/workflows/mandria-v3-standalone-webgl.yml'
   workflow_dispatch:
 permissions:
   contents: read
