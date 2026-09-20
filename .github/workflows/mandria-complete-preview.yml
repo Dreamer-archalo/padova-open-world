@@ -1,0 +1,88 @@
+name: Mandria complete playable GitHub Pages preview
+on:
+  push:
+    branches: [feat/villa-treves-phase1-20260919]
+    paths:
+      - 'dist/villa-mandria-*.js'
+      - 'dist/phase2-runtime.js'
+      - 'tools/verify-villa-mandria-estate-v2.mjs'
+      - 'tools/test-mandria-estate-v2-chromium.mjs'
+      - '.github/workflows/mandria-complete-preview.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+concurrency:
+  group: mandria-isolated-pages-preview
+  cancel-in-progress: true
+jobs:
+  check-and-preview:
+    runs-on: ubuntu-latest
+    timeout-minutes: 18
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Checkout unmerged Mandria source
+        uses: actions/checkout@v6
+        with:
+          ref: feat/villa-treves-phase1-20260919
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Verify all 16 aircraft and estate life without replacing existing systems
+        run: |
+          node --check dist/villa-mandria-estate-v2.js
+          node --check dist/villa-mandria-air-preview-guard.js
+          node --check dist/phase2-runtime.js
+          node tools/verify-mandria-catalog-ui.mjs
+          node tools/verify-villa-mandria-life.mjs
+          node tools/verify-villa-mandria-estate-v2.mjs
+      - name: Install Chromium
+        run: |
+          npm install --no-save playwright@1.55.1
+          npx playwright install --with-deps chromium
+      - name: Start real static preview server
+        run: |
+          node tools/serve.mjs --host 127.0.0.1 --port 4173 &
+          for i in $(seq 1 30); do if curl -fsS http://127.0.0.1:4173/ -o /dev/null; then exit 0; fi; sleep 1; done
+          exit 1
+      - name: Test WebGL estate, patrol movement, greetings and every aircraft card
+        run: node tools/test-mandria-estate-v2-chromium.mjs
+      - name: Save walkthrough/screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: mandria-v2-browser-evidence
+          path: test-artifacts/
+          if-no-files-found: ignore
+      - name: Checkout production main into isolated directory
+        uses: actions/checkout@v6
+        with:
+          ref: main
+          path: .production-source
+          persist-credentials: false
+      - name: Assemble isolated preview without merging PR or changing production root
+        run: |
+          set -euo pipefail
+          test -f .production-source/dist/index.html
+          test -f dist/index.html
+          mkdir -p .production-source/dist/preview/pr-51
+          cp -a dist/. .production-source/dist/preview/pr-51/
+          test -f .production-source/dist/preview/pr-51/villa-mandria-estate-v2.js
+          test -f .production-source/dist/preview/pr-51/villa-mandria-air-preview-guard.js
+          test -f .production-source/dist/preview/pr-51/data/padova.json
+          test -f .production-source/dist/preview/pr-51/vendor/three.module.js
+          cmp dist/index.html .production-source/dist/preview/pr-51/index.html
+          touch .production-source/dist/.nojekyll
+          echo 'Production root remains main; PR #51 is separately published at /preview/pr-51/'
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v4
+        with:
+          path: .production-source/dist
+      - name: Publish tested branch preview using GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
+      - name: Display test link
+        run: echo 'https://dreamer-archalo.github.io/padova-open-world/preview/pr-51/'
