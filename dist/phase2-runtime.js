@@ -75,6 +75,7 @@ import './villa-mandria-v5-dialogues.js';
 import './villa-mandria-v5-controls.js';
 // Additional collision-aware estate refinements, never modify the airport.
 import './villa-mandria-v5-estate-polish.js';
+import './villa-mandria-v5-greetings.js';
 
 // UI-only Phase 2 feedback. It does not own gameplay state: it observes the
 // existing HUD, so it cannot interfere with saves, physics or streaming.
