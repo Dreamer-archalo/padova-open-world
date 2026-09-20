@@ -1,0 +1,30 @@
+name: Mandria avenue and estate life
+on:
+  push:
+    branches: [feat/villa-treves-phase1-20260919]
+    paths:
+      - 'dist/villa-mandria-life.js'
+      - 'dist/phase2-runtime.js'
+      - 'tools/verify-villa-mandria-life.mjs'
+      - '.github/workflows/villa-mandria-life.yml'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'dist/villa-mandria-life.js'
+      - 'dist/phase2-runtime.js'
+      - 'tools/verify-villa-mandria-life.mjs'
+      - '.github/workflows/villa-mandria-life.yml'
+  workflow_dispatch:
+jobs:
+  structural:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Check runtime syntax and estate path, NPC and scenery safety
+        run: |
+          node --check dist/villa-mandria-life.js
+          node --check dist/phase2-runtime.js
+          node tools/verify-villa-mandria-life.mjs
