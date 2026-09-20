@@ -76,6 +76,12 @@ import './villa-mandria-v5-controls.js';
 // Additional collision-aware estate refinements, never modify the airport.
 import './villa-mandria-v5-estate-polish.js';
 import './villa-mandria-v5-greetings.js';
+// Direct user feedback: real first-person scope, reasoned Ape loops, wall parking,
+// complete roof gables, visible climb/return and single-choice NPC conversations.
+import './villa-mandria-v6-scope.js';
+import './villa-mandria-v6-estate.js';
+import './villa-mandria-v6-stairs.js';
+import './villa-mandria-v6-dialogue-flow.js';
 
 // UI-only Phase 2 feedback. It does not own gameplay state: it observes the
 // existing HUD, so it cannot interfere with saves, physics or streaming.
