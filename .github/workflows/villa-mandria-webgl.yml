@@ -9,6 +9,7 @@ on:
       - 'dist/gameplay-areas.js'
       - 'dist/phase2-runtime.js'
       - 'tools/test-villa-treves-chromium.mjs'
+      - 'tools/test-public-pages-loading.mjs'
       - '.github/workflows/villa-mandria-webgl.yml'
 jobs:
   scene:
@@ -29,6 +30,9 @@ jobs:
           for i in $(seq 1 25); do if curl -fsS http://127.0.0.1:4173/ -o /dev/null; then break; fi; sleep 1; done
       - name: Check public Treves and real Mandria scene
         run: node tools/test-villa-treves-chromium.mjs
+      - name: Reproduce map loading on actually published GitHub Pages
+        if: always()
+        run: node tools/test-public-pages-loading.mjs
       - name: Save visual checks
         if: always()
         uses: actions/upload-artifact@v4
