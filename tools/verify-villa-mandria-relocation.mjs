@@ -31,8 +31,9 @@ assert(structures.filter(s=>s.kind==='gameplay').every(parkIsClear),'no fictiona
 assert.equal(gameplaySpawns().filter(s=>s.name===VILLA_PUBLIC_NAME).length,7,'all seven villa vehicles moved to Mandria');
 assert(gameplaySpawns().filter(s=>Math.hypot(s.x-TREVES_PUBLIC_PARK.x,s.z-TREVES_PUBLIC_PARK.z)<150).length===0,'no parked vehicles remain at Treves');
 const estate=map.gameplay.roads.find(r=>r.n==='Accesso Villa della Mandria');
-assert(estate&&estate.p.length===3&&estate.access==='yes','Mandria estate must have a road connection');
+assert(estate&&estate.p.length===3&&estate.access==='private','Mandria estate must have an existing, private road connection');
+assert(map.roads.includes(estate),'Mandria private access must remain in game road network');
 assert.equal(report.originalBuildingsRemoved,0,'never demolish source buildings for villa');
 console.log('MANDRIA_RELOCATION '+JSON.stringify({report,originalBuildings:originalBuildings.length,
- originalFootpaths:originalKeys.size,originalAreas:originalAreas.length,estateRoad:estate.p}));
+ originalFootpaths:originalKeys.size,originalAreas:originalAreas.length,estateRoad:estate.p,access:estate.access}));
 console.log('PASS ONE villa moved to Mandria; Parco Treves source buildings, paths, areas and natural terrain restored');
