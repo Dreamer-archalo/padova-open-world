@@ -20,21 +20,20 @@ function install(){if(holsterButton)return;
 }
 const oldRender=THREE.WebGLRenderer.prototype.render;
 if(!THREE.WebGLRenderer.prototype.__mandriaV6Scope){THREE.WebGLRenderer.prototype.__mandriaV6Scope=true;
- THREE.WebGLRenderer.prototype.render=function(scene,camera){const g=game;if(scene!==g?.scene||!g?.state?.started||!camera?.isPerspectiveCamera)return oldRender.call(this,scene,camera);
+ THREE.WebGLRenderer.prototype.render=function(scene,camera){const g=game;
+  if(!g?.state?.started||!scene?.isScene||!camera?.isPerspectiveCamera)return oldRender.call(this,scene,camera);
   if(!aiming(g)){if(camera.userData.mandriaOriginalFov!==undefined){camera.fov=camera.userData.mandriaOriginalFov;delete camera.userData.mandriaOriginalFov;camera.updateProjectionMatrix();}return oldRender.call(this,scene,camera);}
+  // The active graphics scene is not always referentially identical to
+  // ModernGameplay.scene (streaming and postprocessing can wrap it). Apply
+  // the optic to the actual perspective render, after third-person camera setup.
   if(camera.userData.mandriaOriginalFov===undefined)camera.userData.mandriaOriginalFov=camera.fov;
   const s=g.state,eye=s.y+1.69;
   camera.fov=22;camera.updateProjectionMatrix();camera.position.set(s.x,eye,s.z);
   camera.lookAt(s.x+Math.sin(s.yaw)*85,eye,s.z+Math.cos(s.yaw)*85);
-  // The ordinary player model is not necessarily tagged userData.character. It is
-  // the scene-level person Group whose origin matches the player's world position.
-  // Exclude estate containers and NPCs at other positions; do not hide targets.
   const avatars=scene.children.filter(o=>o.isGroup&&o.visible&&o.children.some(c=>c.isMesh||c.isGroup)&&
-    Math.hypot(o.position.x-s.x,o.position.z-s.z)<.55&&Math.abs(o.position.y-(s.y+.08))<.65);
+    Math.hypot(o.position.x-s.x,o.position.z-s.z)<.8&&Math.abs(o.position.y-(s.y+.08))<1);
   const gun=g.villaV4Polish?.gun,gunShown=gun?.visible;
   for(const avatar of avatars)avatar.visible=false;if(gun)gun.visible=false;
-  // Report the actual camera passed to WebGL, not the third-person rig sampled
-  // before or after this render. Browser acceptance can inspect this snapshot.
   g.mandriaScopeFrame={fov:camera.fov,x:camera.position.x,y:camera.position.y,z:camera.position.z,
     yaw:s.yaw,hiddenAvatars:avatars.length,elapsed:s.elapsed};
   try{return oldRender.call(this,scene,camera);}finally{for(const avatar of avatars)avatar.visible=true;if(gun)gun.visible=gunShown;}
