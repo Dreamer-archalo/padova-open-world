@@ -32,11 +32,11 @@ The player requested continuous driving between streets, sidewalks, bridge appro
 - 424,232 road-grade checks and 1,530 bridge/water checks have no violations in the latest global audit.
 - Existing verify-vehicle-jumps fails at the cargo-north airport ramp. Reproduced identically on the unchanged main d5d2faf in an isolated worktree: pre-existing failure, not certified fixed here.
 - No actual WebGL/browser drive-through or FPS measurement completed. Local Chromium was unavailable and its download timed out. Browser proof is required before any release claim.
-- No merge, PR publication or deployment occurred. Automatic approval review rejected pushing the new GitHub branch, citing authorization/publication risk. Do not work around that rejection through another publishing tool; obtain explicit authorization for uploading this branch and opening its draft PR.
+- Publication authorized by the user on 2026-09-21. Draft PR #52 is open: https://github.com/Dreamer-archalo/padova-open-world/pull/52. Uploaded runtime commit: 20c6411c215ad57bdc1a57df0f0ae69554d241c2 (tree identical to local 2870404). No game changes merged into main. Hosting-only commit 68cc92e1f69227a89fba1e9e3244b053e7365d84 adds a separate /preview/pr-52/ deployment while preserving production files and PR51. Deployment status: https://github.com/Dreamer-archalo/padova-open-world/actions/runs/35578724083.
 
 ## Next work
 
-1. Upload the reviewed branch and create one draft PR when authorized; keep main and the public game unchanged while the release gates fail.
+1. Verify the isolated deployment, then collect driving feedback on https://dreamer-archalo.github.io/padova-open-world/preview/pr-52/. Keep production game unchanged while release gates fail.
 2. Classify remaining stacked-road/retained-bank cases and correct the connected surfaces without hiding failures.
 3. Run actual browser driving in the centre, Prato, Riviera San Benedetto, motorway earth accesses and underpasses; measure mesh/contact agreement and frame cost.
 4. Integrate independently with the latest villa branch only after checking compatibility. Lighting/colour polish and the broader damage/traffic wish list are not implemented by this terrain pass.
