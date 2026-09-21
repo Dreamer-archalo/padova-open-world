@@ -1,7 +1,7 @@
 // Mandria-only scenic improvements. Existing streets and public geometry are untouched.
 import * as THREE from './vendor/three.module.js';
 import {ModernGameplay} from './modern-gameplay.js';
-import {VILLA,areaPoint} from './gameplay-areas.js';
+import {VILLA,areaPoint,areaLocal} from './gameplay-areas.js';
 import {mandriaFree} from './villa-mandria-placement-fix.js';
 const at=(u,v)=>areaPoint(VILLA,u,v),cone=new THREE.ConeGeometry(1,1,7),trunk=new THREE.CylinderGeometry(1,1,1,7);
 const greens=['#345b35','#406e3c','#547844'].map(color=>new THREE.MeshStandardMaterial({color,roughness:.88}));
@@ -32,8 +32,8 @@ function addSheep(g){const ground=g.villaV8Grounds;if(!ground||ground.sheepDone|
 }
 function compactRoof(g){const ground=g.villaV8Grounds,roof=g.villaRoof;if(!roof||ground.roof)return;
  ground.roof=true;
- // Keep the physical deck and handrails, but replace two oversize painted
- // helipads with a single 9-metre circle. No phantom support is introduced.
+ // Keep the real deck and guardrails: replace the two large painted pads with
+ // one compact nine-metre circle. The adjacent VTOL parks on the existing deck.
  for(const obj of roof.root.children){if(!obj.isMesh)continue;
   if(['646f67','f7e4ba','d1b98e'].includes(obj.material?.color?.getHexString()))obj.visible=false;
  }
@@ -45,24 +45,27 @@ function compactRoof(g){const ground=g.villaV8Grounds,roof=g.villaRoof;if(!roof|
   const bar=new THREE.Mesh(box,white);bar.position.set(x,.033,z);bar.scale.set(w,.04,d);pad.add(bar);
  }
  pad.name='Mandria · eliporto compatto · un solo elicottero';roof.root.add(pad);
- // Only the redundant utility helicopter is retired. Never remove the craft
- // currently occupied by the player; retry after landing and disembarking.
  ground.removeSecondHelicopter=()=>{
   const extra=roof.helicopters.find(c=>c.style==='levante'&&c!==g.state.car);
   if(!extra)return false;g.remove(extra);roof.helicopters.splice(roof.helicopters.indexOf(extra),1);return true;
  };
+ // If VTOL conversion is unavailable, do not leave two helicopters on roof.
  ground.removeSecondHelicopter();
 }
 function steadyRoof(g){const roof=g.villaRoof,s=g.state;if(!roof||s.mode!=='foot')return;
- // Stabilize a climb that ended on the real deck. Do not teleport players
- // who approach from ground level or who intentionally leave its edges.
- const high=roof.top+.16,d=Math.hypot(s.x-VILLA.x,s.z-VILLA.z);
- if(d>34){s.v8OnRoof=false;return;}
+ const high=roof.top+.16,loc=areaLocal(VILLA,s.x,s.z);
+ // Previous radial clamp extended 10+ metres beyond the rooftop and created an
+ // invisible floor while jumping down. Restrict support to the actual deck,
+ // the landing and the dedicated elevated stair bridge only.
+ const onDeck=Math.abs(loc.u)<=21.7&&loc.v>=-30.2&&loc.v<=-7.35;
+ const onLanding=Math.hypot(loc.u+9,loc.v+7.3)<2.4;
+ if(!onDeck&&!onLanding){s.v8OnRoof=false;return;}
+ if(g.villaV7Stairs?.travel?.direction==='down'||g.villaV6Stairs?.travel?.direction==='down'||roof.climbing?.direction==='down'){
+  s.v8OnRoof=false;return;
+ }
  const arriving=s.v8OnRoof||s.y>roof.top-1.4;
  if(!arriving)return;
- s.v8OnRoof=true;
- if(s.villaV5Descent||g.villaV5Descent||g.villaV7Stairs?.travel?.direction==='down'||roof.climbing?.direction==='down'){s.v8OnRoof=false;return;}
- if(s.y<high){s.y=high;s.vy=0;}
+ s.v8OnRoof=true;if(s.y<high){s.y=high;s.vy=0;}
 }
 const oldPopulate=ModernGameplay.prototype.populate,oldUpdate=ModernGameplay.prototype.update;
 if(!ModernGameplay.prototype.__mandriaV8GroundsRoof){
