@@ -1,6 +1,7 @@
 import './phase4-terrain-fixes.js';
 import './historic-terrain-level.js';
 import './historic-plaza-alignment.js';
+import './surface-authority-runtime.js';
 import './roof-upgrades.js';
 import './taxi-map-ui.js';
 import './taxi-confirmation-runtime.js';
@@ -8,12 +9,12 @@ import './ambient-pursuits.js';
 import './phase3-runtime.js';
 import './phase3-city-systems.js';
 import './phase3-tram-fix.js';
-// road-reality-pass and road-reality-audit are intentionally not imported here.
-// Their global Terrain/RoadSurfaces monkey patches caused severe height discontinuities
-// (roads/buildings/ground separating and actors sinking) on the live streamed world.
-// The safer direct PR #28 fixes in the individual road/pedestrian modules remain active.
+// Legacy road-reality-pass and road-reality-audit stay disabled: they were
+// independently rewriting heights and separating visuals from physics.
+// WorldSurfaceResolver is the sole source for the new terrain/road interface.
 import './phase3-polish.js';
 import './geometry-audit-runtime.js';
+import './world-integrity-runtime.js';
 import './gameplay-upgrades.js';
 import './city-micromobility.js';
 import './historic-architecture-alignment.js';
