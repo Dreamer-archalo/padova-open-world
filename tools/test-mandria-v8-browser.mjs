@@ -16,19 +16,25 @@ try{
  assert.equal(await page.evaluate(()=>document.documentElement.dataset.initialWorldReady),'true');
  await page.locator('#confirmCharacter').click({timeout:20000});
  phase='estate loading';await page.waitForFunction(()=>{
-  const g=globalThis.__mandriaV8;return !!(g?.villaV7Life&&g.villaV3&&g.villaRoof&&g.villaRange?.ready&&g.villaV8Grounds&&g.villaV8PatrolReport);
+  const g=globalThis.__mandriaV8;return !!(g?.villaV7Life&&g.villaV3&&g.villaRoof&&g.villaRange?.ready&&g.villaV8Grounds&&g.villaV8PatrolReport&&g.villaV9?.report);
  },null,{timeout:65000});
  const estate=await page.evaluate(()=>{const g=globalThis.__mandriaV8;
   return {boards:g.villaRange.v8Boards?.length||0,trees:g.villaV8Grounds.trees,sheep:g.villaV8Grounds.sheep,
    helis:g.villaRoof.helicopters.map(c=>c.name),vtol:g.villaRoof.v8Vtol?.plane?.name,
    vtolAirplaneShape:g.villaRoof.v8Vtol?.plane?.mesh?.name,
-   patrols:g.villaV8PatrolReport,publicRoads:g.map?.gameplay?.mandriaPublicRoads||g.city?.gameplay?.mandriaPublicRoads||null};
- });console.log('MANDRIA_V8_ESTATE '+JSON.stringify(estate));
+   patrols:g.villaV8PatrolReport,v9:g.villaV9.report,publicRoads:g.map?.gameplay?.mandriaPublicRoads||g.city?.gameplay?.mandriaPublicRoads||null};
+ });console.log('MANDRIA_V9_ESTATE '+JSON.stringify(estate));
  assert.equal(estate.boards,2,'two independent round practice targets must exist');
  assert(estate.trees>=4,'estate boundary needs additional trees');
  assert.equal(estate.helis.length,1,'the roof must contain exactly one helicopter');
  assert(estate.vtol?.includes('VTOL')&&estate.vtolAirplaneShape?.includes('Rondone'),'roof needs a visually recognizable VTOL airplane');
  assert(estate.patrols.horses>=1&&estate.patrols.apes>=1,'mounted guards and Ape Cars must both be routed around the property');
+ assert(estate.v9.workers>=8,'the estate must have additional autonomous working NPCs');
+ assert(estate.v9.routines.length>=5,'workers must have distinct visible routines');
+ assert(estate.v9.apeDistributed>=3&&estate.v9.apeCircuitLength>=400,'Ape Cars need distributed starting points and long estate-wide circuits');
+ const patrolSpacing=await page.evaluate(()=>{const g=globalThis.__mandriaV8,apes=g.villaV3.patrols.filter(c=>c.mandriaPatrol==='ape');
+  return apes.slice(1).map(c=>Math.hypot(c.x-apes[0].x,c.z-apes[0].z));});
+ assert(patrolSpacing.some(d=>d>50),'Ape Car patrols must not cluster in the same rear corner');
  phase='scope vertical arrows and mouse drag';
  await page.evaluate(()=>{const g=globalThis.__mandriaV8,r=g.villaRange;
   Object.assign(g.state,{x:r.station.x,z:r.station.z,y:g.terrain.height(r.station.x,r.station.z),mode:'foot',car:null,speed:0,vy:0,mission:null});
@@ -49,17 +55,20 @@ try{
  assert.equal(await page.locator('#mwChoices button').count(),3,'worker must offer approve, alternative, and refuse');
  await page.locator('#mwChoices button').first().click();
  const assigned=await page.evaluate(()=>globalThis.__mandriaV8.villaLife.people.some(p=>!!p.v8Job));
- console.log('MANDRIA_V8_ASSIGNMENT '+JSON.stringify({assigned}));
+ console.log('MANDRIA_V8_ASSIGNMENT '+JSON.stringify({assigned}));assert(assigned,'assignments must create a physical worker job');
  await page.locator('.mw-next').click();
- phase='supplier authorization';
+ phase='supplier authorization and notification';
  await page.evaluate(()=>{const g=globalThis.__mandriaV8;g.villaV8Delivery.nextAt=g.state.elapsed-1;});
  await page.waitForFunction(()=>!!globalThis.__mandriaV8.villaV8Delivery?.active,null,{timeout:15000});
- const supplier=await page.evaluate(()=>{const d=globalThis.__mandriaV8.villaV8Delivery.active;return {phase:d.phase,name:d.truck.name};});
- assert(supplier.name.includes('fornitore'),'supplier truck must actually spawn');
- await page.screenshot({path:'test-artifacts/mandria-v8-estate.png',timeout:25000});
+ const supplier=await page.evaluate(()=>{const d=globalThis.__mandriaV8.villaV8Delivery.active;return {phase:d.phase,name:d.truck.name,decorated:!!d.truck.mesh.userData.mandriaV9Decor};});
+ assert(supplier.name.includes('fornitore')&&supplier.decorated,'a visibly dressed supplier truck must actually spawn');
+ await page.waitForFunction(()=>globalThis.__mandriaV8.villaV8Delivery?.active?.phase==='permission',null,{timeout:20000});
+ await page.waitForFunction(()=>!document.getElementById('mandriaV9DeliveryNotice')?.hidden&&document.getElementById('mandriaV9DeliveryNotice')?.textContent.includes('CAMION PRONTO'),null,{timeout:12000});
+ assert((await page.locator('#mandriaV9DeliveryNotice').textContent()).includes('torna alla villa'),'delivery should notify the player without requiring proximity to the driver');
+ await page.screenshot({path:'test-artifacts/mandria-v9-delivery-notification.png',timeout:25000});
  assert.deepEqual(errors,[],'final estate cannot throw uncaught browser errors');
- console.log('PASS Mandria v8: roof VTOL+one heli, targets, trees, perimeter actors, two-axis aim, workers, permission-based supplier');
-}catch(error){console.error('MANDRIA_V8_FAIL '+phase+' '+(error.stack||error));console.error('JS_ERRORS '+JSON.stringify(errors.slice(-15)));
- try{await page.screenshot({path:'test-artifacts/mandria-v8-failure.png',timeout:14000});}catch{}
+ console.log('PASS Mandria v9: rooftop and scope regressions, eight or more autonomous workers, estate-wide patrols, actionable jobs, visible supplier and persistent permission notice');
+}catch(error){console.error('MANDRIA_V9_FAIL '+phase+' '+(error.stack||error));console.error('JS_ERRORS '+JSON.stringify(errors.slice(-15)));
+ try{await page.screenshot({path:'test-artifacts/mandria-v9-failure.png',timeout:14000});}catch{}
  process.exitCode=1;
 }finally{await browser.close();}
