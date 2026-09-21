@@ -3,12 +3,11 @@
 import * as THREE from './vendor/three.module.js';
 import {ModernGameplay} from './modern-gameplay.js';
 import {VILLA} from './gameplay-areas.js';
-import {collides} from './core.js';
 import {vehicleBlocked} from './movement.js';
 const box3=new THREE.Box3(),corners=[[-1,-1],[1,-1],[1,1],[-1,1]];
-const actorGroup=/\b(worker|gate|bodyguard|servant|guardia|contadino|pattuglia|soldat|pecora|bovino|cavallo|ape car|auto nera|scorta)\b/i;
+const actorGroup=/\b(worker|gate|bodyguard|servant|guardia|contadino|pattuglia|soldat|pecora|bovino|cavallo|ape car|scorta)\b/i;
 function movableAncestor(mesh,root){let p=mesh.parent;while(p&&p!==root){if(actorGroup.test(p.name||''))return true;p=p.parent;}return false;}
-function footprint(mesh,b){const geo=mesh.geometry;if(!geo.boundingBox)geo.computeBoundingBox();const bound=geo.boundingBox;
+function footprint(mesh){const geo=mesh.geometry;if(!geo.boundingBox)geo.computeBoundingBox();const bound=geo.boundingBox;
  const x=(bound.min.x+bound.max.x)/2,z=(bound.min.z+bound.max.z)/2,rx=(bound.max.x-bound.min.x)/2,rz=(bound.max.z-bound.min.z)/2;
  return corners.map(([sx,sz])=>{const p=mesh.localToWorld(new THREE.Vector3(x+sx*rx,0,z+sz*rz));return [p.x,p.z];});}
 function register(g){const index=g.collision;if(!index?.add)return {count:0,reason:'collision index missing'};
@@ -23,7 +22,7 @@ function register(g){const index=g.collision;if(!index?.add)return {count:0,reas
   if(Math.hypot(mx-VILLA.x,mz-VILLA.z)>280)return;
   const ground=g.terrain.height(mx,mz);
   if(box3.max.y<ground-.4||box3.min.y>ground+25)return;
-  const p=footprint(mesh,box3),xs=p.map(a=>a[0]),zs=p.map(a=>a[1]);
+  const p=footprint(mesh),xs=p.map(a=>a[0]),zs=p.map(a=>a[1]);
   const obstacle={p,minX:Math.min(...xs),maxX:Math.max(...xs),minZ:Math.min(...zs),maxZ:Math.max(...zs),minY:box3.min.y,h:Math.max(.12,h),kind:'mandria-solid',solid:true};
   index.add(obstacle,obstacle.minX,obstacle.minZ,obstacle.maxX,obstacle.maxZ);subtotal++;count++;
  });byRoot[root.name||'estate']=subtotal;}
@@ -35,6 +34,15 @@ function nearActor(g,x,z,y,r,exclude=null){
  }
  for(const p of g.villaLife?.people||[]){if(!p.obj?.visible||Math.abs(p.obj.position.y-y)>2.6)continue;
   if(Math.hypot(p.obj.position.x-x,p.obj.position.z-z)<r+.42)return p;
+ }
+ for(const p of g.villaV6?.rear.people||[]){if(!p.obj?.visible||Math.abs(p.obj.position.y-y)>2.6)continue;
+  if(Math.hypot(p.obj.position.x-x,p.obj.position.z-z)<r+.42)return p;
+ }
+ for(const group of g.villaV6?.rear.trios||[]){const o=group.group;if(!o?.visible||Math.abs(o.position.y-y)>2.6)continue;
+  if(Math.hypot(o.position.x-x,o.position.z-z)<r+2.1)return group;
+ }
+ for(const shooter of g.villaRange?.shooters||[]){if(!shooter.visible||Math.abs(shooter.position.y-y)>2.6)continue;
+  if(Math.hypot(shooter.position.x-x,shooter.position.z-z)<r+.55)return shooter;
  }
  for(const patch of g.villaLife?.pastures||[])for(const animal of patch.animals||[]){if(!animal.a?.visible||Math.abs(animal.a.position.y-y)>2.6)continue;
   if(Math.hypot(animal.a.position.x-x,animal.a.position.z-z)<r+.62)return animal;
@@ -53,7 +61,7 @@ function contact(g,before){const s=g.state;
 function patrolSafety(g,previous){for(const [c,b] of previous){if(!g.cars.includes(c)||c===g.state.car||!c.mesh.visible)continue;
   const hittingStatic=vehicleBlocked(c.x,c.z,c.yaw,g.collision,c.spec,c.y);
   const other=nearActor(g,c.x,c.z,c.y,Math.max(.65,c.spec.width*.43),c);
-  if((hittingStatic||other)&&!(vehicleBlocked(b.x,b.z,b.yaw,g.collision,c.spec,b.y))){
+  if((hittingStatic||other)&&!vehicleBlocked(b.x,b.z,b.yaw,g.collision,c.spec,b.y)){
    Object.assign(c,{x:b.x,z:b.z,y:b.y,yaw:b.yaw,routeIndex:b.index,speed:0});g.pose(c);
   }
  }}
