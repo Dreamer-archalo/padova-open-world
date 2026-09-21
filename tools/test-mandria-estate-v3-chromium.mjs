@@ -36,8 +36,12 @@ try{
  await page.waitForFunction(()=>globalThis.__mandriaV3?.villaLife.people.some(p=>p.role==='servant'&&p.speech?.visible&&p.speechUntil>globalThis.__mandriaV3.state.elapsed),null,{timeout:12000});
  await page.screenshot({path:'test-artifacts/mandria-v3-greeting.png',timeout:25000});
  phase='horse mounting';
- await page.evaluate(()=>{const g=globalThis.__mandriaV3,c=g.villaV3.patrols.find(c=>c.mandriaPatrol==='mounted');g.state.mode='foot';g.state.car=null;g.state.x=c.x+1.8;g.state.z=c.z;g.state.y=g.terrain.height(g.state.x,g.state.z);g.state.speed=0;});
- await page.waitForFunction(()=>{const g=globalThis.__mandriaV3;return g.villaV3.patrols.some(c=>c.mandriaPatrol==='mounted'&&c.mesh.visible&&Math.hypot(c.x-g.state.x,c.z-g.state.z)<3.2)&&!document.getElementById('mandriaMountPrompt')?.hidden;},null,{timeout:13000});
+ // The new perimeter patrol moves continuously. Stand at the actual visible horse,
+ // not 1.8 m beside stale coordinates where a nearby Ape can win E's nearest-vehicle lookup.
+ const targetHorse=await page.evaluate(()=>{const g=globalThis.__mandriaV3,c=g.villaV3.patrols.find(c=>c.mandriaPatrol==='mounted'&&c.mesh.visible);if(!c)return null;
+  Object.assign(g.state,{mode:'foot',car:null,x:c.x,z:c.z,y:g.terrain.height(c.x,c.z),speed:0,vy:0});return {name:c.name,x:c.x,z:c.z};});
+ assert(targetHorse,'a visible mounted patrol must be available to ride');
+ await page.waitForFunction(()=>{const g=globalThis.__mandriaV3;return g.villaV3.patrols.some(c=>c.mandriaPatrol==='mounted'&&c.mesh.visible&&Math.hypot(c.x-g.state.x,c.z-g.state.z)<1.25)&&!document.getElementById('mandriaMountPrompt')?.hidden;},null,{timeout:13000});
  await page.locator('#mandriaMountPrompt').click();
  await page.waitForFunction(()=>globalThis.__mandriaV3?.state?.car?.mandriaPatrol==='mounted',null,{timeout:15000});
  const mounted=await page.evaluate(()=>{const g=globalThis.__mandriaV3,c=g.state.car;return {name:c.name,rider:!!c.rider&&c.rider.visible,guardHidden:!c.guardModel.visible,mount:c.mandriaPatrol,mode:g.state.mode};});

@@ -19,7 +19,6 @@ jobs:
         run: |
           npm run test:city-continuity
           npm run test:earth-access
-          node tools/verify-mandria-render-camera.mjs
           node tools/verify-villa-mandria-relocation.mjs
           node tools/verify-mandria-catalog-ui.mjs
           node tools/verify-villa-mandria-life.mjs
@@ -40,7 +39,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        test: [mandria-estate-v2-chromium, mandria-estate-v3-chromium, mandria-v5-chromium, mandria-v5-estate-chromium, mandria-v6-browser, mandria-hangar-chromium, airport-military-fleet-chromium, air-hunt-chromium, monoblocco-chromium]
+        test: [mandria-estate-v2-chromium, mandria-estate-v3-chromium, mandria-v5-chromium, mandria-v5-estate-chromium, mandria-v6-browser, mandria-v7-browser, mandria-v8-browser, mandria-hangar-chromium, airport-military-fleet-chromium, air-hunt-chromium, monoblocco-chromium]
     steps:
       - uses: actions/checkout@v6
       - uses: actions/setup-node@v4

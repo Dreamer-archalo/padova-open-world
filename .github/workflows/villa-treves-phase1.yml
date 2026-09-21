@@ -33,7 +33,7 @@ jobs:
           node --check dist/phase2-runtime.js
       - name: Garage access, existing spawns and visual culling
         run: node tools/verify-villa-phase1.mjs
-      - name: Real Padova source map: one Mandria villa, untouched Parco Treves
+      - name: "Real Padova source map: one Mandria villa, untouched Parco Treves"
         run: node tools/verify-villa-mandria-relocation.mjs
       - name: Preserve game features
         run: node verify-feature-preservation.mjs

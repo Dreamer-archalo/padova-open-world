@@ -31,18 +31,15 @@ try{
  const r=await page.evaluate(()=>{const g=globalThis.__estateV6,r=g.villaRange;if(!r?.ready)return false;Object.assign(g.state,{x:r.station.x,z:r.station.z,y:g.terrain.height(r.station.x,r.station.z),mode:'foot',car:null,speed:0,vy:0,mission:null});return true;});assert(r);
  await page.keyboard.press('KeyE');await page.waitForFunction(()=>globalThis.__estateV6.villaRange?.active,null,{timeout:12000});
  await page.keyboard.press('Tab');await page.waitForFunction(()=>document.body.classList.contains('mandria-sniper'),null,{timeout:12000});
- await page.evaluate(()=>{const g=globalThis.__estateV6,old=g.scene.onBeforeRender;
-  g.scene.onBeforeRender=function(renderer,scene,camera,...args){old.call(this,renderer,scene,camera,...args);
-   if(g.villaRange?.aiming)globalThis.__scopeCamera={fov:camera.fov,x:camera.position.x,y:camera.position.y,z:camera.position.z,player:{...g.state}};};});
- await page.waitForFunction(()=>globalThis.__scopeCamera?.fov===22,null,{timeout:12000});
- const scope=await page.evaluate(()=>{const c=globalThis.__scopeCamera;return {fov:c.fov,distance:Math.hypot(c.x-c.player.x,c.z-c.player.z),eyeHeight:c.y-c.player.y,reticle:!document.getElementById('mandriaSniperScope').hidden,holster:!document.getElementById('mandriaHolster').hidden};});
- console.log('MANDRIA_V6_SCOPE '+JSON.stringify(scope));assert.equal(scope.fov,22);assert(scope.distance<.03&&scope.eyeHeight>1.5&&scope.eyeHeight<2&&scope.reticle&&scope.holster,'scope still looks toward player rather than from eyes');
+ await page.waitForFunction(()=>globalThis.__estateV6?.mandriaScopeFrame?.fov===22,null,{timeout:12000});
+ const scope=await page.evaluate(()=>{const g=globalThis.__estateV6,c=g.mandriaScopeFrame;return {fov:c.fov,distance:Math.hypot(c.x-g.state.x,c.z-g.state.z),eyeHeight:c.y-g.state.y,hiddenAvatars:c.hiddenAvatars,reticle:!document.getElementById('mandriaSniperScope').hidden,holster:!document.getElementById('mandriaHolster').hidden};});
+ console.log('MANDRIA_V6_SCOPE '+JSON.stringify(scope));assert.equal(scope.fov,22);assert(scope.distance<.03&&scope.eyeHeight>1.5&&scope.eyeHeight<2&&scope.hiddenAvatars>0&&scope.reticle&&scope.holster,'optic must render from player eyes with own model hidden');
  await page.screenshot({path:'test-artifacts/mandria-v6-actual-first-person-scope.png',timeout:25000});
  await page.keyboard.press('KeyX');await page.waitForFunction(()=>!globalThis.__estateV6.villaRange.active,null,{timeout:10000});
  phase='stairs interaction';
  await page.evaluate(()=>{const g=globalThis.__estateV6,e=g.villaV6Stairs;Object.assign(g.state,{mode:'foot',car:null,x:e.bottom.x,z:e.bottom.z,y:e.base,speed:0,vy:0});});
  await page.waitForFunction(()=>!document.getElementById('mandriaV6StairButton')?.hidden,null,{timeout:12000});await page.locator('#mandriaV6StairButton').click();
  assert.equal(await page.evaluate(()=>!!globalThis.__estateV6.villaV6Stairs.travel),true,'E must start exterior staircase ascent');
- assert.deepEqual(errors,[],'game JavaScript errors');console.log('PASS Mandria v6 real scoped camera, X holster, roof and wall parking, Ape routes, rear crops, trio patrols and stair interaction');
+ assert.deepEqual(errors,[],'game JavaScript errors');console.log('PASS Mandria v6 real scoped camera with hidden player, X holster, roof and wall parking, Ape routes, rear crops, trio patrols and stair interaction');
 }catch(error){console.error('MANDRIA_V6_FAIL '+phase+' '+(error.stack||error));console.error('JS_ERRORS '+JSON.stringify(errors.slice(-10)));try{await page.screenshot({path:'test-artifacts/mandria-v6-failure.png',timeout:14000});}catch{}process.exitCode=1;}
 finally{await browser.close();}
