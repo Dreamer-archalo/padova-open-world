@@ -25,7 +25,7 @@ function init(g,s){const root=new THREE.Group();root.name='Mandria v9 · fruttet
  const orchards=new Map();for(const actor of s.actors.filter(a=>a.kind==='raccolta')){
   const trees=orchard(g,root,actor);if(trees)orchards.set(actor,trees);
  }
- for(const actor of s.actors){actor.v9Routines={lastCycle:-1,loaded:true};
+ for(const actor of s.actors){actor.v9Routines={lastCycle:-1,lastRespect:-100,loaded:true};
   // Two colleagues can playfully chase one another without leaving clear farm lanes.
   if(actor.kind==='gioco')actor.speed=actor.index%2===0?1.42:1.97;
  }
@@ -39,9 +39,9 @@ function newRoute(g,s,actor){const a=actor.route[0],b=actor.route[1],n=actor.cyc
   actor.route[1]=next;s.report.variableRoutes++;return;
  }
 }
-function cargo(actor){if(!['casse','raccolta','fieno'].includes(actor.kind))return;
+function cargo(actor){if(!['casse','fieno'].includes(actor.kind))return;
  // Deliver outbound and return with empty hands; refill at the supply origin.
- actor.prop.visible=actor.target===1&&actor.phase==='travel'||actor.target===1&&actor.phase==='work'&&actor.cycle===0;
+ actor.prop.visible=actor.target===1;
 }
 function harvest(g,extra,s,actor){const tree=extra.orchards.get(actor);if(!tree)return;
  if(actor.phase==='work'&&actor.target===1&&tree.lastPick!==actor.cycle){
