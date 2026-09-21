@@ -26,6 +26,16 @@ function register(g){const index=g.collision;if(!index?.add)return {count:0,reas
   const obstacle={p,minX:Math.min(...xs),maxX:Math.max(...xs),minZ:Math.min(...zs),maxZ:Math.max(...zs),minY:box3.min.y,h:Math.max(.12,h),kind:'mandria-solid',solid:true};
   index.add(obstacle,obstacle.minX,obstacle.minZ,obstacle.maxX,obstacle.maxZ);subtotal++;count++;
  });byRoot[root.name||'estate']=subtotal;}
+ // SpatialIndex.near yields an entire 60 m bucket, not an exact geometric hit.
+ // Older estate AI treats every returned obstacle as a collision. Filter only
+ // our added obstacles by their real AABB while retaining all original queries.
+ // This keeps the original mobile escort/field hands moving beside scenery.
+ if(!index.__mandriaPreciseAddedObjects){const near=index.near.bind(index);
+  index.near=function(x,z,r=0){const candidates=near(x,z,r);let filtered=null;
+   for(const b of candidates){if(b.kind!=='mandria-solid')continue;
+    if(x+r<b.minX||x-r>b.maxX||z+r<b.minZ||z-r>b.maxZ){if(!filtered)filtered=new Set(candidates);filtered.delete(b);}
+   }return filtered||candidates;};index.__mandriaPreciseAddedObjects=true;
+ }
  const report={count,byRoot};index.__mandriaV7ColliderReport=report;return report;
 }
 function nearActor(g,x,z,y,r,exclude=null){
@@ -73,7 +83,6 @@ if(!ModernGameplay.prototype.__mandriaV7Physics){ModernGameplay.prototype.__mand
   priorUpdate.call(this,dt);
   if(!s?.started||!this.villaV6?.root||!this.villaV4?.root||!this.villaLife||Math.hypot(s.x-VILLA.x,s.z-VILLA.z)>330)return;
   if(!this.villaV7Physics)this.villaV7Physics=register(this);
-  // A previous valid position must not be replaced by a contact inside a moving actor.
   contact(this,before);if(this.villaV7Physics.count)patrolSafety(this,previous);
  };
 }
