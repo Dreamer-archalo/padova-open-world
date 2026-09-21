@@ -1,5 +1,5 @@
 // Preserve autonomous paddock paths even though the old life module rewrites
-// animals every frame. V9 takes priority and v10 fixes the overall estate layout.
+// animals every frame. V9 takes priority and v10/v11 polish the estate.
 import './villa-mandria-v8-scope-targets.js';
 import './villa-mandria-v8-estate-tasks.js';
 import './villa-mandria-v8-vtol.js';
@@ -9,6 +9,7 @@ import './villa-mandria-v8-perimeter-patrols.js';
 import {mandriaV9Update} from './villa-mandria-v9-estate-life.js';
 import {mandriaV9Routines} from './villa-mandria-v9-routines.js';
 import {mandriaV10Update} from './villa-mandria-v10-estate-layout.js';
+import {mandriaV11Update} from './villa-mandria-v11-estate-polish.js';
 import {ModernGameplay} from './modern-gameplay.js';
 import {VILLA,areaPoint,areaLocal} from './gameplay-areas.js';
 import {mandriaFree} from './villa-mandria-placement-fix.js';
@@ -38,4 +39,4 @@ function move(g,dt){if(!g.state?.started||!g.villaV7Life||!Number.isFinite(dt)||
  }
 }
 const oldUpdate=ModernGameplay.prototype.update;
-if(!ModernGameplay.prototype.__mandriaV7AnimalMotion){ModernGameplay.prototype.__mandriaV7AnimalMotion=true;ModernGameplay.prototype.update=function(dt){oldUpdate.call(this,dt);move(this,dt);mandriaV9Update(this,dt);mandriaV9Routines(this);mandriaV10Update(this,dt);};}
+if(!ModernGameplay.prototype.__mandriaV7AnimalMotion){ModernGameplay.prototype.__mandriaV7AnimalMotion=true;ModernGameplay.prototype.update=function(dt){oldUpdate.call(this,dt);move(this,dt);mandriaV9Update(this,dt);mandriaV9Routines(this);mandriaV10Update(this,dt);mandriaV11Update(this,dt);};}
