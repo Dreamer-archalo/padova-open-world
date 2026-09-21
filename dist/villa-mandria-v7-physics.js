@@ -17,9 +17,8 @@ function register(g){const index=g.collision;if(!index?.add)return {count:0,reas
  let count=0,skippedHidden=0;const byRoot={},seen=new Set();g.scene.updateMatrixWorld(true);
  for(const root of roots){let subtotal=0;root.traverse(mesh=>{
   if(!mesh.isMesh||mesh.geometry?.type!=='BoxGeometry'||movableAncestor(mesh,root)||seen.has(mesh))return;
-  // Retired estate perimeter rails were hidden visually by v3 but used to be
-  // reintroduced as invisible v7 colliders. An invisible mesh cannot block a
-  // horse, vehicle or player. Check each ancestor until the owning scene root.
+  // Retired perimeter rails and posts were hidden visually by v3 but used to
+  // become invisible solid colliders in v7. Keep them non-solid throughout.
   if(!visibleGeometry(mesh,root)){skippedHidden++;return;}
   seen.add(mesh);box3.setFromObject(mesh);const w=box3.max.x-box3.min.x,h=box3.max.y-box3.min.y,d=box3.max.z-box3.min.z;
   if(!Number.isFinite(w+h+d)||h<.09||w<.09||d<.09||h<.19&&w>3&&d>3||w>85||d>85)return;
@@ -56,7 +55,7 @@ function nearActor(g,x,z,y,r,exclude=null){
   if(Math.hypot(o.position.x-x,o.position.z-z)<r+2.1)return group;
  }
  for(const shooter of g.villaRange?.shooters||[]){if(!shooter.visible||Math.abs(shooter.position.y-y)>2.6)continue;
-  if(Math.hypot(shooter.position.x-x,shooter.position.z-shooter.position.z)<r+.55)return shooter;
+  if(Math.hypot(shooter.position.x-x,shooter.position.z-z)<r+.55)return shooter;
  }
  for(const patch of g.villaLife?.pastures||[])for(const animal of patch.animals||[]){if(!animal.a?.visible||Math.abs(animal.a.position.y-y)>2.6)continue;
   if(Math.hypot(animal.a.position.x-x,animal.a.position.z-z)<r+.62)return animal;
