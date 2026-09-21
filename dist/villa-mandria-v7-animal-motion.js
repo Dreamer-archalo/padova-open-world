@@ -2,6 +2,7 @@
 // each animal's displayed position every frame for its old idle animation.
 import './villa-mandria-v8-scope-targets.js';
 import './villa-mandria-v8-estate-tasks.js';
+import './villa-mandria-v8-grounds-roof.js';
 import {ModernGameplay} from './modern-gameplay.js';
 import {VILLA,areaPoint,areaLocal} from './gameplay-areas.js';
 import {mandriaFree} from './villa-mandria-placement-fix.js';
