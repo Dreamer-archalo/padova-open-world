@@ -15,7 +15,11 @@ function ring(g,report){const pen=g.villaV4?.corral;if(!pen||!g.villaV5Estate?.t
  const horses=g.villaV3.patrols.filter(c=>c.mandriaPatrol==='mounted'&&c.estateHorse);
  for(const [i,c] of horses.entries()){
   if(c===g.state.car)continue;const shift=Math.floor(i*oval.length/horses.length),points=[...oval.slice(shift),...oval.slice(0,shift)],route=[...points,points[0]],p=at(...route[0]);
-  Object.assign(c,{route,routeIndex:1,x:p.x,z:p.z,y:g.terrain.height(p.x,p.z),speed:0,estateAuthorized:true,mandriaArenaHorse:true});
+  Object.assign(c,{route,routeIndex:1,x:p.x,z:p.z,y:g.terrain.height(p.x,p.z),speed:0,patrolSlot:0,estateAuthorized:true,mandriaArenaHorse:true});
+  // Legacy Hyper culling may have hidden the second horse earlier in this
+  // same update. A newly assigned arena route must be visible immediately,
+  // including the first frame in which villaV10.report becomes available.
+  c.mesh.visible=Math.hypot(g.state.x-c.x,g.state.z-c.z)<380;
   c.home={x:c.x,z:c.z,y:c.y,yaw:c.yaw};g.pose(c);
  }
  report.arenaHorses=horses.length;return horses[0]||null;
