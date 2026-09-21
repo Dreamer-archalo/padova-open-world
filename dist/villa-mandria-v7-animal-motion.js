@@ -2,6 +2,7 @@
 // each animal's displayed position every frame for its old idle animation.
 import './villa-mandria-v8-scope-targets.js';
 import './villa-mandria-v8-estate-tasks.js';
+import './villa-mandria-v8-vtol.js';
 import './villa-mandria-v8-grounds-roof.js';
 import './villa-mandria-v8-deliveries.js';
 import './villa-mandria-v8-perimeter-patrols.js';
