@@ -1,0 +1,48 @@
+name: Diagnose public PR51 map loading
+on:
+  push:
+    branches: [feat/villa-treves-phase1-20260919]
+    paths: [.github/workflows/preview-github-pages-load.yml, dist/game.js, dist/initial-loader.js, dist/index.html]
+  workflow_dispatch:
+jobs:
+  real-public-site:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Install Chromium
+        run: |
+          npm install --no-save playwright@1.55.1
+          npx playwright install --with-deps chromium
+      - name: Load public URL, data and actual map in Chromium
+        run: |
+          node --input-type=module <<'JS'
+          import {chromium} from 'playwright';
+          const url='https://dreamer-archalo.github.io/padova-open-world/preview/pr-51/';
+          const browser=await chromium.launch({headless:true,args:['--enable-webgl','--use-gl=angle','--use-angle=swiftshader','--disable-dev-shm-usage']});
+          const page=await browser.newPage({viewport:{width:1180,height:760}});
+          const errors=[];
+          page.on('pageerror',e=>errors.push('PAGE: '+e.message));
+          page.on('console',m=>{if(m.type()==='error')errors.push('CONSOLE: '+m.text().slice(0,400));});
+          page.on('requestfailed',r=>errors.push('REQUEST: '+r.url()+' '+r.failure()?.errorText));
+          page.on('response',r=>{if(r.status()>=400)errors.push('HTTP '+r.status()+' '+r.url());});
+          try{
+            for(const path of ['','data/padova.json','data/terrain.json','data/city.json','game.js','initial-loader.js']){
+              const res=await page.request.get(url+path,{timeout:60000});
+              console.log('ASSET '+path+' '+res.status()+' '+res.headers()['content-type']+' '+res.headers()['content-length']);
+            }
+            const res=await page.goto(url,{waitUntil:'domcontentloaded',timeout:60000});console.log('NAVIGATE '+res.status()+' '+page.url());
+            await page.waitForFunction(()=>!document.getElementById('playBtn')?.disabled,{timeout:30000});
+            await page.locator('#initialQuality').selectOption('hyper');
+            await page.locator('#playBtn').click();
+            await page.waitForFunction(()=>document.documentElement.dataset.initialWorldReady==='true'||document.getElementById('initialLoaderError')?.hidden===false||document.querySelector('#loadingText.fatal'),null,{timeout:210000});
+            const result=await page.evaluate(()=>({ready:document.documentElement.dataset.initialWorldReady,loaderStatus:document.getElementById('initialLoaderStatus')?.textContent,loaderError:document.getElementById('initialLoaderError')?.textContent,loadingText:document.getElementById('loadingText')?.textContent,percent:document.getElementById('initialLoaderPercent')?.textContent,location:location.href}));
+            console.log('MAP_BOOTSTRAP '+JSON.stringify(result));
+            console.log('BROWSER_ERRORS '+JSON.stringify(errors.slice(-30)));
+            if(result.ready!=='true'||errors.length)process.exitCode=1;
+          }catch(error){console.log('BOOTSTRAP_EXCEPTION '+(error.stack||error));console.log('BROWSER_ERRORS '+JSON.stringify(errors.slice(-30)));console.log('VISIBLE '+JSON.stringify(await page.evaluate(()=>({status:document.getElementById('initialLoaderStatus')?.textContent,error:document.getElementById('initialLoaderError')?.textContent,loading:document.getElementById('loadingText')?.textContent})).catch(()=>null)));process.exitCode=1;}
+          finally{await browser.close();}
+          JS

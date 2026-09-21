@@ -1,0 +1,143 @@
+name: Mandria complete playable GitHub Pages preview
+on:
+  push:
+    branches: [feat/villa-treves-phase1-20260919]
+    paths:
+      - 'dist/villa-mandria-*.js'
+      - 'dist/gameplay-areas.js'
+      - 'dist/phase2-runtime.js'
+      - 'tools/verify-villa-mandria-estate-v2.mjs'
+      - 'tools/verify-villa-mandria-relocation.mjs'
+      - 'tools/verify-mandria-v5-private-road.mjs'
+      - 'tools/test-mandria-estate-v2-chromium.mjs'
+      - 'tools/test-mandria-estate-v3-chromium.mjs'
+      - 'tools/verify-mandria-v5.mjs'
+      - 'tools/test-mandria-v5-chromium.mjs'
+      - 'tools/test-mandria-v5-estate-chromium.mjs'
+      - 'tools/test-mandria-v6-browser.mjs'
+      - 'tools/test-mandria-v7-browser.mjs'
+      - 'tools/test-mandria-v8-browser.mjs'
+      - '.github/workflows/mandria-complete-preview.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+concurrency:
+  group: mandria-isolated-pages-preview
+  cancel-in-progress: true
+jobs:
+  check-and-preview:
+    runs-on: ubuntu-latest
+    timeout-minutes: 24
+    steps:
+      - name: Checkout unmerged Mandria source
+        uses: actions/checkout@v6
+        with:
+          ref: feat/villa-treves-phase1-20260919
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Verify estate modules, road privacy and conversations
+        run: |
+          node --check dist/villa-mandria-estate-v2.js
+          node --check dist/villa-mandria-estate-v3.js
+          node --check dist/villa-mandria-horse-rider.js
+          node --check dist/villa-mandria-air-preview-guard.js
+          node --check dist/villa-mandria-v5-estate-polish.js
+          node --check dist/villa-mandria-v5-greetings.js
+          node --check dist/villa-mandria-v4-range.js
+          node --check dist/villa-mandria-v6-scope.js
+          node --check dist/villa-mandria-v6-estate.js
+          node --check dist/villa-mandria-v6-stairs.js
+          node --check dist/villa-mandria-v6-dialogue-flow.js
+          node --check dist/villa-mandria-v7-physics.js
+          node --check dist/villa-mandria-v7-life.js
+          node --check dist/villa-mandria-v7-entry-stairs.js
+          node --check dist/villa-mandria-v7-animal-motion.js
+          node --check dist/villa-mandria-v8-scope-targets.js
+          node --check dist/villa-mandria-v8-estate-tasks.js
+          node --check dist/villa-mandria-v8-vtol.js
+          node --check dist/villa-mandria-v8-grounds-roof.js
+          node --check dist/villa-mandria-v8-deliveries.js
+          node --check dist/villa-mandria-v8-perimeter-patrols.js
+          node --check dist/villa-mandria-v9-estate-life.js
+          node --check dist/villa-mandria-road-privacy.js
+          node --check dist/phase2-runtime.js
+          node --check tools/test-mandria-v8-browser.mjs
+          node tools/verify-mandria-catalog-ui.mjs
+          node tools/verify-villa-mandria-life.mjs
+          node tools/verify-villa-mandria-estate-v2.mjs
+          node tools/verify-mandria-v5.mjs
+          node tools/verify-mandria-v5-private-road.mjs
+          node tools/verify-villa-mandria-relocation.mjs
+      - name: Install Chromium
+        run: |
+          npm install --no-save playwright@1.55.1
+          npx playwright install --with-deps chromium
+      - name: Start real static preview server
+        run: |
+          node tools/serve.mjs --host 127.0.0.1 --port 4173 &
+          for i in $(seq 1 30); do if curl -fsS http://127.0.0.1:4173/ -o /dev/null; then exit 0; fi; sleep 1; done
+          exit 1
+      - name: Test v7 real collisions, fountain parking, animal motion and worker cooldown
+        run: node tools/test-mandria-v7-browser.mjs
+      - name: Test true first-person scope, estate guards, rear farm and old stairs
+        run: node tools/test-mandria-v6-browser.mjs
+      - name: Test WebGL existing estate, patrols and all aircraft cards
+        run: node tools/test-mandria-estate-v2-chromium.mjs
+      - name: Test WebGL perimeter, hangar, dialogue and rideable horses
+        run: node tools/test-mandria-estate-v3-chromium.mjs
+      - name: Test one-shot worker conversations, scope, holster and horse jumping
+        run: node tools/test-mandria-v5-chromium.mjs
+      - name: Test WebGL private security, Ape patrols, oval horses, roofs, cars and privacy
+        run: node tools/test-mandria-v5-estate-chromium.mjs
+      - name: Test final Mandria aiming, VTOL, perimeter, workers and authorized deliveries
+        run: node tools/test-mandria-v8-browser.mjs
+      - name: Save walkthrough/screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: mandria-v8-browser-evidence
+          path: test-artifacts/
+          if-no-files-found: ignore
+      - name: Checkout production main into isolated directory
+        uses: actions/checkout@v6
+        with:
+          ref: main
+          path: .production-source
+          persist-credentials: false
+      - name: Assemble preview without merging or changing production root
+        run: |
+          set -euo pipefail
+          test -f .production-source/dist/index.html
+          test -f dist/index.html
+          mkdir -p .production-source/dist/preview/pr-51
+          cp -a dist/. .production-source/dist/preview/pr-51/
+          test -f .production-source/dist/preview/pr-51/villa-mandria-estate-v3.js
+          test -f .production-source/dist/preview/pr-51/villa-mandria-horse-rider.js
+          test -f .production-source/dist/preview/pr-51/villa-mandria-v5-dialogues.js
+          test -f .production-source/dist/preview/pr-51/villa-mandria-v5-controls.js
+          test -f .production-source/dist/preview/pr-51/villa-mandria-v6-scope.js
+          test -f .production-source/dist/preview/pr-51/villa-mandria-v6-estate.js
+          test -f .production-source/dist/preview/pr-51/villa-mandria-v6-stairs.js
+          test -f .production-source/dist/preview/pr-51/villa-mandria-v7-physics.js
+          test -f .production-source/dist/preview/pr-51/villa-mandria-v7-life.js
+          test -f .production-source/dist/preview/pr-51/villa-mandria-v7-entry-stairs.js
+          test -f .production-source/dist/preview/pr-51/villa-mandria-v8-scope-targets.js
+          test -f .production-source/dist/preview/pr-51/villa-mandria-v8-vtol.js
+          test -f .production-source/dist/preview/pr-51/villa-mandria-v9-estate-life.js
+          test -f .production-source/dist/preview/pr-51/data/padova.json
+          test -f .production-source/dist/preview/pr-51/vendor/three.module.js
+          cmp dist/index.html .production-source/dist/preview/pr-51/index.html
+          touch .production-source/dist/.nojekyll
+          echo 'Main root untouched; PR #51 isolated in /preview/pr-51/'
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v4
+        with:
+          path: .production-source/dist
+      - name: Publish tested branch preview using GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
+      - name: Display test link
+        run: echo 'https://dreamer-archalo.github.io/padova-open-world/preview/pr-51/'

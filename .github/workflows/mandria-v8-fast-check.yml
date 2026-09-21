@@ -1,0 +1,47 @@
+name: Mandria v8 fast WebGL acceptance
+on:
+  push:
+    branches: [feat/villa-treves-phase1-20260919]
+    paths:
+      - 'dist/villa-mandria-*.js'
+      - 'tools/test-mandria-v8-browser.mjs'
+      - '.github/workflows/mandria-v8-fast-check.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: mandria-v8-fast-acceptance
+  cancel-in-progress: true
+jobs:
+  webgl:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - name: Checkout exact commit
+        uses: actions/checkout@v6
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Check syntax of estate runtime and test
+        run: |
+          node --check dist/villa-mandria-v8-perimeter-patrols.js
+          node --check dist/villa-mandria-v7-physics.js
+          node --check tools/test-mandria-v8-browser.mjs
+      - name: Prepare Chromium
+        run: |
+          npm install --no-save playwright@1.55.1
+          npx playwright install --with-deps chromium
+      - name: Serve isolated game
+        run: |
+          node tools/serve.mjs --host 127.0.0.1 --port 4173 &
+          for i in $(seq 1 30); do if curl -fsS http://127.0.0.1:4173/ -o /dev/null; then exit 0; fi; sleep 1; done
+          exit 1
+      - name: Verify real v8 estate in browser
+        run: node tools/test-mandria-v8-browser.mjs
+      - name: Preserve screenshots if a check fails
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: mandria-v8-fast-evidence
+          path: test-artifacts/
+          if-no-files-found: ignore

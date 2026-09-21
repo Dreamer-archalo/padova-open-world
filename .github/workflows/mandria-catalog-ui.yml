@@ -1,0 +1,55 @@
+name: Mandria vehicle catalogue categories and pictures
+on:
+  push:
+    branches: [feat/villa-treves-phase1-20260919]
+  pull_request:
+    branches: [main]
+    paths:
+      - 'dist/villa-mandria-catalog-ui.js'
+      - 'dist/villa-mandria-hangar.js'
+      - 'dist/phase2-runtime.js'
+      - 'tools/verify-mandria-catalog-ui.mjs'
+      - 'tools/test-mandria-catalog-ui-chromium.mjs'
+      - 'tools/debug-mandria-model-picture.mjs'
+      - '.github/workflows/mandria-catalog-ui.yml'
+  workflow_dispatch:
+jobs:
+  catalogue-static:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Check syntax and all model-specific previews
+        run: |
+          node --check dist/villa-mandria-catalog-ui.js
+          node --check dist/phase2-runtime.js
+          node tools/verify-mandria-catalog-ui.mjs
+  catalogue-browser:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install Chromium
+        run: |
+          npm install --no-save playwright@1.55.1
+          npx playwright install --with-deps chromium
+      - name: Start game
+        run: |
+          node tools/serve.mjs --host 127.0.0.1 --port 4173 &
+          for i in $(seq 1 25); do if curl -fsS http://127.0.0.1:4173/ -o /dev/null; then break; fi; sleep 1; done
+      - name: Diagnose model preview pixels
+        run: node tools/debug-mandria-model-picture.mjs
+      - name: Exercise categories, preview images, color and selection
+        run: node tools/test-mandria-catalog-ui-chromium.mjs
+      - name: Upload screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: mandria-category-gallery
+          path: test-artifacts/mandria-catalog-*
+          if-no-files-found: ignore
