@@ -7,6 +7,7 @@ import './villa-mandria-v8-grounds-roof.js';
 import './villa-mandria-v8-deliveries.js';
 import './villa-mandria-v8-perimeter-patrols.js';
 import {mandriaV9Update} from './villa-mandria-v9-estate-life.js';
+import {mandriaV9Routines} from './villa-mandria-v9-routines.js';
 import {ModernGameplay} from './modern-gameplay.js';
 import {VILLA,areaPoint,areaLocal} from './gameplay-areas.js';
 import {mandriaFree} from './villa-mandria-placement-fix.js';
@@ -39,4 +40,4 @@ function move(g,dt){if(!g.state?.started||!g.villaV7Life||!Number.isFinite(dt)||
  }
 }
 const oldUpdate=ModernGameplay.prototype.update;
-if(!ModernGameplay.prototype.__mandriaV7AnimalMotion){ModernGameplay.prototype.__mandriaV7AnimalMotion=true;ModernGameplay.prototype.update=function(dt){oldUpdate.call(this,dt);move(this,dt);mandriaV9Update(this,dt);};}
+if(!ModernGameplay.prototype.__mandriaV7AnimalMotion){ModernGameplay.prototype.__mandriaV7AnimalMotion=true;ModernGameplay.prototype.update=function(dt){oldUpdate.call(this,dt);move(this,dt);mandriaV9Update(this,dt);mandriaV9Routines(this);};}
