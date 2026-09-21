@@ -27,28 +27,26 @@ try{
  console.log('ESTATE_EXPANSION '+JSON.stringify(start));
  assert(start.barns>=1&&start.fieldTools>=1,'farm and fields not populated in real world');
  assert(start.lanes>0&&start.perimeter>0,'estate service-lane and boundary detail absent');
- // V4 deliberately replaces the second tactical gate guard with a suited bodyguard.
- // The old requirement of exactly two armed gate guards conflicts with the new brief.
  assert(start.recruits>=1&&start.guards>=1&&start.bodyguards>=1&&start.cars===2&&start.movingEscort,'private security deployment incomplete');
  await page.waitForTimeout(1600);
  const motion=await page.evaluate(()=>{const g=globalThis.__mandriaWalkthrough,e=g.villaLife.expansion;return {car:e.escort?.car.position.toArray(),worker:g.villaLife.fields[0]?.worker.obj.position.toArray()};});
+ if(JSON.stringify(motion.car)===JSON.stringify(start.carPosition)){
+  const report=await page.evaluate(async()=>{const g=globalThis.__mandriaWalkthrough,e=g.villaLife.expansion.escort,{areaPoint,VILLA}=await import('./gameplay-areas.js'),{collides}=await import('./core.js');
+   const p=areaPoint(VILLA,...e.route[e.index]),c=e.car.position,dx=p.x-c.x,dz=p.z-c.z,d=Math.hypot(dx,dz),step=.055;
+   const x=c.x+dx/d*step,z=c.z+dz/d*step,local=(x,z)=>{const a=x-VILLA.x,b=z-VILLA.z,co=Math.cos(VILLA.yaw),si=Math.sin(VILLA.yaw);return [a*co-b*si,a*si+b*co];};
+   const candidates=[...g.collision.near(x,z,1.1)].map(b=>({kind:b.kind,solid:b.solid,area:[b.minX,b.minZ,b.maxX,b.maxZ],height:[b.minY,b.h]}));
+   return {route:e.route,index:e.index,player:[g.state.x,g.state.z],from:[c.x,c.z],to:[p.x,p.z],next:[x,z],nextLocal:local(x,z),nextTerrain:g.terrain.height(x,z),blocker:!!collides(x,z,1.1,g.collision,g.terrain.height(x,z)),candidates,physics:g.villaV7Physics};
+  });console.log('ESCORT_STALL_DEBUG '+JSON.stringify(report));
+ }
  assert.notDeepEqual(motion.car,start.carPosition,'black security car did not move');
  assert.notDeepEqual(motion.worker,start.workerPosition,'agricultural worker did not resume work');
  await page.screenshot({path:'test-artifacts/mandria-estate-v2.png',timeout:25000});
  phase='staff respect and resumption';
- const greeting=await page.evaluate(()=>{
-  const g=globalThis.__mandriaWalkthrough,p=g.villaLife.people.find(p=>p.role==='servant');
-  g.state.x=p.obj.position.x;g.state.z=p.obj.position.z;return {name:p.obj.name};
- });
+ const greeting=await page.evaluate(()=>{const g=globalThis.__mandriaWalkthrough,p=g.villaLife.people.find(p=>p.role==='servant');g.state.x=p.obj.position.x;g.state.z=p.obj.position.z;return {name:p.obj.name};});
  await page.waitForFunction(()=>globalThis.__mandriaWalkthrough?.villaLife.people.some(p=>p.role==='servant'&&p.until>globalThis.__mandriaWalkthrough.state.elapsed),null,{timeout:12000});
  assert(greeting.name.includes('servant'));
  phase='aircraft thumbnails';
- // The public HANGAR button is intentionally proximity-gated. Return from the
- // servant outside the gate to the villa spawn before attempting to open it.
- await page.evaluate(async()=>{
-  const g=globalThis.__mandriaWalkthrough,{HOME}=await import('./gameplay-areas.js');
-  Object.assign(g.state,{x:HOME.x,z:HOME.z,y:g.terrain.height(HOME.x,HOME.z),mode:'foot',car:null,speed:0,vy:0});
- });
+ await page.evaluate(async()=>{const g=globalThis.__mandriaWalkthrough,{HOME}=await import('./gameplay-areas.js');Object.assign(g.state,{x:HOME.x,z:HOME.z,y:g.terrain.height(HOME.x,HOME.z),mode:'foot',car:null,speed:0,vy:0});});
  await page.waitForFunction(()=>document.getElementById('mandriaHangarButton')&&!document.getElementById('mandriaHangarButton').hidden,null,{timeout:20000});
  await page.locator('#mandriaHangarButton').click();
  await page.waitForFunction(()=>document.getElementById('mandriaHangarDialog')?.open&&document.getElementById('hangarSections')&&!document.getElementById('hangarSections').hidden,null,{timeout:20000});
@@ -56,9 +54,7 @@ try{
  const ids=await page.locator('#hangarGrid [data-hangar-id]:visible').evaluateAll(cards=>cards.map(c=>c.dataset.hangarId));
  assert.equal(ids.length,16,'the aircraft selection must contain all 16 models');
  const thumbnails=[];
- for(const id of ids){
-  const selector=`#hangarGrid [data-hangar-id="${id}"] img`;
-  await page.locator(selector).scrollIntoViewIfNeeded();
+ for(const id of ids){const selector=`#hangarGrid [data-hangar-id="${id}"] img`;await page.locator(selector).scrollIntoViewIfNeeded();
   await page.waitForFunction(id=>{const img=document.querySelector(`#hangarGrid [data-hangar-id="${id}"] img`);return img?.complete&&img.dataset.previewReady===id+'/'+document.getElementById('hangarPaint').value;},id,{timeout:50000});
   thumbnails.push(await page.locator(selector).evaluate(img=>({id:img.closest('[data-hangar-id]').dataset.hangarId,src:img.getAttribute('src'),alt:img.alt,w:img.naturalWidth})));
  }
