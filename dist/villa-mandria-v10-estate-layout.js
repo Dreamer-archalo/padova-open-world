@@ -35,15 +35,27 @@ function apes(g,report){const actors=g.villaV3.patrols.filter(c=>c.mandriaPatrol
  }
  report.apes=actors.length;report.apeLanes=lanes.length;return base;
 }
+// The v9 animal walker validates every intermediate step and has its own
+// slope threshold. Never teleport animals to a merely clear point when their
+// next route would be blocked by a fence, terrain edge or other prop.
+function grazingRoute(g,a,b){const n=Math.max(1,Math.ceil(distance(a,b)/.80));let last=null;
+ for(let k=0;k<=n;k++){const u=a[0]+(b[0]-a[0])*k/n,v=a[1]+(b[1]-a[1])*k/n;
+  if(!mandriaFree(g,u,v,.48,2.6))return false;
+  const p=at(u,v),y=g.terrain.height(p.x,p.z);if(last!==null&&Math.abs(last-y)>.38)return false;last=y;
+ }return true;}
 function distributeFarm(g,report){let count=0;
  const offsets=[[-8,-8],[7,-7],[-7,6],[7,7],[0,0],[-8,0],[8,0]];
  for(const [farm,patch] of (g.villaLife?.pastures||[]).entries()){
   const u=patch.worker.u+10,v=patch.worker.v-10;
   for(const [i,a] of patch.animals.entries()){
-   if(a.v10Spread)continue;const [dx,dz]=offsets[(i+farm)%offsets.length];
-   const site=[[u+dx,v+dz],[u+dx*.7,v+dz*.7],[u+dx*.4,v+dz*.4]].find(p=>safe(g,...p,.47));
-   if(!site)continue;const p=at(...site);a.a.position.set(p.x,g.terrain.height(p.x,p.z),p.z);a.origin.copy(a.a.position);a.walkPosition?.copy(a.a.position);
-   if(a.v9){a.v9.target=null;a.v9.phase='graze';a.v9.until=g.state.elapsed+2+i*.4;}a.v10Spread=true;count++;
+   if(a.v10Spread)continue;const local=areaLocal(VILLA,a.a.position.x,a.a.position.z),from=[local.u,local.v],primary=offsets[(i+farm)%offsets.length],dx=primary[0],dz=primary[1];
+   const trials=[[u+dx,v+dz],[u+dx*.7,v+dz*.7],[u+dx*.4,v+dz*.4],
+    [u+Math.sin(i*2.4+farm)*6,v+Math.cos(i*1.7+farm)*6],
+    [from[0]+(i%2?2:-2),from[1]+(i%3-1)*2]];
+   const goal=trials.find(([x,z])=>Math.abs(x-u)<10.9&&Math.abs(z-v)<12&&distance(from,[x,z])>1.2&&grazingRoute(g,from,[x,z]));
+   if(goal&&a.v9){a.v9.target=goal;a.v9.phase='walk';a.v9.until=0;a.v10Spread=true;count++;}
+   // If there is no safe path, preserve the original moving pasture pattern:
+   // neither teleport the animal nor strand it behind an obstacle.
   }
  }report.spreadAnimals=count;
 }
