@@ -95,6 +95,27 @@ jobs:
           test -f dist/preview/pr-51/data/padova.json
           test -f dist/preview/pr-51/vendor/three.module.js
           echo 'Main production root untouched; PR 51 game isolated in /preview/pr-51/.'
+      # Isolated continuity playtest; never replace the production runtime.
+      - name: Checkout PR 52 continuity playtest
+        uses: actions/checkout@v6
+        with:
+          ref: 20c6411c215ad57bdc1a57df0f0ae69554d241c2
+          path: .preview-pr52-source
+          persist-credentials: false
+      - name: Validate and assemble PR 52 playtest
+        shell: bash
+        run: |
+          set -euo pipefail
+          npm --prefix .preview-pr52-source run test:city-continuity
+          npm --prefix .preview-pr52-source run test:earth-access
+          mkdir -p dist/preview/pr-52
+          cp -a .preview-pr52-source/dist/. dist/preview/pr-52/
+          cmp .preview-pr52-source/dist/index.html dist/preview/pr-52/index.html
+          test -f dist/preview/pr-52/earth-access.js
+          test -f dist/preview/pr-52/data/padova.json
+          test -f dist/preview/pr-52/vendor/three.module.js
+          git diff --exit-code -- dist
+          echo 'Production files unchanged; continuity playtest isolated in /preview/pr-52/.'
       - name: Configure GitHub Pages
         uses: actions/configure-pages@v5
       - name: Upload dist plus isolated preview
@@ -106,3 +127,5 @@ jobs:
         uses: actions/deploy-pages@v4
       - name: Show public preview link
         run: echo "PR 51 preview ${{ steps.deployment.outputs.page_url }}preview/pr-51/"
+      - name: Show continuity playtest link
+        run: echo "PR 52 preview ${{ steps.deployment.outputs.page_url }}preview/pr-52/"
