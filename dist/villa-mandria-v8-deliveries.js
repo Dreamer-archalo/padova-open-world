@@ -51,7 +51,7 @@ function progress(g,d,dt){const safe=Math.min(dt,.08);
   const distance=Math.hypot(from.u-to.u,from.v-to.v);d.progress=Math.min(1,d.progress+safe*2.15/distance);
   advance(g,d.truck,from,to,d.progress);
   if(d.progress>=1){if(d.phase==='enter'){d.phase='permission';d.progress=0;d.driver.obj.visible=true;}
-   else{g.remove(d.truck);d.driver.obj.parent?.remove(d.driver.obj);g.villaV8Delivery.active=null;g.villaV8Delivery.nextAt=g.state.elapsed+240;}}
+   else{g.remove(d.truck);d.driver.obj.parent?.remove(d.driver.obj);g.villaV8Delivery.active=null;g.villaV8Delivery.nextAt=g.state.elapsed+155;}}
   return;
  }
  if(d.phase!=='unload')return;
@@ -67,9 +67,14 @@ const beforePopulate=ModernGameplay.prototype.populate,beforeUpdate=ModernGamepl
 if(!ModernGameplay.prototype.__mandriaV8Deliveries){
  ModernGameplay.prototype.__mandriaV8Deliveries=true;
  ModernGameplay.prototype.populate=function(...args){if(this.villaV8Delivery?.active){this.villaV8Delivery.active.driver.obj.parent?.remove(this.villaV8Delivery.active.driver.obj);}this.villaV8Delivery=null;return beforePopulate.apply(this,args);};
- ModernGameplay.prototype.update=function(dt){beforeUpdate.call(this,dt);game=this;if(!this.state?.started||!this.villaV3||Math.hypot(this.state.x-VILLA.x,this.state.z-VILLA.z)>330)return;
-  install();this.villaV8Delivery??={active:null,nextAt:this.state.elapsed+45};const manager=this.villaV8Delivery;
-  if(!manager.active&&this.state.elapsed>=manager.nextAt){if(!spawn(this))manager.nextAt=this.state.elapsed+70;}
+ ModernGameplay.prototype.update=function(dt){beforeUpdate.call(this,dt);game=this;
+  if(!this.state?.started||!this.villaV3)return;
+  // An already approaching supplier keeps moving when the player leaves the
+  // villa: the permission notification must be able to arrive anywhere in game.
+  const close=Math.hypot(this.state.x-VILLA.x,this.state.z-VILLA.z)<=330;
+  if(!close&&!this.villaV8Delivery?.active){if(button)button.hidden=true;return;}
+  install();this.villaV8Delivery??={active:null,nextAt:this.state.elapsed+30};const manager=this.villaV8Delivery;
+  if(close&&!manager.active&&this.state.elapsed>=manager.nextAt){if(!spawn(this))manager.nextAt=this.state.elapsed+70;}
   if(manager.active&&Number.isFinite(dt)&&dt>0)progress(this,manager.active,dt);
   button.hidden=!nearDriver(this)||dialog.open||!!document.querySelector('dialog[open]');
  };
