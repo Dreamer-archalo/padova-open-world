@@ -1,4 +1,4 @@
-// Only the fictional estate shooting range may temporarily override the gameplay camera.
+// The estate shooting range optic changes the actual city camera, not just an overlay.
 import * as THREE from './vendor/three.module.js';
 import {ModernGameplay} from './modern-gameplay.js';
 let game=null,holsterButton=null;
@@ -18,25 +18,28 @@ function install(){if(holsterButton)return;
  holsterButton=document.createElement('button');holsterButton.id='mandriaHolster';holsterButton.type='button';holsterButton.textContent='X · METTI GIÙ IL FUCILE';holsterButton.hidden=true;holsterButton.addEventListener('click',()=>putAway(game));document.body.appendChild(holsterButton);
  const label=document.querySelector('#mandriaSniperScope .scope-info');if(label)label.textContent='TAB · ESCI DALLA MIRA   ·   INVIO · SPARA   ·   X · RIPONI';
 }
-const oldRender=THREE.WebGLRenderer.prototype.render;
-if(!THREE.WebGLRenderer.prototype.__mandriaV6Scope){THREE.WebGLRenderer.prototype.__mandriaV6Scope=true;
- THREE.WebGLRenderer.prototype.render=function(scene,camera){const g=game;
-  if(!g?.state?.started||!scene?.isScene||!camera?.isPerspectiveCamera)return oldRender.call(this,scene,camera);
-  if(!aiming(g)){if(camera.userData.mandriaOriginalFov!==undefined){camera.fov=camera.userData.mandriaOriginalFov;delete camera.userData.mandriaOriginalFov;camera.updateProjectionMatrix();}return oldRender.call(this,scene,camera);}
-  // The active graphics scene is not always referentially identical to
-  // ModernGameplay.scene (streaming and postprocessing can wrap it). Apply
-  // the optic to the actual perspective render, after third-person camera setup.
-  if(camera.userData.mandriaOriginalFov===undefined)camera.userData.mandriaOriginalFov=camera.fov;
+// The renderer installs an own render method, so overriding its prototype
+// never reached the frame. The city updates its main camera's projection at
+// the end of updateCamera(), immediately before calling renderer.render().
+// Hook that real projection update and leave short-range preview cameras alone.
+const originalProjection=THREE.PerspectiveCamera.prototype.updateProjectionMatrix;
+if(!THREE.PerspectiveCamera.prototype.__mandriaRealScope){
+ THREE.PerspectiveCamera.prototype.__mandriaRealScope=true;
+ THREE.PerspectiveCamera.prototype.updateProjectionMatrix=function(...args){
+  const g=game;
+  if(!aiming(g)||this.far<300)return originalProjection.apply(this,args);
   const s=g.state,eye=s.y+1.69;
-  camera.fov=22;camera.updateProjectionMatrix();camera.position.set(s.x,eye,s.z);
-  camera.lookAt(s.x+Math.sin(s.yaw)*85,eye,s.z+Math.cos(s.yaw)*85);
-  const avatars=scene.children.filter(o=>o.isGroup&&o.visible&&o.children.some(c=>c.isMesh||c.isGroup)&&
-    Math.hypot(o.position.x-s.x,o.position.z-s.z)<.8&&Math.abs(o.position.y-(s.y+.08))<1);
-  const gun=g.villaV4Polish?.gun,gunShown=gun?.visible;
-  for(const avatar of avatars)avatar.visible=false;if(gun)gun.visible=false;
-  g.mandriaScopeFrame={fov:camera.fov,x:camera.position.x,y:camera.position.y,z:camera.position.z,
+  this.position.set(s.x,eye,s.z);
+  this.lookAt(s.x+Math.sin(s.yaw)*85,eye,s.z+Math.cos(s.yaw)*85);
+  this.fov=22;
+  const avatars=g.scene.children.filter(o=>o.isGroup&&o.userData?.character&&
+    Math.hypot(o.position.x-s.x,o.position.z-s.z)<2&&Math.abs(o.position.y-s.y)<3);
+  for(const avatar of avatars)avatar.visible=false;
+  const gun=g.villaV4Polish?.gun;if(gun)gun.visible=false;
+  const result=originalProjection.apply(this,args);
+  g.mandriaScopeFrame={fov:this.fov,x:this.position.x,y:this.position.y,z:this.position.z,
     yaw:s.yaw,hiddenAvatars:avatars.length,elapsed:s.elapsed};
-  try{return oldRender.call(this,scene,camera);}finally{for(const avatar of avatars)avatar.visible=true;if(gun)gun.visible=gunShown;}
+  return result;
  };
 }
 const previousPopulate=ModernGameplay.prototype.populate,previousUpdate=ModernGameplay.prototype.update;
