@@ -1,8 +1,7 @@
-// Keep the Mandria estate private, preserving public road connectivity only
-// where a complete detour OUTSIDE the boundary passes actual map-obstacle checks.
+// Preserve traffic on original public streets by adding only obstacle-cleared
+// detours OUTSIDE the private Mandria border. Unsafe alternatives stay blocked.
 import {pointInside,nearestOnSegment} from './core.js';
 import {VILLA,areaLocal,areaPoint} from './gameplay-areas-implementation.js';
-
 export const MANDRIA_PRIVATE_LIMITS=Object.freeze({west:-132,east:132,south:-97,north:62});
 const same=(a,b)=>Math.hypot(a[0]-b[0],a[1]-b[1])<.025;
 function outsideParts(points,limits=MANDRIA_PRIVATE_LIMITS){
@@ -33,7 +32,7 @@ export function segmentEntersMandria(a,b){
 }
 const length=(a,b)=>Math.hypot(a[0]-b[0],a[1]-b[1]);
 const world=([u,v])=>{const p=areaPoint(VILLA,u,v);return [p.x,p.z];};
-function anchor(p,b,pad){
+function anchor(p,b){
  const loc=areaLocal(VILLA,...p),m=MANDRIA_PRIVATE_LIMITS;
  const edges=[['west',Math.abs(loc.u-m.west)],['east',Math.abs(loc.u-m.east)],['south',Math.abs(loc.v-m.south)],['north',Math.abs(loc.v-m.north)]];
  const side=edges.sort((a,b)=>a[1]-b[1])[0][0];
@@ -63,11 +62,23 @@ function surround(a,c,b,clockwise){const w=b.east-b.west,h=b.north-b.south,P=2*(
  }
  return [a,...stops.map(s=>ringPoint(s,b)),c];
 }
+// Construct the polygon bounding boxes ONCE instead of thousands of times
+// during the 3-metre clearance sampling of candidate bypass routes.
+const obstacleIndex=new WeakMap();
+function obstacles(map){let index=obstacleIndex.get(map);if(index)return index;
+ const all=[...(map.buildings||[]),...(map.water||[]),...(map.areas||[]).filter(o=>o.k==='water'||o.k==='cemetery'||o.k==='grave_yard')];
+ index=[];const limit={minX:VILLA.x-435,maxX:VILLA.x+435,minZ:VILLA.z-435,maxZ:VILLA.z+435};
+ for(const o of all){const poly=o.p;if(!Array.isArray(poly)||poly.length<3)continue;
+  let minX=Infinity,maxX=-Infinity,minZ=Infinity,maxZ=-Infinity;
+  for(const vertex of poly){if(!Array.isArray(vertex))continue;minX=Math.min(minX,vertex[0]);maxX=Math.max(maxX,vertex[0]);minZ=Math.min(minZ,vertex[1]);maxZ=Math.max(maxZ,vertex[1]);}
+  if(!Number.isFinite(minX)||maxX<limit.minX||minX>limit.maxX||maxZ<limit.minZ||minZ>limit.maxZ)continue;
+  index.push({poly,minX,maxX,minZ,maxZ});
+ }
+ obstacleIndex.set(map,index);return index;
+}
 function obstacleClear(map,p,r){
- const objects=[...(map.buildings||[]),...(map.water||[]),...(map.areas||[]).filter(o=>o.k==='water'||o.k==='cemetery'||o.k==='grave_yard')];
- for(const o of objects){const poly=o.p;if(!Array.isArray(poly)||poly.length<3)continue;
-  const xs=poly.map(q=>q[0]),zs=poly.map(q=>q[1]);
-  if(p[0]+r<Math.min(...xs)||p[0]-r>Math.max(...xs)||p[1]+r<Math.min(...zs)||p[1]-r>Math.max(...zs))continue;
+ for(const {poly,minX,maxX,minZ,maxZ} of obstacles(map)){
+  if(p[0]+r<minX||p[0]-r>maxX||p[1]+r<minZ||p[1]-r>maxZ)continue;
   if(pointInside(p[0],p[1],poly))return false;
   for(let i=0;i<poly.length;i++){const q=nearestOnSegment(p[0],p[1],poly[i],poly[(i+1)%poly.length]);
    if(Math.hypot(p[0]-q.x,p[1]-q.z)<r)return false;
@@ -80,8 +91,6 @@ function safeDetour(map,path,width){for(let i=1;i<path.length;i++){
  if(segmentEntersMandria(a,b))return false;
  for(let n=0;n<=steps;n++){
   const t=n/steps,p=[a[0]+(b[0]-a[0])*t,a[1]+(b[1]-a[1])*t];
-  // Exact boundary endpoints may touch the existing perimeter fence, but the
-  // new detour's interior must have clearance for both sides of the road.
   if((i===1&&n===0||i===path.length-1&&n===steps))continue;
   if(!obstacleClear(map,p,Math.max(2.5,width*.5+1.4)))return false;
  }
@@ -91,7 +100,7 @@ function bypass(map,start,end,width){
  const options=[];
  for(const pad of [9,13,18,25,34]){
   const b={west:MANDRIA_PRIVATE_LIMITS.west-pad,east:MANDRIA_PRIVATE_LIMITS.east+pad,south:MANDRIA_PRIVATE_LIMITS.south-pad,north:MANDRIA_PRIVATE_LIMITS.north+pad};
-  const a=anchor(start,b,pad),c=anchor(end,b,pad);
+  const a=anchor(start,b),c=anchor(end,b);
   for(const clockwise of [true,false]){
    const points=[start,...surround(a,c,b,clockwise).map(world),end].filter((p,i,arr)=>i===0||!same(p,arr[i-1]));
    if(!safeDetour(map,points,width))continue;
@@ -112,8 +121,6 @@ export function privatizeMandriaRoads(map){
   if(!paths.length){removed++;return [];}
   split++;pieces+=paths.length;
   const parts=paths.map(p=>({...road,p,estateClipped:true}));
-  // Reconnect only the fragments originating from the SAME mapped street.
-  // Never stitch unrelated roads and never restore the old through-estate road.
   for(let i=0;i<paths.length-1;i++){
    const way=bypass(map,paths[i].at(-1),paths[i+1][0],road.w||5);
    if(way){parts.push({...road,p:way,estateBypass:true});bypasses++;}
