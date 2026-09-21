@@ -17,6 +17,9 @@ function move(g,dt){if(!g.state?.started||!g.villaV7Life||!Number.isFinite(dt)||
   for(const [i,a] of patch.animals.entries()){
    if(!a.walkPosition)a.walkPosition=a.origin.clone();
    const pos=a.walkPosition;
+   // v9 controls grazing pauses, safe targets, legs and smoothly turned heading.
+   // Do not add the old motion or snap its yaw on top of that controller.
+   if(a.v9){a.a.position.copy(pos);continue;}
    if(!a.walkDestination||Math.hypot(pos.x-a.walkDestination.x,pos.z-a.walkDestination.z)<.25||g.state.elapsed>a.walkUntil){
     const seed=g.state.elapsed*.73+farm*15.1+i*8.2+(a.walkCount||0)*2.77;
     a.walkCount=(a.walkCount||0)+1;const u=centre.u+Math.sin(seed*2.13)*8.8,v=centre.v+Math.cos(seed*1.77)*10.2;
@@ -31,7 +34,6 @@ function move(g,dt){if(!g.state?.started||!g.villaV7Life||!Number.isFinite(dt)||
      }else a.walkDestination=null;
     }
    }
-   // Override old +/-0.42 m stationary oscillation with persistent movement.
    a.a.position.copy(pos);a.a.position.y+=Math.sin(g.state.elapsed*(1.8+i*.6)+farm)*.015;
   }
  }
