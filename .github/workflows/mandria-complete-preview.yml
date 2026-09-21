@@ -70,6 +70,10 @@ jobs:
           node tools/serve.mjs --host 127.0.0.1 --port 4173 &
           for i in $(seq 1 30); do if curl -fsS http://127.0.0.1:4173/ -o /dev/null; then exit 0; fi; sleep 1; done
           exit 1
+      - name: Test v7 real collisions, fountain parking, animal motion and worker cooldown
+        run: node tools/test-mandria-v7-browser.mjs
+      - name: Test true first-person scope, estate guards, rear farm and old stairs
+        run: node tools/test-mandria-v6-browser.mjs
       - name: Test WebGL existing estate, patrols and all aircraft cards
         run: node tools/test-mandria-estate-v2-chromium.mjs
       - name: Test WebGL perimeter, hangar, dialogue and rideable horses
@@ -78,10 +82,6 @@ jobs:
         run: node tools/test-mandria-v5-chromium.mjs
       - name: Test WebGL private security, Ape patrols, oval horses, roofs, cars and privacy
         run: node tools/test-mandria-v5-estate-chromium.mjs
-      - name: Test true first-person scope, estate guards, rear farm and old stairs
-        run: node tools/test-mandria-v6-browser.mjs
-      - name: Test v7 real collisions, fountain parking, animal motion and worker cooldown
-        run: node tools/test-mandria-v7-browser.mjs
       - name: Save walkthrough/screenshots
         if: always()
         uses: actions/upload-artifact@v4
