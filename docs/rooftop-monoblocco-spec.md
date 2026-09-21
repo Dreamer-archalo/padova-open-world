@@ -1,0 +1,5 @@
+# Ospedale — rooftop moto course acceptance
+
+Ground truth from the loaded Padova data: `Ospedale Civile - Monoblocco - Casse - Prenotazioni`, center approximately `(816, 518)`, 90-point irregular footprint, bounding box 245 × 200 m, height 27.9 m; the former hint `(821,276)` and 175 m search radius exclude this building. The full bounding rectangle cannot be treated as usable rooftop: it crosses courtyards. Choose a flat *inscribed* playable rectangle with a margin from the actual polygon.
+
+Retire the former easter-egg module entirely (no leftover duplicate roof). Provide a physical flat platform over the real chosen hospital roof, bounded parapets, a separate safe helipad, compact rooftop-specific trial bikes, a short lap with wood bridge features, ramps and recoverable NPC riders. Roof elevation must be shared by helicopter landing, vehicle contact and foot exit. Pressing E when landed must leave the helicopter visible and parked on the rooftop so it can be boarded again. Retain parachute behavior F when airborne. Unit / whole-map checks and actual two-way browser walkthrough are separate requirements.

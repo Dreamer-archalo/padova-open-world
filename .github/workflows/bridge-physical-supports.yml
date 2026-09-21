@@ -1,0 +1,30 @@
+name: Bridge physical supports
+on:
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Three raised bridges, columns, real 3D deck and underpass clearance
+        run: |
+          node --check dist/road-structures.js
+          node verify-bridge-physical-supports.mjs
+      - name: Measure safe external abutments and real nearby structures at Chiesanuova
+        run: |
+          node tools/diagnose-chiesanuova-abutments.mjs
+      - name: Audit genuine elevated bridge spans from entire Padova map
+        run: node --max-old-space-size=3072 verify-bridge-real-map.mjs
+      - name: Existing structural and both Tangenziale race regressions
+        if: always()
+        run: |
+          node verify-geometry-integrity.mjs
+          npm run test:tangenziale-race
+          node verify-race-one-difficulty.mjs
