@@ -1,5 +1,7 @@
 // Preserve autonomous paddock paths even though the legacy life module rewrites
 // each animal's displayed position every frame for its old idle animation.
+import './villa-mandria-v8-scope-targets.js';
+import './villa-mandria-v8-estate-tasks.js';
 import {ModernGameplay} from './modern-gameplay.js';
 import {VILLA,areaPoint,areaLocal} from './gameplay-areas.js';
 import {mandriaFree} from './villa-mandria-placement-fix.js';
