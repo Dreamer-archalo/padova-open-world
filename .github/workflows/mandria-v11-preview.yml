@@ -1,0 +1,87 @@
+name: Mandria v11 playable isolated preview
+on:
+  push:
+    branches: [feat/mandria-v11-polish-20260922]
+  workflow_dispatch:
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+concurrency:
+  group: mandria-v11-playable-preview
+  cancel-in-progress: true
+jobs:
+  test-and-publish:
+    runs-on: ubuntu-latest
+    timeout-minutes: 24
+    steps:
+      - name: Checkout v11 without merging
+        uses: actions/checkout@v6
+        with:
+          ref: feat/mandria-v11-polish-20260922
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Validate source, public roads and preservation
+        run: |
+          set -euo pipefail
+          node --check dist/gameplay-areas.js
+          node --check dist/villa-mandria-v7-animal-motion.js
+          node --check dist/villa-mandria-v11-road-quality.js
+          node --check dist/villa-mandria-v11-estate-polish.js
+          node --check tools/test-mandria-v11-browser.mjs
+          node tools/verify-mandria-v5-private-road.mjs
+          node tools/verify-mandria-v11-roads.mjs
+          node tools/verify-villa-mandria-relocation.mjs
+          node tools/verify-mandria-v5.mjs
+      - name: Install Chromium for actual gameplay
+        run: |
+          npm install --no-save playwright@1.55.1
+          npx playwright install --with-deps chromium
+      - name: Start static test server
+        run: |
+          node tools/serve.mjs --host 127.0.0.1 --port 4173 &
+          for i in $(seq 1 40); do if curl -fsS http://127.0.0.1:4173/ -o /dev/null; then exit 0; fi; sleep 1; done
+          exit 1
+      - name: Verify existing estate animals, stairs and collisions
+        run: node tools/test-mandria-v7-browser.mjs
+      - name: Verify existing guards, hangar and horses
+        run: node tools/test-mandria-v5-estate-chromium.mjs
+      - name: Verify v10 horses, missions, scoped aiming and supplier
+        run: node tools/test-mandria-v8-browser.mjs
+      - name: Verify v11 movement, service roads, work areas, LOD and preview inspection
+        run: node tools/test-mandria-v11-browser.mjs
+      - name: Capture evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: mandria-v11-browser-evidence
+          path: test-artifacts/
+          if-no-files-found: ignore
+      - name: Checkout current main separately
+        uses: actions/checkout@v6
+        with:
+          ref: main
+          path: .production-source
+          persist-credentials: false
+      - name: Build preview while keeping the published main unchanged
+        run: |
+          set -euo pipefail
+          test -f .production-source/dist/index.html
+          test -f dist/index.html
+          mkdir -p .production-source/dist/preview/mandria-v11
+          cp -a dist/. .production-source/dist/preview/mandria-v11/
+          test -f .production-source/dist/preview/mandria-v11/villa-mandria-v11-estate-polish.js
+          test -f .production-source/dist/preview/mandria-v11/villa-mandria-v11-road-quality.js
+          cmp dist/index.html .production-source/dist/preview/mandria-v11/index.html
+          touch .production-source/dist/.nojekyll
+          echo 'Main production root remains on its own current code; preview is isolated.'
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v4
+        with:
+          path: .production-source/dist
+      - name: Deploy playable v11 preview
+        id: deployment
+        uses: actions/deploy-pages@v4
+      - name: Preview URL
+        run: echo 'https://dreamer-archalo.github.io/padova-open-world/preview/mandria-v11/'
