@@ -16,6 +16,7 @@ on:
       - 'tools/test-mandria-v5-estate-chromium.mjs'
       - 'tools/test-mandria-v6-browser.mjs'
       - 'tools/test-mandria-v7-browser.mjs'
+      - 'tools/test-mandria-v8-browser.mjs'
       - '.github/workflows/mandria-complete-preview.yml'
   workflow_dispatch:
 permissions:
@@ -29,7 +30,6 @@ jobs:
   check-and-preview:
     runs-on: ubuntu-latest
     timeout-minutes: 24
-    # Test current PR head without changing production main or replacing a good preview on failure.
     steps:
       - name: Checkout unmerged Mandria source
         uses: actions/checkout@v6
@@ -38,7 +38,7 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
-      - name: Verify estate modules, road privacy and 25 conversations
+      - name: Verify estate modules, road privacy and conversations
         run: |
           node --check dist/villa-mandria-estate-v2.js
           node --check dist/villa-mandria-estate-v3.js
@@ -54,7 +54,16 @@ jobs:
           node --check dist/villa-mandria-v7-physics.js
           node --check dist/villa-mandria-v7-life.js
           node --check dist/villa-mandria-v7-entry-stairs.js
+          node --check dist/villa-mandria-v7-animal-motion.js
+          node --check dist/villa-mandria-v8-scope-targets.js
+          node --check dist/villa-mandria-v8-estate-tasks.js
+          node --check dist/villa-mandria-v8-vtol.js
+          node --check dist/villa-mandria-v8-grounds-roof.js
+          node --check dist/villa-mandria-v8-deliveries.js
+          node --check dist/villa-mandria-v8-perimeter-patrols.js
+          node --check dist/villa-mandria-road-privacy.js
           node --check dist/phase2-runtime.js
+          node --check tools/test-mandria-v8-browser.mjs
           node tools/verify-mandria-catalog-ui.mjs
           node tools/verify-villa-mandria-life.mjs
           node tools/verify-villa-mandria-estate-v2.mjs
@@ -82,11 +91,13 @@ jobs:
         run: node tools/test-mandria-v5-chromium.mjs
       - name: Test WebGL private security, Ape patrols, oval horses, roofs, cars and privacy
         run: node tools/test-mandria-v5-estate-chromium.mjs
+      - name: Test final Mandria aiming, VTOL, perimeter, workers and authorized deliveries
+        run: node tools/test-mandria-v8-browser.mjs
       - name: Save walkthrough/screenshots
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: mandria-v7-browser-evidence
+          name: mandria-v8-browser-evidence
           path: test-artifacts/
           if-no-files-found: ignore
       - name: Checkout production main into isolated directory
@@ -112,6 +123,8 @@ jobs:
           test -f .production-source/dist/preview/pr-51/villa-mandria-v7-physics.js
           test -f .production-source/dist/preview/pr-51/villa-mandria-v7-life.js
           test -f .production-source/dist/preview/pr-51/villa-mandria-v7-entry-stairs.js
+          test -f .production-source/dist/preview/pr-51/villa-mandria-v8-scope-targets.js
+          test -f .production-source/dist/preview/pr-51/villa-mandria-v8-vtol.js
           test -f .production-source/dist/preview/pr-51/data/padova.json
           test -f .production-source/dist/preview/pr-51/vendor/three.module.js
           cmp dist/index.html .production-source/dist/preview/pr-51/index.html
