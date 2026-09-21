@@ -1,0 +1,53 @@
+import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import {chromium} from 'playwright';
+fs.mkdirSync('test-artifacts',{recursive:true});
+const browser=await chromium.launch({headless:true,args:['--enable-webgl','--use-gl=angle','--use-angle=swiftshader','--disable-dev-shm-usage','--js-flags=--max-old-space-size=3072']});
+const page=await browser.newPage({viewport:{width:1280,height:800},deviceScaleFactor:1});
+let phase='boot';const errors=[];
+page.on('pageerror',e=>errors.push(e.message));page.on('crash',()=>errors.push('Browser crashed'));
+try{
+ const response=await page.goto('http://127.0.0.1:4173/',{waitUntil:'domcontentloaded',timeout:45000});assert.equal(response.status(),200);
+ await page.waitForFunction(()=>document.getElementById('playBtn')&&!document.getElementById('playBtn').disabled,null,{timeout:45000});
+ await page.evaluate(async()=>{const {ModernGameplay}=await import('./modern-gameplay.js'),previous=ModernGameplay.prototype.populate;ModernGameplay.prototype.populate=function(...args){const result=previous.apply(this,args);globalThis.__mandriaV3=this;return result;};});
+ await page.locator('#initialQuality').selectOption('hyper');await page.locator('#playBtn').click();phase='world startup';
+ await page.waitForFunction(()=>document.documentElement.dataset.initialWorldReady==='true'||document.getElementById('initialLoaderError')?.hidden===false,null,{timeout:220000});
+ assert.equal(await page.evaluate(()=>document.documentElement.dataset.initialWorldReady),'true');
+ await page.locator('#confirmCharacter').click({timeout:20000});
+ phase='estate initialization';await page.waitForFunction(()=>!!globalThis.__mandriaV3?.villaV3&&!!globalThis.__mandriaV3.villaLife?.expansion,null,{timeout:45000});
+ const report=await page.evaluate(async()=>{
+  const g=globalThis.__mandriaV3,v=g.villaV3,{ESTATE_BORDER}=await import('./villa-mandria-estate-v3.js');
+  const gateObstructions=v.root.children.filter(o=>o.isMesh&&o.name==='Estate boundary post'&&Math.abs(o.position.x-g.villaLife.people[0].obj.position.x)<.01);
+  return {border:ESTATE_BORDER,fence:v.fence,poplars:v.poplars,oldOutsidePoplarsHidden:v.hiddenTrees,houses:v.houses,horses:v.patrols.filter(c=>c.mandriaPatrol==='mounted').length,apes:v.patrols.filter(c=>c.mandriaPatrol==='ape').length,registered:v.patrols.every(c=>g.cars.includes(c)&&c.fixedSpawn),gateObstructions:gateObstructions.length};
+ });
+ console.log('MANDRIA_V3 '+JSON.stringify(report));
+ assert(report.fence.built>15&&report.border.north>51&&report.border.north<69,'property fence must end at open gate along real entrance');
+ assert.equal(report.fence.roadWidth,18,'driveway opening must remain unobstructed');
+ assert(report.houses>=1,'farm workers need an actual cottage');
+ assert(report.poplars>=1,'poplars must be planted inside the gate');
+ assert(report.horses>=1&&report.apes>=1&&report.registered,'mounted and three-wheel private patrols must exist as game actors');
+ phase='visible contextual hangar prompt';
+ const prompt=await page.evaluate(()=>{const b=document.getElementById('mandriaHangarButton');return {visible:b&&!b.hidden,html:b?.innerHTML,top:b?getComputedStyle(b).top:null};});
+ console.log('HANGAR_PROMPT '+JSON.stringify(prompt));
+ assert(prompt.visible&&prompt.html.includes('PREMI H')&&prompt.top!=='auto','hangar prompt should be large and raised above the bottom HUD');
+ await page.screenshot({path:'test-artifacts/mandria-v3-gate.png',timeout:25000});
+ phase='speech above NPC';
+ await page.evaluate(()=>{const g=globalThis.__mandriaV3,p=g.villaLife.people.find(p=>p.role==='servant');g.state.mode='foot';g.state.car=null;g.state.x=p.obj.position.x;g.state.z=p.obj.position.z;g.state.y=g.terrain.height(g.state.x,g.state.z);p.helloAt=-100;g.villaLife.lastHello=-100;});
+ await page.waitForFunction(()=>globalThis.__mandriaV3?.villaLife.people.some(p=>p.role==='servant'&&p.speech?.visible&&p.speechUntil>globalThis.__mandriaV3.state.elapsed),null,{timeout:12000});
+ await page.screenshot({path:'test-artifacts/mandria-v3-greeting.png',timeout:25000});
+ phase='horse mounting';
+ await page.evaluate(()=>{const g=globalThis.__mandriaV3,c=g.villaV3.patrols.find(c=>c.mandriaPatrol==='mounted');g.state.mode='foot';g.state.car=null;g.state.x=c.x+1.8;g.state.z=c.z;g.state.y=g.terrain.height(g.state.x,g.state.z);g.state.speed=0;});
+ await page.waitForFunction(()=>{const g=globalThis.__mandriaV3;return g.villaV3.patrols.some(c=>c.mandriaPatrol==='mounted'&&c.mesh.visible&&Math.hypot(c.x-g.state.x,c.z-g.state.z)<3.2)&&!document.getElementById('mandriaMountPrompt')?.hidden;},null,{timeout:13000});
+ await page.locator('#mandriaMountPrompt').click();
+ await page.waitForFunction(()=>globalThis.__mandriaV3?.state?.car?.mandriaPatrol==='mounted',null,{timeout:15000});
+ const mounted=await page.evaluate(()=>{const g=globalThis.__mandriaV3,c=g.state.car;return {name:c.name,rider:!!c.rider&&c.rider.visible,guardHidden:!c.guardModel.visible,mount:c.mandriaPatrol,mode:g.state.mode};});
+ console.log('MOUNTED_HORSE '+JSON.stringify(mounted));
+ assert(mounted.rider&&mounted.guardHidden&&mounted.mode==='car'&&mounted.mount==='mounted','E/touch must give the player a visible rider and replace the guard');
+ await page.keyboard.down('w');await page.waitForTimeout(450);await page.keyboard.up('w');
+ const speed=await page.evaluate(()=>({speed:globalThis.__mandriaV3.state.speed,max:globalThis.__mandriaV3.state.car.spec.max}));
+ assert(speed.max>=13&&speed.speed>0,'mounted horse must respond to the standard forward input');
+ await page.screenshot({path:'test-artifacts/mandria-v3-riding.png',timeout:25000});
+ assert.equal(errors.length,0,'Unhandled browser errors: '+errors.join(' | '));
+ console.log('PASS Mandria v3: open entrance, houses, rows of poplars, mounted/Ape patrols, raised H, NPC speech and rideable horse');
+}catch(error){console.error('MANDRIA_V3_FAIL '+phase+' '+(error.stack||error));console.error('JS_ERRORS '+JSON.stringify(errors.slice(-12)));try{await page.screenshot({path:'test-artifacts/mandria-v3-failure.png',timeout:15000});}catch{}process.exitCode=1;}
+finally{await browser.close();}

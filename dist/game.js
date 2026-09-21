@@ -1,3 +1,4 @@
+import {renderEstateCamera} from './mandria-scope-camera.js';
 import {PerformanceOverlay} from './performance-overlay.js';
 import {InputManager} from './InputManager.js';
 import {TaxiDispatcher} from './TaxiDispatcher.js';
@@ -478,7 +479,7 @@ function animate(time){
  }
  if(state.started&&!state.paused){const ratio=resolution.sample(dt,qualityFor(state.quality));if(ratio!==null)renderer.setPixelRatio(Math.min(devicePixelRatio,ratio));}
  performanceOverlay.update(rawDt,world,state,{people:people.filter(p=>p.mesh.visible).length,cars:cars.filter(c=>c.mesh.visible).length+cops.filter(c=>c.mesh.visible).length,trams:qualityFor(state.quality).trams});
- renderer.render(scene,camera);
+ renderEstateCamera(renderer,scene,camera,gameplay,player);
 }
 
 async function init(){try{progress(5,'Loading the city map…');const [response,terrainResponse]=await Promise.all([fetch('./data/padova.json'),fetch('./data/terrain.json')]);if(!terrainResponse.ok)throw new Error('Terrain download failed');const terrainData=await terrainResponse.json();if(!response.ok)throw new Error('Map download failed ('+response.status+')');const total=Number(response.headers.get('Content-Length'))||18330287;if(response.body){const reader=response.body.getReader(),chunks=[];let size=0;while(true){const {done,value}=await reader.read();if(done)break;chunks.push(value);size+=value.length;progress(Math.min(50,5+size/total*45),'Loading the city map · '+Math.round(size/1024/1024)+' MB');}const all=new Uint8Array(size);let off=0;for(const chunk of chunks){all.set(chunk,off);off+=chunk.length;}data=JSON.parse(new TextDecoder().decode(all));}else data=await response.json();progress(55,'Laying out '+data.buildings.length.toLocaleString('en-GB')+' buildings…');await yieldFrame();

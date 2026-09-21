@@ -1,0 +1,57 @@
+name: Mandria v4 private estate WebGL acceptance
+on:
+  push:
+    branches: [feat/villa-treves-phase1-20260919]
+    paths:
+      - 'dist/villa-mandria-v4-*.js'
+      - 'dist/phase2-runtime.js'
+      - 'dist/gameplay-areas.js'
+      - 'tools/test-mandria-v4-chromium.mjs'
+      - '.github/workflows/mandria-v4-webgl.yml'
+  pull_request:
+    paths:
+      - 'dist/villa-mandria-v4-*.js'
+      - 'dist/phase2-runtime.js'
+      - 'dist/gameplay-areas.js'
+      - 'tools/test-mandria-v4-chromium.mjs'
+      - '.github/workflows/mandria-v4-webgl.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  villa-private-estate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: feat/villa-treves-phase1-20260919
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Syntax and critical imports
+        run: |
+          node --check dist/villa-mandria-v4-grounds.js
+          node --check dist/villa-mandria-v4-vehicles.js
+          node --check dist/villa-mandria-v4-roof.js
+          node --check dist/villa-mandria-v4-range.js
+          node --check dist/phase2-runtime.js
+          node --check tools/test-mandria-v4-chromium.mjs
+      - name: Install Chromium
+        run: |
+          npm install --no-save playwright@1.55.1
+          npx playwright install --with-deps chromium
+      - name: Start web game
+        run: |
+          node tools/serve.mjs --host 127.0.0.1 --port 4173 &
+          for i in $(seq 1 30); do if curl -fsS http://127.0.0.1:4173/ -o /dev/null; then exit 0; fi; sleep 1; done
+          exit 1
+      - name: Browser test real gameplay interactions
+        run: node tools/test-mandria-v4-chromium.mjs
+      - name: Screenshots on success or failure
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: mandria-v4-evidence
+          path: test-artifacts/
+          if-no-files-found: ignore

@@ -1,0 +1,17 @@
+import assert from 'node:assert/strict';
+import * as THREE from '../dist/vendor/three.module.js';
+import {renderEstateCamera} from '../dist/mandria-scope-camera.js';
+const scene=new THREE.Scene(),camera=new THREE.PerspectiveCamera(60,1,.1,1000);
+camera.position.set(11,12,13);camera.lookAt(1,2,3);
+const before={position:camera.position.clone(),rotation:camera.quaternion.clone(),fov:camera.fov};
+const player={visible:true},gun={visible:true};
+const game={state:{started:true,paused:false,mode:'foot',x:4,y:5,z:6,yaw:Math.PI/2},villaRange:{active:true,aiming:true},villaV4Polish:{gun}};
+let calls=0;
+const renderer={render(s,c){calls++;assert.equal(s,scene);assert.equal(c.fov,22);assert(c.position.distanceTo(new THREE.Vector3(4,6.69,6))<1e-10);assert.equal(player.visible,false);assert.equal(gun.visible,false);const direction=c.getWorldDirection(new THREE.Vector3());assert(direction.x>.999&&Math.abs(direction.z)<.001);}};
+renderEstateCamera(renderer,scene,camera,game,player);
+assert.equal(calls,1);assert(camera.position.equals(before.position));assert(camera.quaternion.equals(before.rotation));assert.equal(camera.fov,60);assert(player.visible&&gun.visible);
+assert.throws(()=>renderEstateCamera({render(){throw Error('render error');}},scene,camera,game,player));
+assert.equal(camera.fov,60);assert(player.visible&&gun.visible);
+game.villaRange.aiming=false;
+renderEstateCamera({render(s,c){assert.equal(c.fov,60);assert.equal(player.visible,true);}},scene,camera,game,player);
+console.log('PASS real render entry, eye position, yaw, avatar visibility and camera restoration after scope/error');

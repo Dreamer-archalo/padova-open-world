@@ -1,0 +1,37 @@
+name: Verify villa relocation to Mandria
+on:
+  push:
+    branches:
+      - feat/villa-treves-phase1-20260919
+  pull_request:
+    branches: [main]
+    paths:
+      - 'dist/villa-*.js'
+      - 'dist/gameplay-areas.js'
+      - 'dist/phase2-runtime.js'
+      - 'tools/verify-villa-mandria-relocation.mjs'
+      - 'tools/verify-villa-phase1.mjs'
+      - 'tools/verify-mandria-hangar.mjs'
+      - '.github/workflows/villa-mandria-relocation.yml'
+  workflow_dispatch:
+jobs:
+  map-integrity:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Syntax and catalogue
+        run: |
+          node --check dist/villa-mandria-relocation.js
+          node --check dist/villa-mandria-hangar.js
+          node --check dist/villa-treves-layout.js
+          node --check dist/villa-treves-estate.js
+          node --check dist/gameplay-areas.js
+          node --check dist/phase2-runtime.js
+          node tools/verify-mandria-hangar.mjs
+          node tools/verify-villa-phase1.mjs
+      - name: Verify source map, location and Treves preservation
+        run: node tools/verify-villa-mandria-relocation.mjs

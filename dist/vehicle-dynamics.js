@@ -65,17 +65,27 @@ export function groundVehicleStep(actor,car,input,dt,terrain,collision){
    const alignment=old.ramp?Math.cos(actor.yaw-old.ramp.yaw)*(actor.speed>=0?1:-1):0;
    const drop=actor.y-next.y,rise=next.y-actor.y;
    const leavesRamp=old.ramp&&old.ramp!==next.ramp&&alignment>.65&&drop>.25&&Math.abs(actor.speed)>8;
+   // At a fast convex crest the road falls away faster than gravity can pull
+   // the car down. Preserve its uphill velocity instead of gluing it to the
+   // next height sample. Small kerbs/noisy centimetre changes cannot launch it.
+   const ballisticY=actor.y+j.groundVy*step-.5*JUMP_GRAVITY*step*step;
+   const crests=!old.ramp&&!next.ramp&&Math.abs(actor.speed)>16&&j.groundVy>1.2
+    &&j.climbDistance>=Math.max(2,spec.wheelbase||2.5)&&Math.abs(next.y-old.y)<Math.max(.12,horizontal*.3)
+    &&ballisticY-next.y>Math.max(.0001,JUMP_GRAVITY*step*step*.1)
+    &&j.groundVy-(next.y-old.y)/step>JUMP_GRAVITY*step*1.2;
    // Any genuine ledge is ballistic. Previously slow vehicles could be snapped
    // downward by half a metre or more in one fixed tick.
    const drops=drop>.48&&Math.abs(actor.speed)>1.5;
-   if(leavesRamp||drops){
-    j.airborne=true;j.vx=vx;j.vz=vz;j.vy=leavesRamp?Math.max(2,j.groundVy):clamp(j.groundVy,-4,12);ny=actor.y+j.vy*step;launched=true;
+   if(leavesRamp||drops||crests){
+    j.airborne=true;j.climbDistance=0;j.vx=vx;j.vz=vz;j.vy=leavesRamp?Math.max(2,j.groundVy):clamp(j.groundVy,-4,12);ny=actor.y+j.vy*step-.5*JUMP_GRAVITY*step*step;j.vy-=JUMP_GRAVITY*step;launched=true;
    }else{
     // Reject impossible vertical elevators even when both contacts are ordinary
     // terrain (the old test only caught a transition into/out of a ramp).
     const allowedRise=Math.max(MAX_CONTACT_RISE,horizontal*.22);
     if(rise>allowedRise){hitSpeed=Math.abs(actor.speed);actor.speed*=-.15;break;}
-    ny=smoothGroundY(actor.y,next.y,step,actor.speed);j.groundVy=(ny-actor.y)/step;j.ramp=next.ramp;
+    const followsGrade=Math.abs(next.y-old.y)<=Math.max(.025,horizontal*.24)&&Math.abs(actor.y-old.y)<.15;
+    ny=followsGrade?next.y:smoothGroundY(actor.y,next.y,step,actor.speed);j.groundVy=(ny-actor.y)/step;j.ramp=next.ramp;
+    j.climbDistance=next.y-old.y>horizontal*.015?(j.climbDistance||0)+horizontal:0;
    }
   }
   if(j.airborne&&ny<=next.y&&j.vy<=0){landingSpeed=Math.max(landingSpeed,-j.vy);j.airborne=false;landed=true;ny=next.y;j.vy=0;j.ramp=next.ramp;}

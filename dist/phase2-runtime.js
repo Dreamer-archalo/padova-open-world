@@ -36,6 +36,53 @@ import './airport-life-v3.js';
 import './airport-blast-ballistics.js';
 // Installed last so its enemy arrows, mission HUD and control hints win visually.
 import './airport-air-hunt.js';
+// Decorative estate details are separate from the collision-aware hangar shell.
+import './villa-treves-estate.js';
+// Poplars follow the access road; optional plots and staff are proximity-loaded.
+import './villa-mandria-life.js';
+// Existing estate life owns its NPCs; this adds safe farm structures, lanes,
+// low-cost patrol routes and a moving escort without replacing original logic.
+import './villa-mandria-estate-v2.js';
+// When old gate parking coordinates intersect real buildings, search for clear
+// alternate locations instead of placing black cars inside colliders.
+import './villa-mandria-security-placement.js';
+import './villa-mandria-respawn-label.js';
+// All models registered before the hangar catalogue is first opened.
+import './villa-mandria-hangar.js';
+// Final populate/addCar wrapper creates distinct military models both at the
+// airport and when selecting one from the Mandria hangar.
+import './airport-military-fleet.js';
+// Home screen groups air, ground and urban vehicles. Boat slot is future-only;
+// actual vehicle previews render lazily from 3-D meshes, not generic icons.
+import './villa-mandria-catalog-ui.js';
+// Protect the aircraft cards from displaying stale ground placeholders while
+// their per-model GPU thumbnails are still being generated.
+import './villa-mandria-air-preview-guard.js';
+// High-visibility H/E controls, estate border, speech bubbles, horses and Ape patrols.
+import './villa-mandria-estate-v3.js';
+import './villa-mandria-horse-rider.js';
+// SpatialIndex.near returns bucket candidates: confirm exact polygon collisions
+// before rejecting a house, a poplar or a moving patrol.
+import './villa-mandria-placement-fix.js';
+// v4 is strictly estate-scoped. The public city and aircraft catalog stay intact.
+import './villa-mandria-v4-grounds.js';
+import './villa-mandria-v4-roof.js';
+import './villa-mandria-v4-vehicles.js';
+import './villa-mandria-v4-range.js';
+import './villa-mandria-v4-polish.js';
+// Post-publication feedback: optional dialogues and estate-only input/visual changes.
+import './villa-mandria-v5-dialogues.js';
+import './villa-mandria-v5-controls.js';
+// Additional collision-aware estate refinements, never modify the airport.
+import './villa-mandria-v5-estate-polish.js';
+import './villa-mandria-v5-greetings.js';
+// Direct user feedback: real first-person scope, reasoned Ape loops, wall parking,
+// complete roof gables, visible climb/return and single-choice NPC conversations.
+import './villa-mandria-v6-scope.js';
+import './villa-mandria-v6-estate.js';
+import './villa-mandria-v6-stairs.js';
+import './villa-mandria-v6-dialogue-flow.js';
+import './villa-mandria-v6-horse-track.js';
 
 // UI-only Phase 2 feedback. It does not own gameplay state: it observes the
 // existing HUD, so it cannot interfere with saves, physics or streaming.
@@ -59,6 +106,6 @@ function showCamera(){
   cameraTimer=setTimeout(()=>cameraBanner.hidden=true,240);
  },1250);
 }
-function updateDamage(){const value=parseFloat(healthValue?.textContent||'100'),inVehicle=(vehicleName?.textContent||'ON FOOT').trim()!=='ON FOOT',damage=inVehicle?Math.max(0,100-value):0;damageEdge.hidden=damage<8;document.body.dataset.vehicleDamage=damage>=65?'critical':damage>=35?'damaged':damage>=8?'scratched':'none';damageEdge.style.setProperty('--damage',String(Math.min(.48,damage/150)));}
+function updateDamage(){const value=parseFloat(healthValue?.textContent||'100'),inVehicle=(vehicleName?.textContent||'ON FOOT').trim()!=='ON FOOT',damage=inVehicle?Math.max(0,100-value):0;document.body.dataset.vehicleDamage=damage>=65?'critical':damage>=35?'damaged':damage>=8?'scratched':'none';damageEdge.hidden=damage<8;damageEdge.style.setProperty('--damage',String(Math.min(.48,damage/150)));}
 document.addEventListener('keydown',event=>{if(event.code!=='KeyC'||event.repeat||playing?.hidden||document.querySelector('dialog[open]'))return;cameraMode=(cameraMode+1)%3;showCamera();});
 const observer=new MutationObserver(updateDamage);if(healthValue)observer.observe(healthValue,{childList:true,subtree:true,characterData:true});if(vehicleName)observer.observe(vehicleName,{childList:true,subtree:true,characterData:true});updateDamage();

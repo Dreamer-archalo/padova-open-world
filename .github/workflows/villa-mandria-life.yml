@@ -1,0 +1,42 @@
+name: Mandria avenue and estate life
+on:
+  push:
+    branches: [feat/villa-treves-phase1-20260919]
+    paths:
+      - 'dist/villa-mandria-life.js'
+      - 'dist/phase2-runtime.js'
+      - 'tools/verify-villa-mandria-life.mjs'
+      - '.github/workflows/villa-mandria-life.yml'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'dist/villa-mandria-life.js'
+      - 'dist/phase2-runtime.js'
+      - 'tools/verify-villa-mandria-life.mjs'
+      - '.github/workflows/villa-mandria-life.yml'
+  workflow_dispatch:
+jobs:
+  structural:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Check runtime syntax and estate path, NPC and scenery safety
+        run: |
+          node --check dist/villa-mandria-life.js
+          node --check dist/phase2-runtime.js
+          node tools/verify-villa-mandria-life.mjs
+  public-assets:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Test real published map URL and all required assets
+        shell: bash
+        run: |
+          set -euo pipefail
+          base='https://dreamer-archalo.github.io/padova-open-world/preview/pr-51/'
+          for path in '' game.js initial-loader.js data/padova.json data/terrain.json data/city.json; do
+            echo "Asset: $base$path"
+            curl -L -sS --max-time 90 -o /dev/null -w 'HTTP %{http_code} bytes %{size_download} type %{content_type}\n' --fail-with-body "$base$path"
+          done
