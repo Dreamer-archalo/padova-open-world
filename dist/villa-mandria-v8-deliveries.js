@@ -2,7 +2,7 @@
 // physically unloads three boxes and leaves. Never uses public-road AI routing.
 import * as THREE from './vendor/three.module.js';
 import {ModernGameplay} from './modern-gameplay.js';
-import {VILLA,areaPoint,areaLocal} from './gameplay-areas.js';
+import {VILLA,areaPoint} from './gameplay-areas.js';
 import {mandriaFree} from './villa-mandria-placement-fix.js';
 const at=(u,v)=>areaPoint(VILLA,u,v);
 const ENTRY={u:-3,v:55},BAY={u:-3,v:42},DRIVER={u:-7,v:41},STORAGE={u:-13,v:36};
@@ -36,8 +36,15 @@ function spawn(g){if(!clearPath(g,ENTRY,BAY,1.6)||!clearPath(g,DRIVER,STORAGE,.6
  Object.assign(truck,{name:'Mandria · camion fornitore autorizzato',fixedSpawn:true,estateAuthorized:true,parked:true,speed:0});
  place(g,truck,ENTRY.u,ENTRY.v);const driver=createDriver(g);driver.obj.visible=false;
  g.villaV8Delivery.active={truck,driver,phase:'enter',progress:0,trip:0};return true;}
-function advance(g,c,a,b,progress){const start=at(a.u,a.v),end=at(b.u,b.v),p=start.clone().lerp(end,progress);
- c.x=p.x;c.z=p.z;c.y=g.terrain.height(p.x,p.z);c.yaw=Math.atan2(end.x-start.x,end.z-start.z);c.speed=0;g.pose(c);}
+function advance(g,c,a,b,progress){
+ const start=at(a.u,a.v),end=at(b.u,b.v);
+ // areaPoint returns {x,z}, not a THREE.Vector3. Interpolate its actual
+ // world coordinates; the former start.clone().lerp() crashed every frame.
+ c.x=start.x+(end.x-start.x)*progress;
+ c.z=start.z+(end.z-start.z)*progress;
+ c.y=g.terrain.height(c.x,c.z);
+ c.yaw=Math.atan2(end.x-start.x,end.z-start.z);c.speed=0;g.pose(c);
+}
 function progress(g,d,dt){const safe=Math.min(dt,.08);
  if(d.phase==='enter'||d.phase==='exit'){
   const from=d.phase==='enter'?ENTRY:BAY,to=d.phase==='enter'?BAY:ENTRY;
