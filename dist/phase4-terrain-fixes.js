@@ -9,9 +9,11 @@ export const MAX_TERRAIN_GRADE=.12;
 export const MIN_ADJACENT_DELTA=.5;
 export const ROAD_WATER_CLEARANCE=.55;
 const SOUTH_PATCHES=[
- {id:'bassanello',name:'Bassanello',p:project(45.3868,11.8722),rx:650,rz:520,core:.28,strength:.78,slopeZ:.00018,slopeX:.00005},
- {id:'guizza',name:'Guizza',p:project(45.3788,11.8703),rx:760,rz:620,core:.3,strength:.82,slopeZ:.00016,slopeX:.00004},
- {id:'albignasego',name:'Albignasego / capolinea sud',p:project(45.3560,11.8672),rx:1500,rz:1050,core:.36,strength:.9,slopeZ:.00014,slopeX:.00003}
+ // All points in the sampled playable core lie on the same gentle plane;
+ // smoothly fade that plane to the surrounding DEM outside the core.
+ {id:'bassanello',name:'Bassanello',p:project(45.3868,11.8722),rx:650,rz:520,core:.42,strength:1,slopeZ:.00018,slopeX:.00005},
+ {id:'guizza',name:'Guizza',p:project(45.3788,11.8703),rx:760,rz:620,core:.42,strength:1,slopeZ:.00016,slopeX:.00004},
+ {id:'albignasego',name:'Albignasego / capolinea sud',p:project(45.3560,11.8672),rx:1500,rz:1050,core:.42,strength:1,slopeZ:.00014,slopeX:.00003}
 ];
 const CENTRE_PATCHES=[
  {id:'piazza-signori',name:'Piazza dei Signori',p:{x:-282,z:-140},rx:78,rz:55,core:.72,strength:1},
