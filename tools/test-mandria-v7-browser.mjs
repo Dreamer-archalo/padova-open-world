@@ -33,10 +33,13 @@ try{
  await page.keyboard.press('KeyE');assert.equal(await page.locator('#mandriaWorkerDialog').evaluate(d=>d.open),false,'E must respect cooldown');
  await page.evaluate(()=>{const g=globalThis.__mandriaV7;globalThis.__v7Worker.v7NextTalkAt=g.state.elapsed-1;});
  await page.waitForFunction(()=>globalThis.__v7Worker.v7Marker.visible,null,{timeout:10000});
- phase='animal movement';
+ phase='animal movement after natural grazing pause';
  const first=await page.evaluate(()=>{const a=globalThis.__mandriaV7.villaLife.pastures[0]?.animals[1]?.a;return a&&[a.position.x,a.position.z];});assert(first);
- await page.waitForTimeout(1800);const next=await page.evaluate(()=>{const a=globalThis.__mandriaV7.villaLife.pastures[0].animals[1].a;return [a.position.x,a.position.z];});
- assert(Math.hypot(next[0]-first[0],next[1]-first[1])>.12,'sheep must walk around within their paddock');
+ // Sheep may graze for several seconds. Require real translation after a rest,
+ // not constant perpetual walking or a cosmetic stationary leg animation.
+ await page.waitForFunction(([x,z])=>{const a=globalThis.__mandriaV7?.villaLife?.pastures?.[0]?.animals?.[1]?.a;
+  return !!a&&Math.hypot(a.position.x-x,a.position.z-z)>.12;
+ },first,{timeout:14000});
  phase='scoped camera';
  await page.evaluate(()=>{const g=globalThis.__mandriaV7,r=g.villaRange;Object.assign(g.state,{x:r.station.x,z:r.station.z,y:g.terrain.height(r.station.x,r.station.z),mode:'foot',car:null,speed:0,vy:0,mission:null});});
  await page.keyboard.press('KeyE');await page.waitForFunction(()=>globalThis.__mandriaV7.villaRange.active,null,{timeout:12000});await page.keyboard.press('Tab');
@@ -50,5 +53,5 @@ try{
  await page.evaluate(()=>{const g=globalThis.__mandriaV7,e=g.villaV7Stairs;e.travel=null;Object.assign(g.state,{x:e.top.x,z:e.top.z,y:e.high,speed:0,vy:0});});
  await page.waitForFunction(()=>document.getElementById('mandriaV7EntryStairs')?.textContent.includes('SCENDI')&&!document.getElementById('mandriaV7EntryStairs').hidden,null,{timeout:12000});
  await page.locator('#mandriaV7EntryStairs').click();assert.equal(await page.evaluate(()=>globalThis.__mandriaV7.villaV7Stairs.travel?.direction),'down');
- assert.deepEqual(errors,[],'no uncaught JS errors');console.log('PASS Mandria v7: physical range wall/fence, fountain cars, varied Ape routes, workers, cooldown, sheep animation, first-person scope and reversible entry stairs');
+ assert.deepEqual(errors,[],'no uncaught JS errors');console.log('PASS Mandria v7: physical range wall/fence, fountain cars, varied Ape routes, workers, cooldown, sheep walk after grazing, first-person scope and reversible entry stairs');
 }catch(e){console.error('MANDRIA_V7_FAIL '+phase+' '+(e.stack||e));console.error('JS_ERRORS '+JSON.stringify(errors.slice(-12)));try{await page.screenshot({path:'test-artifacts/mandria-v7-failure.png',timeout:14000});}catch{}process.exitCode=1;}finally{await browser.close();}
