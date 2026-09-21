@@ -1,5 +1,5 @@
 // Estate-specific solid geometry: scenic meshes must no longer be pass-through.
-// Register props into the SAME SpatialIndex used by slideMove/vehicleBlocked.
+// Register only VISIBLE permanent props in the same SpatialIndex used by driving.
 import * as THREE from './vendor/three.module.js';
 import {ModernGameplay} from './modern-gameplay.js';
 import {VILLA} from './gameplay-areas.js';
@@ -7,15 +7,20 @@ import {vehicleBlocked} from './movement.js';
 const box3=new THREE.Box3(),corners=[[-1,-1],[1,-1],[1,1],[-1,1]];
 const actorGroup=/\b(worker|gate|bodyguard|servant|guardia|contadino|pattuglia|soldat|pecora|bovino|cavallo|ape car|scorta)\b/i;
 function movableAncestor(mesh,root){let p=mesh.parent;while(p&&p!==root){if(actorGroup.test(p.name||''))return true;p=p.parent;}return false;}
+function visibleGeometry(mesh,root){let p=mesh;while(p&&p!==root){if(p.visible===false)return false;p=p.parent;}return true;}
 function footprint(mesh){const geo=mesh.geometry;if(!geo.boundingBox)geo.computeBoundingBox();const bound=geo.boundingBox;
  const x=(bound.min.x+bound.max.x)/2,z=(bound.min.z+bound.max.z)/2,rx=(bound.max.x-bound.min.x)/2,rz=(bound.max.z-bound.min.z)/2;
  return corners.map(([sx,sz])=>{const p=mesh.localToWorld(new THREE.Vector3(x+sx*rx,0,z+sz*rz));return [p.x,p.z];});}
 function register(g){const index=g.collision;if(!index?.add)return {count:0,reason:'collision index missing'};
  if(index.__mandriaV7ColliderReport)return index.__mandriaV7ColliderReport;
  const roots=[g.villaEstate?.root,g.villaLife?.root,g.villaV3?.root,g.villaV4?.root,g.villaV5Estate?.root].filter(Boolean);
- let count=0;const byRoot={};const seen=new Set();g.scene.updateMatrixWorld(true);
+ let count=0,skippedHidden=0;const byRoot={},seen=new Set();g.scene.updateMatrixWorld(true);
  for(const root of roots){let subtotal=0;root.traverse(mesh=>{
   if(!mesh.isMesh||mesh.geometry?.type!=='BoxGeometry'||movableAncestor(mesh,root)||seen.has(mesh))return;
+  // Retired estate perimeter rails were hidden visually by v3 but used to be
+  // reintroduced as invisible v7 colliders. An invisible mesh cannot block a
+  // horse, vehicle or player. Check each ancestor until the owning scene root.
+  if(!visibleGeometry(mesh,root)){skippedHidden++;return;}
   seen.add(mesh);box3.setFromObject(mesh);const w=box3.max.x-box3.min.x,h=box3.max.y-box3.min.y,d=box3.max.z-box3.min.z;
   if(!Number.isFinite(w+h+d)||h<.09||w<.09||d<.09||h<.19&&w>3&&d>3||w>85||d>85)return;
   const mx=(box3.min.x+box3.max.x)/2,mz=(box3.min.z+box3.max.z)/2;
@@ -26,17 +31,16 @@ function register(g){const index=g.collision;if(!index?.add)return {count:0,reas
   const obstacle={p,minX:Math.min(...xs),maxX:Math.max(...xs),minZ:Math.min(...zs),maxZ:Math.max(...zs),minY:box3.min.y,h:Math.max(.12,h),kind:'mandria-solid',solid:true};
   index.add(obstacle,obstacle.minX,obstacle.minZ,obstacle.maxX,obstacle.maxZ);subtotal++;count++;
  });byRoot[root.name||'estate']=subtotal;}
- // SpatialIndex.near yields an entire 60 m bucket, not an exact geometric hit.
- // Older estate AI treats every returned obstacle as a collision. Filter only
- // our added obstacles by their real AABB while retaining all original queries.
- // This keeps the original mobile escort/field hands moving beside scenery.
+ // SpatialIndex.near yields entire 60 m buckets, not exact geometric hits.
+ // Filter only our additional obstacles by their true AABB; preserve the
+ // original index results and moving worker/escort behavior.
  if(!index.__mandriaPreciseAddedObjects){const near=index.near.bind(index);
   index.near=function(x,z,r=0){const candidates=near(x,z,r);let filtered=null;
    for(const b of candidates){if(b.kind!=='mandria-solid')continue;
     if(x+r<b.minX||x-r>b.maxX||z+r<b.minZ||z-r>b.maxZ){if(!filtered)filtered=new Set(candidates);filtered.delete(b);}
    }return filtered||candidates;};index.__mandriaPreciseAddedObjects=true;
  }
- const report={count,byRoot};index.__mandriaV7ColliderReport=report;return report;
+ const report={count,byRoot,skippedHidden};index.__mandriaV7ColliderReport=report;return report;
 }
 function nearActor(g,x,z,y,r,exclude=null){
  for(const c of g.cars||[]){if(c===exclude||!c.mesh?.visible||c.spec?.aircraft||Math.abs(c.y-y)>2.6)continue;
@@ -52,7 +56,7 @@ function nearActor(g,x,z,y,r,exclude=null){
   if(Math.hypot(o.position.x-x,o.position.z-z)<r+2.1)return group;
  }
  for(const shooter of g.villaRange?.shooters||[]){if(!shooter.visible||Math.abs(shooter.position.y-y)>2.6)continue;
-  if(Math.hypot(shooter.position.x-x,shooter.position.z-z)<r+.55)return shooter;
+  if(Math.hypot(shooter.position.x-x,shooter.position.z-shooter.position.z)<r+.55)return shooter;
  }
  for(const patch of g.villaLife?.pastures||[])for(const animal of patch.animals||[]){if(!animal.a?.visible||Math.abs(animal.a.position.y-y)>2.6)continue;
   if(Math.hypot(animal.a.position.x-x,animal.a.position.z-z)<r+.62)return animal;
