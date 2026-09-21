@@ -25,7 +25,6 @@ import './airport-flight-extras.js';
 // Must precede legacy key listeners: Tab is throttle, Ctrl brake, G missile.
 import './airport-air-controls.js';
 import './airport-combat-flight.js';
-import './airport-ejection-state.js';
 import './airport-dogfight-v2.js';
 import './airport-dogfight-jet-models.js';
 import './airport-golf-arcade.js';
@@ -87,6 +86,7 @@ import './villa-mandria-v6-horse-track.js';
 import './villa-mandria-v7-physics.js';
 import './villa-mandria-v7-life.js';
 import './villa-mandria-v7-entry-stairs.js';
+import './villa-mandria-v7-animal-motion.js';
 
 // UI-only Phase 2 feedback. It does not own gameplay state: it observes the
 // existing HUD, so it cannot interfere with saves, physics or streaming.
