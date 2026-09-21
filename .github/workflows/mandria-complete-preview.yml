@@ -7,6 +7,7 @@ on:
       - 'dist/gameplay-areas.js'
       - 'dist/phase2-runtime.js'
       - 'tools/verify-villa-mandria-estate-v2.mjs'
+      - 'tools/verify-villa-mandria-relocation.mjs'
       - 'tools/verify-mandria-v5-private-road.mjs'
       - 'tools/test-mandria-estate-v2-chromium.mjs'
       - 'tools/test-mandria-estate-v3-chromium.mjs'
