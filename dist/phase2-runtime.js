@@ -25,6 +25,7 @@ import './airport-flight-extras.js';
 // Must precede legacy key listeners: Tab is throttle, Ctrl brake, G missile.
 import './airport-air-controls.js';
 import './airport-combat-flight.js';
+import './airport-ejection-state.js';
 import './airport-dogfight-v2.js';
 import './airport-dogfight-jet-models.js';
 import './airport-golf-arcade.js';
