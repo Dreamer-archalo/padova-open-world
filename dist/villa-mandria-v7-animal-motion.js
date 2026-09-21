@@ -4,6 +4,7 @@ import './villa-mandria-v8-scope-targets.js';
 import './villa-mandria-v8-estate-tasks.js';
 import './villa-mandria-v8-grounds-roof.js';
 import './villa-mandria-v8-deliveries.js';
+import './villa-mandria-v8-perimeter-patrols.js';
 import {ModernGameplay} from './modern-gameplay.js';
 import {VILLA,areaPoint,areaLocal} from './gameplay-areas.js';
 import {mandriaFree} from './villa-mandria-placement-fix.js';
