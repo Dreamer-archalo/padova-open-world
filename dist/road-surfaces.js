@@ -8,6 +8,12 @@ class MaxHeap{constructor(){this.a=[];}push(v){let i=this.a.length;this.a.push(v
 // without a shared OSM vertex stay separate, so the lower street remains usable.
 export class RoadSurfaces{
  constructor(map,terrain){this.terrain=terrain;this.modern=terrain.modern;this.index=new SpatialIndex(80);this.nodes=[];this.profiles=new Map();this.report={roads:map.roads.length,inferred:[],submergedEnds:[],steep:[],layers:0,culverts:0};const lookup=new Map();
+  // The compact OSM import stores both building passages and underground ways
+  // as tunnel=true. Only an explicitly negative layer establishes a subsurface
+  // level. A covered portico must not excavate its entire connected street.
+  if(this.modern)for(const road of map.roads)if(road.tunnel&&!(Number(road.layer)<0)){
+   road.coveredPassage=true;road.tunnel=false;
+  }
   const node=(p,shared,road,endpoint)=>{
    const base=()=>terrain.prato(...p)?terrain.pratoHeight+.28:terrain.elevation(...p),create=()=>{const h=base();this.nodes.push({x:p[0],z:p[1],base:h,h,edges:[]});return this.nodes.length-1;};
    if(!shared)return create();const key=p[0].toFixed(1)+','+p[1].toFixed(1);
@@ -27,7 +33,11 @@ export class RoadSurfaces{
    const profile={id,road,ids,points,wet,hasWater,layer,tunnel};this.profiles.set(road,profile);
    for(let i=0;i<ids.length;i++){
     const n=this.nodes[ids[i]];
-    const lift=terrain.prato(n.x,n.z)?0:explicit&&!hasWater?Math.max(1,layer)*5.4:layer>0?layer*5.4:0;
+    // A canal bridge joins its existing banks. layer=1 describes ordering,
+    // not an extra storey above those banks. Real road-under-road clearance is
+    // still enforced by the crossing solve below, including riverside paths.
+    const riverBridge=this.modern&&hasWater&&layer<=1;
+    const lift=terrain.prato(n.x,n.z)||riverBridge?0:explicit&&!hasWater?Math.max(1,layer)*5.4:layer>0?layer*5.4:0;
     const deck=wet[i]?Math.max(n.base,terrain.waterHeight(n.x,n.z)+2.2):n.base;
     if(!tunnel)n.h=Math.max(n.h,deck+lift);
     if(i){const prev=this.nodes[ids[i-1]],d=distance(points[i-1],points[i]);const grade=road.k==='steps'?.65:this.modern?.055:MAX_GRADE;n.edges.push({id:ids[i-1],d,grade});prev.edges.push({id:ids[i],d,grade});const s={a:points[i-1],b:points[i],ia:ids[i-1],ib:ids[i],profile,i:i-1};this.index.add(s,Math.min(s.a[0],s.b[0])-road.w,Math.min(s.a[1],s.b[1])-road.w,Math.max(s.a[0],s.b[0])+road.w,Math.max(s.a[1],s.b[1])+road.w);}
