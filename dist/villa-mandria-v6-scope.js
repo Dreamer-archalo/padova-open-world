@@ -1,4 +1,4 @@
-// The range is fictional target practice. Only estate-bound aiming alters the camera.
+// Only the fictional estate shooting range may temporarily override the gameplay camera.
 import * as THREE from './vendor/three.module.js';
 import {ModernGameplay} from './modern-gameplay.js';
 let game=null,holsterButton=null;
@@ -6,7 +6,7 @@ function aiming(g){return !!(g?.state?.started&&g.villaRange?.active&&g.villaRan
 function putAway(g){const r=g?.villaRange;if(!r?.active)return false;r.active=false;r.aiming=false;r.lastShot=-100;
  if(g.villaV4Polish?.gun)g.villaV4Polish.gun.visible=false;
  document.body.classList.remove('mandria-sniper');const s=document.getElementById('mandriaSniperScope');if(s)s.hidden=true;
- if(r.hud){r.hud.hidden=true;}g.toast?.('Fucile riposto · torna al poligono e premi E per riprendere.',2.8);return true;}
+ if(r.hud)r.hud.hidden=true;g.toast?.('Fucile riposto · torna al poligono e premi E per riprendere.',2.8);return true;}
 function install(){if(holsterButton)return;
  const style=document.createElement('style');style.textContent=`
  body.mandria-sniper #mandriaSniperScope{background:radial-gradient(circle min(24vmin,175px) at 50% 50%,transparent 0 98%,#000 100%)!important}
@@ -23,18 +23,26 @@ if(!THREE.WebGLRenderer.prototype.__mandriaV6Scope){THREE.WebGLRenderer.prototyp
  THREE.WebGLRenderer.prototype.render=function(scene,camera){const g=game;if(scene!==g?.scene||!g?.state?.started||!camera?.isPerspectiveCamera)return oldRender.call(this,scene,camera);
   if(!aiming(g)){if(camera.userData.mandriaOriginalFov!==undefined){camera.fov=camera.userData.mandriaOriginalFov;delete camera.userData.mandriaOriginalFov;camera.updateProjectionMatrix();}return oldRender.call(this,scene,camera);}
   if(camera.userData.mandriaOriginalFov===undefined)camera.userData.mandriaOriginalFov=camera.fov;
-  camera.fov=22;camera.updateProjectionMatrix();const s=g.state,eye=s.y+1.69;
-  // The existing third-person camera is overwritten *after* the ordinary camera update,
-  // exactly for this render. The crosshair is centered along the same yaw used by the target ray.
-  camera.position.set(s.x,eye,s.z);camera.lookAt(s.x+Math.sin(s.yaw)*85,eye,s.z+Math.cos(s.yaw)*85);
-  const avatars=scene.children.filter(o=>o.userData?.character&&o.visible),gun=g.villaV4Polish?.gun,gunShown=gun?.visible;
+  const s=g.state,eye=s.y+1.69;
+  camera.fov=22;camera.updateProjectionMatrix();camera.position.set(s.x,eye,s.z);
+  camera.lookAt(s.x+Math.sin(s.yaw)*85,eye,s.z+Math.cos(s.yaw)*85);
+  // The ordinary player model is not necessarily tagged userData.character. It is
+  // the scene-level person Group whose origin matches the player's world position.
+  // Exclude estate containers and NPCs at other positions; do not hide targets.
+  const avatars=scene.children.filter(o=>o.isGroup&&o.visible&&o.children.some(c=>c.isMesh||c.isGroup)&&
+    Math.hypot(o.position.x-s.x,o.position.z-s.z)<.55&&Math.abs(o.position.y-(s.y+.08))<.65);
+  const gun=g.villaV4Polish?.gun,gunShown=gun?.visible;
   for(const avatar of avatars)avatar.visible=false;if(gun)gun.visible=false;
+  // Report the actual camera passed to WebGL, not the third-person rig sampled
+  // before or after this render. Browser acceptance can inspect this snapshot.
+  g.mandriaScopeFrame={fov:camera.fov,x:camera.position.x,y:camera.position.y,z:camera.position.z,
+    yaw:s.yaw,hiddenAvatars:avatars.length,elapsed:s.elapsed};
   try{return oldRender.call(this,scene,camera);}finally{for(const avatar of avatars)avatar.visible=true;if(gun)gun.visible=gunShown;}
  };
 }
 const previousPopulate=ModernGameplay.prototype.populate,previousUpdate=ModernGameplay.prototype.update;
 if(!ModernGameplay.prototype.__mandriaV6Scope){ModernGameplay.prototype.__mandriaV6Scope=true;
- ModernGameplay.prototype.populate=function(...args){const out=previousPopulate.apply(this,args);game=this;document.body.classList.remove('mandria-sniper');if(holsterButton)holsterButton.hidden=true;return out;};
+ ModernGameplay.prototype.populate=function(...args){const out=previousPopulate.apply(this,args);game=this;this.mandriaScopeFrame=null;document.body.classList.remove('mandria-sniper');if(holsterButton)holsterButton.hidden=true;return out;};
  ModernGameplay.prototype.update=function(dt){previousUpdate.call(this,dt);game=this;install();holsterButton.hidden=!this.villaRange?.active||this.state.mode!=='foot'||this.state.paused;
   if(aiming(this)){const scope=document.getElementById('mandriaSniperScope');if(scope){scope.hidden=false;document.body.classList.add('mandria-sniper');}}
  };
