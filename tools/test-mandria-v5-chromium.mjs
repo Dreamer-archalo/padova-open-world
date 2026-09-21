@@ -16,15 +16,19 @@ try{
  await page.waitForFunction(()=>!!globalThis.__mandriaV5Test?.villaLife?.people.some(p=>p.role==='worker')&&!!globalThis.__mandriaV5Test?.villaV7Life,null,{timeout:60000});
  await page.evaluate(()=>{const g=globalThis.__mandriaV5Test,p=g.villaLife.people.find(p=>p.role==='worker');globalThis.__v5Worker=p;Object.assign(g.state,{mode:'foot',car:null,x:p.obj.position.x,z:p.obj.position.z,y:g.terrain.height(p.obj.position.x,p.obj.position.z),speed:0,vy:0});});
  await page.waitForFunction(()=>{const p=document.getElementById('mandriaWorkerPrompt');return p&&!p.hidden;},null,{timeout:20000});await page.locator('#mandriaWorkerPrompt').click();
- assert.equal(await page.locator('#mandriaWorkerDialog').evaluate(d=>d.open),true);assert.equal(await page.locator('#mwChoices button').count(),4);
+ assert.equal(await page.locator('#mandriaWorkerDialog').evaluate(d=>d.open),true);
+ const options=await page.locator('#mwChoices button').allTextContents();
+ assert.equal(options.length,3,'v8 worker requests must offer execute, alternate destination and refuse');
+ assert(options[2].includes('Non procedere'),'the refusal must remain a genuine option');
  await page.locator('#mwChoices button').first().click();assert.equal(await page.locator('#mwReply').isVisible(),true);assert.equal(await page.locator('.mw-next').textContent(),'Concludi ✓');
  await page.locator('.mw-next').click();assert.equal(await page.locator('#mandriaWorkerDialog').evaluate(d=>d.open),false,'one reply should finish a conversation');
  await page.waitForFunction(()=>globalThis.__v5Worker.v7NextTalkAt>globalThis.__mandriaV5Test.state.elapsed,null,{timeout:10000});
  assert.equal(await page.locator('#mandriaWorkerPrompt').evaluate(e=>e.hidden),true,'answered worker should not immediately repeat a conversation');
  await page.keyboard.press('KeyE');assert.equal(await page.locator('#mandriaWorkerDialog').evaluate(d=>d.open),false,'E must respect dialogue cooldown');
- await page.evaluate(()=>{globalThis.__v5Worker.v7NextTalkAt=globalThis.__mandriaV5Test.state.elapsed-1;});
+ await page.evaluate(()=>{const g=globalThis.__mandriaV5Test,p=globalThis.__v5Worker;p.v7NextTalkAt=g.state.elapsed-1;p.v8Job=null;if(p.v8Cargo){p.obj.remove(p.v8Cargo);p.v8Cargo=null;}});
  await page.waitForFunction(()=>!document.getElementById('mandriaWorkerPrompt').hidden,null,{timeout:10000});
- await page.locator('#mandriaWorkerPrompt').click();assert.equal(await page.locator('#mwChoices button:visible').count(),4);
+ await page.locator('#mandriaWorkerPrompt').click();assert.equal(await page.locator('#mwChoices button:visible').count(),3);
+ await page.locator('#mwChoices button').last().click();assert.equal(await page.evaluate(()=>!!globalThis.__v5Worker.v8Job),false,'refusing an order must not start a task');
  await page.keyboard.press('KeyX');assert.equal(await page.locator('#mandriaWorkerDialog').evaluate(d=>d.open),false,'X closes dialogue');
  phase='scope';
  const ready=await page.evaluate(()=>{const g=globalThis.__mandriaV5Test,r=g.villaRange;if(!r?.ready)return false;Object.assign(g.state,{x:r.station.x,z:r.station.z,y:g.terrain.height(r.station.x,r.station.z),mode:'foot',car:null,speed:0,vy:0,mission:null});return true;});
@@ -36,6 +40,6 @@ try{
  phase='horse jump';
  const mounted=await page.evaluate(()=>{const g=globalThis.__mandriaV5Test,c=g.villaV3?.patrols.find(c=>c.estateHorse);if(!c)return false;Object.assign(g.state,{mode:'car',car:c,x:c.x,z:c.z,y:c.y,yaw:c.yaw,speed:3,vy:0});c.speed=3;c.jump={airborne:false,vx:0,vz:0,vy:0,ramp:null,groundVy:0};return true;});
  assert(mounted,'no mountable paddock horse');await page.keyboard.down('Space');assert.equal(await page.evaluate(()=>!!globalThis.__mandriaV5Test.state.car?.jump?.airborne),true,'Space did not initiate horse jump');
- await page.keyboard.up('Space');assert.deepEqual(errors,[],'runtime JS errors');console.log('PASS Mandria v7 Chromium: one-topic four-option dialogue, worker cooldown, X close, scope, X holster, SPACE horse jump');
+ await page.keyboard.up('Space');assert.deepEqual(errors[],'runtime JS errors');console.log('PASS Mandria v8 Chromium: one-topic three-action dialogue, cooldown, refusal, X close, scope, holster, SPACE horse jump');
 }catch(error){console.error('MANDRIA_V6_INTERACTION_FAIL '+phase+' '+(error.stack||error));console.error('JS_ERRORS '+JSON.stringify(errors.slice(-10)));try{await page.screenshot({path:'test-artifacts/mandria-v6-interaction-failure.png',timeout:12000});}catch{}process.exitCode=1;}
 finally{await browser.close();}
