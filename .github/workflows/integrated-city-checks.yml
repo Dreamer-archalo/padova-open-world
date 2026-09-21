@@ -1,0 +1,65 @@
+name: Integrated Mandria and city acceptance
+on:
+  push:
+    branches: [fix/integrated-mandria-continuity-20260921]
+  workflow_call:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  integration:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Continuity, villa, catalogue and preserved game systems
+        run: |
+          npm run test:city-continuity
+          npm run test:earth-access
+          node tools/verify-villa-mandria-relocation.mjs
+          node tools/verify-mandria-catalog-ui.mjs
+          node tools/verify-villa-mandria-life.mjs
+          node tools/verify-villa-mandria-estate-v2.mjs
+          node tools/verify-mandria-v5-private-road.mjs
+          node tools/verify-mandria-v5.mjs
+          node tools/verify-airport-military-fleet.mjs
+          node tools/verify-air-hunt.mjs
+          npm run test:taxi
+          npm run test:tangenziale-race
+          node verify-online-race.mjs
+          node verify-online-race-second-fix.mjs
+          npm run test:initial-world
+          node verify-feature-preservation.mjs
+  browser:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        test: [mandria-estate-v2-chromium, mandria-estate-v3-chromium, mandria-v5-chromium, mandria-v5-estate-chromium, mandria-v6-browser, mandria-v7-browser, mandria-v8-browser, mandria-hangar-chromium, airport-military-fleet-chromium, air-hunt-chromium, monoblocco-chromium]
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install software WebGL browser
+        run: |
+          npm install --no-save playwright@1.55.1
+          npx playwright install --with-deps chromium
+      - name: Start game server
+        run: |
+          node tools/serve.mjs --host 127.0.0.1 --port 4173 &
+          for i in $(seq 1 30); do if curl -fsS http://127.0.0.1:4173/ -o /dev/null; then exit 0; fi; sleep 1; done
+          exit 1
+      - name: Exercise actual integrated runtime
+        run: node tools/test-${{ matrix.test }}.mjs
+      - name: Save browser evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: integrated-${{ matrix.test }}
+          path: test-artifacts/
+          if-no-files-found: ignore

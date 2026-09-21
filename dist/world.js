@@ -2,6 +2,8 @@ import {CityStream} from './streaming.js';
 import {createWedgeCar} from './sport-models.js';
 import {motorwayBarriers} from './motorways.js';
 import {arcadeRamps} from './arcade-ramps.js';
+import {installEarthAccess} from './earth-access.js';
+import {groundTileNeedsSplit} from './ground-mesh-sampling.js';
 import {surfaceBatch} from './surface-layers.js';
 import {batchStatic} from './render-batch.js';
 import {qualityFor} from './quality.js';
@@ -106,6 +108,7 @@ export class CityWorld{
    // Stone balustrades of the four Prato bridges use the same local frame as the water mask.
    for(const [x,z,yaw,width] of [[0,130.5,0,11],[0,-130.5,0,11],[85.5,0,Math.PI/2,9],[-85.5,0,Math.PI/2,9]])for(const side of [-1,1]){const px=x+Math.cos(yaw)*(width/2+.2)*side,pz=z-Math.sin(yaw)*(width/2+.2)*side,c=Math.cos(PRATO.yaw),s=Math.sin(PRATO.yaw),wx=PRATO.x+c*px+s*pz,wz=PRATO.z-s*px+c*pz,a=yaw+PRATO.yaw,points=[[-.25,-7],[.25,-7],[.25,7],[-.25,7]].map(([u,v])=>[wx+Math.cos(a)*u+Math.sin(a)*v,wz-Math.sin(a)*u+Math.cos(a)*v]),xs=points.map(p=>p[0]),zs=points.map(p=>p[1]),b={p:points,minX:Math.min(...xs),maxX:Math.max(...xs),minZ:Math.min(...zs),maxZ:Math.max(...zs),minY:terrain.pratoHeight+.3,h:1.2};this.collision.add(b,b.minX,b.minZ,b.maxX,b.maxZ);}
    this.structures=[...roadStructures(terrain),...(terrain.modern?motorwayBarriers(terrain):[]),...gameplayStructures(terrain),...(terrain.modern?portelloStructures(terrain):[])];if(terrain.modern)this.structures.push(...arcadeRamps(terrain,this.structures.filter(b=>b.kind==='guardrail'||b.kind==='median'),this.collision,this.structures));for(const b of this.structures){if(b.solid!==false)this.collision.add(b,b.minX,b.minZ,b.maxX,b.maxZ);this.chunk(b.x,b.z).structures.push(b);}this.details=cityDetails(scene,data,terrain);}
+  if(terrain?.modern)installEarthAccess(terrain,this.collision,this.structures);
   for(const tree of gameplayVegetation(terrain))this.chunk(tree.x,tree.z).trees.push(tree);
  }
  chunk(x,z){const i=Math.floor(x/CHUNK),j=Math.floor(z/CHUNK),key=i+','+j;if(!this.chunks.has(key))this.chunks.set(key,{i,j,buildings:[],roads:[],water:[],areas:[],structures:[],trees:[]});return this.chunks.get(key);}
@@ -117,7 +120,7 @@ export class CityWorld{
   if(stage==='core'){
   if(terrain){const ground=new GeometryBatch(),color=col(Math.hypot(ch.i*CHUNK*.82,ch.j*CHUNK)<1550?'#b4aa91':'#8c9b73');
    const groundWriter=terrain.modern?surfaceBatch(ground,terrain,{height:(x,z)=>groundHeight(x,z)-.08}):ground;
-   const tile=(x,z,size)=>{const half=size/2;if(size>4&&terrain.waterDistance(x+half,z+half)<size){for(const dx of [0,half])for(const dz of [0,half])tile(x+dx,z+dz,half);return;}groundWriter.quad([x,groundHeight(x,z)-.08,z],[x,groundHeight(x,z+size)-.08,z+size],[x+size,groundHeight(x+size,z+size)-.08,z+size],[x+size,groundHeight(x+size,z)-.08,z],color);};
+   const tile=(x,z,size)=>{const half=size/2;if(terrain.modern?groundTileNeedsSplit(terrain,x,z,size,groundHeight):size>4&&terrain.waterDistance(x+half,z+half)<size){for(const dx of [0,half])for(const dz of [0,half])tile(x+dx,z+dz,half);return;}groundWriter.quad([x,groundHeight(x,z)-.08,z],[x,groundHeight(x,z+size)-.08,z+size],[x+size,groundHeight(x+size,z+size)-.08,z+size],[x+size,groundHeight(x+size,z)-.08,z],color);};
    for(let x=ch.i*CHUNK;x<(ch.i+1)*CHUNK;x+=16){for(let z=ch.j*CHUNK;z<(ch.j+1)*CHUNK;z+=16){tile(x,z,16);yield;}}
    const mesh=ground.mesh(this.groundMat);mesh.receiveShadow=true;g.add(mesh);
   }

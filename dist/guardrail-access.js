@@ -37,7 +37,10 @@ export function clearRailAccess(a,b,profile,terrain,{margin=1.35,gaps=[],side=1}
   }
  }
  for(const gap of gaps){
-  if(gap.road&&gap.road!==profile.road)continue;
+  // Periodic openings carry a road NAME; stunt openings carry the road OBJECT.
+  // Comparing a name to the object silently discarded every periodic opening.
+  // Name-labelled gaps intentionally line up across parallel carriageways.
+  if(gap.road&&typeof gap.road==='object'&&gap.road!==profile.road)continue;
   if(!gap.road&&gap.profileId!==undefined&&gap.profileId!==profile.id)continue;
   if(gap.side!==undefined&&gap.side!==side)continue;
   const dx=b[0]-a[0],dz=b[1]-a[1];if(Math.abs((dx*Math.sin(gap.yaw)+dz*Math.cos(gap.yaw))/length)<.85)continue;

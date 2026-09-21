@@ -11,8 +11,8 @@ const read=name=>JSON.parse(fs.readFileSync(new URL('./dist/data/'+name+'.json',
 const map=read('padova');applyCityData(map,read('city'));prepareGameplayMap(map);
 const terrain=new Terrain(read('terrain'),map,{modern:true});
 
-const report={roadSegments:0,maxRoadGrade:0,gradeViolations:0,shoulderSamples:0,maxNearShoulderGap:0,shoulderViolations:0,bridgeSamples:0,bridgeViolations:0,flatZones:{},finiteSamples:0};
-const badGrades=[],badShoulders=[],badBridges=[];
+const report={roadSegments:0,maxRoadGrade:0,gradeViolations:0,shoulderSamples:0,maxNearShoulderGap:0,maxTransverseChange:0,nearGapViolations:0,transverseViolations:0,shoulderViolations:0,bridgeSamples:0,bridgeViolations:0,flatZones:{},finiteSamples:0};
+const badGrades=[],badShoulders=[],badBridges=[],worstRoads=new Map();
 const excluded=/motorway|trunk|footway|path|cycleway|steps|pedestrian|tram/;
 
 for(const profile of terrain.roads.profiles.values()){
@@ -25,8 +25,14 @@ for(const profile of terrain.roads.profiles.values()){
   for(const side of [-1,1]){
    const near=profile.road.w/2+1.25,far=profile.road.w/2+Math.min(SHOULDER_FEATHER-.5,6.5),x1=mx+nx*near*side,z1=mz+nz*near*side,x2=mx+nx*far*side,z2=mz+nz*far*side;
    if(terrain.waterDistance(x1,z1)<1.5||terrain.waterDistance(x2,z2)<1.5)continue;
-   const h1=terrain.groundHeight(x1,z1),h2=terrain.groundHeight(x2,z2),gap=Math.abs(h1-deck),transition=Math.abs(h2-h1);report.shoulderSamples++;report.maxNearShoulderGap=Math.max(report.maxNearShoulderGap,gap);
-   if(gap>.55||transition>1.35){report.shoulderViolations++;if(badShoulders.length<20)badShoulders.push({road:profile.road.n||profile.road.k,gap:+gap.toFixed(3),transition:+transition.toFixed(3),x:+mx.toFixed(1),z:+mz.toFixed(1)});}
+   const h1=terrain.groundHeight(x1,z1),h2=terrain.groundHeight(x2,z2),gap=Math.abs(h1-deck),transition=Math.abs(h2-h1);report.shoulderSamples++;report.maxNearShoulderGap=Math.max(report.maxNearShoulderGap,gap);report.maxTransverseChange=Math.max(report.maxTransverseChange,transition);
+   if(gap>.55)report.nearGapViolations++;
+   if(transition>1.35)report.transverseViolations++;
+   if(gap>.55||transition>1.35){
+    report.shoulderViolations++;
+    const road=profile.road.n||profile.road.k,entry=worstRoads.get(road)||{road,count:0,maxGap:0,maxTransition:0};entry.count++;entry.maxGap=Math.max(entry.maxGap,gap);entry.maxTransition=Math.max(entry.maxTransition,transition);worstRoads.set(road,entry);
+    if(badShoulders.length<20){const owner=terrain.roads.at(x2,z2,null,SHOULDER_FEATHER);badShoulders.push({road,gap:+gap.toFixed(3),transition:+transition.toFixed(3),x:+mx.toFixed(1),z:+mz.toFixed(1),deck:+deck.toFixed(3),nearGround:+h1.toFixed(3),farGround:+h2.toFixed(3),farOwner:owner?.road.n||owner?.road.k||null,farOwnerY:owner?+owner.height.toFixed(3):null});}
+   }
   }
  }
 }
@@ -46,6 +52,8 @@ for(const patch of LEVEL_PATCHES){
  const variation=max-min;report.flatZones[patch.id]={samples:count,variation:+variation.toFixed(3)};assert(variation<.35,patch.name+' core variation '+variation.toFixed(3)+' m');
 }
 
+const leaders=[...worstRoads.values()].sort((a,b)=>b.count-a.count).slice(0,20).map(r=>({...r,maxGap:+r.maxGap.toFixed(3),maxTransition:+r.maxTransition.toFixed(3)}));
+console.log('ELEVATION_DIAGNOSTIC '+JSON.stringify({report,leaders,examples:badShoulders}));
 assert(report.roadSegments>10000,'map-wide road coverage too small');
 assert.equal(report.gradeViolations,0,'road grade discontinuities: '+JSON.stringify(badGrades));
 assert.equal(report.shoulderViolations,0,'road/terrain shoulder discontinuities: '+JSON.stringify(badShoulders));

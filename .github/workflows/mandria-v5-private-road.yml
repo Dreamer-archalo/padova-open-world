@@ -1,0 +1,29 @@
+name: Mandria private-road map regression
+on:
+  push:
+    branches: [feat/villa-treves-phase1-20260919]
+    paths:
+      - 'dist/gameplay-areas.js'
+      - 'dist/villa-mandria-road-privacy.js'
+      - 'tools/verify-mandria-v5-private-road.mjs'
+      - '.github/workflows/mandria-v5-private-road.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  private-streets:
+    runs-on: ubuntu-latest
+    timeout-minutes: 6
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: feat/villa-treves-phase1-20260919
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Validate public streets stop at private boundary
+        run: |
+          node --check dist/gameplay-areas.js
+          node --check dist/villa-mandria-road-privacy.js
+          node tools/verify-mandria-v5-private-road.mjs
+          node tools/verify-villa-mandria-relocation.mjs

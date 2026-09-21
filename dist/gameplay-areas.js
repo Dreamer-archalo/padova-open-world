@@ -1,9 +1,32 @@
-// Airport integration based on current main. Retain existing authored facilities
-// and the single graph-connected vehicle entrance; aircraft taxiways aren't car roads.
+// Airport integration retains its single graph-connected vehicle entrance.
+// The fictional estate lives at Mandria; the real Parco Treves is untouched.
 import {makeRoadGraph,nearestOnSegment,dist} from './core.js';
-import {prepareGameplayMap as prepareBase,gameplayStructures as originalStructures,AIRPORT,AIRPORT_GATE,areaPoint,areaLocal} from './gameplay-areas-implementation.js';
+import {prepareGameplayMap as prepareBase,gameplayStructures as originalStructures,gameplaySpawns as baseSpawns,gameplayVegetation as originalVegetation,AIRPORT,AIRPORT_GATE,VILLA,areaPoint,areaLocal} from './gameplay-areas-implementation.js';
 import {buildAirportRoads} from './airport-road-network.js';
+import {villaGarageStructures,VILLA_GARAGE} from './villa-treves-layout.js';
+import {relocateVillaToMandria,verifyParkAndVillaMap,VILLA_PUBLIC_NAME} from './villa-mandria-relocation.js';
+import {privatizeMandriaRoads} from './villa-mandria-road-privacy.js';
 export * from './gameplay-areas-implementation.js';
+
+const WEST_PARKING=Object.freeze([[-35,14],[-35,41],[-14,15],[-14,26],[-14,38],[-8,15],[-8,28]]);
+export function gameplaySpawns(){
+ let index=0;
+ return baseSpawns().map(s=>{
+  if(s.name!=='Villa Treves')return s;
+  const [u,v]=WEST_PARKING[index++];return {...s,...areaPoint(VILLA,u,v),name:VILLA_PUBLIC_NAME};
+ });
+}
+
+export function gameplayVegetation(terrain){
+ const g=VILLA_GARAGE;
+ return originalVegetation(terrain).filter(tree=>{
+  const p=areaLocal(VILLA,tree.x,tree.z);
+  // Remove only the villa's own decorative tree instances that would otherwise
+  // pass through the hangar's east wall, roof or standing aircraft. Never touch
+  // the city/Parco Treves's native mapped trees or greenery.
+  return !(p.u>g.u-g.w/2-2&&p.u<g.u+g.w/2+2&&p.v>g.v-g.d/2-2&&p.v<g.v+g.d/2+2);
+ });
+}
 
 export function gameplayStructures(terrain){
   const structures=originalStructures(terrain);
@@ -19,33 +42,24 @@ export function gameplayStructures(terrain){
     const poly=[[-w/2,-d/2],[w/2,-d/2],[w/2,d/2],[-w/2,d/2]].map(([du,dv])=>{const p=areaPoint(AIRPORT,u+du,v+dv);return [p.x,p.z];});
     result.push({x:centre.x,z:centre.z,p:poly,y,minY:y,h,color,solid,kind:'gameplay',minX:Math.min(...poly.map(p=>p[0])),maxX:Math.max(...poly.map(p=>p[0])),minZ:Math.min(...poly.map(p=>p[1])),maxZ:Math.max(...poly.map(p=>p[1]))});
   }
-  // Wide, collision-free entrance portal with physically separated supports.
   for(const v of [226,274])box(211,v,1.7,1.7,7.2,'#d1d3cb');
   for(const v of [217,283])box(215,v,1.1,18,1.2,'#adb6b4');
   box(211,250,1.65,48,.75,'#526775',7.2,false);
   box(211.9,250,.3,30,1.55,'#24566d',8,false);
   for(const v of [228,272])box(211.4,v,.5,.6,1.55,'#e9dba2',8,false);
-  // Three separated airport facilities, using the same real collision and
-  // chunk-render pipeline as the original structures. Keep away from roads,
-  // flight corridors, existing buildings and all gate/fence openings.
   for(const [u,v,w,d,h,wall] of [
-    [170,562,24,13,5,'#bec8c3'], // northern terminal logistics annex
-    [172,-442,26,17,5.5,'#71816b'], // southern military equipment shed
-    [188,-35,16,14,5,'#9baba6'] // airport maintenance substation
+    [170,562,24,13,5,'#bec8c3'],
+    [172,-442,26,17,5.5,'#71816b'],
+    [188,-35,16,14,5,'#9baba6']
   ]){
     box(u,v,w,d,h,wall);
     box(u,v,w+1,d+1,.3,'#52656a',h);
     box(u,v+d/2+.12,w*.55,.12,2.25,'#47677b',1.2,false);
   }
+  result.push(...villaGarageStructures(terrain));
   return result;
 }
 
-// Source OSM roads formerly continued straight through the hangars and eight
-// physical fence sections. Only the authored entrance may cross this fence.
-// Clip ALL original road types against a footprint buffered 8-9 m beyond the
-// actual fence, so their rendered lane width cannot protrude into a wall.
-// Keep external portions and road metadata; do not delete the city road or
-// attach an inaccessible runway route to the drivable city graph.
 const CLIP={minU:-94,maxU:223,minV:-584,maxV:584};
 function outsideAirport(points){
   const paths=[];let current=[];
@@ -70,17 +84,27 @@ function outsideAirport(points){
 }
 
 export function prepareGameplayMap(map){
+  const relocation=map.gameplay?null:relocateVillaToMandria(map);
   prepareBase(map);
-  if(map.gameplay.airportRoadIntegration)return map;
+  if(relocation){
+    const drive=map.gameplay.roads.find(r=>r.n==='Accesso villa Treves');
+    if(!drive)throw new Error('Mandria villa access road was not generated');
+    const approach={x:relocation.site.x,z:relocation.site.z+69};
+    const gate={x:relocation.site.x,z:relocation.site.z+51};
+    drive.n='Accesso Villa della Mandria';drive.access='yes';
+    drive.p=[relocation.site.road.point,[approach.x,approach.z],[gate.x,gate.z]];
+    const central=map.gameplay.roads.find(r=>r.n==='Viale della villa');
+    if(central)central.n='Viale Villa della Mandria';
+  }
+  if(map.gameplay.airportRoadIntegration){if(relocation){verifyParkAndVillaMap(map,relocation);privatizeMandriaRoads(map);}return map;}
   const entry=map.gameplay.roads.find(r=>r.n==='Ingresso aeroporto');
   const oldService=map.gameplay.roads.find(r=>r.n==='Servizi aeroportuali');
   if(oldService){map.gameplay.roads=map.gameplay.roads.filter(r=>r!==oldService);map.roads=map.roads.filter(r=>r!==oldService);}
-  // Do this BEFORE selecting the actual external junction or constructing the
-  // road surfaces; all non-airport city pieces stop short of the perimeter.
   map.roads=map.roads.flatMap(r=>r.gameplay?[r]:outsideAirport(r.p).map(p=>({...r,p,airportClipped:true})));
   const added=buildAirportRoads(AIRPORT,areaPoint);
   map.gameplay.roads.push(...added);map.roads.push(...added);
-  if(!entry){map.gameplay.airportRoadIntegration={status:'missing-entrance',connected:false};return map;}
+  if(!entry){map.gameplay.airportRoadIntegration={status:'missing-entrance',connected:false};
+    if(relocation){verifyParkAndVillaMap(map,relocation);privatizeMandriaRoads(map);}return map;}
   const outside=areaPoint(AIRPORT,228,250);
   entry.access='yes';entry.p=[[outside.x,outside.z],[AIRPORT_GATE.x,AIRPORT_GATE.z]];
   const graph=makeRoadGraph(map.roads,{separateLevels:true});
@@ -94,7 +118,7 @@ export function prepareGameplayMap(map){
     for(let i=1;i<road.p.length;i++){
       const a=road.p[i-1],b=road.p[i];
       if((Math.hypot(a[0]-c.a.x,a[1]-c.a.z)<.11&&Math.hypot(b[0]-c.b.x,b[1]-c.b.z)<.11)||
-         (Math.hypot(a[0]-c.b.x,a[1]-c.b.z)<.11&&Math.hypot(b[0]-c.a.x,b[1]-c.a.z)<.11)){at=i;break;}
+         (Math.hypot(a[0]-c.b.x,a[1]-c.b.z)<.11&&Math.hypot(b[0]-c.a.x,b[1]-c.b.z)<.11)){at=i;break;}
     }
     if(at<1)continue;
     if(dist(c.a,c.point)>.11&&dist(c.b,c.point)>.11)road.p.splice(at,0,[c.point.x,c.point.z]);
@@ -102,5 +126,6 @@ export function prepareGameplayMap(map){
   }
   if(junction)entry.p.unshift(junction.point);
   map.gameplay.airportRoadIntegration={connected:!!junction,cityJunction:junction,visualValidationPending:true,sourceRoadsClipped:true};
+  if(relocation){verifyParkAndVillaMap(map,relocation);privatizeMandriaRoads(map);}
   return map;
 }

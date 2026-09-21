@@ -15,7 +15,10 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
+  verify-integrated-game:
+    uses: ./.github/workflows/integrated-city-checks.yml
   deploy:
+    needs: verify-integrated-game
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
