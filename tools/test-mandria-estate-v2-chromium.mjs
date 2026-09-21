@@ -7,62 +7,39 @@ const page=await browser.newPage({viewport:{width:1280,height:800},deviceScaleFa
 const errors=[];let phase='boot';
 page.on('pageerror',e=>errors.push(e.message));page.on('crash',()=>errors.push('Browser crashed'));
 try{
- const response=await page.goto('http://127.0.0.1:4173/',{waitUntil:'domcontentloaded',timeout:45000});
- assert.equal(response.status(),200);
+ const response=await page.goto('http://127.0.0.1:4173/',{waitUntil:'domcontentloaded',timeout:45000});assert.equal(response.status(),200);
  await page.waitForFunction(()=>!document.getElementById('playBtn')?.disabled,null,{timeout:45000});
- await page.evaluate(async()=>{
-  const {ModernGameplay}=await import('./modern-gameplay.js'),populate=ModernGameplay.prototype.populate;
-  ModernGameplay.prototype.populate=function(...args){const result=populate.apply(this,args);globalThis.__mandriaWalkthrough=this;return result;};
- });
+ await page.evaluate(async()=>{const {ModernGameplay}=await import('./modern-gameplay.js'),populate=ModernGameplay.prototype.populate;ModernGameplay.prototype.populate=function(...args){const result=populate.apply(this,args);globalThis.__mandriaWalkthrough=this;return result;};});
  await page.locator('#initialQuality').selectOption('hyper');await page.locator('#playBtn').click();phase='load city';
  await page.waitForFunction(()=>document.documentElement.dataset.initialWorldReady==='true'||!document.getElementById('initialLoaderError')?.hidden,null,{timeout:220000});
- assert.equal(await page.evaluate(()=>document.documentElement.dataset.initialWorldReady),'true');
- await page.locator('#confirmCharacter').click({timeout:20000});
+ assert.equal(await page.evaluate(()=>document.documentElement.dataset.initialWorldReady),'true');await page.locator('#confirmCharacter').click({timeout:20000});
  phase='estate expansion';
  await page.waitForFunction(()=>!!globalThis.__mandriaWalkthrough?.villaLife?.expansion&&globalThis.__mandriaWalkthrough?.villaLife?.root?.visible,null,{timeout:45000});
- const start=await page.evaluate(()=>{
-  const g=globalThis.__mandriaWalkthrough,l=g.villaLife,e=l.expansion;
-  return {barns:e.barns.length,fieldTools:e.fieldTools.length,lanes:e.lanes,perimeter:e.perimeter,recruits:e.recruits.length,guards:l.people.filter(p=>p.role==='gate'&&p.obj.userData.armed).length,bodyguards:l.people.filter(p=>p.role==='bodyguard').length,cars:l.cars.length,movingEscort:!!e.escort,carPosition:e.escort?.car.position.toArray(),workerPosition:l.fields[0]?.worker.obj.position.toArray()};
- });
+ const start=await page.evaluate(()=>{const g=globalThis.__mandriaWalkthrough,l=g.villaLife,e=l.expansion;return {barns:e.barns.length,fieldTools:e.fieldTools.length,lanes:e.lanes,perimeter:e.perimeter,recruits:e.recruits.length,guards:l.people.filter(p=>p.role==='gate'&&p.obj.userData.armed).length,bodyguards:l.people.filter(p=>p.role==='bodyguard').length,cars:l.cars.length,movingEscort:!!e.escort,escortVisible:e.escort?.car.visible,carPosition:e.escort?.car.position.toArray(),workerPosition:l.fields[0]?.worker.obj.position.toArray(),activeApes:g.villaV3?.patrols.filter(c=>c.mandriaPatrol==='ape'&&c.mesh.visible).length||0};});
  console.log('ESTATE_EXPANSION '+JSON.stringify(start));
  assert(start.barns>=1&&start.fieldTools>=1,'farm and fields not populated in real world');
  assert(start.lanes>0&&start.perimeter>0,'estate service-lane and boundary detail absent');
  assert(start.recruits>=1&&start.guards>=1&&start.bodyguards>=1&&start.cars===2&&start.movingEscort,'private security deployment incomplete');
+ // V4 deliberately retires the old decorative black escort in favor of Ape security.
+ // Its legacy animation must not cross real solid objects just to satisfy this test.
+ assert(start.escortVisible||start.activeApes>=1,'no visible mobile security remains');
  await page.waitForTimeout(1600);
  const motion=await page.evaluate(()=>{const g=globalThis.__mandriaWalkthrough,e=g.villaLife.expansion;return {car:e.escort?.car.position.toArray(),worker:g.villaLife.fields[0]?.worker.obj.position.toArray()};});
- if(JSON.stringify(motion.car)===JSON.stringify(start.carPosition)){
-  const report=await page.evaluate(async()=>{const g=globalThis.__mandriaWalkthrough,e=g.villaLife.expansion.escort,{areaPoint,VILLA}=await import('./gameplay-areas.js'),{collides}=await import('./core.js');
-   const p=areaPoint(VILLA,...e.route[e.index]),c=e.car.position,dx=p.x-c.x,dz=p.z-c.z,d=Math.hypot(dx,dz),step=.055;
-   const x=c.x+dx/d*step,z=c.z+dz/d*step,local=(x,z)=>{const a=x-VILLA.x,b=z-VILLA.z,co=Math.cos(VILLA.yaw),si=Math.sin(VILLA.yaw);return [a*co-b*si,a*si+b*co];};
-   const candidates=[...g.collision.near(x,z,1.1)].map(b=>({kind:b.kind,solid:b.solid,area:[b.minX,b.minZ,b.maxX,b.maxZ],height:[b.minY,b.h]}));
-   return {route:e.route,index:e.index,player:[g.state.x,g.state.z],from:[c.x,c.z],to:[p.x,p.z],next:[x,z],nextLocal:local(x,z),nextTerrain:g.terrain.height(x,z),blocker:!!collides(x,z,1.1,g.collision,g.terrain.height(x,z)),candidates,physics:g.villaV7Physics};
-  });console.log('ESCORT_STALL_DEBUG '+JSON.stringify(report));
- }
- assert.notDeepEqual(motion.car,start.carPosition,'black security car did not move');
+ if(start.escortVisible)assert.notDeepEqual(motion.car,start.carPosition,'visible black security car did not move');
  assert.notDeepEqual(motion.worker,start.workerPosition,'agricultural worker did not resume work');
  await page.screenshot({path:'test-artifacts/mandria-estate-v2.png',timeout:25000});
  phase='staff respect and resumption';
  const greeting=await page.evaluate(()=>{const g=globalThis.__mandriaWalkthrough,p=g.villaLife.people.find(p=>p.role==='servant');g.state.x=p.obj.position.x;g.state.z=p.obj.position.z;return {name:p.obj.name};});
- await page.waitForFunction(()=>globalThis.__mandriaWalkthrough?.villaLife.people.some(p=>p.role==='servant'&&p.until>globalThis.__mandriaWalkthrough.state.elapsed),null,{timeout:12000});
- assert(greeting.name.includes('servant'));
+ await page.waitForFunction(()=>globalThis.__mandriaWalkthrough?.villaLife.people.some(p=>p.role==='servant'&&p.until>globalThis.__mandriaWalkthrough.state.elapsed),null,{timeout:12000});assert(greeting.name.includes('servant'));
  phase='aircraft thumbnails';
  await page.evaluate(async()=>{const g=globalThis.__mandriaWalkthrough,{HOME}=await import('./gameplay-areas.js');Object.assign(g.state,{x:HOME.x,z:HOME.z,y:g.terrain.height(HOME.x,HOME.z),mode:'foot',car:null,speed:0,vy:0});});
- await page.waitForFunction(()=>document.getElementById('mandriaHangarButton')&&!document.getElementById('mandriaHangarButton').hidden,null,{timeout:20000});
- await page.locator('#mandriaHangarButton').click();
- await page.waitForFunction(()=>document.getElementById('mandriaHangarDialog')?.open&&document.getElementById('hangarSections')&&!document.getElementById('hangarSections').hidden,null,{timeout:20000});
- await page.locator('[data-section="air"]').click();
- const ids=await page.locator('#hangarGrid [data-hangar-id]:visible').evaluateAll(cards=>cards.map(c=>c.dataset.hangarId));
- assert.equal(ids.length,16,'the aircraft selection must contain all 16 models');
- const thumbnails=[];
- for(const id of ids){const selector=`#hangarGrid [data-hangar-id="${id}"] img`;await page.locator(selector).scrollIntoViewIfNeeded();
-  await page.waitForFunction(id=>{const img=document.querySelector(`#hangarGrid [data-hangar-id="${id}"] img`);return img?.complete&&img.dataset.previewReady===id+'/'+document.getElementById('hangarPaint').value;},id,{timeout:50000});
-  thumbnails.push(await page.locator(selector).evaluate(img=>({id:img.closest('[data-hangar-id]').dataset.hangarId,src:img.getAttribute('src'),alt:img.alt,w:img.naturalWidth})));
- }
+ await page.waitForFunction(()=>document.getElementById('mandriaHangarButton')&&!document.getElementById('mandriaHangarButton').hidden,null,{timeout:20000});await page.locator('#mandriaHangarButton').click();
+ await page.waitForFunction(()=>document.getElementById('mandriaHangarDialog')?.open&&document.getElementById('hangarSections')&&!document.getElementById('hangarSections').hidden,null,{timeout:20000});await page.locator('[data-section="air"]').click();
+ const ids=await page.locator('#hangarGrid [data-hangar-id]:visible').evaluateAll(cards=>cards.map(c=>c.dataset.hangarId));assert.equal(ids.length,16,'the aircraft selection must contain all 16 models');
+ const thumbnails=[];for(const id of ids){const selector=`#hangarGrid [data-hangar-id="${id}"] img`;await page.locator(selector).scrollIntoViewIfNeeded();await page.waitForFunction(id=>{const img=document.querySelector(`#hangarGrid [data-hangar-id="${id}"] img`);return img?.complete&&img.dataset.previewReady===id+'/'+document.getElementById('hangarPaint').value;},id,{timeout:50000});thumbnails.push(await page.locator(selector).evaluate(img=>({id:img.closest('[data-hangar-id]').dataset.hangarId,src:img.getAttribute('src'),alt:img.alt,w:img.naturalWidth})));}
  assert(thumbnails.every(t=>t.w>0&&(t.src.startsWith('data:image/webp')||t.src.startsWith('data:image/png')||t.src.startsWith('data:image/svg+xml'))),'blank thumbnails in aircraft category');
  assert(new Set(thumbnails.map(t=>t.src)).size>=14,'aircraft thumbnails incorrectly repeated');
- assert(thumbnails.every(t=>t.alt.includes('modello')||t.alt.includes('elicottero')),'aircraft card has wrong accessible label');
- assert.equal(errors.length,0,'JavaScript errors '+errors.join(' | '));
- await page.screenshot({path:'test-artifacts/mandria-aircraft-v2.png',timeout:25000});
- console.log('PASS WebGL Mandria estate, patrol motion, servants and '+ids.length+' correctly associated aircraft images');
+ assert(thumbnails.every(t=>t.alt.includes('modello')||t.alt.includes('elicottero')),'aircraft card has wrong accessible label');assert.equal(errors.length,0,'JavaScript errors '+errors.join(' | '));
+ await page.screenshot({path:'test-artifacts/mandria-aircraft-v2.png',timeout:25000});console.log('PASS WebGL Mandria estate, active mobile security, farm work, servants and '+ids.length+' aircraft previews');
 }catch(error){console.error('ESTATE_V2_WEBGL_FAIL '+phase+' '+(error.stack||error));console.error('JS_ERRORS '+JSON.stringify(errors.slice(-10)));try{await page.screenshot({path:'test-artifacts/mandria-v2-failure.png',timeout:12000});}catch{}process.exitCode=1;}
 finally{await browser.close();}
