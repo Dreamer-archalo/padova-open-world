@@ -2,7 +2,6 @@ import {RoadSurfaces} from './road-surfaces.js';
 import {SpatialIndex, nearestOnSegment, pointInside, clamp, safeRoadPoint} from './core.js';
 import {vehicleBlocked} from './movement.js';
 import {gameplayElevation,areaLocal} from './gameplay-areas.js';
-import {roadsideHarmony} from './roadside-harmony.js';
 
 const smooth=t=>{t=clamp(t,0,1);return t*t*(3-2*t);};
 export const SAFE_MIN_Y=-10,SAFE_MAX_Y=100,ROAD_FADE_DISTANCE=9;
@@ -37,22 +36,22 @@ export class Terrain {
       this.groundHeight=(x,z)=>{
         if(globalThis.__padovaFastStartup===true)return this.elevation(x,z);
         const platform=this.platformAt(x,z);if(platform)return safeTerrainHeight(platform.height,this.rawElevation(x,z));
-        const prato=this.prato(x,z);if(prato?.canal)return safeTerrainHeight(this.pratoHeight-3,this.pratoHeight);
+        const prato=this.prato(x,z);if(prato?.canal&&!prato.bridge&&!this.roads.candidates(x,z,1.2).some(s=>!s.road.tunnel))return safeTerrainHeight(this.pratoHeight-3,this.pratoHeight);
         const natural=safeTerrainHeight(this.elevation(x,z),this.rawElevation(x,z));
-        const raw=safeTerrainHeight(roadsideHarmony(this,x,z,natural),natural);
-        const d=this.waterDistance(x,z);if(d>10)return raw;
+        const raw=safeTerrainHeight(this.roads.streetHeight(x,z),natural);
+        const d=this.waterDistance(x,z);if(d>=1)return raw;
         const water=this.waterHeight(x,z),channel=safeTerrainHeight(water-1.5,natural),bank=safeTerrainHeight(Math.max(raw,water+.8),natural);
         // Keep the dry quay at the same level as the adjacent road. Previously
         // a second, ten-metre-wide river blend cut straight through that road's
         // shoulder, making the terrain drop several metres beside the sidewalk.
-        return safeTerrainHeight(channel+(bank-channel)*smooth((d+1)/2.25),natural);
+        return safeTerrainHeight(channel+(bank-channel)*smooth((d+1)/2),natural);
       };
     }
   }
   rawElevation(x,z){const g=this.grid,u=clamp((x-g.x0)/g.step,0,g.width-1),v=clamp((z-g.z0)/g.step,0,g.height-1),i=Math.min(g.width-2,Math.floor(u)),j=Math.min(g.height-2,Math.floor(v)),a=u-i,b=v-j,h=(i,j)=>g.heights[j*g.width+i],value=h(i,j)*(1-a)*(1-b)+h(i+1,j)*a*(1-b)+h(i,j+1)*(1-a)*b+h(i+1,j+1)*a*b;return safeTerrainHeight(value,h(i,j));}
   elevation(x,z){const raw=this.rawElevation(x,z),value=this.gameplayPatches?.length?gameplayElevation(x,z,raw,this.gameplayPatches):raw;return safeTerrainHeight(value,raw);}
   platformAt(x,z){for(const a of this.gameplayPatches){if(!a.platform)continue;const p=areaLocal(a,x,z),b=a.platform;if(p.u>=b.minU&&p.u<=b.maxU&&p.v>=b.minV&&p.v<=b.maxV)return a;}return null;}
-  waterHeight(x,z){const p=this.grid.waterPlane,base=safeTerrainHeight(this.elevation(x,z)-1.8,0),value=this.waterSample(x,z).level??(p[0]+p[1]*x+p[2]*z-1.8);return safeTerrainHeight(value,base);}
+  waterHeight(x,z){const p=this.grid.waterPlane,base=safeTerrainHeight(this.elevation(x,z)-1.8,0),value=this.waterSample(x,z).level??(this.modern?((this.roads?.streetField?this.roads.streetHeight(x,z):this.elevation(x,z))-2.2):(p[0]+p[1]*x+p[2]*z-1.8));return safeTerrainHeight(value,base);}
   prato(x,z){const p=pratoLocal(x,z);if((p.x/115)**2+(p.z/163)**2>1)return null;const canal=(p.x/90)**2+(p.z/135)**2<1&&(p.x/81)**2+(p.z/126)**2>1;return {canal,bridge:Math.abs(p.x)<5.5||Math.abs(p.z)<4.5};}
   waterSample(x,z){let distance=Infinity,level;for(const r of this.waterIndex.near(x,z)){
     let d=Infinity;if(r.p){for(let i=0;i<r.p.length;i++){const q=nearestOnSegment(x,z,r.p[i],r.p[(i+1)%r.p.length]);d=Math.min(d,Math.hypot(q.x-x,q.z-z));}if(pointInside(x,z,r.p))d=-Math.max(.01,d);}
@@ -84,24 +83,24 @@ export class Terrain {
       if(referenceY!==null){
         // At an x/z overlap choose the surface occupied by the actor, instead
         // of snapping a lower pedestrian path onto a nearby higher carriageway.
-        const matches=this.roads.candidates(x,z).filter(s=>Math.abs(s.height+.05-referenceY)<1.5);
-        if(matches.length){matches.sort((a,b)=>Math.abs(a.height+.05-referenceY)-Math.abs(b.height+.05-referenceY)||a.d-b.d);
-          if(!support||Math.abs(matches[0].height+.05-referenceY)+.08<Math.abs(support.height+.05-referenceY))support=matches[0];}
+        const matches=this.roads.candidates(x,z).filter(s=>Math.abs(s.height+.075-referenceY)<1.5);
+        if(matches.length){matches.sort((a,b)=>Math.abs(a.height+.075-referenceY)-Math.abs(b.height+.075-referenceY)||a.d-b.d);
+          if(!support||Math.abs(matches[0].height+.075-referenceY)+.08<Math.abs(support.height+.075-referenceY))support=matches[0];}
       }
-      if(support&&(referenceY===null||Math.abs(support.height+.05-referenceY)<.55))return safeTerrainHeight(support.height+.05,this.groundHeight(x,z)+.05);
-      if(referenceY!==null&&this.waterDistance(x,z)>1){
+      if(support&&(referenceY===null||Math.abs(support.height+.075-referenceY)<.55))return safeTerrainHeight(support.height+.075,this.groundHeight(x,z)+.05);
+      if(referenceY!==null){
         // The exact 1.2 m visual sidewalk is driveable/walkable as a single
         // surface. Prefer it over an unrelated overlapping road at another y.
         const sidewalks=this.roads.candidates(x,z,1.2).filter(s=>
           !/^(motorway|motorway_link|trunk|trunk_link|track|path|footway|cycleway|pedestrian|steps|tram)$/.test(s.road.k)
-          &&!s.road.crossing&&s.d>s.road.w/2&&s.d<=s.road.w/2+1.2
-          &&Math.abs(s.height+.05-referenceY)<1.3);
-        if(sidewalks.length){sidewalks.sort((a,b)=>Math.abs(a.height+.05-referenceY)-Math.abs(b.height+.05-referenceY)||a.d-b.d);
-          return safeTerrainHeight(sidewalks[0].height+.083,this.groundHeight(x,z)+.05);}
+          &&s.d>s.road.w/2&&s.d<=s.road.w/2+1.2
+          &&Math.abs(s.height+.075-referenceY)<1.3);
+        if(sidewalks.length){sidewalks.sort((a,b)=>Math.abs(a.height+.075-referenceY)-Math.abs(b.height+.075-referenceY)||a.d-b.d);
+          return safeTerrainHeight(sidewalks[0].height+.075,this.groundHeight(x,z)+.05);}
       }
-      if(support)return safeTerrainHeight(support.height+.05,this.groundHeight(x,z)+.05);
+      if(support)return safeTerrainHeight(support.height+.075,this.groundHeight(x,z)+.05);
     }
-    const prato=this.prato(x,z);if(prato)return safeTerrainHeight(this.pratoHeight+(prato.bridge?.36:prato.canal?-3:.18),base);
+    const prato=this.prato(x,z);if(prato)return safeTerrainHeight(this.modern&&(!prato.canal||prato.bridge)?this.roads.streetHeight(x,z)+.075:this.pratoHeight+(prato.bridge?.36:prato.canal?-3:.18),base);
     const road=this.roads?.at(x,z,referenceY);return safeTerrainHeight(road?road.height+.05:this.groundHeight(x,z)+.05,base);
   }
   slope(x,z,yaw,wheelbase=2.5,referenceY=null){const dx=Math.sin(yaw)*wheelbase/2,dz=Math.cos(yaw)*wheelbase/2,a=this.height(x+dx,z+dz,referenceY),b=this.height(x-dx,z-dz,referenceY);return -Math.atan2(safeTerrainHeight(a,b)-b,wheelbase);}

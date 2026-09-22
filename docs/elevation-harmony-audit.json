@@ -1,0 +1,52 @@
+{
+  "roadSegments": 424345,
+  "maxRoadGrade": 0.055,
+  "gradeViolations": 0,
+  "shoulderSamples": 527544,
+  "maxNearShoulderGap": 0.48,
+  "maxTransverseChange": 0.185615530061499,
+  "nearGapViolations": 0,
+  "transverseViolations": 0,
+  "shoulderViolations": 0,
+  "bridgeSamples": 1534,
+  "bridgeViolations": 0,
+  "flatZones": {
+    "piazza-signori": {
+      "samples": 25,
+      "variation": 0
+    },
+    "piazza-erbe": {
+      "samples": 25,
+      "variation": 0
+    },
+    "piazza-frutta": {
+      "samples": 25,
+      "variation": 0
+    },
+    "piazza-duomo": {
+      "samples": 25,
+      "variation": 0
+    },
+    "prato": {
+      "samples": 25,
+      "variation": 0.006
+    },
+    "bassanello": {
+      "samples": 25,
+      "variation": 0.066
+    },
+    "guizza": {
+      "samples": 25,
+      "variation": 0.067
+    },
+    "albignasego": {
+      "samples": 25,
+      "variation": 0.1
+    }
+  },
+  "finiteSamples": 200,
+  "ok": true,
+  "badGrades": [],
+  "badShoulders": [],
+  "badBridges": []
+}

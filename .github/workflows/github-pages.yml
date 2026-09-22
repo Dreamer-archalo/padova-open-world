@@ -68,8 +68,7 @@ jobs:
           node verify-city-micromobility.mjs
           node verify-feature-preservation.mjs
           node tools/verify-mandria-v11-roads.mjs
-      - name: Full elevation audit — known citywide discrepancies remain visible and nonblocking
-        continue-on-error: true
+      - name: Full elevation audit — mandatory continuous street geometry
         run: npm run test:geometry-integrity
       - name: Checkout historic PR 51 playtest separately
         uses: actions/checkout@v6

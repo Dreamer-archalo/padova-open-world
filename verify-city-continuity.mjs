@@ -13,7 +13,7 @@ const covered=road('pedestrian',[[-30,0],[0,0],[30,0]],{tunnel:true});
 const street=road('residential',[[-120,0],[-30,0]]);
 let terrain=make([covered,street]);
 assert(covered.coveredPassage&&!covered.tunnel,'Covered passage classified at ground level');
-for(let x=-100;x<=30;x++)assert(Math.abs(terrain.height(x,0)-14.05)<.001,'Portico must not dig a pit in its approach');
+for(let x=-100;x<=30;x++)assert(Math.abs(terrain.height(x,0)-14.075)<.001,'Portico must not dig a pit in its approach');
 const underground=road('footway',[[-100,0],[0,0],[100,0]],{tunnel:true,layer:-1});
 terrain=make([underground]);assert(underground.tunnel&&!underground.coveredPassage);assert(terrain.roads.sample(underground,0,0)<10,'Explicit underground level retained');
 const riverBridge=road('residential',[[-30,0],[30,0]],{b:true,layer:1});

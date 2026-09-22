@@ -1,5 +1,6 @@
 import fs from 'node:fs';
 import assert from 'node:assert/strict';
+import {buildModernRoads} from './dist/modern-roads.js';
 import {smoothGroundY,MAX_CONTACT_RISE} from './dist/vehicle-dynamics.js';
 
 const read=p=>fs.readFileSync(new URL(p,import.meta.url),'utf8');
@@ -12,6 +13,17 @@ const raised=smoothGroundY(10,10.8,1/60,20);assert(raised>10&&raised<10.8,'large
 const lowered=smoothGroundY(10,9.2,1/60,20);assert(lowered<10&&lowered>9.2,'large descent must be interpolated');
 assert(MAX_CONTACT_RISE<=.3,'hard ground-rise guard must stay below 30 cm');
 
+// Inspect emitted geometry: source-text checks of old centreline variables
+// missed changes to the actual per-vertex road surface.
+const faces=[],batch={quad:(a,b,c,d)=>faces.push([a,b,c],[a,c,d]),tri:(a,b,c)=>faces.push([a,b,c])};
+const road={k:'residential',w:6,surfaceId:1},nodes=[{x:0,z:0,degree:3},{x:12,z:0,degree:2}];
+const meshTerrain={roads:{nodes,index:{near:()=>[{ia:0,ib:1}]},sample:(r,x,z)=>10+x*.02+z*.015,candidates:()=>[]},waterDistance:()=>Infinity};
+buildModernRoads(batch,[{road,a:[0,0],b:[12,0]}],meshTerrain);
+const upward=faces.length>0&&faces.every(([a,b,c])=>(b[2]-a[2])*(c[0]-a[0])-(b[0]-a[0])*(c[2]-a[2])>0);
+meshTerrain.roads.sample=()=>NaN;
+buildModernRoads(batch,[{road:{...road,surfaceId:2},a:[30,0],b:[42,0]}],{...meshTerrain,roads:{...meshTerrain.roads,index:{near:()=>[]}}});
+const finite=faces.every(face=>face.every(p=>p.every(Number.isFinite)));
+
 const checks={
  clippedWinding:surface.includes('signedArea2')&&surface.includes('[...part].reverse()'),
  degenerateRemoval:surface.includes('triArea2')&&surface.includes('1e-8'),
@@ -20,8 +32,8 @@ const checks={
  meanPreservingClamp:terrainFix.includes('excess=(Math.abs(d)-limit)/2'),
  monotoneRoadInterpolation:terrainFix.includes('__phase4MonotoneHeight')&&terrainFix.includes('Math.min(a.h,b.h)')&&terrainFix.includes('Math.max(a.h,b.h)'),
  shoulderFeather:terrainFix.includes('SHOULDER_FEATHER=7.5'),
- roadUpwardWinding:roads.includes('[a[0]+nx*right')&&roads.includes('[b[0]+nx*left')&&roads.includes('writer.tri([p[0],y,p[1]],vertex(b),vertex(a),asphalt)'),
- finiteRoadHeights:roads.includes('[h0,h1].every(Number.isFinite)'),
+ roadUpwardWinding:upward,
+ finiteRoadHeights:finite,
  runtimeGridAudit:audit.includes('terrain-delta')&&audit.includes('gridEdges'),
  runtimeRoadAudit:audit.includes('road-grade')&&audit.includes('road-hermite-overshoot'),
  runtimeWaterAudit:audit.includes('road-water-clearance'),

@@ -1,5 +1,4 @@
 import {Terrain} from './terrain.js';
-import {RoadSurfaces} from './road-surfaces.js';
 
 // The historic centre of Padova is a very flat urban plain. Keep the river and
 // canal geometry independent: only the immediate bank remains outside the urban
@@ -28,28 +27,13 @@ if(!Terrain.prototype.__historicCenterLevelPlane){
  Terrain.prototype.__historicCenterLevelPlane=true;
  Terrain.prototype.elevation=function(x,z){
   const h=baseElevation.call(this,x,z);if(!this.modern)return h;
-  const waterDistance=this.waterIndex?this.waterDistance(x,z):Infinity,influence=historicPlainMask(x,z,waterDistance);if(influence<=0)return h;
+  const influence=historicPlainMask(x,z);if(influence<=0)return h;
   return h*(1-influence)+historicTarget(this,x,z)*influence;
  };
 }
 
-// RoadSurfaces is solved after Terrain has been created. Reinforce the same flat
-// datum on ordinary historic-centre streets after the global road smoothing pass.
-// Bridges, tunnels and layered roads are deliberately excluded: their vertical
-// separation belongs to the river/structure system, not to ordinary paving.
-const baseRoadSmooth=RoadSurfaces.prototype.smoothProfiles;
-if(!RoadSurfaces.prototype.__historicCenterRoadPlane){
- RoadSurfaces.prototype.__historicCenterRoadPlane=true;
- RoadSurfaces.prototype.smoothProfiles=function(){
-  baseRoadSmooth.call(this);if(!this.modern||!this.terrain)return;
-  const seen=new Set();
-  for(const profile of this.profiles.values()){
-   const road=profile.road;if(road.crossing||road.tunnel||road.b||Number(road.layer))continue;
-   for(const id of profile.ids){if(seen.has(id))continue;seen.add(id);const n=this.nodes[id],waterDistance=this.terrain.waterDistance(n.x,n.z),influence=historicPlainMask(n.x,n.z,waterDistance);if(influence<=0)continue;n.h=n.h*(1-influence)+historicTarget(this.terrain,n.x,n.z)*influence;}
-  }
-  this.updateSlopes();
- };
-}
+// Elevation is fixed BEFORE solving the road graph. Never move individual
+// road nodes afterwards: shared bridge endpoints and tram ways must stay joined.
 
 // Diagnostic used when checking future terrain changes. It intentionally ignores
 // the river corridor because water level/banks are a separate vertical system.
