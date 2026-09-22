@@ -25,22 +25,32 @@ export function findTaxiRoad(pos,graph,terrain,{maxRadius=520,maxCandidates=2500
  if(!pos||!Number.isFinite(pos.x)||!Number.isFinite(pos.z)||!graph?.index||!graph?.nodes)return null;
  const now=()=>globalThis.performance?.now?.()??Date.now(),started=now(),seen=new Set();
  let best=null,bestDistance=Infinity,visited=0;
+ // Choose by geometry first. Sampling the height for every provisional winner
+ // used to initialize the entire shared street field inside the first taxi
+ // lookup, and unnecessarily repeated the height query in dense junctions.
+ // We need the exact height only at the one selected connected, driveable road.
+ const finish=()=>{
+  if(!best)return null;
+  const {point,road,segment,yaw}=best;
+  const sample=terrain?.roads?.sample?.(road,point.x,point.z);
+  const y=Number.isFinite(sample)?sample+.05:terrain?.height?.(point.x,point.z);
+  return Number.isFinite(y)?{...point,yaw,y,segment}:null;
+ };
  for(const radius of [90,180,320,520]){
   if(radius>maxRadius)break;
   for(const segment of graph.index.near(pos.x,pos.z,radius)){
    if(seen.has(segment))continue;seen.add(segment);visited++;
-   if(visited>maxCandidates||now()-started>maxMs)return best;
+   if(visited>maxCandidates||now()-started>maxMs)return finish();
    const road=segment.road;
    if(!segment.connected||['no','private'].includes(road?.access)||['pedestrian','footway','path','cycleway','steps','track','tram'].includes(road?.k)||Number(road?.w||0)<3.5)continue;
    const a=graph.nodes[segment.a],b=graph.nodes[segment.b];if(!a||!b)continue;
    const point=nearestOnSegment(pos.x,pos.z,[a.x,a.z],[b.x,b.z]);
    if(!Number.isFinite(point.x)||!Number.isFinite(point.z))continue;
    const distance=dist(point,pos);if(distance>=bestDistance)continue;
-   const yaw=Math.atan2(b.x-a.x,b.z-a.z)+(road.oneway===-1?Math.PI:0),sample=terrain?.roads?.sample?.(road,point.x,point.z),y=Number.isFinite(sample)?sample+.05:terrain?.height?.(point.x,point.z);
-   if(!Number.isFinite(y))continue;
-   best={...point,yaw,y,segment};bestDistance=distance;
+   const yaw=Math.atan2(b.x-a.x,b.z-a.z)+(road.oneway===-1?Math.PI:0);
+   best={point,road,segment,yaw};bestDistance=distance;
   }
-  if(best)return best;
+  if(best)return finish();
  }
  return null;
 }
