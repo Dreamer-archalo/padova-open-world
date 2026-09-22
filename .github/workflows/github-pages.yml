@@ -33,7 +33,7 @@ jobs:
       - name: Validate production runtime
         run: |
           test -f dist/index.html
-          node --input-type=module -e "import fs from 'node:fs'; const v=JSON.parse(fs.readFileSync('dist/version.json')); if(v.version!=='1.2.0' || v.publishDirectory!=='dist') process.exit(1);"
+          node --input-type=module -e "import fs from 'node:fs'; const v=JSON.parse(fs.readFileSync('dist/version.json')); if(v.version!=='1.2.1' || v.publishDirectory!=='dist' || v.officialSite!=='https://dreamer-archalo.github.io/padova-open-world/') process.exit(1);"
           node --check dist/game.js
           node --check dist/city-micromobility.js
           node --check dist/phase2-runtime.js
@@ -54,6 +54,8 @@ jobs:
           node --check dist/tangenziale-race-short-sprint.js
           node --check dist/online-race-v2.js
           node --check dist/online-race-second-fix.js
+          node --check dist/villa-mandria-v11-road-quality.js
+          node --check dist/villa-mandria-v11-estate-polish.js
       - name: Release smoke tests before publishing
         run: |
           npm run test:taxi
@@ -65,19 +67,17 @@ jobs:
           npm run test:portello
           node verify-city-micromobility.mjs
           node verify-feature-preservation.mjs
-      - name: Full elevation audit — pre-existing Bassanello discrepancy, visible and nonblocking
+          node tools/verify-mandria-v11-roads.mjs
+      - name: Full elevation audit — known citywide discrepancies remain visible and nonblocking
         continue-on-error: true
         run: npm run test:geometry-integrity
-      # Keep the production game exactly as checked out from main. The PR game
-      # is an independent static build beneath /preview/pr-51/ with its own
-      # relative URLs and data files. No PR source is merged into main.
-      - name: Checkout unmerged PR 51 for isolated preview
+      - name: Checkout historic PR 51 playtest separately
         uses: actions/checkout@v6
         with:
           ref: feat/villa-treves-phase1-20260919
           path: .preview-pr51-source
           persist-credentials: false
-      - name: Assemble PR preview without overwriting production files
+      - name: Preserve historic PR 51 preview without overwriting production
         shell: bash
         run: |
           set -euo pipefail
@@ -97,15 +97,13 @@ jobs:
           cmp .preview-pr51-source/dist/index.html dist/preview/pr-51/index.html
           test -f dist/preview/pr-51/data/padova.json
           test -f dist/preview/pr-51/vendor/three.module.js
-          echo 'Main production root untouched; PR 51 game isolated in /preview/pr-51/.'
-      # Isolated continuity playtest; never replace the production runtime.
-      - name: Checkout PR 52 continuity playtest
+      - name: Checkout historic PR 52 continuity playtest separately
         uses: actions/checkout@v6
         with:
           ref: 20c6411c215ad57bdc1a57df0f0ae69554d241c2
           path: .preview-pr52-source
           persist-credentials: false
-      - name: Validate and assemble PR 52 playtest
+      - name: Preserve historic PR 52 preview without overwriting production
         shell: bash
         run: |
           set -euo pipefail
@@ -118,17 +116,32 @@ jobs:
           test -f dist/preview/pr-52/data/padova.json
           test -f dist/preview/pr-52/vendor/three.module.js
           git diff --exit-code -- dist
-          echo 'Production files unchanged; continuity playtest isolated in /preview/pr-52/.'
+      - name: Checkout original Mandria v11 playtest separately
+        uses: actions/checkout@v6
+        with:
+          ref: cb6d5fb1f3afedfda68f8f07651916d3a8e12f28
+          path: .preview-mandria-v11-source
+          persist-credentials: false
+      - name: Preserve original Mandria v11 preview
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -f .preview-mandria-v11-source/dist/index.html
+          test -f .preview-mandria-v11-source/dist/villa-mandria-v11-estate-polish.js
+          mkdir -p dist/preview/mandria-v11
+          cp -a .preview-mandria-v11-source/dist/. dist/preview/mandria-v11/
+          cmp .preview-mandria-v11-source/dist/index.html dist/preview/mandria-v11/index.html
+          test -f dist/preview/mandria-v11/data/padova.json
+          test -f dist/preview/mandria-v11/vendor/three.module.js
+          git diff --exit-code -- dist
       - name: Configure GitHub Pages
         uses: actions/configure-pages@v5
-      - name: Upload dist plus isolated preview
+      - name: Upload definitive game plus historic previews
         uses: actions/upload-pages-artifact@v4
         with:
           path: dist
-      - name: Deploy to GitHub Pages
+      - name: Deploy definitive version to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
-      - name: Show public preview link
-        run: echo "PR 51 preview ${{ steps.deployment.outputs.page_url }}preview/pr-51/"
-      - name: Show continuity playtest link
-        run: echo "PR 52 preview ${{ steps.deployment.outputs.page_url }}preview/pr-52/"
+      - name: Show definitive link
+        run: echo "${{ steps.deployment.outputs.page_url }}"

@@ -1,11 +1,10 @@
 {
   "game": "Padova After Hours",
-  "version": "1.2.0",
-  "releaseName": "Versione 1.2",
+  "version": "1.2.1",
+  "releaseName": "Versione 1.2.1 · Villa della Mandria v11",
   "baselineSourceCommit": "bf51b9fc3a0eb8701628ae733e37f129e7dc9326",
   "repository": "Dreamer-archalo/padova-open-world",
   "productionBranch": "main",
   "publishDirectory": "dist",
-  "officialSite": "https://padova-open-world.netlify.app/",
-  "alternateSite": "https://dreamer-archalo.github.io/padova-open-world/"
+  "officialSite": "https://dreamer-archalo.github.io/padova-open-world/"
 }

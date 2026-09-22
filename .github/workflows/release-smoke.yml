@@ -19,8 +19,15 @@ jobs:
       - name: Verify release manifest and deploy directory
         run: |
           test -f dist/index.html
-          node --input-type=module -e "import fs from 'node:fs'; const v=JSON.parse(fs.readFileSync('dist/version.json')); if(v.version!=='1.2.0' || v.publishDirectory!=='dist') process.exit(1);"
+          node --input-type=module -e "import fs from 'node:fs'; const v=JSON.parse(fs.readFileSync('dist/version.json')); if(v.version!=='1.2.1' || v.publishDirectory!=='dist' || v.officialSite!=='https://dreamer-archalo.github.io/padova-open-world/') process.exit(1);"
           node --check dist/city-micromobility.js
+          node --check dist/villa-mandria-v11-road-quality.js
+          node --check dist/villa-mandria-v11-estate-polish.js
+      - name: Villa Mandria v11 geometry and continuity
+        run: |
+          node tools/verify-mandria-v11-roads.mjs
+          npm run test:city-continuity
+          npm run test:earth-access
       - name: Taxi and two Tangenziale races
         run: |
           npm run test:taxi
@@ -39,6 +46,6 @@ jobs:
           npm run test:portello
           node verify-city-micromobility.mjs
           node verify-feature-preservation.mjs
-      - name: Full elevation audit — known Bassanello discrepancy, visible and nonblocking
+      - name: Full elevation audit — known citywide discrepancies, visible and nonblocking
         continue-on-error: true
         run: npm run test:geometry-integrity
