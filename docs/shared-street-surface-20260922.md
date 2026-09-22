@@ -19,4 +19,12 @@ The common surface limits directional grades to about 3.6%; independent structur
 - Six earth accesses crossed in both directions with the actual vehicle controller.
 - CI runs the new browser check together with all existing Villa, airport and game-system acceptance checks, including Villa v11. Geometry acceptance is mandatory before production deployment.
 
+## Taxi performance regression — fixed in this branch, not yet published
+
+The original headless test charged the first destination request with the one-time shared street-surface construction, taking 3,289 ms. The actual game renders its street meshes before enabling taxi interaction; the test now initializes that same surface separately and reports its real duration, instead of disguising it as a taxi lookup. `findTaxiRoad` additionally chooses the nearest connected drivable segment using its 2D geometry before evaluating the expensive physical surface height once for the winning segment, preserving the returned road identity, elevation and heading.
+
+[Taxi main-thread safety run 35794833494](https://github.com/Dreamer-archalo/padova-open-world/actions/runs/35794833494) passed on PR #56 commit `a65ad77e3860e9a46f07f0825c5b5cdf4cfa1e3b`. Measured surface initialization **3,240 ms** (a separate startup/performance concern), subsequent ten taxi destinations **0–1 ms**, each using exactly **one** elevation sample, and three connected pickup plans **3, 16, 1 ms**. Regression tests also passed for fare confirmation, asynchronous transfer, 1,000 off-road no-global-scan attempts, taxi, races and online simulations. These measurements are from GitHub's Ubuntu runner and do not establish device-specific FPS or prove a manual real-browser taxi ride.
+
+Do not merge the entire PR #56 until its *other* CI checks (especially airport integration and full city browser tests) are examined and resolved; fixing taxi alone does not certify airport or citywide gameplay.
+
 These checks cover sampled geometry and the named driving routes. They do not establish device-specific frame rates or claim an exhaustive manual playthrough of every street.
