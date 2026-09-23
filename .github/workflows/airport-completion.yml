@@ -65,7 +65,9 @@ jobs:
         run: node --max-old-space-size=4096 verify-airport-road-runtime.mjs
       - name: Airport vehicle and aircraft controller regression
         if: always()
-        run: npm run test:airport
+        run: |
+          git fetch --no-tags --depth=1 origin 405ae9c6659e03e391cbb680ce4e288427b39336
+          npm run test:airport
       - name: Independent current five-star staggered-spawn regression
         if: always()
         run: node tools/verify-five-star-timing.mjs
