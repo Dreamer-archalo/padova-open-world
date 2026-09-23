@@ -1,12 +1,12 @@
 {
   "browser": {
     "rendered": false,
-    "reason": "Cloud Chrome reports GL_RENDERER=Disabled; GPU/device FPS and visual flight QA remain pending."
+    "reason": "Node controller harness has no WebGL rendering; see separate Chromium airport browser CI."
   },
   "airport": {
     "runwaySamples": 1677,
-    "maxHeightDeltaPer2m": 0,
-    "connectedAccessRoads": 4,
+    "maxHeightDeltaPer2m": 3.552713678800501e-15,
+    "connectedAccessRoads": 16,
     "enterableHangars": 4
   },
   "tank": {
@@ -54,9 +54,9 @@
   },
   "portavalori": {
     "startsMoving": true,
-    "routeMetres": 2605.9336264207363,
+    "routeMetres": 3972.4626448305853,
     "maxKmh": 158.4,
-    "progressMetres": 379.19779676532124,
+    "progressMetres": 608.5975484047198,
     "crimeEnabled": true,
     "reward": 1000,
     "paidOnce": true
@@ -64,11 +64,11 @@
   "performance": {
     "interpolation120Frames": {
       "before": {
-        "milliseconds": 178.63741100000334,
-        "terrainQueries": 10680
+        "milliseconds": 287.8787090000005,
+        "terrainQueries": 11400
       },
       "after": {
-        "milliseconds": 4.449786999997741,
+        "milliseconds": 4.834524000001693,
         "terrainQueries": 0
       }
     },
@@ -81,6 +81,6 @@
       3,
       3
     ],
-    "airportStructureBoxes": 718
+    "airportStructureBoxes": 743
   }
 }

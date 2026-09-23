@@ -1,5 +1,6 @@
 import * as THREE from './vendor/three.module.js';
 import {Terrain} from './terrain.js';
+import {StreetHeightField} from './street-height-field.js';
 import {RoadSurfaces} from './road-surfaces.js';
 import {SpatialIndex} from './core.js';
 import {Districts} from './districts.js';
@@ -8,6 +9,8 @@ import {qualityFor} from './quality.js';
 
 export function hydrateTerrain(snapshot){
  const t=Object.assign(Object.create(Terrain.prototype),snapshot),r=t.roads,packed=r.nodes;
+ if(r.streetField)Object.setPrototypeOf(r.streetField,StreetHeightField.prototype);
+ if(t.modern)t.groundHeight=t.sharedGroundHeight.bind(t);
  Object.setPrototypeOf(r,RoadSurfaces.prototype);r.terrain=t;r.nodes=[];r.index=new SpatialIndex(80);
  for(let i=0;i<packed.length;i+=4)r.nodes.push({x:packed[i],z:packed[i+1],h:packed[i+2],degree:packed[i+3]});
  const profiles=r.profiles;r.profiles=new Map();

@@ -11,8 +11,8 @@ export function junctionFanHeight(centre,sampled,radius){
  return Math.max(centre-change,Math.min(centre+change,sampled));
 }
 
-// Centreline sampling keeps both sides at the same cross-section elevation.
-// Paint and pavement use exactly the same smooth profile as vehicle physics.
+// Every paving vertex uses the same world-space height as vehicle contact.
+// Paint is a thin decorative offset; sidewalks have no physical kerb step.
 export function buildModernRoads(batch,segments,terrain){for(const _ of modernRoadSteps(batch,segments,terrain)){} }
 export function* modernRoadSteps(batch,segments,terrain,{coarse=false}={}){
  const colours=new Map(),colour=hex=>{if(!colours.has(hex))colours.set(hex,new Color(hex));return colours.get(hex);};
@@ -23,7 +23,7 @@ export function* modernRoadSteps(batch,segments,terrain,{coarse=false}={}){
   const nx=-dz/length,nz=dx/length,central=Math.hypot(...s.a)<1550,asphalt=colour(ped?(central?'#bdae91':'#aaa799'):rail?'#8c8980':central?'#535b5b':'#586164');
   const heights=new Map(),height=p=>{const key=p.join(',');if(!heights.has(key))heights.set(key,terrain.roads.sample(road,...p));return heights.get(key);};
   const writer=ped?surfaceBatch(batch,terrain,{pedestrian:true,exclude:road}):batch;
-  const section=(a,b,left,right,offset,c)=>{const h0=height(a)+offset,h1=height(b)+offset;if(![h0,h1].every(Number.isFinite))return;writer.quad([a[0]+nx*right,h0,a[1]+nz*right],[b[0]+nx*right,h1,b[1]+nz*right],[b[0]+nx*left,h1,b[1]+nz*left],[a[0]+nx*left,h0,a[1]+nz*left],c);};
+  const section=(a,b,left,right,offset,c)=>{const vertex=(p,side)=>{const x=p[0]+nx*side,z=p[1]+nz*side;return [x,terrain.roads.sample(road,x,z)+offset,z];};const vertices=[vertex(a,right),vertex(b,right),vertex(b,left),vertex(a,left)];if(vertices.every(p=>p.every(Number.isFinite)))writer.quad(...vertices,c);};
   const junctions=new Set();if(!coarse)for(const e of terrain.roads.index.near((s.a[0]+s.b[0])/2,(s.a[1]+s.b[1])/2,length/2+Math.max(12,road.w)))for(const id of [e.ia,e.ib])if(terrain.roads.nodes[id].degree>2)junctions.add(terrain.roads.nodes[id]);
   const junction=(x,z,radius=Math.max(6,road.w))=>[...junctions].some(n=>Math.hypot(x-n.x,z-n.z)<radius);
   const count=Math.ceil(length/(coarse?6:3));
@@ -34,16 +34,16 @@ export function* modernRoadSteps(batch,segments,terrain,{coarse=false}={}){
    // Elevated/inferred bridge decks need physical visual thickness. A thin pair
    // of fascias prevents the camera from reading the asphalt as a zero-thickness
    // floating plane while the continuous terrain/water remains visible below.
-   if(road.crossing&&!ped){const t0=height(a)+.025,t1=height(b)+.025,thickness=.58;if([t0,t1].every(Number.isFinite))for(const side of [-1,1]){const off=side*(road.w/2+.3),ax=a[0]+nx*off,az=a[1]+nz*off,bx=b[0]+nx*off,bz=b[1]+nz*off;batch.quad([ax,t0,az],[bx,t1,bz],[bx,t1-thickness,bz],[ax,t0-thickness,az],colour('#8f918b'));}}
+   if(road.crossing&&!ped)for(const side of [-1,1]){const thickness=.58,off=side*(road.w/2+.3),ax=a[0]+nx*off,az=a[1]+nz*off,bx=b[0]+nx*off,bz=b[1]+nz*off,t0=terrain.roads.sample(road,ax,az)+.025,t1=terrain.roads.sample(road,bx,bz)+.025;if([t0,t1].every(Number.isFinite))batch.quad([ax,t0,az],[bx,t1,bz],[bx,t1-thickness,bz],[ax,t0-thickness,az],colour('#8f918b'));}
    if(!coarse&&!ped&&!rail&&!atJunction){
     for(const side of [-1,1]){
      const edge=side*(road.w/2-.25);section(a,b,edge-.055,edge+.055,.082,colour('#d7d4c2'));
-     if(urban&&!road.crossing){const off=side*(road.w/2+.65),x=mid[0]+nx*off,z=mid[1]+nz*off;
+     if(urban){const off=side*(road.w/2+.65),x=mid[0]+nx*off,z=mid[1]+nz*off;
       // A bridge at a different height is not a junction: it must not erase
       // the sidewalk beneath it. Suppress pavement only for roads sharing the
       // actual walking/driving level, so it does not cover their intersection.
       const intersectingAtGrade=terrain.roads.candidates(x,z).some(c=>c.road!==road&&Math.abs(c.height-height(mid))<1.2);
-      if(!intersectingAtGrade&&terrain.waterDistance(x,z)>1)section(a,b,Math.min(side*road.w/2,side*(road.w/2+1.2)),Math.max(side*road.w/2,side*(road.w/2+1.2)),.083,colour('#b7b5a8'));
+      if(!intersectingAtGrade&&(road.crossing||terrain.waterDistance(x,z)>1))section(a,b,Math.min(side*road.w/2,side*(road.w/2+1.2)),Math.max(side*road.w/2,side*(road.w/2+1.2)),.075,colour('#b7b5a8'));
      }
     }
     if(road.w>=6.5&&!road.oneway&&Math.floor((i/count*length)/5)%2===0)section(a,b,-.06,.06,.09,colour('#d7d4c2'));
@@ -52,7 +52,7 @@ export function* modernRoadSteps(batch,segments,terrain,{coarse=false}={}){
    // drawing two incompatible lines through one another.
    if(!coarse&&!atJunction&&/motorway|trunk/.test(road.k)&&road.w>=7&&Math.floor((i/count*length)/6)%2===0){const offsets=road.oneway||road.one?[0]:[-road.w/4,road.w/4];for(const o of offsets)section(a,b,o-.075,o+.075,.09,colour('#ece5cd'));}
    if(i%4===0)yield;
-   if(rail)for(const offset of [-.7,.7])section(a,b,offset-.055,offset+.055,.1,colour('#bdc8c9'));
+   if(rail)for(const offset of [-.7,.7])section(a,b,offset-.055,offset+.055,.081,colour('#bdc8c9'));
   }
   // Old fan caps were emitted at EVERY 3–9 m segment end, producing circular
   // overlapping asphalt and stray upward triangles. Close only real graph

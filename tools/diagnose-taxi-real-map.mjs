@@ -12,6 +12,13 @@ import {Terrain} from '../dist/terrain.js';
 const read=name=>JSON.parse(fs.readFileSync(new URL(`../dist/data/${name}.json`,import.meta.url)));
 const map=read('padova');applyCityData(map,read('city'));prepareGameplayMap(map);
 const terrain=new Terrain(read('terrain'),map,{modern:true});
+// The game draws road meshes before enabling taxi interaction. In this headless
+// test the renderer is absent, so explicitly initialize the SAME shared surface
+// that rendering initializes. Report its real cost separately; do not charge
+// an entire city-surface construction to one user's destination click or hide it.
+const surfaceStart=performance.now(),surfaceHeight=terrain.roads.streetHeight(0,0),surfaceMs=performance.now()-surfaceStart;
+assert(Number.isFinite(surfaceHeight),'shared road surface must initialize to a finite height');
+console.log('CITY_SURFACE_INITIALIZATION',JSON.stringify({ms:Math.round(surfaceMs),height:surfaceHeight}));
 const graph=makeRoadGraph(map.roads,{separateLevels:true});
 const pathfinder=new TaxiPathfinder({graph,terrain,bounds:{x:-6050,z:-6550,w:13400,h:12900}});
 const places=[
@@ -22,12 +29,18 @@ const places=[
  {name:'Stadio Euganeo',...project(45.4352,11.8564)}
 ];
 const destinations=taxiDestinations(places,{x:-150,z:-49},project(45.3964,11.8494));
+const originalSample=terrain.roads.sample.bind(terrain.roads);
+let heightSamples=0;
+terrain.roads.sample=(...args)=>{heightSamples++;return originalSample(...args);};
 let found=0,maxMs=0;
 for(const dest of destinations){
- const start=performance.now(),road=pathfinder.nearestRoad(dest,{maxRadius:320,maxCandidates:2500,maxMs:18}),ms=performance.now()-start;
+ const before=heightSamples,start=performance.now(),road=pathfinder.nearestRoad(dest,{maxRadius:320,maxCandidates:2500,maxMs:18}),ms=performance.now()-start;
+ const samples=heightSamples-before;
  maxMs=Math.max(ms,maxMs);found+=Number(!!road);
- console.log('TAXI_DESTINATION',JSON.stringify({name:dest.name,road:!!road,ms:Math.round(ms)}));
+ console.log('TAXI_DESTINATION',JSON.stringify({name:dest.name,road:!!road,ms:Math.round(ms),heightSamples:samples}));
  assert(ms<450,`Taxi destination search exceeds safe bounded time: ${dest.name}`);
+ assert(samples<=2,`Taxi destination must not recalculate elevation for every provisional street: ${dest.name}`);
+ if(road)assert(Number.isFinite(road.y),'taxi road must have a valid physical height');
 }
 assert(found>=6,'at least six of ten real taxi destinations must have a nearby drivable road');
 const dispatcher=new TaxiDispatcher({graph,terrain,collision:new SpatialIndex(),taxiSpec:VEHICLES.taxi,vehicleBlocked:()=>false,pathfinder});
@@ -39,4 +52,4 @@ for(const origin of [{x:-115,z:960,yaw:0},{x:-150,z:-49,yaw:0},{x:235,z:545,yaw:
  assert(ms<500,'Real-map taxi dispatch must not monopolize the browser main thread');
 }
 assert(dispatched>=1,'at least one real central location must dispatch an actual connected taxi route');
-console.log('PASS real Padova taxi stress:',JSON.stringify({destinationsFound:found,total:destinations.length,dispatches:dispatched,maxDestinationMs:Math.round(maxMs)}));
+console.log('PASS real Padova taxi stress:',JSON.stringify({destinationsFound:found,total:destinations.length,dispatches:dispatched,maxDestinationMs:Math.round(maxMs),surfaceInitMs:Math.round(surfaceMs)}));

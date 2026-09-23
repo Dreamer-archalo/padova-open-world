@@ -1,3 +1,4 @@
+import {StreetHeightField} from './street-height-field.js';
 import {SpatialIndex,nearestOnSegment,clamp} from './core.js';
 
 export const MAX_GRADE=.085;
@@ -15,7 +16,7 @@ export class RoadSurfaces{
    road.coveredPassage=true;road.tunnel=false;
   }
   const node=(p,shared,road,endpoint)=>{
-   const base=()=>terrain.prato(...p)?terrain.pratoHeight+.28:terrain.elevation(...p),create=()=>{const h=base();this.nodes.push({x:p[0],z:p[1],base:h,h,edges:[]});return this.nodes.length-1;};
+   const base=()=>terrain.prato(...p)?terrain.pratoHeight+.12:terrain.elevation(...p),create=()=>{const h=base();this.nodes.push({x:p[0],z:p[1],base:h,h,edges:[]});return this.nodes.length-1;};
    if(!shared)return create();const key=p[0].toFixed(1)+','+p[1].toFixed(1);
    if(!this.modern){if(!lookup.has(key))lookup.set(key,create());return lookup.get(key);}
    const level=road.tunnel?-1:Number(road.layer)||(road.b?1:0),entries=lookup.get(key)||[],match=entries.find(e=>e.level===level)||entries.find(e=>e.endpoint&&endpoint);
@@ -30,24 +31,25 @@ export class RoadSurfaces{
    const wet=points.map(p=>!terrain.prato(...p)&&terrain.waterDistance(...p)<0),hasWater=wet.some(Boolean),explicit=!!road.b,layer=Number(road.layer)||0,tunnel=!!road.tunnel;
    const inferred=hasWater&&!explicit&&!tunnel;road.crossing=explicit||inferred;road.surfaceId=id;
    if(inferred)this.report.inferred.push(id);if(wet[0]||wet.at(-1))this.report.submergedEnds.push(id);if(layer||tunnel)this.report.layers++;
-   const profile={id,road,ids,points,wet,hasWater,layer,tunnel};this.profiles.set(road,profile);
+   const riverDeck=this.modern&&!tunnel&&!/motorway|trunk/.test(road.k)&&layer<=1&&points.some(p=>terrain.waterDistance(...p)<40);
+   const profile={id,road,ids,points,wet,hasWater,layer,tunnel,riverDeck};this.profiles.set(road,profile);
    for(let i=0;i<ids.length;i++){
     const n=this.nodes[ids[i]];
     // A canal bridge joins its existing banks. layer=1 describes ordering,
     // not an extra storey above those banks. Real road-under-road clearance is
     // still enforced by the crossing solve below, including riverside paths.
-    const riverBridge=this.modern&&hasWater&&layer<=1;
+    const riverBridge=riverDeck;
     const lift=terrain.prato(n.x,n.z)||riverBridge?0:explicit&&!hasWater?Math.max(1,layer)*5.4:layer>0?layer*5.4:0;
     const deck=wet[i]?Math.max(n.base,terrain.waterHeight(n.x,n.z)+2.2):n.base;
     if(!tunnel)n.h=Math.max(n.h,deck+lift);
-    if(i){const prev=this.nodes[ids[i-1]],d=distance(points[i-1],points[i]);const grade=road.k==='steps'?.65:this.modern?.055:MAX_GRADE;n.edges.push({id:ids[i-1],d,grade});prev.edges.push({id:ids[i],d,grade});const s={a:points[i-1],b:points[i],ia:ids[i-1],ib:ids[i],profile,i:i-1};this.index.add(s,Math.min(s.a[0],s.b[0])-road.w,Math.min(s.a[1],s.b[1])-road.w,Math.max(s.a[0],s.b[0])+road.w,Math.max(s.a[1],s.b[1])+road.w);}
+    if(i){const prev=this.nodes[ids[i-1]],d=distance(points[i-1],points[i]);const grade=this.modern?.055:road.k==='steps'?.65:MAX_GRADE;n.edges.push({id:ids[i-1],d,grade});prev.edges.push({id:ids[i],d,grade});const s={a:points[i-1],b:points[i],ia:ids[i-1],ib:ids[i],profile,i:i-1};this.index.add(s,Math.min(s.a[0],s.b[0])-road.w,Math.min(s.a[1],s.b[1])-road.w,Math.max(s.a[0],s.b[0])+road.w,Math.max(s.a[1],s.b[1])+road.w);}
    }
   }
   const lower=new MaxHeap();for(const p of this.profiles.values())if(p.tunnel)for(const id of p.ids){const n=this.nodes[id];n.h=Math.min(n.h,n.base-5.4);lower.push({id,h:-n.h});}
   while(lower.a.length){const item=lower.pop(),n=this.nodes[item.id];if(item.h<-n.h-.001)continue;for(const e of n.edges){const q=this.nodes[e.id],h=n.h+e.d*e.grade;if(h<q.h-.001){q.h=h;lower.push({id:e.id,h:-h});}}}
   const heap=new MaxHeap();this.nodes.forEach((n,id)=>heap.push({id,h:n.h}));
   while(heap.a.length){const item=heap.pop(),n=this.nodes[item.id];if(item.h<n.h-.001)continue;for(const edge of n.edges){const q=this.nodes[edge.id],h=n.h-edge.d*edge.grade;if(h>q.h+.001){q.h=h;heap.push({id:edge.id,h});}}}
-  const crossings=[];const order=p=>p.layer||(p.tunnel?-1:p.road.b?1:0);
+  const crossings=[];const order=p=>p.riverDeck?0:p.layer||(p.tunnel?-1:p.road.b?1:0);
   for(const p of this.profiles.values()){if(order(p)<=0)continue;for(let i=1;i<p.points.length;i++){
    const a=p.points[i-1],b=p.points[i],dx=b[0]-a[0],dz=b[1]-a[1];
    for(const s of this.index.near((a[0]+b[0])/2,(a[1]+b[1])/2,8)){if(s.profile===p||order(s.profile)>=order(p))continue;const c=s.a,d=s.b,ex=d[0]-c[0],ez=d[1]-c[1],den=dx*ez-dz*ex;if(Math.abs(den)<1e-6)continue;const u=((c[0]-a[0])*ez-(c[1]-a[1])*ex)/den,v=((c[0]-a[0])*dz-(c[1]-a[1])*dx)/den;if(u<=.001||u>=.999||v<=.001||v>=.999)continue;
@@ -61,7 +63,7 @@ export class RoadSurfaces{
   for(const profile of this.profiles.values())for(let i=1;i<profile.ids.length;i++){const a=this.nodes[profile.ids[i-1]],b=this.nodes[profile.ids[i]],grade=Math.abs(a.h-b.h)/Math.max(.01,distance(profile.points[i-1],profile.points[i]));if(grade>(profile.road.k==='steps'?.65:this.modern?.055:MAX_GRADE)+.005)this.report.steep.push({road:profile.id,grade});}
   for(const n of this.nodes){n.degree=new Set(n.edges.map(e=>e.id)).size;delete n.edges;}
  }
- sample(road,x,z){const profile=this.profiles.get(road);if(!profile)return this.terrain.elevation(x,z);let best=null,d=Infinity;for(const s of this.index.near(x,z,road.w+8)){if(s.profile!==profile)continue;const q=nearestOnSegment(x,z,s.a,s.b),dd=Math.hypot(x-q.x,z-q.z);if(dd<d){d=dd;best={s,q};}}if(!best)return this.terrain.elevation(x,z);return this.segmentHeight(best.s,best.q.t);}
+ rawSample(road,x,z){const profile=this.profiles.get(road);if(!profile)return this.terrain.elevation(x,z);let best=null,d=Infinity;for(const s of this.index.near(x,z,road.w+8)){if(s.profile!==profile)continue;const q=nearestOnSegment(x,z,s.a,s.b),dd=Math.hypot(x-q.x,z-q.z);if(dd<d){d=dd;best={s,q};}}if(!best)return this.terrain.elevation(x,z);return this.segmentHeight(best.s,best.q.t);}
  alignParallelDecks(){
   for(let pass=0;pass<2;pass++)for(const p of this.profiles.values()){if(!p.road.crossing)continue;
    for(let i=1;i<p.points.length;i++){const a=p.points[i-1],b=p.points[i],dx=b[0]-a[0],dz=b[1]-a[1],len=distance(a,b);if(len<.01)continue;
@@ -117,7 +119,44 @@ export class RoadSurfaces{
   // Hermite interpolation must never overshoot the solved endpoint envelope.
   return clamp(value,Math.min(a.h,b.h),Math.max(a.h,b.h));
  }
- candidates(x,z,margin=0){const found=[];for(const s of this.index.near(x,z,this.modern?margin:0)){const q=nearestOnSegment(x,z,s.a,s.b),d=Math.hypot(x-q.x,z-q.z);if(d<=s.profile.road.w/2+margin)found.push({height:this.segmentHeight(s,q.t),road:s.profile.road,d,segment:s});}if(!this.modern)return found;const closest=new Map();for(const s of found){const previous=closest.get(s.road);if(!previous||s.d<previous.d-1e-7)closest.set(s.road,s);}return [...closest.values()];}
+ rawCandidates(x,z,margin=0){const found=[];for(const s of this.index.near(x,z,this.modern?margin:0)){const q=nearestOnSegment(x,z,s.a,s.b),d=Math.hypot(x-q.x,z-q.z);if(d<=s.profile.road.w/2+margin)found.push({height:this.segmentHeight(s,q.t),road:s.profile.road,d,segment:s});}if(!this.modern)return found;const closest=new Map();for(const s of found){const previous=closest.get(s.road);if(!previous||s.d<previous.d-1e-7)closest.set(s.road,s);}return [...closest.values()];}
+ // Ordinary streets, tram tracks and pavements share this world-space field.
+ // Grade-separated decks retain their own profile, including their sidewalk.
+ shared(road){const p=this.profiles.get(road);return !!p&&!p.tunnel&&(p.riverDeck||!road.b);}
+ streetHeight(x,z){this.streetField??=new StreetHeightField(this);return this.streetField.sample(x,z);}
+ solveDeckProfiles(){
+  if(this.deckProfilesReady)return;
+  this.streetHeight(0,0);
+  const sharedNodes=new Set(),edges=new Map();
+  for(const p of this.profiles.values()){
+   if(this.shared(p.road)){for(const id of p.ids)sharedNodes.add(id);continue;}
+   for(let i=1;i<p.ids.length;i++){
+    const a=p.ids[i-1],b=p.ids[i],d=distance(p.points[i-1],p.points[i]);
+    if(!edges.has(a))edges.set(a,[]);if(!edges.has(b))edges.set(b,[]);
+    edges.get(a).push({id:b,d});edges.get(b).push({id:a,d});
+   }
+  }
+  const envelope=sign=>{
+   const heights=new Map(),heap=new MaxHeap();
+   for(const id of edges.keys())if(sharedNodes.has(id)){const n=this.nodes[id],h=sign*this.streetHeight(n.x,n.z);heights.set(id,h);heap.push({id,h});}
+   while(heap.a.length){const {id,h}=heap.pop();if(h<heights.get(id)-1e-8)continue;
+    for(const e of edges.get(id)||[]){const next=h-.055*e.d;if(next>(heights.get(e.id)??-Infinity)+1e-8){heights.set(e.id,next);heap.push({id:e.id,h:next});}}
+   }
+   return heights;
+  };
+  const lower=envelope(1),negativeUpper=envelope(-1);
+  for(const p of this.profiles.values())if(!this.shared(p.road))p.renderHeights=p.ids.map(id=>Math.min(-(negativeUpper.get(id)??-Infinity),Math.max(lower.get(id)??-Infinity,this.nodes[id].h)));
+  this.deckProfilesReady=true;
+ }
+ sample(road,x,z){
+  if(!this.modern)return this.rawSample(road,x,z);
+  if(this.shared(road))return this.streetHeight(x,z);
+  this.solveDeckProfiles();const p=this.profiles.get(road);if(!p)return this.terrain.elevation(x,z);
+  let nearest=null,d=Infinity;for(const s of this.index.near(x,z,road.w+8)){if(s.profile!==p)continue;const q=nearestOnSegment(x,z,s.a,s.b),dd=Math.hypot(x-q.x,z-q.z);if(dd<d){d=dd;nearest={s,q};}}
+  if(!nearest)return this.terrain.elevation(x,z);
+  const {s,q}=nearest;return p.renderHeights[s.i]*(1-q.t)+p.renderHeights[s.i+1]*q.t;
+ }
+ candidates(x,z,margin=0){const found=this.rawCandidates(x,z,margin);if(!this.modern)return found;let shared;for(const s of found)if(this.shared(s.road)){shared??=this.streetHeight(x,z);s.height=shared;}else s.height=this.sample(s.road,x,z);return found;}
  at(x,z,referenceY=null,margin=0){const candidates=this.candidates(x,z,margin);if(!candidates.length)return null;const base=referenceY??this.terrain.elevation(x,z);const motor=candidates.some(s=>!/footway|path|steps|cycleway|tram|pedestrian/.test(s.road.k)&&Math.abs(s.height-base)<2);const score=s=>{const delta=Math.abs(s.height-base),ped=motor&&/footway|path|steps|cycleway|tram|pedestrian/.test(s.road.k)?20:0;return delta<=2?s.d+delta*.01+ped:100+delta;};candidates.sort((a,b)=>this.modern?score(a)-score(b):Math.abs(a.height-base)-Math.abs(b.height-base)||a.d-b.d);return candidates[0];}
  bridge(x,z,referenceY=null){if(referenceY===null)return this.candidates(x,z).find(s=>s.road.crossing)||null;const s=this.at(x,z,referenceY);return s?.road.crossing?s:null;}
 }

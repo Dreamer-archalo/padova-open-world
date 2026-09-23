@@ -76,9 +76,9 @@ function makeLandmarks(scene,data){const g=new THREE.Group(),root=g;
   const prato=new THREE.Group();prato.position.set(PRATO.x,0,PRATO.z);prato.rotation.y=PRATO.yaw;
   const ellipse=(color,rx,rz,y)=>{const m=new THREE.Mesh(new THREE.CircleGeometry(1,96),material(color));m.rotation.x=-Math.PI/2;m.scale.set(rx,rz,1);m.position.y=y;prato.add(m);};
   const ringShape=new THREE.Shape();ringShape.absellipse(0,0,115,163,0,Math.PI*2,false,0);const hole=new THREE.Path();hole.absellipse(0,0,90,135,0,Math.PI*2,true,0);ringShape.holes.push(hole);const outer=new THREE.Mesh(new THREE.ShapeGeometry(ringShape,96),material('#c6b99c'));outer.rotation.x=-Math.PI/2;outer.position.y=.12;prato.add(outer);ellipse('#7bb3b0',90,135,-1.5);ellipse('#d6c5a2',81,126,.16);ellipse('#899e5c',72,117,.18);
-  box(prato,'#d4c4a4',0,.25,0,11,.2,249);box(prato,'#d4c4a4',0,.26,0,159,.2,9);
+  box(prato,'#d4c4a4',0,.145,0,11,.1,249);box(prato,'#d4c4a4',0,.145,0,159,.1,9);
   // Four separate canal crossings, aligned with the collision passages in Terrain.
-  for(const [x,z,yaw,width] of [[0,130.5,0,11],[0,-130.5,0,11],[85.5,0,Math.PI/2,9],[-85.5,0,Math.PI/2,9]]){const bridge=new THREE.Group();bridge.position.set(x,0,z);bridge.rotation.y=yaw;prato.add(bridge);box(bridge,'#d4c4a4',0,.23,0,width,.26,14);
+  for(const [x,z,yaw,width] of [[0,130.5,0,11],[0,-130.5,0,11],[85.5,0,Math.PI/2,9],[-85.5,0,Math.PI/2,9]]){const bridge=new THREE.Group();bridge.position.set(x,0,z);bridge.rotation.y=yaw;prato.add(bridge);box(bridge,'#d4c4a4',0,.065,0,width,.26,14);
    for(const side of [-1,1]){for(let j=-6;j<=6;j+=2)box(bridge,'#e2d7bd',side*(width/2+.2),.85,j,.35,1.0,.35);box(bridge,'#d5c7aa',side*(width/2+.2),1.4,0,.5,.2,14);box(bridge,'#c5b497',side*(width/2+.2),-.35,0,.65,.9,14);}}
   primitive(prato,cylinderGeo,'#d0c2a5',0,.5,0,5,1,5);primitive(prato,cylinderGeo,'#78a6a1',0,1.03,0,4.4,.05,4.4);primitive(prato,cylinderGeo,'#c3bba5',0,1.7,0,.7,1.6,.7);
   for(let i=0;i<22;i++){const a=i/22*Math.PI*2,x=Math.cos(a)*60,z=Math.sin(a)*103;primitive(prato,cylinderGeo,'#746b50',x,2.5,z,.4,5,.4);primitive(prato,sphereGeo,'#527a4a',x,6,z,4.5,5,4.5);}

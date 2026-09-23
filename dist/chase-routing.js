@@ -1,4 +1,4 @@
-import {clamp,dist,angleDiff,roadRoute,nearestRoad} from './core.js';
+import {clamp,dist,angleDiff,roadRoute,nearestRoad,nearestOnSegment} from './core.js';
 import {vehicleBlocked} from './movement.js';
 import {roadCorridor} from './modern-driving.js';
 
@@ -8,7 +8,12 @@ export function escapeRoute(car,player,graph,attempt=0){
  for(const s of graph.index.near(car.x,car.z,1800)){if(!s.connected||!major(s.road)||s.road.w<7||['no','private'].includes(s.road.access))continue;
   for(const id of [s.a,s.b]){if(seen.has(id))continue;seen.add(id);const n=graph.nodes[id],d=dist(n,car);if(d<900||d>2300)continue;const away=dist(n,player),variation=Math.sin(id*3.7+attempt*1.9)*500;candidates.push({n,score:away+variation});}
  }
- candidates.sort((a,b)=>b.score-a.score);for(const c of candidates.slice(0,8)){const route=roadRoute(car,c.n,graph);if(route.length>2&&route.reduce((sum,p,i)=>sum+(i?dist(p,route[i-1]):0),0)>850)return route;}return [];
+ candidates.sort((a,b)=>b.score-a.score);for(const c of candidates.slice(0,8)){const route=roadRoute(car,c.n,graph);
+  // The generic route starts at the nearest endpoint, which may lie behind a
+  // mid-segment spawn even when the next edge immediately returns past it.
+  // Remove that redundant out-and-back leg before orienting the fleeing van.
+  if(route.length>2){const a=route[1],b=route[2],q=nearestOnSegment(car.x,car.z,[a.x,a.z],[b.x,b.z]);if(q.t>0&&q.t<1&&Math.hypot(q.x-car.x,q.z-car.z)<.1)route.splice(1,1);}
+  if(route.length>2&&route.reduce((sum,p,i)=>sum+(i?dist(p,route[i-1]):0),0)>850)return route;}return [];
 }
 export function followRoad(car,dt,graph,terrain,collision,{max=32,accel=8,turnRate=1.7,traffic=[]}={}){
  let target=car.path[car.pathIndex];while(target&&dist(car,target)<Math.max(2.1,car.speed*.22)){car.pathIndex++;target=car.path[car.pathIndex];}

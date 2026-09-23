@@ -1,15 +1,18 @@
 import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import {applyCityData} from './dist/districts.js';
 import {AIRPORT,AIRPORT_GATE,areaLocal,areaPoint,prepareGameplayMap,gameplayStructures} from './dist/gameplay-areas.js';
 import {AIRPORT_ROAD_LAYOUT} from './dist/airport-road-network.js';
 
-const outside=areaPoint(AIRPORT,250,250);
-const map={buildings:[],roads:[{n:'Strada urbana di prova',k:'residential',w:8,p:[[outside.x,outside.z],[outside.x+40,outside.z+20]]}]};
+// Exercise the integrated map, including the real Mandria relocation.
+const read=n=>JSON.parse(fs.readFileSync(new URL('./dist/data/'+n+'.json',import.meta.url)));
+const map=read('padova');applyCityData(map,read('city'));
 prepareGameplayMap(map);
 const access=map.gameplay.roads.find(r=>r.n==='Ingresso aeroporto');
 const roads=map.gameplay.roads.filter(r=>r.airportRoad);
 assert(access,'main gate must connect to existing city roads');
 assert.equal(roads.length,AIRPORT_ROAD_LAYOUT.length,'all intended airport routes are in the actual map');
-assert.equal(map.gameplay.roads.length,roads.length+3,'only airport, villa and external connectors are authored');
+assert(map.gameplay.airportRoadIntegration.connected,'airport entry must remain connected to the real city graph');
 const key=p=>p.map(v=>v.toFixed(5)).join(',');
 const graph=new Map();
 function edge(a,b){const x=key(a),y=key(b);if(!graph.has(x))graph.set(x,new Set());if(!graph.has(y))graph.set(y,new Set());graph.get(x).add(y);graph.get(y).add(x);}

@@ -24,11 +24,11 @@ assert(Math.abs(roadsideHarmony(unmarked,0,0,10)-9.95)<.5,'The lower road must r
 // Exercise the actual modern Terrain API: the phase-four nearest-road override
 // must not replace the continuous solver between the centre and outer shoulder.
 const grid={version:1,width:2,height:2,step:200,x0:-100,z0:-100,heights:[12,12,12,12],waterPlane:[0,0,0]};
-const map={roads:[],areas:[],water:[]};
-const world=new Terrain(grid,map,{modern:true});world.roads={candidates};
+const map={roads:[{k:'residential',w:6,p:[[-20,0],[36,0]]},{k:'tram',w:3,p:[[-20,3],[36,3]]}],areas:[],water:[]};
+const world=new Terrain(grid,map,{modern:true});
 assert(Object.hasOwn(world,'groundHeight'),'Modern map must install one continuous ground solver');
 let maxActualJump=0,last=null;
-for(let x=-20;x<=36;x+=.25){const y=world.groundHeight(x,0);assert(Number.isFinite(y));if(last!==null)maxActualJump=Math.max(maxActualJump,Math.abs(y-last));last=y;assert(Math.abs(y-roadsideHarmony(terrain,x,0,12))<.001,'Modern ground diverges from the rendered corridor at '+x);}
+for(let x=-20;x<=36;x+=.25){const y=world.groundHeight(x,0);assert(Number.isFinite(y));if(last!==null)maxActualJump=Math.max(maxActualJump,Math.abs(y-last));last=y;assert(Math.abs(y-world.roads.sample(map.roads[0],x,0))<.001,'Road and visible support must share one datum');assert.equal(world.roads.sample(map.roads[0],x,1),world.roads.sample(map.roads[1],x,1),'Tram and asphalt must coincide');}
 assert(maxActualJump<.45,'Actual terrain has a cliff at the edge of the road: '+maxActualJump);
 const historical=new Terrain(grid,map,{modern:false});assert(!Object.hasOwn(historical,'groundHeight'),'Keep historical terrain independent');
 console.log('PASS continuous modern ground, overlapping levels, pedestrian separation and historical terrain; max 0.25 m-step '+maxActualJump.toFixed(3)+' m.');

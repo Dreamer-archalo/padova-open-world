@@ -7,6 +7,8 @@ globalThis.document={createElement:()=>({width:0,height:0,getContext:()=>({fillR
 const [{Terrain},{applyCityData},{prepareGameplayMap},{LEVEL_PATCHES,SHOULDER_FEATHER}]=await Promise.all([
  import('./dist/terrain.js'),import('./dist/districts.js'),import('./dist/gameplay-areas.js'),import('./dist/phase4-terrain-fixes.js')
 ]);
+await import('./dist/historic-terrain-level.js');
+await import('./dist/historic-plaza-alignment.js');
 const read=name=>JSON.parse(fs.readFileSync(new URL('./dist/data/'+name+'.json',import.meta.url)));
 const map=read('padova');applyCityData(map,read('city'));prepareGameplayMap(map);
 const terrain=new Terrain(read('terrain'),map,{modern:true});
@@ -18,13 +20,13 @@ const excluded=/motorway|trunk|footway|path|cycleway|steps|pedestrian|tram/;
 for(const profile of terrain.roads.profiles.values()){
  for(let i=1;i<profile.points.length;i++){
   const a=terrain.roads.nodes[profile.ids[i-1]],b=terrain.roads.nodes[profile.ids[i]],dx=profile.points[i][0]-profile.points[i-1][0],dz=profile.points[i][1]-profile.points[i-1][1],length=Math.hypot(dx,dz);if(length<.01)continue;
-  const grade=Math.abs(b.h-a.h)/length;report.roadSegments++;report.maxRoadGrade=Math.max(report.maxRoadGrade,grade);
+  const grade=Math.abs(terrain.roads.sample(profile.road,b.x,b.z)-terrain.roads.sample(profile.road,a.x,a.z))/length;report.roadSegments++;report.maxRoadGrade=Math.max(report.maxRoadGrade,grade);
   const limit=profile.road.k==='steps'?.66:.061;if(grade>limit){report.gradeViolations++;if(badGrades.length<20)badGrades.push({road:profile.road.n||profile.road.k,grade:+grade.toFixed(4),x:+((a.x+b.x)/2).toFixed(1),z:+((a.z+b.z)/2).toFixed(1)});}
   if(profile.road.crossing||profile.road.tunnel||excluded.test(profile.road.k||''))continue;
   const mx=(a.x+b.x)/2,mz=(a.z+b.z)/2,yaw=Math.atan2(dx,dz),nx=Math.cos(yaw),nz=-Math.sin(yaw),deck=terrain.roads.sample(profile.road,mx,mz);
   for(const side of [-1,1]){
    const near=profile.road.w/2+1.25,far=profile.road.w/2+Math.min(SHOULDER_FEATHER-.5,6.5),x1=mx+nx*near*side,z1=mz+nz*near*side,x2=mx+nx*far*side,z2=mz+nz*far*side;
-   if(terrain.waterDistance(x1,z1)<1.5||terrain.waterDistance(x2,z2)<1.5)continue;
+   if(terrain.waterDistance(x1,z1)<1.5||terrain.waterDistance(x2,z2)<1.5||terrain.prato(x1,z1)?.canal&&terrain.waterAt(x1,z1)!==null||terrain.prato(x2,z2)?.canal&&terrain.waterAt(x2,z2)!==null)continue;
    const h1=terrain.groundHeight(x1,z1),h2=terrain.groundHeight(x2,z2),gap=Math.abs(h1-deck),transition=Math.abs(h2-h1);report.shoulderSamples++;report.maxNearShoulderGap=Math.max(report.maxNearShoulderGap,gap);report.maxTransverseChange=Math.max(report.maxTransverseChange,transition);
    if(gap>.55)report.nearGapViolations++;
    if(transition>1.35)report.transverseViolations++;

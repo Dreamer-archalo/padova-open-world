@@ -21,3 +21,15 @@ assert(Math.abs(junctionFanHeight(10,-100,4)-10)<.25,'Low rim pit must be grade 
 const steep=countFans(4,2,(r,x,z)=>x===0&&z===0?10:80);
 assert(steep.maxRadialRise<.21,'Actual junction geometry still has vertical roof triangles: '+steep.maxRadialRise);
 console.log('PASS straight roads have no artificial fans; genuine junction caps remain grade-limited without spikes.');
+
+// A sloping bridge sidewalk must have visible paving over water at the same
+// per-vertex height as its carriageway (not an invisible collision-only ledge).
+const bridge={k:'residential',w:6,crossing:true,surfaceId:2},quads=[];
+const terrain={roads:{nodes:[],index:{near:()=>[]},sample:(r,x,z)=>10+x*.02+z*.015,candidates:()=>[]},waterDistance:()=>-5};
+buildModernRoads({quad:(...args)=>quads.push(args.slice(0,4)),tri:()=>{}},[{a:[0,0],b:[12,0],road:bridge}],terrain);
+for(const side of [-1,1]){
+ const paving=quads.filter(q=>q.every(p=>Math.sign(p[2])===side)&&q.some(p=>Math.abs(Math.abs(p[2])-4.2)<1e-8));
+ assert(paving.length>0,'Bridge sidewalk must be drawn above water');
+ for(const quad of paving)for(const p of quad)assert(Math.abs(p[1]-terrain.roads.sample(bridge,p[0],p[2])-.075)<1e-8,'Sidewalk must match visible asphalt and vehicle support');
+}
+console.log('PASS bridge sidewalks have visible support at the shared carriageway height.');

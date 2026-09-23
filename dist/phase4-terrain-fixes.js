@@ -143,7 +143,7 @@ function buildPratoEdges(game){
   const p=pratoPoint(Math.cos(a)*rx,Math.sin(a)*rz),q=pratoPoint(Math.cos(b)*rx,Math.sin(b)*rz),m={x:(p.x+q.x)/2,z:(p.z+q.z)/2},len=Math.hypot(q.x-p.x,q.z-p.z),yaw=Math.atan2(q.x-p.x,q.z-p.z),top=game.terrain.pratoHeight+.16;
   walls.push({x:m.x,y:game.terrain.pratoHeight-.58,z:m.z,w:.34,h:1.65,d:len+.18,yaw});curbs.push({x:m.x,y:top,z:m.z,w:.48,h:.28,d:len+.22,yaw});
  }
- const bridges=[{lx:0,lz:130.5,w:11,d:13},{lx:0,lz:-130.5,w:11,d:13},{lx:85.5,lz:0,w:13,d:10},{lx:-85.5,lz:0,w:13,d:10}],decks=[];for(const b of bridges){const p=pratoPoint(b.lx,b.lz);decks.push({x:p.x,y:game.terrain.pratoHeight+.17,z:p.z,w:b.w,h:.24,d:b.d,yaw:PRATO.yaw});}
+ const bridges=[{lx:0,lz:130.5,w:11,d:13},{lx:0,lz:-130.5,w:11,d:13},{lx:85.5,lz:0,w:13,d:10},{lx:-85.5,lz:0,w:13,d:10}],decks=[];for(const b of bridges){const p=pratoPoint(b.lx,b.lz);decks.push({x:p.x,y:game.terrain.pratoHeight+.075,z:p.z,w:b.w,h:.24,d:b.d,yaw:PRATO.yaw});}
  const root=new THREE.Group();root.name='phase4-prato-canal-edges';root.userData.phase4PratoEdges=true;
  const wallMesh=new THREE.InstancedMesh(cube,pratoWallMat,walls.length),curbMesh=new THREE.InstancedMesh(cube,pratoWallMat,curbs.length),deckMesh=new THREE.InstancedMesh(cube,pratoDeckMat,decks.length);walls.forEach((v,i)=>instance(wallMesh,i,v.x,v.y,v.z,v.w,v.h,v.d,v.yaw));curbs.forEach((v,i)=>instance(curbMesh,i,v.x,v.y,v.z,v.w,v.h,v.d,v.yaw));decks.forEach((v,i)=>instance(deckMesh,i,v.x,v.y,v.z,v.w,v.h,v.d,v.yaw));for(const m of [wallMesh,curbMesh,deckMesh]){m.instanceMatrix.needsUpdate=true;m.receiveShadow=true;root.add(m);}root.visible=false;game.scene.add(root);return root;
 }

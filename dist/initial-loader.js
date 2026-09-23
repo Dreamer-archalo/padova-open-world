@@ -114,6 +114,9 @@ const originalUpdate=CityWorld.prototype.update;
 if(!CityWorld.prototype.__initialLoaderManager){
  CityWorld.prototype.__initialLoaderManager=true;
  CityWorld.prototype.update=function(x,z,force=false,motion={}){
+  // The loader owns chunk installation until its complete 3x3 ring is ready.
+  // A second streamer could replace a finished detail stage with a late core.
+  if(this.__initialLoader?.started&&!this.__initialLoader.done)return;
   const result=originalUpdate.call(this,x,z,force,motion);
   if(this.terrain?.modern&&!this.__initialLoader){
    debug.mark('CityWorld disponibile · avvio loader iniziale…');

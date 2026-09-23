@@ -1,0 +1,43 @@
+name: Apply taxi hotfix on PR56 only
+
+on:
+  push:
+    branches: [fix/shared-street-surface-20260922]
+    paths:
+      - '.github/workflows/taxi-hotfix-apply.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  apply-taxi-hotfix:
+    if: github.repository == 'Dreamer-archalo/padova-open-world'
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - name: Checkout exact PR branch, never main
+        uses: actions/checkout@v4
+        with:
+          ref: fix/shared-street-surface-20260922
+          persist-credentials: true
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Apply source patch and regression checks
+        run: |
+          set -euo pipefail
+          node tools/apply-taxi-hotfix.mjs
+          node --check dist/game.js
+          node --check dist/taxi-affordability.js
+          node --check tools/verify-taxi-hotfix.mjs
+          node tools/verify-taxi-hotfix.mjs
+          npm run test:taxi
+      - name: Commit game source fix onto PR branch only
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add dist/game.js
+          git diff --cached --quiet && { echo 'Expected game.js hotfix was not applied'; exit 1; }
+          git commit -m 'fix(taxi): redispatch distant cab and restore close controls'
+          git push origin HEAD:refs/heads/fix/shared-street-surface-20260922

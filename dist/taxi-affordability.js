@@ -1,7 +1,5 @@
-// UI/runtime safety net for Taxi abusivo fares. The game controller owns the
-// actual trip; this module prevents confirmation when the displayed balance
-// cannot cover the fare, so money can never be driven negative by the dialog.
-const menu=document.getElementById('menu');
+// Keep the taxi fare dialog responsive: a MutationObserver watches this same
+// subtree, so never rewrite DOM text unless its value actually changed.
 const content=document.getElementById('menuContent');
 const money=document.getElementById('money');
 
@@ -20,18 +18,23 @@ function warning(){
 function refreshTaxiAffordability(){
  const button=document.getElementById('confirmTaxi');if(!button)return;
  const fare=fareFromDialog();if(fare===null)return;
- const short=balance()<fare;
- button.disabled=short;button.setAttribute('aria-disabled',String(short));
- button.dataset.taxiFare=String(fare);
+ const available=balance(),short=available<fare;
+ if(button.disabled!==short)button.disabled=short;
+ if(button.getAttribute('aria-disabled')!==String(short))button.setAttribute('aria-disabled',String(short));
+ if(button.dataset.taxiFare!==String(fare))button.dataset.taxiFare=String(fare);
  if(!button.dataset.defaultLabel)button.dataset.defaultLabel=button.textContent||'Conferma e parti';
- button.textContent=short?`Fondi insufficienti · €${fare}`:button.dataset.defaultLabel;
+ const label=short?`Fondi insufficienti · €${fare}`:button.dataset.defaultLabel;
+ if(button.textContent!==label)button.textContent=label;
  const existing=document.getElementById('taxiFundsWarning');
- if(short){const p=warning();if(p)p.textContent=`Servono €${fare}. Saldo disponibile: €${Math.max(0,Math.floor(balance()))}.`;}else existing?.remove();
+ if(short){
+  const p=existing||warning();
+  const message=`Servono €${fare}. Saldo disponibile: €${Math.max(0,Math.floor(available))}.`;
+  if(p&&p.textContent!==message)p.textContent=message;
+ }else if(existing)existing.remove();
 }
 
-// MutationObserver covers every newly rendered confirmation dialog. A capture
-// guard is kept as a second line of defence in case a click lands in the same
-// frame in which the dialog was created.
+// Reentrant refreshes must be idempotent: the confirmation must never cause
+// an endless microtask cycle that starves rendering, ESC or the close button.
 const observer=new MutationObserver(refreshTaxiAffordability);
 if(content)observer.observe(content,{childList:true,subtree:true,characterData:true});
 if(money)observer.observe(money,{childList:true,subtree:true,characterData:true});
