@@ -133,6 +133,15 @@ jobs:
           test -f dist/preview/mandria-v11/data/padova.json
           test -f dist/preview/mandria-v11/vendor/three.module.js
           git diff --exit-code -- dist
+      - name: Preserve the PR56 test link with the same verified game
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p "${RUNNER_TEMP}/pr56-current" dist/preview/pr-56
+          git archive HEAD dist | tar -x -C "${RUNNER_TEMP}/pr56-current"
+          cp -a "${RUNNER_TEMP}/pr56-current/dist/." dist/preview/pr-56/
+          cmp dist/game.js dist/preview/pr-56/game.js
+          cmp dist/street-height-field.js dist/preview/pr-56/street-height-field.js
       - name: Configure GitHub Pages
         uses: actions/configure-pages@v5
       - name: Upload definitive game plus historic previews
