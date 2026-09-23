@@ -5,6 +5,9 @@ on:
     branches: [fix/shared-street-surface-20260922]
     paths:
       - '.github/workflows/pr56-taxi-playable-preview.yml'
+      - 'dist/game.js'
+      - 'dist/taxi-affordability.js'
+      - 'tools/verify-taxi-hotfix.mjs'
       - 'dist/taxi-service.js'
       - 'dist/Pathfinder.js'
       - 'tools/diagnose-taxi-real-map.mjs'
@@ -37,8 +40,11 @@ jobs:
       - name: Confirm taxi implementation and destination latency on the real map
         run: |
           set -euo pipefail
+          node --check dist/game.js
+          node --check dist/taxi-affordability.js
           node --check dist/taxi-service.js
           node --check dist/Pathfinder.js
+          node tools/verify-taxi-hotfix.mjs
           node tools/diagnose-taxi-real-map.mjs
           npm run test:taxi
           node verify-taxi-main-thread-safety.mjs
@@ -69,6 +75,8 @@ jobs:
           sha256sum .production-source/dist/index.html .production-source/dist/game.js .production-source/dist/version.json > /tmp/pr56-production-root.sha
           mkdir -p .production-source/dist/preview/pr-56
           cp -a dist/. .production-source/dist/preview/pr-56/
+          cmp dist/game.js .production-source/dist/preview/pr-56/game.js
+          cmp dist/taxi-affordability.js .production-source/dist/preview/pr-56/taxi-affordability.js
           cmp dist/taxi-service.js .production-source/dist/preview/pr-56/taxi-service.js
           cmp dist/Pathfinder.js .production-source/dist/preview/pr-56/Pathfinder.js
           test -f .production-source/dist/preview/pr-56/data/padova.json
