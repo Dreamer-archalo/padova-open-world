@@ -1,0 +1,106 @@
+name: PR56 corrected taxi playable preview
+
+on:
+  push:
+    branches: [fix/shared-street-surface-20260922]
+    paths:
+      - '.github/workflows/pr56-taxi-hotfix-preview.yml'
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pr56-corrected-taxi-preview
+  cancel-in-progress: true
+
+jobs:
+  test-and-publish:
+    runs-on: ubuntu-latest
+    timeout-minutes: 28
+    steps:
+      - name: Checkout corrected PR56, not main
+        uses: actions/checkout@v6
+        with:
+          ref: fix/shared-street-surface-20260922
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Verify taxi freeze fix, remote dispatch and existing taxi behavior
+        run: |
+          set -euo pipefail
+          node --check dist/game.js
+          node --check dist/taxi-affordability.js
+          node tools/verify-taxi-hotfix.mjs
+          node tools/diagnose-taxi-real-map.mjs
+          npm run test:taxi
+          node verify-taxi-main-thread-safety.mjs
+          node verify-taxi-transfer-pause.mjs
+          node verify-taxi-confirmation-runtime.mjs
+          node verify-taxi-transition-recovery.mjs
+      - name: Preserve road geometry checks
+        run: |
+          set -euo pipefail
+          node tools/verify-shared-streets.mjs
+          node verify-elevation-harmony.mjs
+      - name: Checkout official main separately
+        uses: actions/checkout@v6
+        with:
+          ref: main
+          path: .production-source
+          persist-credentials: false
+      - name: Copy corrected candidate into isolated preview, preserve official root
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -f .production-source/dist/version.json
+          sha256sum .production-source/dist/index.html .production-source/dist/game.js .production-source/dist/version.json >/tmp/pr56-root.sha
+          mkdir -p .production-source/dist/preview/pr-56
+          cp -a dist/. .production-source/dist/preview/pr-56/
+          cmp dist/game.js .production-source/dist/preview/pr-56/game.js
+          cmp dist/taxi-affordability.js .production-source/dist/preview/pr-56/taxi-affordability.js
+          test -f .production-source/dist/preview/pr-56/data/padova.json
+          sha256sum -c /tmp/pr56-root.sha
+      - name: Checkout historic Villa PR51 preview source
+        uses: actions/checkout@v6
+        with:
+          ref: feat/villa-treves-phase1-20260919
+          path: .historic-pr51
+          persist-credentials: false
+      - name: Checkout historic PR52 preview source
+        uses: actions/checkout@v6
+        with:
+          ref: 20c6411c215ad57bdc1a57df0f0ae69554d241c2
+          path: .historic-pr52
+          persist-credentials: false
+      - name: Checkout original Villa v11 preview source
+        uses: actions/checkout@v6
+        with:
+          ref: cb6d5fb1f3afedfda68f8f07651916d3a8e12f28
+          path: .historic-v11
+          persist-credentials: false
+      - name: Preserve older test links and verify official root unchanged
+        shell: bash
+        run: |
+          set -euo pipefail
+          for item in 'pr-51 .historic-pr51' 'pr-52 .historic-pr52' 'mandria-v11 .historic-v11'; do
+            read -r name folder <<< "$item"
+            test -f "$folder/dist/index.html"
+            mkdir -p ".production-source/dist/preview/$name"
+            cp -a "$folder/dist/." ".production-source/dist/preview/$name/"
+          done
+          sha256sum -c /tmp/pr56-root.sha
+          touch .production-source/dist/.nojekyll
+      - uses: actions/configure-pages@v5
+      - name: Upload a single fresh Pages artifact
+        uses: actions/upload-pages-artifact@v4
+        with:
+          path: .production-source/dist
+      - name: Publish corrected PR56 preview without merging
+        id: publish
+        uses: actions/deploy-pages@v4
+      - name: Show verified test link
+        run: |
+          echo 'Corrected taxi: https://dreamer-archalo.github.io/padova-open-world/preview/pr-56/'
+          echo "Deployment: ${{ steps.publish.outputs.page_url }}"
