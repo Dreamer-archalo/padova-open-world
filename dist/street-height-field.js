@@ -1,3 +1,4 @@
+import {areaLocal} from './gameplay-areas-implementation.js';
 // One continuous, grade-bounded surface for all ordinary urban paving.
 // River beds are carved below it by Terrain; water does not change the height
 // of the street above a bridge. Real grade-separated structures keep profiles.
@@ -22,6 +23,12 @@ export class StreetHeightField {
     // A narrow canal can fall BETWEEN two nine-metre graph nodes.
     if(terrain.waterDistance(x,z)<1.2)constrain(x,z,terrain.waterHeight(x,z)+2.2);
    }
+  }
+  // The authored airport has a level runway and apron. Constrain its native
+  // height before spreading the envelopes, so its approaches also stay smooth.
+  for(const a of terrain.gameplayPatches||[])if(!a.platform)for(let j=0;j<h;j++)for(let i=0;i<w;i++){
+   const p=areaLocal(a,this.x0+i*step,this.z0+j*step);
+   if(p.u>=a.minU&&p.u<=a.maxU&&p.v>=a.minV&&p.v<=a.maxV){values[j*w+i]=a.height;ceilings[j*w+i]=a.height;}
   }
   // Exact separable maximum of cones in the Manhattan metric: each axis has
   // <=2.5% grade, so the maximum grade in ANY direction is below 3.6%.

@@ -34,3 +34,15 @@ console.log('SEAMS '+JSON.stringify(seams));
 assert.deepEqual(seams,[], 'Deck entrances must join the shared street without steps');
 console.log(JSON.stringify({report,bad,gaps,wet},null,2));
 assert(report.segments>100000);assert(report.overlaps>1000);assert.equal(report.maxOverlapGap,0);assert(report.maxShoulderGap<.01);assert.equal(report.gradeFailures,0);assert(report.minClearance>.45);
+
+// Cross the actual worker serialization boundary: rendering must use the
+// solved surface, never regenerate it from an unpatched DEM in the worker.
+const {streamingSnapshot}=await import('../dist/streaming.js');
+const {hydrateTerrain}=await import('../dist/streaming-worker.js');
+const worker=hydrateTerrain(structuredClone(streamingSnapshot(terrain)));
+for(const [x,z] of [[145,673],[403,-522],[-653,-48],[140,-645],[-2800,1200],[4000,0]]){
+ assert.equal(worker.height(x,z),terrain.height(x,z),'Worker contact height');
+ assert.equal(worker.groundHeight(x,z),terrain.groundHeight(x,z),'Worker visible ground');
+ assert.equal(worker.waterHeight(x,z),terrain.waterHeight(x,z),'Worker water height');
+}
+console.log('PASS worker and main-thread surface heights agree');

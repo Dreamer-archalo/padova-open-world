@@ -45,7 +45,10 @@ export function groundVehicleStep(actor,car,input,dt,terrain,collision){
  // A teleport or a recovered vehicle must never inherit a stale ballistic arc.
  if(j.lastX!==undefined&&Math.hypot(actor.x-j.lastX,actor.z-j.lastZ)>10){resetGroundMotion(car);return groundVehicleStep(actor,car,input,dt,terrain,collision);}
  car.steerInput=(car.steerInput||0)+(input.turn-(car.steerInput||0))*(1-Math.exp(-dt*(bike?12:9)));
- const yaw=actor.yaw+car.steerInput*steeringRate(spec,actor.speed,input.handbrake)*dt*(actor.speed>=0?1:-1)*(j.airborne?.28:1);
+ // Floating-point slope noise near zero must not reverse a stationary tank's
+ // steering every frame. Deliberate reverse motion still reverses steering.
+ const direction=spec.tracked&&Math.abs(actor.speed)<.01?1:actor.speed>=0?1:-1;
+ const yaw=actor.yaw+car.steerInput*steeringRate(spec,actor.speed,input.handbrake)*dt*direction*(j.airborne?.28:1);
  if(!vehicleBlocked(actor.x,actor.z,yaw,collision,spec,actor.y))actor.yaw=yaw;
  let hitSpeed=0,landingSpeed=0,launched=false,landed=false;
  const count=Math.max(1,Math.ceil(Math.max(Math.abs(actor.speed),Math.hypot(j.vx,j.vz))*dt/.65)),step=dt/count;

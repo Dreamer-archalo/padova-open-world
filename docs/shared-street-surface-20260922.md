@@ -28,3 +28,11 @@ The original headless test charged the first destination request with the one-ti
 Do not merge the entire PR #56 until its *other* CI checks (especially airport integration and full city browser tests) are examined and resolved; fixing taxi alone does not certify airport or citywide gameplay.
 
 These checks cover sampled geometry and the named driving routes. They do not establish device-specific frame rates or claim an exhaustive manual playthrough of every street.
+
+## Final integration follow-up — 23 September
+
+The shared field is now prepared by Terrain during world loading. Streaming workers receive the exact solved field and structure profiles instead of rebuilding them without the historic elevation patches; main/worker contact, ground and water heights are checked across the serialization boundary. The initial loader owns its nine chunks until completion, preventing a concurrent streaming core update from replacing finished detail geometry.
+
+The airport's authored level surface constrains the common field before approach smoothing. The runway and hangar clearance checks pass. Additional controller checks exposed stationary tank steering changing direction on floating-point speed noise; that is now stable. Fleeing van routes also discard a redundant initial backtrack through their spawn point.
+
+Airport mobility now uses the complete real map, including Mandria relocation, instead of an incomplete pre-relocation fixture. The enemy-projectile test uses the existing 36-point damage and 2.4-second cooldown to allow the required three hits; it still requires an actual destruction, respawn and reset.

@@ -23,10 +23,10 @@ export function streamingSnapshot(t){
  const r=t.roads,d=t.districts;
  const nodes=new Float64Array(r.nodes.length*4);
  r.nodes.forEach((n,i)=>nodes.set([n.x,n.z,n.h,n.degree],i*4));
- const profiles=[...r.profiles.values()].map(p=>({id:p.id,road:p.road,ids:Uint32Array.from(p.ids),slopes:p.slopes?Float64Array.from(p.slopes):null,layer:p.layer,tunnel:p.tunnel}));
+ const profiles=[...r.profiles.values()].map(p=>({id:p.id,road:p.road,ids:Uint32Array.from(p.ids),slopes:p.slopes?Float64Array.from(p.slopes):null,layer:p.layer,tunnel:p.tunnel,riverDeck:p.riverDeck,renderHeights:p.renderHeights?Float64Array.from(p.renderHeights):null}));
  const unique=index=>[...new Set([...index.cells.values()].flat())];
  return {grid:t.grid,modern:t.modern,gameplayPatches:t.gameplayPatches,pratoHeight:t.pratoHeight,
-  water:unique(t.waterIndex),fountains:t.fountains,roads:{modern:r.modern,nodes,profiles},
+  water:unique(t.waterIndex),fountains:t.fountains,roads:{modern:r.modern,nodes,profiles,streetField:r.streetField,deckProfilesReady:r.deckProfilesReady},
   districts:d?{zones:unique(d.index),wild:d.wild}:null};
 }
 

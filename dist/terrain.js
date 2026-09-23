@@ -29,11 +29,18 @@ export class Terrain {
     }
     this.pratoHeight=safeTerrainHeight(this.elevation(PRATO.x,PRATO.z),this.rawElevation(PRATO.x,PRATO.z));this.roads=new RoadSurfaces(map,this);
     if(this.modern){
+      // Finish the common field and structure profiles during world loading.
+      // Deferring this work until the first taxi/vehicle height query would
+      // block an otherwise bounded interaction for several seconds.
+      this.roads.solveDeckProfiles();
       // The phase-four prototype override otherwise snaps to ONE closest street
       // for a 7.5 m strip, while the original method snaps to a different road
       // inside its footprint. Install one authoritative continuous ground
       // solver per modern map; leave the legacy historical map unchanged.
-      this.groundHeight=(x,z)=>{
+      this.groundHeight=this.sharedGroundHeight.bind(this);
+    }
+  }
+  sharedGroundHeight(x,z){
         if(globalThis.__padovaFastStartup===true)return this.elevation(x,z);
         const platform=this.platformAt(x,z);if(platform)return safeTerrainHeight(platform.height,this.rawElevation(x,z));
         const prato=this.prato(x,z);if(prato?.canal&&!prato.bridge&&!this.roads.candidates(x,z,1.2).some(s=>!s.road.tunnel))return safeTerrainHeight(this.pratoHeight-3,this.pratoHeight);
@@ -45,8 +52,6 @@ export class Terrain {
         // a second, ten-metre-wide river blend cut straight through that road's
         // shoulder, making the terrain drop several metres beside the sidewalk.
         return safeTerrainHeight(channel+(bank-channel)*smooth((d+1)/2),natural);
-      };
-    }
   }
   rawElevation(x,z){const g=this.grid,u=clamp((x-g.x0)/g.step,0,g.width-1),v=clamp((z-g.z0)/g.step,0,g.height-1),i=Math.min(g.width-2,Math.floor(u)),j=Math.min(g.height-2,Math.floor(v)),a=u-i,b=v-j,h=(i,j)=>g.heights[j*g.width+i],value=h(i,j)*(1-a)*(1-b)+h(i+1,j)*a*(1-b)+h(i,j+1)*(1-a)*b+h(i+1,j+1)*a*b;return safeTerrainHeight(value,h(i,j));}
   elevation(x,z){const raw=this.rawElevation(x,z),value=this.gameplayPatches?.length?gameplayElevation(x,z,raw,this.gameplayPatches):raw;return safeTerrainHeight(value,raw);}

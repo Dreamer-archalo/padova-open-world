@@ -34,6 +34,7 @@ jobs:
           npm run test:tangenziale-race
           node verify-online-race.mjs
           node verify-online-race-second-fix.mjs
+          node --max-old-space-size=3072 verify-streaming.mjs
           npm run test:initial-world
           node verify-feature-preservation.mjs
   browser:

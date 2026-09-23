@@ -51,3 +51,12 @@ assert.deepEqual(cut,[[0,9],[21,30]],'Name-labelled periodic gaps must physicall
 assert.equal(groundTileNeedsSplit({waterDistance:()=>100},0,0,16,(x,z)=>x*.02+z*.03),false,'Planar ground stays cheap');
 assert.equal(groundTileNeedsSplit({waterDistance:()=>100},0,0,16,(x,z)=>2*Math.sin(Math.PI*x/16)),true,'Curved ramp is subdivided');
 console.log('PASS actual guardrail opening and adaptive ramp mesh sampling');
+
+// A tracked vehicle on a level runway must pivot consistently even when the
+// slope calculation produces a tiny negative floating-point speed.
+const flat={height:()=>14,slope:()=>0,waterAt:()=>null};
+const tank={spec:{...VEHICLES.mito,tracked:true,steer:.65}};
+const pivot={x:0,z:0,y:14,yaw:0,speed:-1e-16};
+for(let i=0;i<120;i++)groundVehicleStep(pivot,tank,{turn:1,handbrake:false},1/60,flat,empty);
+assert(pivot.yaw>1.1,'Stationary tank pivot must not flip direction on slope round-off');
+console.log('PASS stationary tracked steering ignores numerical speed noise');
