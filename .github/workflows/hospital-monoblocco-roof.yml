@@ -28,12 +28,14 @@ jobs:
           node tools/diagnose-monoblocco-connectors.mjs
           node tools/diagnose-roof-island-bridges.mjs
           node verify-monoblocco-island-bridges.mjs
-      - name: Validate rooftop source and exact real-map polygon route
+      - name: Validate rooftop source, elevators and exact real-map polygon route
         run: |
           node --check dist/hospital-rooftop-easter-egg.js
           node --check dist/hospital-helipad-exit.js
+          node --check dist/hospital-rooftop-elevators.js
           node --check dist/monoblocco-trial-paddock.js
           node verify-hospital-rooftop.mjs
+          node verify-hospital-elevators.mjs
       - name: Verify safe ramp approaches, landings and actual roof-gap bridges
         run: |
           node --check dist/monoblocco-course-polish.js
