@@ -268,6 +268,31 @@ function applyTaxiDestination(destination,road,price,{fallback=false}={}){
  const departure=planTaxiDeparture(c);if(departure){taxi.phase='departing';taxi.target=departure.target;taxi.path=departure.path;taxi.index=Math.min(1,departure.path.length-1);taxi.blocked=0;taxi.departAt=state.elapsed+.9;taxi.departUntil=state.elapsed+14;setTaxiHazards(true);}else{taxi.phase='gone';c.mesh.visible=false;c.parked=true;setTaxiHazards(false);}
  toast(fallback?'Arrivo completato su strada. Il taxi riparte.':'Sei arrivato. Il taxi ti ha lasciato a bordo strada e riparte.',5);
 }
+async function preloadTaxiDestination(arrival,destination){
+ const label=destination?.name||'destinazione';
+ setPaused(true);keys.clear();
+ taxiLoadingOverlay?.show('Caricamento '+label+' · preparo strade e quartiere').catch(error=>console.warn('[Taxi UI] splash non disponibile',error));
+ const pin=world.prefetch(arrival.x,arrival.z,560),started=performance.now(),minimumVisibleMs=850,maxWaitMs=4800;
+ let ready=world.coreReady(arrival.x,arrival.z,180),passes=0;
+ while((!ready&&performance.now()-started<maxWaitMs)||performance.now()-started<minimumVisibleMs){
+  if(!ready){
+   world.update(arrival.x,arrival.z,passes===0,{speed:0,yaw:arrival.yaw??0,aircraft:false,altitude:0});
+   ready=world.coreReady(arrival.x,arrival.z,180);passes++;
+  }
+  const queued=world.streaming?.metrics?.coreQueued;
+  if($('taxiLoadingStatus'))$('taxiLoadingStatus').textContent=ready?'Zona di arrivo pronta · ultimi dettagli…':'Caricamento '+label+(Number.isFinite(queued)?' · '+queued+' settori':'');
+  await yieldFrame();
+ }
+ // Prefetch pins intentionally prioritise the collision/road core. Release the
+ // destination pin once that core is ready so normal detail streaming can start
+ // immediately around the player after the teleport.
+ if(world.streaming?.pins)world.streaming.pins=world.streaming.pins.filter(p=>p!==pin&&Math.hypot(p.x-arrival.x,p.z-arrival.z)>1);
+ world.update(arrival.x,arrival.z,true,{speed:0,yaw:arrival.yaw??0,aircraft:false,altitude:0});
+ if(modelLayer&&!world.streaming?.metrics?.pressure)modelLayer.update(arrival.x,arrival.z,!qualityFor(state.quality).simple);
+ if($('taxiLoadingStatus'))$('taxiLoadingStatus').textContent=ready?'Arrivo a '+label+'…':'Arrivo a '+label+' · dettagli in streaming…';
+ await yieldFrame();
+ return ready;
+}
 async function executeTaxiTransition({targetCoords,meta={}}){
  if(!taxi?.car||state.car!==taxi.car||!validTaxiDestination(targetCoords))throw new Error('Invalid static taxi destination or player is not aboard');
  const destination={x:targetCoords.x,y:Number.isFinite(targetCoords.y)?targetCoords.y:0,z:targetCoords.z,yaw:Number.isFinite(targetCoords.yaw)?targetCoords.yaw:state.yaw,name:meta.name||targetCoords.name||'Destinazione personalizzata',tag:meta.tag||''};
@@ -276,6 +301,7 @@ async function executeTaxiTransition({targetCoords,meta={}}){
  const arrival={...road,name:destination.name},price=taxiFare(taxi.car,arrival);
  taxi.phase='transition';taxi.destination={...destination};taxi.tripCharged=false;taxiDriverNPC?.hide();setTaxiHazards(false);keys.clear();document.body.classList.add('taxi-transit');taxiFactIndex=Math.floor((state.elapsed+price)%TAXI_FACTS.length);if($('taxiFact'))$('taxiFact').textContent=TAXI_FACTS[taxiFactIndex];
  if(!taxiSystem)throw new Error('TaxiSystem not initialized');
+ await preloadTaxiDestination(arrival,destination);
  await taxiSystem.travel({targetCoords:arrival,destination,price,yaw:arrival.yaw??state.yaw});
 }
 function confirmTaxi(destination,event=null){

@@ -1,4 +1,6 @@
 const EXTRA_TAXI_FACTS = [
+  'Sapevi che il sistema base dei veicoli urbani definisce 11 famiglie diverse, prima ancora di contare velivoli e mezzi speciali?',
+  'Durante il viaggio in taxi il gioco precarica strade e collisioni della zona di arrivo, poi continua a costruire i dettagli mentre riprendi a giocare.',
   'Nella primissima versione del gioco c’era praticamente un solo modello di auto. Adesso il parcheggio ha sviluppato una personalità propria.',
   'All’aeroporto puoi trovare tre tipi diversi di aerei: Rondone, Albatros e Libellula. Sì, hanno tutti nomi da fauna locale non autorizzata.',
   'Falco e Levante sono gli elicotteri del gioco. Uno sembra professionale, l’altro sembra sapere cose che tu non sai.',

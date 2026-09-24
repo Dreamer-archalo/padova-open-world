@@ -7,6 +7,9 @@ on:
       - '.github/workflows/pr56-taxi-playable-preview.yml'
       - 'dist/game.js'
       - 'dist/taxi-affordability.js'
+      - 'dist/TaxiLoadingOverlay.js'
+      - 'dist/taxi-facts-extra.js'
+      - 'dist/taxi-loading-layout.css'
       - 'tools/verify-taxi-hotfix.mjs'
       - 'dist/taxi-service.js'
       - 'dist/Pathfinder.js'
@@ -42,6 +45,8 @@ jobs:
           set -euo pipefail
           node --check dist/game.js
           node --check dist/taxi-affordability.js
+          node --check dist/TaxiLoadingOverlay.js
+          node --check dist/taxi-facts-extra.js
           node --check dist/taxi-service.js
           node --check dist/Pathfinder.js
           node tools/verify-taxi-hotfix.mjs
