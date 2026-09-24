@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#10242d">
+  <meta name="description" content="Venezia Open World — ricostruzione 3D giocabile basata su OpenStreetMap.">
+  <title>VENEZIA — Open World</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect fill='%2310242d' width='64' height='64' rx='12'/%3E%3Ctext x='13' y='49' fill='%23ffc56a' font-family='Arial' font-weight='bold' font-size='46'%3EV%3C/text%3E%3C/svg%3E">
+  <link rel="stylesheet" href="./venice.css">
+</head>
+<body>
+  <canvas id="world" aria-label="Venezia 3D game world"></canvas>
+  <div id="vignette"></div>
+
+  <header class="topbar">
+    <div class="wordmark">VENEZIA<span>OPEN WORLD</span></div>
+    <div class="location"><span>ITALIA / VENETO</span><strong id="location">Piazzale Roma</strong></div>
+    <div class="top-actions"><button id="mapBtn">MAPPA <kbd>M</kbd></button></div>
+  </header>
+
+  <section id="loading" class="loading-screen">
+    <div class="loading-card">
+      <span class="eyebrow">VENEZIA / OPENSTREETMAP WORLD</span>
+      <h1>CARICAMENTO<br><b>VENEZIA</b></h1>
+      <p id="loadingStatus">Carico edifici, calli e canali reali…</p>
+      <div class="loader"><i id="loadingBar"></i></div>
+      <small>Geometria: © OpenStreetMap contributors · ODbL 1.0</small>
+    </div>
+  </section>
+
+  <div id="hud" hidden>
+    <aside class="info-card">
+      <span class="eyebrow">VENEZIA / FREE ROAM</span>
+      <h2>La città d'acqua.</h2>
+      <p>Esplora a piedi. I canali sono già costruiti come rete navigabile: il prossimo passo sarà inserire barche, pontili e traffico acqueo.</p>
+      <div class="stat"><span>EDIFICI</span><b id="buildingCount">—</b></div>
+      <div class="stat"><span>CANALI</span><b id="canalCount">—</b></div>
+    </aside>
+    <div class="controls"><kbd>W A S D</kbd> muovi <span>·</span> <kbd>SHIFT</kbd> corri <span>·</span> <kbd>M</kbd> mappa</div>
+    <div id="toast" class="toast" hidden></div>
+  </div>
+
+  <dialog id="mapDialog">
+    <div class="dialog-head">
+      <div><span class="eyebrow">MAPPA / VENEZIA</span><h2>Canali, sestieri e punti chiave.</h2></div>
+      <button id="closeMap" class="close" aria-label="Chiudi">×</button>
+    </div>
+    <div class="map-layout">
+      <div class="map-wrap"><canvas id="mapCanvas" width="1000" height="820" aria-label="Mappa di Venezia"></canvas></div>
+      <div class="map-side">
+        <button id="goPadova" class="primary">← VAI A PADOVA</button>
+        <span class="eyebrow">SPOSTAMENTO RAPIDO</span>
+        <div id="places"></div>
+      </div>
+    </div>
+    <div class="legend"><span>● Tu</span><span>━ Canali</span><span>━ Calli / percorsi</span></div>
+  </dialog>
+
+  <footer>
+    <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">© OpenStreetMap contributors</a>
+    <span>Scala reale · ricostruzione stilizzata</span>
+  </footer>
+
+  <script type="module" src="./venice-game.js"></script>
+</body>
+</html>
