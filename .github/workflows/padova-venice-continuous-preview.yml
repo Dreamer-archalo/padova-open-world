@@ -66,13 +66,17 @@ jobs:
               || fetch_one "https://overpass.private.coffee/api/interpreter" \
               || fetch_one "https://overpass-api.de/api/interpreter"
           }
-          fetch_query scripts/venice-overpass.ql /tmp/venice-overpass.json
+          mkdir -p dist/data
+          if ! curl --fail --show-error --silent --location --max-time 45             https://dreamer-archalo.github.io/padova-open-world/preview/venice/data/venice.json             -o dist/data/venice.json; then
+            fetch_query scripts/venice-overpass.ql /tmp/venice-overpass.json
+            python prepare_venice.py /tmp/venice-overpass.json
+          fi
+          python -c 'import json; d=json.load(open("dist/data/venice.json")); assert len(d.get("buildings",[]))>2500'
           fetch_query scripts/padova-venice-corridor-overpass.ql /tmp/corridor-overpass.json
 
       - name: Build unified world data
         run: |
           set -euo pipefail
-          python prepare_venice.py /tmp/venice-overpass.json
           python prepare_corridor.py /tmp/corridor-overpass.json
           python prepare_world_terrain.py --cache /tmp/padova-venice-terrain
           python prepare_world_map.py
