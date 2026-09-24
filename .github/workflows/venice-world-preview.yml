@@ -1,0 +1,162 @@
+name: Venice playable world preview
+
+on:
+  push:
+    branches: [feat/venice-world-20260924]
+    paths:
+      - 'dist/venice.html'
+      - 'dist/venice.css'
+      - 'dist/venice-game.js'
+      - 'dist/venice-map-entry.js'
+      - 'dist/index.html'
+      - 'prepare_venice.py'
+      - 'scripts/venice-overpass.ql'
+      - 'verify-venice-world.mjs'
+      - '.github/workflows/venice-world-preview.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: venice-world-preview
+  cancel-in-progress: true
+
+jobs:
+  build-test-deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout Venice candidate
+        uses: actions/checkout@v6
+        with:
+          ref: feat/venice-world-20260924
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Download current OpenStreetMap Venice extract
+        shell: bash
+        run: |
+          set -euo pipefail
+          query="scripts/venice-overpass.ql"
+          out="/tmp/venice-overpass.json"
+          fetch_overpass () {
+            local endpoint="$1"
+            echo "Trying $endpoint"
+            curl --fail --show-error --silent --location               --retry 2 --retry-delay 4 --max-time 240               --data-urlencode "data@$query"               "$endpoint" -o "$out"
+            python - <<'PY'
+          import json
+          p="/tmp/venice-overpass.json"
+          d=json.load(open(p))
+          assert len(d.get("elements",[]))>3000, "Overpass response is unexpectedly small"
+          print("OSM elements:",len(d["elements"]))
+          PY
+          }
+          fetch_overpass "https://overpass.kumi.systems/api/interpreter"             || fetch_overpass "https://overpass-api.de/api/interpreter"
+          test -s "$out"
+
+      - name: Generate compact Venice world data
+        run: |
+          set -euo pipefail
+          python prepare_venice.py /tmp/venice-overpass.json
+          test -s dist/data/venice.json
+
+      - name: Verify Venice world
+        run: |
+          set -euo pipefail
+          node --check dist/venice-game.js
+          node --check dist/venice-map-entry.js
+          node verify-venice-world.mjs
+
+      - name: Checkout current production main separately
+        uses: actions/checkout@v6
+        with:
+          ref: main
+          path: .production-source
+          persist-credentials: false
+
+      - name: Preserve production root and install Venice preview
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -f .production-source/dist/index.html
+          test -f .production-source/dist/game.js
+          sha256sum .production-source/dist/index.html .production-source/dist/game.js > /tmp/production-root.sha
+          mkdir -p .production-source/dist/preview/venice
+          cp -a dist/. .production-source/dist/preview/venice/
+          test -s .production-source/dist/preview/venice/data/venice.json
+          sha256sum -c /tmp/production-root.sha
+
+      - name: Preserve PR57 preview
+        uses: actions/checkout@v6
+        with:
+          ref: feat/monoblocco-elevators-20260924
+          path: .pr57
+          persist-credentials: false
+
+      - name: Preserve PR56 preview
+        uses: actions/checkout@v6
+        with:
+          ref: fix/shared-street-surface-20260922
+          path: .pr56
+          persist-credentials: false
+
+      - name: Preserve PR51 preview
+        uses: actions/checkout@v6
+        with:
+          ref: feat/villa-treves-phase1-20260919
+          path: .pr51
+          persist-credentials: false
+
+      - name: Preserve PR52 preview
+        uses: actions/checkout@v6
+        with:
+          ref: 20c6411c215ad57bdc1a57df0f0ae69554d241c2
+          path: .pr52
+          persist-credentials: false
+
+      - name: Preserve Mandria v11 preview
+        uses: actions/checkout@v6
+        with:
+          ref: cb6d5fb1f3afedfda68f8f07651916d3a8e12f28
+          path: .mandria-v11
+          persist-credentials: false
+
+      - name: Rebuild known preview folders
+        shell: bash
+        run: |
+          set -euo pipefail
+          for item in "pr-57 .pr57" "pr-56 .pr56" "pr-51 .pr51" "pr-52 .pr52" "mandria-v11 .mandria-v11"; do
+            read -r name folder <<< "$item"
+            test -f "$folder/dist/index.html"
+            mkdir -p ".production-source/dist/preview/$name"
+            cp -a "$folder/dist/." ".production-source/dist/preview/$name/"
+          done
+          touch .production-source/dist/.nojekyll
+          sha256sum -c /tmp/production-root.sha
+
+      - name: Configure GitHub Pages
+        uses: actions/configure-pages@v5
+
+      - name: Upload production plus isolated previews
+        uses: actions/upload-pages-artifact@v4
+        with:
+          path: .production-source/dist
+
+      - name: Publish Venice preview without merging
+        id: deployment
+        uses: actions/deploy-pages@v4
+
+      - name: Display playtest URLs
+        run: |
+          echo 'Padova + Venice: https://dreamer-archalo.github.io/padova-open-world/preview/venice/'
+          echo 'Direct Venice: https://dreamer-archalo.github.io/padova-open-world/preview/venice/venice.html'
+          echo "Pages: ${{ steps.deployment.outputs.page_url }}"
