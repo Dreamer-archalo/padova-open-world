@@ -1,0 +1,126 @@
+name: PR57 Monoblocco elevators playable preview
+
+on:
+  push:
+    branches: [feat/monoblocco-elevators-20260924]
+    paths:
+      - '.github/workflows/pr57-monoblocco-elevators-preview.yml'
+      - 'dist/hospital-rooftop-elevators.js'
+      - 'dist/gameplay-upgrades.js'
+      - 'tools/test-monoblocco-chromium.mjs'
+      - 'verify-hospital-elevators.mjs'
+      - '.github/workflows/hospital-monoblocco-roof.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pr57-monoblocco-elevators-preview
+  cancel-in-progress: true
+
+jobs:
+  verify-and-deploy-preview:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout exact unmerged PR57 candidate
+        uses: actions/checkout@v6
+        with:
+          ref: feat/monoblocco-elevators-20260924
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Verify elevator implementation
+        run: |
+          set -euo pipefail
+          node --check dist/hospital-rooftop-elevators.js
+          node --check dist/gameplay-upgrades.js
+          node verify-hospital-elevators.mjs
+          test -f dist/index.html
+          test -f dist/data/padova.json
+          test -f dist/vendor/three.module.js
+
+      - name: Checkout CURRENT official main separately
+        uses: actions/checkout@v6
+        with:
+          ref: main
+          path: .production-source
+          persist-credentials: false
+
+      - name: Preserve production root and add ONLY isolated PR57 folder
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -f .production-source/dist/index.html
+          test -f .production-source/dist/version.json
+          sha256sum .production-source/dist/index.html .production-source/dist/game.js .production-source/dist/version.json > /tmp/pr57-production-root.sha
+          mkdir -p .production-source/dist/preview/pr-57
+          cp -a dist/. .production-source/dist/preview/pr-57/
+          cmp dist/hospital-rooftop-elevators.js .production-source/dist/preview/pr-57/hospital-rooftop-elevators.js
+          cmp dist/gameplay-upgrades.js .production-source/dist/preview/pr-57/gameplay-upgrades.js
+          test -f .production-source/dist/preview/pr-57/data/padova.json
+          test -f .production-source/dist/preview/pr-57/vendor/three.module.js
+          sha256sum -c /tmp/pr57-production-root.sha
+          touch .production-source/dist/.nojekyll
+
+      - name: Checkout historic PR51 preview source
+        uses: actions/checkout@v6
+        with:
+          ref: feat/villa-treves-phase1-20260919
+          path: .historic-pr51
+          persist-credentials: false
+
+      - name: Checkout historic PR52 preview source
+        uses: actions/checkout@v6
+        with:
+          ref: 20c6411c215ad57bdc1a57df0f0ae69554d241c2
+          path: .historic-pr52
+          persist-credentials: false
+
+      - name: Checkout PR56 preview source
+        uses: actions/checkout@v6
+        with:
+          ref: fix/shared-street-surface-20260922
+          path: .historic-pr56
+          persist-credentials: false
+
+      - name: Checkout original Mandria v11 preview source
+        uses: actions/checkout@v6
+        with:
+          ref: cb6d5fb1f3afedfda68f8f07651916d3a8e12f28
+          path: .historic-v11
+          persist-credentials: false
+
+      - name: Preserve previous public test links
+        shell: bash
+        run: |
+          set -euo pipefail
+          for item in 'pr-51 .historic-pr51' 'pr-52 .historic-pr52' 'pr-56 .historic-pr56' 'mandria-v11 .historic-v11'; do
+            read -r name folder <<< "$item"
+            test -f "$folder/dist/index.html"
+            mkdir -p ".production-source/dist/preview/$name"
+            cp -a "$folder/dist/." ".production-source/dist/preview/$name/"
+          done
+          sha256sum -c /tmp/pr57-production-root.sha
+
+      - name: Configure GitHub Pages
+        uses: actions/configure-pages@v5
+
+      - name: Upload unchanged main plus isolated previews
+        uses: actions/upload-pages-artifact@v4
+        with:
+          path: .production-source/dist
+
+      - name: Publish PR57 preview without merging
+        id: deployment
+        uses: actions/deploy-pages@v4
+
+      - name: Display exact PR57 playtest URL
+        run: |
+          echo 'https://dreamer-archalo.github.io/padova-open-world/preview/pr-57/'
+          echo "Pages: ${{ steps.deployment.outputs.page_url }}"
