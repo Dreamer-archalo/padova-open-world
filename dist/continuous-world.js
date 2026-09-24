@@ -16,7 +16,7 @@ const mats={
  building:new THREE.MeshStandardMaterial({color:'#cdb38e',roughness:1})
 };
 let data,terrain,last=performance.now(),toastUntil=0,currentChunk='',nearVeniceShown=false;
-const chunks=new Map(),loaded=new Map(),keys=new Set();
+const chunks=new Map(),loaded=new Map();
 const state={x:-150,z:-49,yaw:Math.PI/2,speed:0};
 const PADOVA={x:-150,z:-49,name:'Padova'},VENICE_FALLBACK={x:34450,z:-3500,name:'Venezia'};
 
