@@ -29,7 +29,7 @@ const MAT={
 let data=null,player=null,playerYaw=0,toastUntil=0,lastTime=performance.now();
 const keys=new Set();
 const state={x:0,z:0,speed:0};
-const buildingGrid=new Map(),waterGrid=new Map();
+const buildingGrid=new Map(),waterGrid=new Map(),bridgeGrid=new Map();
 const CELL=70;
 
 function progress(value,text){$('loadingBar').style.width=value+'%';$('loadingStatus').textContent=text;}
@@ -61,6 +61,7 @@ function blocked(x,z){
  return false;
 }
 function inWater(x,z){
+ for(const b of nearby(bridgeGrid,x,z))if(segDist(x,z,b.a,b.b)<b.w*.55)return false;
  for(const w of nearby(waterGrid,x,z)){
   if(w.type==='area'){if(x>=w.minX&&x<=w.maxX&&z>=w.minZ&&z<=w.maxZ&&pointIn(x,z,w.p))return true;}
   else if(segDist(x,z,w.a,w.b)<w.w*.47)return true;
@@ -99,7 +100,10 @@ function buildWorld(){
  progress(70,'Disegno calli, ponti e canali…');
  for(const r of data.roads){
   if(r.tunnel)continue;const y=r.bridge?.56:.18;
-  for(let i=1;i<r.p.length;i++){const out=stripPositions(r.p[i-1],r.p[i],r.w+(r.bridge?.45:0),y);(r.bridge?bridges:walks).push(...out);}
+  for(let i=1;i<r.p.length;i++){
+   const a=r.p[i-1],b=r.p[i],width=r.w+(r.bridge?.45:0),out=stripPositions(a,b,width,y);(r.bridge?bridges:walks).push(...out);
+   if(r.bridge){const pad=width/2+1;addGrid(bridgeGrid,{a,b,w:width},Math.min(a[0],b[0])-pad,Math.min(a[1],b[1])-pad,Math.max(a[0],b[0])+pad,Math.max(a[1],b[1])+pad);}
+  }
  }
  for(const w of data.water){
   for(let i=1;i<w.p.length;i++){
@@ -149,8 +153,7 @@ function move(dt){
   if(!blocked(nx,nz)&&!inWater(nx,nz)){state.x=nx;state.z=nz;}else if(inWater(nx,nz)&&performance.now()>toastUntil)toast('Canale: qui servirà una barca.');
  }
  player.position.set(state.x,.2,state.z);player.rotation.y=playerYaw;
- const desired=new THREE.Vector3(state.x-Math.sin(playerYaw)*8,state.x===Infinity?6:6,state.z-Math.cos(playerYaw)*8);
- desired.y=6;camera.position.lerp(desired,1-Math.exp(-dt*5));camera.lookAt(state.x,1.15,state.z);
+ const desired=new THREE.Vector3(state.x-Math.sin(playerYaw)*8,6,state.z-Math.cos(playerYaw)*8);camera.position.lerp(desired,1-Math.exp(-dt*5));camera.lookAt(state.x,1.15,state.z);
  const near=nearestPlace();$('location').textContent=near?near.name:'Venezia';
 }
 function mapTransform(x,z){
@@ -182,7 +185,7 @@ async function init(){
   await new Promise(r=>requestAnimationFrame(r));buildWorld();
   player=makePlayer();const spawn=safePlace(data.spawn);state.x=spawn.x;state.z=spawn.z;player.position.set(state.x,.2,state.z);camera.position.set(state.x-8,7,state.z+10);
   $('buildingCount').textContent=data.buildings.length.toLocaleString('it-IT');$('canalCount').textContent=data.water.length.toLocaleString('it-IT');
-  globalThis.__veniceWorld={data,state,buildingGrid,waterGrid,teleport};
+  globalThis.__veniceWorld={data,state,buildingGrid,waterGrid,bridgeGrid,teleport};
   progress(100,'Venezia pronta.');setTimeout(()=>{$('loading').hidden=true;$('hud').hidden=false;},300);
   requestAnimationFrame(animate);
  }catch(error){$('loadingStatus').textContent='ERRORE: '+error.message;$('loadingBar').style.width='100%';console.error(error);}
