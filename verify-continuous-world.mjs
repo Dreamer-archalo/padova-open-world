@@ -16,4 +16,6 @@ const entry=fs.readFileSync('dist/venice-map-entry.js','utf8');
 if(!entry.includes('VENEZIA VIA STRADA')||!entry.includes('./venice.html'))throw new Error('Both road and fast travel must remain');
 const html=fs.readFileSync('dist/continuous-world.html','utf8');
 if(!html.includes('FAST TRAVEL · VENEZIA')||!html.includes('continuous-world.js'))throw new Error('Continuous world UI incomplete');
+const runtime=fs.readFileSync('dist/continuous-world.js','utf8');
+if(!runtime.includes('const LAGOON=')||!runtime.includes('bridgeBase')||!runtime.includes('installLagoon()'))throw new Error('Lagoon/bridge treatment missing');
 console.log('PASS continuous world:',world.buildings.length,'buildings,',world.roads.length,'roads, bounds',world.bounds,'terrain',terrain.width+'x'+terrain.height);

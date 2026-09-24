@@ -19,6 +19,7 @@ let data,terrain,last=performance.now(),toastUntil=0,currentChunk='',nearVeniceS
 const chunks=new Map(),loaded=new Map();
 const state={x:-150,z:-49,yaw:Math.PI/2,speed:0};
 const PADOVA={x:-150,z:-49,name:'Padova'},VENICE_FALLBACK={x:34450,z:-3500,name:'Venezia'};
+const LAGOON={minX:30000,maxX:39000,minZ:-8500,maxZ:1500,y:.15};
 
 function progress(v,t){$('loadingBar').style.width=v+'%';$('loadingText').textContent=t;}
 function keyAt(x,z){return Math.floor(x/CHUNK)+','+Math.floor(z/CHUNK);}
@@ -36,6 +37,12 @@ function terrainHeight(x,z){
  const i=Math.min(g.width-2,Math.floor(u)),j=Math.min(g.height-2,Math.floor(v)),a=u-i,b=v-j,h=(ix,jz)=>g.heights[jz*g.width+ix];
  return h(i,j)*(1-a)*(1-b)+h(i+1,j)*a*(1-b)+h(i,j+1)*(1-a)*b+h(i+1,j+1)*a*b;
 }
+function installLagoon(){
+ const width=LAGOON.maxX-LAGOON.minX,depth=LAGOON.maxZ-LAGOON.minZ;
+ const water=new THREE.Mesh(new THREE.PlaneGeometry(width,depth),mats.water);
+ water.rotation.x=-Math.PI/2;water.position.set((LAGOON.minX+LAGOON.maxX)/2,LAGOON.y,(LAGOON.minZ+LAGOON.maxZ)/2);
+ water.renderOrder=1;scene.add(water);
+}
 function strip(out,a,b,w,yA,yB){
  const dx=b[0]-a[0],dz=b[1]-a[1],d=Math.hypot(dx,dz);if(d<.05)return;
  const nx=-dz/d*w/2,nz=dx/d*w/2,p1=[a[0]+nx,yA,a[1]+nz],p2=[b[0]+nx,yB,b[1]+nz],p3=[b[0]-nx,yB,b[1]-nz],p4=[a[0]-nx,yA,a[1]-nz];
@@ -52,7 +59,7 @@ function buildChunk(key){
  if(loaded.has(key))return;const src=chunks.get(key);if(!src)return;
  const [ix,iz]=key.split(',').map(Number),group=new THREE.Group();group.userData.key=key;group.add(terrainTile(ix,iz));
  const road=[],motorway=[],water=[];
- for(const r of src.roads){const yA=terrainHeight(r.a[0],r.a[1])+.08,yB=terrainHeight(r.b[0],r.b[1])+.08;strip(/motorway|trunk/.test(r.k)?motorway:road,r.a,r.b,r.w,yA,yB);}
+ for(const r of src.roads){const bridgeBase=r.b&&(r.a[0]>LAGOON.minX||r.b[0]>LAGOON.minX)?LAGOON.y+2.8:-Infinity,yA=Math.max(terrainHeight(r.a[0],r.a[1])+.08,bridgeBase),yB=Math.max(terrainHeight(r.b[0],r.b[1])+.08,bridgeBase);strip(/motorway|trunk/.test(r.k)?motorway:road,r.a,r.b,r.w,yA,yB);}
  for(const w of src.water){const yA=terrainHeight(w.a[0],w.a[1])-.25,yB=terrainHeight(w.b[0],w.b[1])-.25;strip(water,w.a,w.b,w.w,yA,yB);}
  if(road.length)group.add(new THREE.Mesh(geom(road),mats.road));if(motorway.length)group.add(new THREE.Mesh(geom(motorway),mats.motorway));if(water.length)group.add(new THREE.Mesh(geom(water),mats.water));
  if(src.buildings.length){
@@ -110,7 +117,7 @@ function openMap(){drawMap();$('mapDialog').showModal();keys.clear();}
 async function init(){
  try{
   progress(8,'Carico il mondo unico…');const [wr,tr]=await Promise.all([fetch('./data/world-padova-venice.json'),fetch('./data/world-terrain.json')]);if(!wr.ok)throw new Error('world map '+wr.status);if(!tr.ok)throw new Error('terrain '+tr.status);
-  data=await wr.json();progress(35,'Indicizzo Padova, corridoio e Venezia…');terrain=await tr.json();await new Promise(r=>requestAnimationFrame(r));indexWorld();progress(68,'Preparo lo streaming dei settori…');
+  data=await wr.json();progress(35,'Indicizzo Padova, corridoio e Venezia…');terrain=await tr.json();installLagoon();await new Promise(r=>requestAnimationFrame(r));indexWorld();progress(68,'Preparo lo streaming dei settori…');
   const q=new URLSearchParams(location.search);if(q.get('spawn')==='venice'){const v=venicePoint();state.x=v.x;state.z=v.z;state.yaw=-Math.PI/2;}stream(true);const y=terrainHeight(state.x,state.z);car.position.set(state.x,y+.2,state.z);camera.position.set(state.x-12,y+8,state.z-14);
   progress(100,'Mondo continuo pronto.');setTimeout(()=>{$('loading').hidden=true;$('hud').hidden=false;},250);requestAnimationFrame(animate);
  }catch(error){console.error(error);$('loadingText').textContent='ERRORE: '+error.message;$('loadingBar').style.width='100%';}
