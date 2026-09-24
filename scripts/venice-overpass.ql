@@ -1,4 +1,4 @@
-[out:json][timeout:120];
+[out:json][timeout:90];
 (
   way["building"](45.4230,12.3120,45.4470,12.3620);
   way["highway"](45.4230,12.3120,45.4470,12.3620);
