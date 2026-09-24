@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="it">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <title>Padova ↔ Venezia · Continuous World</title>
+  <link rel="stylesheet" href="./continuous-world.css">
+</head>
+<body>
+  <canvas id="world"></canvas>
+  <div id="loading">
+    <div class="loading-card">
+      <div class="eyebrow">PADOVA ↔ VENEZIA</div>
+      <h1>Mondo continuo</h1>
+      <div class="bar"><i id="loadingBar"></i></div>
+      <p id="loadingText">Caricamento dati regionali…</p>
+    </div>
+  </div>
+  <section id="hud" hidden>
+    <div class="hud-card">
+      <div class="eyebrow">CONTINUOUS WORLD · TEST</div>
+      <strong id="location">Padova</strong>
+      <span id="distance">Venezia · -- km</span>
+      <span id="speed">0 km/h</span>
+    </div>
+    <div class="hud-actions">
+      <button id="mapBtn">MAPPA</button>
+      <button id="fastPadova">FAST TRAVEL · PADOVA</button>
+      <button id="fastVenice">FAST TRAVEL · VENEZIA</button>
+    </div>
+    <div class="controls">W/S accelera-frena · A/D sterza · SHIFT boost · M mappa</div>
+  </section>
+  <div id="toast" hidden></div>
+  <dialog id="mapDialog">
+    <div class="map-head">
+      <div><span class="eyebrow">UNICA MAPPA</span><h2>Padova → Venezia</h2></div>
+      <button id="closeMap">CHIUDI</button>
+    </div>
+    <canvas id="mapCanvas" width="1100" height="420"></canvas>
+    <div class="map-legend">
+      <span><i class="dot me"></i> posizione</span>
+      <span><i class="dot pad"></i> Padova</span>
+      <span><i class="dot ven"></i> Venezia</span>
+    </div>
+    <div class="map-actions">
+      <button id="backFull">PADOVA · GIOCO COMPLETO</button>
+      <button id="veniceFull">VENEZIA · MAPPA DETTAGLIATA</button>
+    </div>
+  </dialog>
+  <script type="module" src="./continuous-world.js"></script>
+</body>
+</html>
