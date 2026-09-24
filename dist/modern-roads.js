@@ -34,7 +34,7 @@ export function* modernRoadSteps(batch,segments,terrain,{coarse=false}={}){
    // Elevated/inferred bridge decks need physical visual thickness. A thin pair
    // of fascias prevents the camera from reading the asphalt as a zero-thickness
    // floating plane while the continuous terrain/water remains visible below.
-   if(road.crossing&&!ped){const t0=height(a)+.025,t1=height(b)+.025,thickness=.58;if([t0,t1].every(Number.isFinite))for(const side of [-1,1]){const off=side*(road.w/2+.3),ax=a[0]+nx*off,az=a[1]+nz*off,bx=b[0]+nx*off,bz=b[1]+nz*off;batch.quad([ax,t0,az],[bx,t1,bz],[bx,t1-thickness,bz],[ax,t0-thickness,az],colour('#8f918b'));}}
+   if((road.crossing||Number(road.layer)>0)&&!ped){const t0=height(a)+.025,t1=height(b)+.025,thickness=.58;if([t0,t1].every(Number.isFinite))for(const side of [-1,1]){const off=side*(road.w/2+.3),ax=a[0]+nx*off,az=a[1]+nz*off,bx=b[0]+nx*off,bz=b[1]+nz*off;batch.quad([ax,t0,az],[bx,t1,bz],[bx,t1-thickness,bz],[ax,t0-thickness,az],colour('#8f918b'));}}
    if(!coarse&&!ped&&!rail&&!atJunction){
     for(const side of [-1,1]){
      const edge=side*(road.w/2-.25);section(a,b,edge-.055,edge+.055,.082,colour('#d7d4c2'));
