@@ -5,6 +5,9 @@ ROOT=pathlib.Path(__file__).parent
 PADOVA_ORIGIN=[45.4064,11.8768]
 KX=111320*math.cos(math.radians(PADOVA_ORIGIN[0]))
 KZ=111320
+# Playable/display envelope. OSM ways crossing an extract boundary can carry
+# remote vertices; they remain in source data but must not stretch the world map.
+PLAYABLE_BOUNDS=[-6500,-12000,39000,9000]
 
 def global_point(x,z,origin):
     lat=origin[0]-z/111320
@@ -24,6 +27,11 @@ def convert_venice(v):
         x,z=global_point(p["x"],p["z"],origin);out["places"].append({**p,"x":x,"z":z})
     if v.get("spawn"):
         x,z=global_point(v["spawn"]["x"],v["spawn"]["z"],origin);out["spawn"]={**v["spawn"],"x":x,"z":z}
+    # The Venice Overpass query is the historic city + Giudecca. Use that
+    # geographic envelope instead of way vertices that can continue outside it.
+    sw=global_point(-2095.0,1246.6,origin)
+    ne=global_point(1813.0,-1425.1,origin)
+    out["bounds"]=[min(sw[0],ne[0]),min(sw[1],ne[1]),max(sw[0],ne[0]),max(sw[1],ne[1])]
     return out
 
 padova=json.load(open(ROOT/"dist/data/padova.json"))
@@ -34,12 +42,7 @@ buildings=[*padova.get("buildings",[]),*venice.get("buildings",[])]
 roads=[*padova.get("roads",[]),*corridor.get("roads",[]),*venice.get("roads",[])]
 water=[*padova.get("water",[]),*corridor.get("water",[]),*venice.get("water",[])]
 areas=[*padova.get("areas",[]),*corridor.get("areas",[]),*venice.get("areas",[])]
-
-allx=[];allz=[]
-for group in (buildings,roads,water,areas):
-    for item in group:
-        for x,z in item.get("p",[]):allx.append(x);allz.append(z)
-bounds=[round(min(allx)-400,1),round(min(allz)-400,1),round(max(allx)+400,1),round(max(allz)+400,1)]
+bounds=PLAYABLE_BOUNDS
 places=[
  {"name":"Padova","tag":"Centro città","x":-150,"z":-49},
  *corridor.get("places",[]),

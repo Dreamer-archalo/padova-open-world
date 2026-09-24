@@ -57,13 +57,13 @@ jobs:
             fetch_one () {
               local endpoint="$1"
               echo "Trying $endpoint for $query"
-              curl --fail --show-error --silent --location --retry 1 --retry-delay 4 --max-time 150 \
+              curl --fail --show-error --silent --location --retry 1 --retry-delay 4 --max-time 90 \
                 -A 'PadovaOpenWorld-ContinuousPreview/1.0' \
                 --data-urlencode "data@$query" "$endpoint" -o "$out"
               python -c 'import json,sys; p=sys.argv[1]; d=json.load(open(p)); assert len(d.get("elements",[]))>200, "OSM response unexpectedly small"; print(p,"elements:",len(d["elements"]))' "$out"
             }
-            fetch_one "https://maps.mail.ru/osm/tools/overpass/api/interpreter" \
-              || fetch_one "https://overpass.private.coffee/api/interpreter" \
+            fetch_one "https://overpass.private.coffee/api/interpreter" \
+              || fetch_one "https://maps.mail.ru/osm/tools/overpass/api/interpreter" \
               || fetch_one "https://overpass-api.de/api/interpreter"
           }
           mkdir -p dist/data

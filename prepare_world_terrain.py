@@ -12,7 +12,7 @@ def main():
     ap=argparse.ArgumentParser();ap.add_argument("--cache",type=pathlib.Path,default=pathlib.Path("/tmp/padova-venice-terrain"));args=ap.parse_args()
     args.cache.mkdir(parents=True,exist_ok=True)
     zoom,size,step=12,256,96
-    x0,z0,x1,z1=-7000,-9500,44000,9500
+    x0,z0,x1,z1=-7000,-13000,44000,9500
     width=int((x1-x0)//step)+1;height=int((z1-z0)//step)+1
     xs,zs=np.meshgrid(x0+np.arange(width)*step,z0+np.arange(height)*step)
     lon=ORIGIN[1]+xs/(111320*math.cos(math.radians(ORIGIN[0])))
