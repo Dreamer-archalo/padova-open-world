@@ -13,6 +13,8 @@ on:
       - 'dist/unified-regions.js'
       - 'dist/regional-world.js'
       - 'dist/regional-hydro.js'
+      - 'dist/unified-water.css'
+      - 'dist/unified-map-detail.js'
       - 'dist/water-gameplay.js'
       - 'verify-unified-water.mjs'
       - 'dist/modern-driving.js'
