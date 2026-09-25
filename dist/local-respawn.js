@@ -40,7 +40,7 @@ export class LocalRespawn {
   const candidate=!water?this.safe(current,terrain,clear,vehicle):null;
   if(candidate)return candidate;
   // Prefer the last solid point visited, before looking for a nearby street.
-  const localLast=this.last&&Math.hypot(this.last.x-current.x,this.last.z-current.z)<2200?this.last:null;
+  const localLast=this.last&&Math.hypot(this.last.x-current.x,this.last.z-current.z)<(water?8000:2200)?this.last:null;
   const remembered=localLast&&this.near(localLast,terrain,clear,vehicle);
   if(remembered)return remembered;
   const road=nearRoad?.(localLast||current,vehicle);
