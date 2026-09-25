@@ -55,22 +55,9 @@ export class UnifiedMap {
   const c=this.canvas.getContext('2d'),w=this.canvas.width,h=this.canvas.height,pixelRatio=this.uiScale,
    unit=n=>n*pixelRatio;
   c.setTransform(1,0,0,1,0,0);c.clearRect(0,0,w,h);
-  // Only the fully zoomed-out 45 km overview is rasterized. Any user-visible
-  // zoom into a municipality uses OSM polylines/polygons at native resolution.
-  if(true){ // native GTA-style vector at EVERY map zoom, including whole-world view
-   this.detail.draw(c,this.center,w,h,this.scale,{pixelRatio,labels:this.zoomLevel>=3});
-  }else{
-   c.fillStyle='#152b35';c.fillRect(0,0,w,h);
-   const ratio=this.scale/this.baseScale;
-   c.translate(w/2,h/2);c.scale(ratio,ratio);
-   c.drawImage(this.base,-(this.center.x-this.bounds.x)*this.baseScale,-(this.center.z-this.bounds.z)*this.baseScale);
-   c.setTransform(1,0,0,1,0,0);
-  }
-  // Standard cartographic street tiles supply uniform, surveyed water and
-  // bank widths in ALL municipalities. If network tiles are unavailable,
-  // the vector renderer above remains the complete offline fallback.
-  // Consistent GTA-inspired vector cartography, no painted OSM raster tiles.
-  this.lastTileStats={ready:0,pending:0,vector:true};
+  // Raster-free GTA-inspired vectors at every zoom and in every town.
+  this.detail.draw(c,this.center,w,h,this.scale,{pixelRatio,labels:this.zoomLevel>=3});
+    this.lastTileStats={ready:0,pending:0,vector:true};
   
   if(route.length){
    c.beginPath();route.forEach((p,i)=>{const a=this.toScreen(p);i?c.lineTo(a.x,a.y):c.moveTo(a.x,a.y);});
