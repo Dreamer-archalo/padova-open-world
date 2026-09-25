@@ -23,9 +23,13 @@ export class VisibleMapTiles {
   const n=2**zoom,lon=tx/n*360-180,lat=yToLat(ty/n);
   return {x:(lon-ORIGIN_LON)*KX,z:(ORIGIN_LAT-lat)*KZ};
  }
- chooseZoom(scale){
+ chooseZoom(scale,pixelRatio=1){
+  // OSM raster is designed for 256 CSS pixels, not 256 HD backing pixels.
+  // Choosing from the CSS viewport keeps street labels readable and avoids
+  // requesting 100+ extremely high-zoom tiles for one desktop canvas.
   const metresPerTileAtZero=2*PI*6378137*Math.cos(ORIGIN_LAT*PI/180);
-  const zoom=Math.ceil(Math.log2(scale*metresPerTileAtZero/TILE));
+  const cssScale=scale/clamp(pixelRatio,1,4);
+  const zoom=Math.round(Math.log2(cssScale*metresPerTileAtZero/TILE));
   return clamp(zoom,5,19);
  }
  request(zoom,x,y){
@@ -48,9 +52,9 @@ export class VisibleMapTiles {
   }
   return entry;
  }
- draw(ctx,center,width,height,scale){
+ draw(ctx,center,width,height,scale,pixelRatio=1){
   if(!Number.isFinite(scale)||scale<=0||!Number.isFinite(center.x)||!Number.isFinite(center.z))return {ready:0,pending:0};
-  const zoom=this.chooseZoom(scale);this.lastZoom=zoom;
+  const zoom=this.chooseZoom(scale,pixelRatio);this.lastZoom=zoom;
   const x0=center.x-width/(2*scale),x1=center.x+width/(2*scale),
    z0=center.z-height/(2*scale),z1=center.z+height/(2*scale);
   const nw=VisibleMapTiles.worldToTile(x0,z0,zoom),
