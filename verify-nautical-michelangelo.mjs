@@ -4,6 +4,7 @@ import {BOAT_SPECS,watercraftStep} from './dist/nautical-catalog.js';
 import {nearestWaterSegment} from './dist/padova-boats.js';
 import {canalAt,veniceDocks} from './dist/venice-boats.js';
 import {project} from './dist/core.js';
+import {veniceFlightUrl,MAX_SPEED} from './dist/airport-michelangelo.js';
 const read=p=>fs.readFileSync(p,'utf8');
 const names=Object.keys(BOAT_SPECS);
 assert(names.length>=10,'First playable boat fleet must have 10 real types');
@@ -40,6 +41,13 @@ assert(src.phase.includes("import './padova-boats.js'")&&src.phase.includes("imp
 assert(src.hangar.includes("if(s.watercraft)")&&src.cats.includes("enabled:true}"));
 assert(src.venice.includes('installVeniceBoats')&&src.venice.includes('boats.step(dt)'));
 assert(src.michelangelo.includes('MAX_KMH=1000')&&src.michelangelo.includes('veniceFlightUrl'));
+const departure={x:-2685,z:1422,y:40,speed:80};
+const params=new URL(veniceFlightUrl(departure),'https://local.invalid/preview/marine/index.html').searchParams;
+const arrival=project(45.43868,12.31811),expectedYaw=Math.atan2(arrival.x-departure.x,arrival.z-departure.z);
+assert.equal(params.get('vehicle'),'michelangelo');
+assert(Math.abs(+params.get('yaw')-expectedYaw)<1e-8,'Aircraft Venice heading must point to lagoon coordinates');
+assert.equal(MAX_SPEED,1000/3.6);
+
 assert(src.continuous.includes('MICHELANGELO_LIMIT=1000/3.6')&&src.continuous.includes("q.get('vehicle')==='michelangelo'"));
 assert(src.html.includes('id="enterVenice"'));
 if(fs.existsSync('dist/data/padova.json')){
