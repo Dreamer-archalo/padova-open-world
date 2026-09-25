@@ -12,6 +12,8 @@ const green=material('#819675'),roadMat=material('#59666a'),arterialMat=material
  canalMat=material('#4a939d',{roughness:.46,transparent:true,opacity:.94}),stone=material('#cdbda1'),
  walls=material('#cfb897'),roofs=material('#a57358');
 const energy=new THREE.MeshBasicMaterial({color:'#6dd4d5',transparent:true,opacity:.35,wireframe:true,depthWrite:false});
+const energySkin=new THREE.MeshBasicMaterial({color:'#4cb8c2',transparent:true,opacity:.19,side:THREE.DoubleSide,depthWrite:false});
+const energyOutline=new THREE.LineBasicMaterial({color:'#8ef7ec',transparent:true,opacity:.76,depthWrite:false});
 const cube=new THREE.BoxGeometry(1,1,1);
 const min=(a,b)=>Math.min(a,b),max=(a,b)=>Math.max(a,b);
 const distance=(x,z,a,b)=>Math.hypot(x-a,z-b);
@@ -156,21 +158,28 @@ export class RegionalWorld{
   for(const [a,b,c] of tri){roof.push(poly[a].x,base+h,poly[a].y,poly[b].x,base+h,poly[b].y,poly[c].x,base+h,poly[c].y);}
  }
  ambient(group,chunk){
-  const roads=chunk.roads.filter(r=>r.w>=3&&!/motorway|trunk|footway|path|steps/.test(r.k));
+  const roads=chunk.roads.filter(r=>r.w>=3&&!/motorway|trunk|footway|path|steps|cycleway|pedestrian/.test(r.k));
   if(!roads.length)return;
-  const active=roads.filter(r=>regionalDetail((r.a[0]+r.b[0])/2,(r.a[1]+r.b[1])/2)==='detailed');
-  if(!active.length)return;
+  const isDetailed=r=>regionalDetail((r.a[0]+r.b[0])/2,(r.a[1]+r.b[1])/2)==='detailed';
+  const active=roads.filter(isDetailed);
+  // Transit towns remain inhabited, not empty: fewer low-poly cars/buses on
+  // real mapped arteries even where the buildings use energy-mode LOD.
+  const transit=roads.filter(r=>!isDetailed(r)&&/primary|secondary|tertiary/.test(r.k));
+  const candidates=active.length?active:transit;
+  if(!candidates.length)return;
   const actors=[];const carMat=material('#80919b'),busMat=material('#bc9f61'),peopleMat=material('#577d78');
-  const count=Math.min(3,Math.ceil(active.length/22));
+  const count=Math.min(active.length?3:2,Math.ceil(candidates.length/(active.length?22:35)));
   for(let i=0;i<count;i++){
-   const r=active[Math.abs((i*97+chunk.roads.length*11)%active.length)],bus=i===0&&r.w>5;
+   const r=candidates[Math.abs((i*97+chunk.roads.length*11)%candidates.length)],bus=i===0&&r.w>=5.5;
    const mesh=new THREE.Mesh(new THREE.BoxGeometry(bus?2.4:1.8,bus?2.25:1.25,bus?9:4),bus?busMat:carMat);
-   group.add(mesh);actors.push({mesh,r,t:(i*.33)%1,bus});
+   group.add(mesh);actors.push({mesh,r,t:(i*.33)%1,bus,dir:i%2?1:-1});
   }
-  const peopleRoads=chunk.roads.filter(r=>/footway|pedestrian|path|residential/.test(r.k));
+  // People only appear on actual town streets/paths; remote transit zones
+  // retain their simplified low-poly vehicle traffic.
+  const peopleRoads=chunk.roads.filter(r=>isDetailed(r)&&/footway|pedestrian|path|residential|living_street/.test(r.k));
   for(let i=0;i<Math.min(5,Math.ceil(peopleRoads.length/14));i++){
    const r=peopleRoads[(i*13+peopleRoads.length*5)%peopleRoads.length];
-   if(!r)continue;const mesh=new THREE.Mesh(new THREE.BoxGeometry(.38,1.55,.35),peopleMat);group.add(mesh);actors.push({mesh,r,t:(i*.29)%1,person:true});
+   if(!r)continue;const mesh=new THREE.Mesh(new THREE.BoxGeometry(.38,1.55,.35),peopleMat);group.add(mesh);actors.push({mesh,r,t:(i*.29)%1,dir:i%2?1:-1,person:true});
   }
   group.userData.ambient=actors;
  }
@@ -185,7 +194,7 @@ export class RegionalWorld{
    lagoon.rotation.x=-Math.PI/2;lagoon.position.set((ix+.5)*CHUNK,LAGOON_Y,(iz+.5)*CHUNK);
    lagoon.renderOrder=1;group.add(lagoon);
   }
-  const normal=[],arterial=[],channels=[],balustrade=[],w=[],r=[],blocks=[];
+  const normal=[],arterial=[],channels=[],balustrade=[],w=[],r=[],blocks=[],energyFaces=[],energyEdges=[];
   for(const p of src.roads){
    surface(/motorway|trunk|primary|secondary/.test(p.k)?arterial:normal,p.a,p.b,p.w,p.yA+.025,p.yB+.025);
    if(p.bri&&coast(...p.a)&&/footway|steps|pedestrian|path/.test(p.k)){
@@ -205,13 +214,30 @@ export class RegionalWorld{
     channels.push(p[0],y,p[1],q[0],y,q[1],r[0],y,r[1]);
    }
   }
-  for(const b of src.buildings)if(b.lod==='detailed'&&b.p.length<=100)this.detailedBuilding(b,w,r);else blocks.push(b);
+  for(const b of src.buildings){
+   if(b.lod==='detailed'&&b.p.length<=100){this.detailedBuilding(b,w,r);continue;}
+   // Energy-mode proxies preserve the OSM footprint rather than replacing
+   // every building with an arbitrary axis-aligned rectangle. All outlines
+   // and translucent walls are batched into just two draw calls per chunk.
+   if(b.p.length<3||b.p.length>28){blocks.push(b);continue;}
+   const base=b.minY,top=base+b.h,poly=b.p.map(v=>new THREE.Vector2(v[0],v[1]));
+   for(let i=0;i<b.p.length;i++){
+    const a=b.p[i],d=b.p[(i+1)%b.p.length];
+    addQuad(energyFaces,[a[0],base,a[1]],[d[0],base,d[1]],[d[0],top,d[1]],[a[0],top,a[1]]);
+    energyEdges.push(a[0],top,a[1],d[0],top,d[1]);
+    if(i%2===0)energyEdges.push(a[0],base,a[1],a[0],top,a[1]);
+   }
+   for(const [a,c,d] of THREE.ShapeUtils.triangulateShape(poly,[]))
+    energyFaces.push(poly[a].x,top,poly[a].y,poly[c].x,top,poly[c].y,poly[d].x,top,poly[d].y);
+  }
   if(normal.length)group.add(new THREE.Mesh(geometry(normal),roadMat));
   if(arterial.length)group.add(new THREE.Mesh(geometry(arterial),arterialMat));
   if(channels.length)group.add(new THREE.Mesh(geometry(channels),canalMat));
   if(balustrade.length)group.add(new THREE.Mesh(geometry(balustrade),stone));
   if(w.length)group.add(new THREE.Mesh(geometry(w),walls));
   if(r.length)group.add(new THREE.Mesh(geometry(r),roofs));
+  if(energyFaces.length)group.add(new THREE.Mesh(geometry(energyFaces),energySkin));
+  if(energyEdges.length){const eg=new THREE.BufferGeometry();eg.setAttribute('position',new THREE.Float32BufferAttribute(energyEdges,3));group.add(new THREE.LineSegments(eg,energyOutline));}
   if(blocks.length){
    const mesh=new THREE.InstancedMesh(cube,energy,blocks.length),dummy=new THREE.Object3D();
    for(let i=0;i<blocks.length;i++){
@@ -240,9 +266,14 @@ export class RegionalWorld{
   // Spread chunk builds over frames to avoid blocking existing city gameplay.
   for(let i=0;i<2&&this.queue.length;i++)this.build(this.queue.shift());
   for(const group of this.visible.values())for(const actor of group.userData.ambient||[]){
-   const r=actor.r;actor.t=(actor.t+Math.min(.05,dt)*(actor.person?.13:actor.bus?.36:.57))%1;
+   const r=actor.r,roadLength=Math.max(1,distance(...r.a,...r.b));
+   actor.t+=actor.dir*Math.min(.05,dt)*(actor.person?1.3:actor.bus?5.5:8.3)/roadLength;
+   // Reverse at a segment endpoint rather than visibly teleporting back to
+   // its start. Real multi-town A-to-B navigation remains a later phase.
+   if(actor.t>1){actor.t=2-actor.t;actor.dir=-1;}
+   if(actor.t<0){actor.t=-actor.t;actor.dir=1;}
    const t=actor.t;actor.mesh.position.set(r.a[0]+(r.b[0]-r.a[0])*t,r.yA+(r.yB-r.yA)*t+(actor.person?.85:actor.bus?1.14:.66),r.a[1]+(r.b[1]-r.a[1])*t);
-   actor.mesh.rotation.y=Math.atan2(r.b[0]-r.a[0],r.b[1]-r.a[1]);
+   actor.mesh.rotation.y=Math.atan2((r.b[0]-r.a[0])*actor.dir,(r.b[1]-r.a[1])*actor.dir);
   }
  }
  place(x,z){return activeRegionalPlace(x,z);}
