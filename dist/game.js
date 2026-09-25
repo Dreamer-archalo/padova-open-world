@@ -288,6 +288,13 @@ function recover(fromWater=false){
  toast(fromWater?'Riapparso sull’ultimo terreno sicuro.':'Riapparso vicino al punto precedente. Mezzo riparato.');return true;
 }
 function requestRecover(){
+ // Manual R on the Monoblocco bike circuit must retain the roof, rather
+ // than selecting an ordinary street hundreds of metres below the player.
+ const roof=waterRecovery.active?null:hospitalRoofRespawnPoint();
+ if(roof){
+  if(incidents?.recovery)incidents.recovery=null;
+  state.respawnHospitalRoof=roof;return respawnAtHospitalRoof();
+ }
  if(incidents?.recovery){
   incidents.recovery=null;
   if(state.respawnHospitalRoof)return respawnAtHospitalRoof();
