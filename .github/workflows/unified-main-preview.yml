@@ -12,12 +12,16 @@ on:
       - 'dist/local-respawn.js'
       - 'dist/unified-regions.js'
       - 'dist/regional-world.js'
+      - 'dist/regional-hydro.js'
+      - 'dist/water-gameplay.js'
+      - 'verify-unified-water.mjs'
       - 'dist/modern-driving.js'
       - 'verify-unified-main.mjs'
       - 'verify-unified-features.mjs'
       - 'scripts/padova-venice-buildings-overpass.ql'
       - 'scripts/padova-venice-local-streets-overpass.ql'
       - 'scripts/padova-venice-backroads-overpass.ql'
+      - 'scripts/padova-venice-water-bodies-overpass.ql'
       - 'dist/continuous-world.html'
       - 'dist/continuous-world.css'
       - 'dist/continuous-world.js'
@@ -70,8 +74,9 @@ jobs:
             /tmp/corridor-buildings.json
             /tmp/corridor-local-streets.json
             /tmp/corridor-backroads.json
+            /tmp/corridor-hydrology.json
             /tmp/padova-venice-terrain
-          key: regional-data-v1-${{ hashFiles('scripts/padova-venice-corridor-overpass.ql', 'scripts/padova-venice-buildings-overpass.ql', 'scripts/padova-venice-local-streets-overpass.ql', 'scripts/padova-venice-backroads-overpass.ql', 'prepare_world_terrain.py') }}
+          key: regional-data-v1-${{ hashFiles('scripts/padova-venice-corridor-overpass.ql', 'scripts/padova-venice-buildings-overpass.ql', 'scripts/padova-venice-local-streets-overpass.ql', 'scripts/padova-venice-backroads-overpass.ql', 'scripts/padova-venice-water-bodies-overpass.ql', 'prepare_world_terrain.py') }}
 
       - name: Download OpenStreetMap extracts
         shell: bash
@@ -105,11 +110,12 @@ jobs:
           fetch_query scripts/padova-venice-buildings-overpass.ql /tmp/corridor-buildings.json
           fetch_query scripts/padova-venice-local-streets-overpass.ql /tmp/corridor-local-streets.json
           fetch_query scripts/padova-venice-backroads-overpass.ql /tmp/corridor-backroads.json
+          fetch_query scripts/padova-venice-water-bodies-overpass.ql /tmp/corridor-hydrology.json
 
       - name: Build unified world data
         run: |
           set -euo pipefail
-          python prepare_corridor.py /tmp/corridor-overpass.json /tmp/corridor-buildings.json /tmp/corridor-local-streets.json /tmp/corridor-backroads.json
+          python prepare_corridor.py /tmp/corridor-overpass.json /tmp/corridor-buildings.json /tmp/corridor-local-streets.json /tmp/corridor-backroads.json /tmp/corridor-hydrology.json
           python prepare_world_terrain.py --cache /tmp/padova-venice-terrain
           python prepare_world_map.py
           test -s dist/data/world-padova-venice.json
@@ -127,10 +133,13 @@ jobs:
           node --check dist/unified-map.js
           node --check dist/unified-map-detail.js
           node --check dist/local-respawn.js
+          node --check dist/regional-hydro.js
+          node --check dist/water-gameplay.js
           node --check dist/unified-regions.js
           node --check dist/regional-world.js
           node verify-unified-main.mjs
           node verify-unified-features.mjs
+          node verify-unified-water.mjs
 
       - name: Checkout current production main separately
         uses: actions/checkout@v6
