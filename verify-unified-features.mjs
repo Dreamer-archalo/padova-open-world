@@ -14,9 +14,9 @@ for(const [x0,x1] of spans){
 }
 assert(game.includes('requestRecover()')&&game.includes('localRespawn.choose('),'R and incident recovery not on one local-spawn path');
 assert(game.includes('unifiedMap.drawMini(c,state,range,w,h)'),'Minimap must use vectors in Padova and all regional towns');
-assert(game.includes('Math.max(7,unifiedMap.zoomLevel)'),'Opening M must zoom into actual position');
-assert(map.includes('this.detail.draw(c,this.center,w,h,this.scale)'),'High-zoom M map still uses a stretched raster');
-assert(map.includes('this.detail.draw(ctx,position,width,height,width/range)'),'Minimap still uses a stretched raster');
+assert(game.includes('Math.max(11,unifiedMap.zoomLevel)'),'Opening M must zoom into actual position');
+assert(map.includes('this.detail.draw(c,this.center,w,h,this.scale,'),'High-zoom M map still uses a stretched raster');
+assert(map.includes('this.detail.draw(ctx,position,width,height,width/range,'),'Minimap still uses a stretched raster');
 assert(html.includes('id="minimap" width="660" height="510"')&&html.includes('id="fullmap" width="1920" height="1280"'),'Both map canvas resolutions are too low');
 assert(game.includes('state.respawnHospitalRoof=roof;return respawnAtHospitalRoof()'),'Manual rooftop R fallback missing');
 
