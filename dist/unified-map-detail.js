@@ -87,7 +87,7 @@ export class VectorMapDetail {
    ctx.lineWidth=roadWidth;
    ctx.strokeStyle=walk?'#b2c7b3':tier===2?'#eed1a2':tier===1?'#d0d6c5':'#adbfb3';
    ctx.stroke();
-   if(labels&&r.n&&scale>.23&&!walk&&named.length<1000)named.push(r);
+   if(labels&&r.n&&scale>.23&&(!walk||scale>.38)&&named.length<1000)named.push(r);
   }
   if(labels&&scale>.23)this.drawRoadLabels(ctx,named,x0,z0,width,height,scale,px,mini);
   ctx.restore();
@@ -106,13 +106,13 @@ export class VectorMapDetail {
    for(let i=1;i<r.p.length;i++){
     const a=r.p[i-1],b=r.p[i],x=(a[0]+b[0])*.5,z=(a[1]+b[1])*.5,
      sx=(x-x0)*scale,sy=(z-z0)*scale,len=Math.hypot(b[0]-a[0],b[1]-a[1])*scale;
-    if(sx<font||sx>width-font||sy<font||sy>height-font||len<25*px||len<score)continue;
+    if(sx<font||sx>width-font||sy<font||sy>height-font||len<12*px||len<score)continue;
     best={sx,sy,a,b};score=len;
    }
    if(!best)continue;
    const column=Math.floor(best.sx/cell),row=Math.floor(best.sy/cell),
     key=column+','+row,name=r.n.trim();
-   if(!name||occupied.has(key)||ctx.measureText&&ctx.measureText(name).width>score*1.8)continue;
+   if(!name||occupied.has(key)||ctx.measureText&&ctx.measureText(name).width>Math.max(score*3.3,80*px))continue;
    occupied.add(key);count++;
    let angle=Math.atan2((best.b[1]-best.a[1]),(best.b[0]-best.a[0]));
    if(angle>Math.PI*.5)angle-=Math.PI;if(angle<-Math.PI*.5)angle+=Math.PI;
