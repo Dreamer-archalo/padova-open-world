@@ -316,9 +316,24 @@ function drawMini(){if(!mapBase)return;densityCanvas(mini,2.7,1100);const c=mini
  c.fillStyle='#102e3bdc';c.fillRect(6*density,h-29*density,Math.max(67*density,bar+16*density),26*density);
  c.fillStyle='#f9f3df';c.fillRect(13*density,h-14*density,bar,2*density);
  c.font='650 '+Math.round(10.5*density)+'px system-ui';c.fillText(metres+' m',13*density,h-17*density);
+ if($('minimapStatus')){
+  const st=miniTiles.lastStats||{},online=st.ready>0;
+  $('minimapStatus').textContent=online?'OSM · HD':st.pending?'HD…':'VETTORI';
+ }
 }
 function fullTransform(p){if(unifiedMap)return unifiedMap.toScreen(p);const c=$('fullmap');return {x:(p.x-minBounds.x)/minBounds.w*c.width,y:(p.z-minBounds.z)/minBounds.h*c.height};}
-function drawFullMap(){if($('mapDialog')?.open)resizeMapSurfaces();if(unifiedMap){unifiedMap.draw({position:state,places:PLACES,target:currentTarget(),route:state.route});return;}const c=$('fullmap').getContext('2d'),w=$('fullmap').width,h=$('fullmap').height;c.drawImage(mapBase,0,0,w,h);drawRoute(c,fullTransform,3);for(const p of PLACES){const a=fullTransform(p);c.fillStyle='#ffc56a';c.beginPath();c.arc(a.x,a.y,3,0,Math.PI*2);c.fill();}const a=fullTransform(state);c.fillStyle='white';c.strokeStyle='#172e38';c.lineWidth=3;c.beginPath();c.arc(a.x,a.y,8,0,Math.PI*2);c.fill();c.stroke();const target=currentTarget();if(target){const b=fullTransform(target);c.strokeStyle='#ffc56a';c.lineWidth=3;c.beginPath();c.arc(b.x,b.y,10,0,Math.PI*2);c.stroke();c.fillStyle='#ffc56a';c.font='600 19px system-ui';c.fillText('DESTINATION',clamp(b.x+16,5,810),b.y+6);}}
+function drawFullMap(){if($('mapDialog')?.open)resizeMapSurfaces();if(unifiedMap){
+ unifiedMap.draw({position:state,places:PLACES,target:currentTarget(),route:state.route});
+ const tiles=unifiedMap.lastTileStats||{};
+ if($('mapQuality'))$('mapQuality').textContent=tiles.ready>0?
+  'OSM HD: '+tiles.ready+' sezioni nitide caricate'+(tiles.pending?' · '+tiles.pending+' in caricamento':''):
+  tiles.pending?'Scaricamento cartografia HD…':'Modalità vettoriale locale (verifica connessione mappa)';
+ if($('waterQuality')){
+  const exact=(regionalWorld?.data?.areas||[]).filter(a=>a.k==='water'&&a.osm).length;
+  $('waterQuality').textContent=exact?'Acque: '+exact+' bacini/sponde da poligoni geografici reali':
+   'Acque: geometria approssimata nel 3D; cartografia OSM HD online';
+ }
+ return;}const c=$('fullmap').getContext('2d'),w=$('fullmap').width,h=$('fullmap').height;c.drawImage(mapBase,0,0,w,h);drawRoute(c,fullTransform,3);for(const p of PLACES){const a=fullTransform(p);c.fillStyle='#ffc56a';c.beginPath();c.arc(a.x,a.y,3,0,Math.PI*2);c.fill();}const a=fullTransform(state);c.fillStyle='white';c.strokeStyle='#172e38';c.lineWidth=3;c.beginPath();c.arc(a.x,a.y,8,0,Math.PI*2);c.fill();c.stroke();const target=currentTarget();if(target){const b=fullTransform(target);c.strokeStyle='#ffc56a';c.lineWidth=3;c.beginPath();c.arc(b.x,b.y,10,0,Math.PI*2);c.stroke();c.fillStyle='#ffc56a';c.font='600 19px system-ui';c.fillText('DESTINATION',clamp(b.x+16,5,810),b.y+6);}}
 function currentTarget(){return state.mission?.target||state.waypoint;}
 function routeTo(target){if(target&&regionalWorld?.contains(target.x,target.z)){state.route=[];return;}try{state.route=target?roadRoute(state,target,graph,{maxSteps:30000,maxMs:60}):[];}catch(error){console.warn('[Navigation] route failed',error);state.route=[];}if(target&&!state.route.length)toast('No connected road route here. Follow the destination marker.');}
 function updateMarker(){const t=currentTarget();marker.visible=!!t;if(!t)return;marker.position.set(t.x,terrain.height(t.x,t.z)+.16,t.z);const d=dist(state,t);$('targetDistance').hidden=false;$('targetDistance').textContent=(t.name||'Destination')+' · '+(d>=1000?(d/1000).toFixed(1)+' km':Math.round(d)+' m');}
