@@ -17,7 +17,8 @@ const mats={
 };
 let data,terrain,last=performance.now(),toastUntil=0,currentChunk='',nearVeniceShown=false;
 const chunks=new Map(),loaded=new Map();
-const state={x:-150,z:-49,yaw:Math.PI/2,speed:0};
+const state={x:-150,z:-49,y:0,yaw:Math.PI/2,speed:0,pitch:0,vehicle:'car'};
+const MICHELANGELO_LIMIT=1000/3.6;
 const PADOVA={x:-150,z:-49,name:'Padova'},VENICE_FALLBACK={x:34450,z:-3500,name:'Venezia'};
 const LAGOON={minX:30000,maxX:39000,minZ:-8500,maxZ:1500,y:.15};
 
@@ -82,14 +83,39 @@ function makeCar(){
  scene.add(g);return g;
 }
 const car=makeCar();
+function makeMichelangelo(){
+ const g=new THREE.Group(),body='#e5e2d6',trim='#1c5570',part=(color,x,y,z,w,h,l,yaw=0)=>{const m=new THREE.Mesh(new THREE.BoxGeometry(w,h,l),new THREE.MeshStandardMaterial({color,metalness:.18,roughness:.48}));m.position.set(x,y,z);m.scale.set(w,h,l);m.rotation.y=yaw;g.add(m);};
+ part(body,0,0,0,2.4,1.6,20);part(body,0,-.15,10.5,1.3,.85,4);part(trim,0,.48,6,1.5,.28,4);
+ for(const side of [-1,1]){part(body,side*3,-.25,-1.4,6.5,.25,6.8,side*.12);part(trim,side*5.6,-.09,-2.2,.8,.07,4.9,side*.12);part(body,side*2.2,0,-9,3.9,.16,3);part('#364b59',side*2,-.8,-9,.9,1.3,3.1);}
+ part(trim,0,1.35,-8.7,.25,3,3.6);g.name='Michelangelo · Venezia 1.000 km/h';scene.add(g);g.visible=false;return g;
+}
+const michelangelo=makeMichelangelo();
 function nearestPlace(){
  let best={name:'Tra Padova e Venezia'},bd=Infinity;for(const p of data.places||[]){const d=Math.hypot(state.x-p.x,state.z-p.z);if(d<bd){bd=d;best=p;}}
  return bd<2500?best:{name:'Corridoio Padova–Venezia'};
 }
 function venicePoint(){return (data.places||[]).find(p=>/Piazzale Roma/i.test(p.name))||(data.places||[]).find(p=>/San Marco/i.test(p.name))||VENICE_FALLBACK;}
-function teleport(p,msg){state.x=p.x;state.z=p.z;state.speed=0;stream(true);toast(msg);drawMap();}
+function teleport(p,msg){state.x=p.x;state.z=p.z;state.speed=0;if(state.vehicle==='michelangelo')state.y=terrainHeight(state.x,state.z)+130;stream(true);toast(msg);drawMap();}
 function toast(t,s=3){$('toast').textContent=t;$('toast').hidden=false;toastUntil=performance.now()+s*1000;}
+function flightUpdate(dt){
+ const f=(keys.has('KeyW')?1:0)-(keys.has('KeyS')?1:0),tab=keys.has('Tab'),brake=keys.has('ControlLeft')||keys.has('ControlRight');
+ const cap=tab?MICHELANGELO_LIMIT:215;
+ state.speed=Math.max(35,Math.min(cap,state.speed+(tab?34:f>0?20:f<0?-36:-.45)*dt-(brake?47*dt:0)));
+ const turn=(keys.has('KeyA')?1:0)-(keys.has('KeyD')?1:0),climb=(keys.has('ArrowUp')?1:0)-(keys.has('ArrowDown')?1:0);
+ state.yaw+=turn*dt*.22;state.pitch=Math.max(-.52,Math.min(.42,state.pitch+climb*.5*dt));if(!climb)state.pitch*=Math.exp(-dt*.25);
+ state.x+=Math.sin(state.yaw)*state.speed*dt;state.z+=Math.cos(state.yaw)*state.speed*dt;
+ state.y=Math.max(terrainHeight(state.x,state.z)+4,state.y+Math.sin(state.pitch)*state.speed*.52*dt);
+ michelangelo.position.set(state.x,state.y,state.z);michelangelo.rotation.set(-state.pitch,state.yaw,turn*.06,'YXZ');car.visible=false;michelangelo.visible=true;
+ const back=37+state.speed*.09,desired=new THREE.Vector3(state.x-Math.sin(state.yaw)*back,state.y+17+state.speed*.035,state.z-Math.cos(state.yaw)*back);
+ camera.position.lerp(desired,1-Math.exp(-dt*4));camera.lookAt(state.x+Math.sin(state.yaw)*60,state.y+Math.sin(state.pitch)*25,state.z+Math.cos(state.yaw)*60);
+ stream();const v=venicePoint(),d=Math.hypot(state.x-v.x,state.z-v.z);
+ $('distance').textContent='Venezia · '+(d/1000).toFixed(1)+' km';$('speed').textContent='MICHELANGELO · '+Math.round(state.speed*3.6)+' / 1.000 km/h';$('location').textContent=nearestPlace().name;
+ const enter=$('enterVenice');if(enter)enter.hidden=d>1800;
+ if(d<1800&&!nearVeniceShown){nearVeniceShown=true;toast('Michelangelo: Venezia raggiunta. Premi VAI A VENEZIA per entrare nella mappa dettagliata.',6);}
+ if(performance.now()>toastUntil)$('toast').hidden=true;
+}
 function update(dt){
+ if(state.vehicle==='michelangelo'){flightUpdate(dt);return;}
  let throttle=(keys.has('KeyW')||keys.has('ArrowUp')?1:0)-(keys.has('KeyS')||keys.has('ArrowDown')?1:0),steer=(keys.has('KeyA')||keys.has('ArrowLeft')?1:0)-(keys.has('KeyD')||keys.has('ArrowRight')?1:0);
  const max=keys.has('ShiftLeft')||keys.has('ShiftRight')?72:50;state.speed+=throttle*24*dt;state.speed*=Math.pow(.986,dt*60);state.speed=Math.max(-12,Math.min(max,state.speed));
  if(Math.abs(state.speed)>.4)state.yaw+=steer*dt*(1.45*Math.min(1,Math.abs(state.speed)/12))*(state.speed>=0?1:-1);
@@ -118,14 +144,26 @@ async function init(){
  try{
   progress(8,'Carico il mondo unico…');const [wr,tr]=await Promise.all([fetch('./data/world-padova-venice.json'),fetch('./data/world-terrain.json')]);if(!wr.ok)throw new Error('world map '+wr.status);if(!tr.ok)throw new Error('terrain '+tr.status);
   data=await wr.json();progress(35,'Indicizzo Padova, corridoio e Venezia…');terrain=await tr.json();installLagoon();await new Promise(r=>requestAnimationFrame(r));indexWorld();progress(68,'Preparo lo streaming dei settori…');
-  const q=new URLSearchParams(location.search);if(q.get('spawn')==='venice'){const v=venicePoint();state.x=v.x;state.z=v.z;state.yaw=-Math.PI/2;}stream(true);const y=terrainHeight(state.x,state.z);car.position.set(state.x,y+.2,state.z);camera.position.set(state.x-12,y+8,state.z-14);
+  const q=new URLSearchParams(location.search);if(q.get('spawn')==='venice'){const v=venicePoint();state.x=v.x;state.z=v.z;state.yaw=-Math.PI/2;}
+  if(q.get('vehicle')==='michelangelo'){
+   state.vehicle='michelangelo';
+   for(const key of ['x','z','yaw']){const num=Number(q.get(key));if(q.has(key)&&Number.isFinite(num))state[key]=num;}
+   if(!q.has('yaw'))state.yaw=Math.PI/2;
+   const [x0,z0,x1,z1]=data.bounds;state.x=Math.max(x0+50,Math.min(x1-50,state.x));state.z=Math.max(z0+50,Math.min(z1-50,state.z));
+   const requested=Number(q.get('y'));state.y=Math.max(terrainHeight(state.x,state.z)+90,Number.isFinite(requested)&&requested>0?requested:0);
+   const starting=Number(q.get('speed'));state.speed=Number.isFinite(starting)?Math.max(35,Math.min(MICHELANGELO_LIMIT,starting)):75;
+   $('speed').textContent='MICHELANGELO · '+Math.round(state.speed*3.6)+' / 1.000 km/h';
+   const info=document.querySelector('#hud .controls');if(info)info.textContent='MICHELANGELO · W/S accelera-frena · TAB 1.000 km/h · CTRL frena · A/D curva · ↑/↓ quota · M mappa';
+  }
+  stream(true);const y=state.vehicle==='michelangelo'?state.y:terrainHeight(state.x,state.z)+.2;car.position.set(state.x,y,state.z);michelangelo.position.set(state.x,y,state.z);car.visible=state.vehicle!=='michelangelo';michelangelo.visible=!car.visible;camera.position.set(state.x-12,y+8,state.z-14);
   progress(100,'Mondo continuo pronto.');requestAnimationFrame(animate);setTimeout(()=>{const loading=$('loading');loading.hidden=true;loading.style.display='none';$('hud').hidden=false;},250);
  }catch(error){console.error(error);$('loadingText').textContent='ERRORE: '+error.message;$('loadingBar').style.width='100%';}
 }
 addEventListener('resize',()=>{renderer.setSize(innerWidth,innerHeight);camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();});
-addEventListener('keydown',e=>{if(['KeyW','KeyA','KeyS','KeyD','ArrowUp','ArrowDown','ArrowLeft','ArrowRight','ShiftLeft','ShiftRight'].includes(e.code))e.preventDefault();if(e.code==='KeyM'&&!e.repeat){e.preventDefault();$('mapDialog').open?$('mapDialog').close():openMap();return;}keys.add(e.code);});
+addEventListener('keydown',e=>{if(['KeyW','KeyA','KeyS','KeyD','ArrowUp','ArrowDown','ArrowLeft','ArrowRight','ShiftLeft','ShiftRight','Tab','ControlLeft','ControlRight'].includes(e.code))e.preventDefault();if(e.code==='KeyM'&&!e.repeat){e.preventDefault();$('mapDialog').open?$('mapDialog').close():openMap();return;}keys.add(e.code);});
 addEventListener('keyup',e=>keys.delete(e.code));addEventListener('blur',()=>keys.clear());
 $('mapBtn').onclick=openMap;$('closeMap').onclick=()=>$('mapDialog').close();$('mapDialog').addEventListener('cancel',e=>{e.preventDefault();$('mapDialog').close();});
 $('fastPadova').onclick=()=>teleport(PADOVA,'Fast travel: Padova.');$('fastVenice').onclick=()=>teleport(venicePoint(),'Fast travel: Venezia.');
 $('backFull').onclick=()=>location.href='./index.html';$('veniceFull').onclick=()=>location.href='./venice.html';
+$('enterVenice').onclick=()=>{location.href='./venice.html';};
 init();
