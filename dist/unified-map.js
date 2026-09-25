@@ -70,6 +70,7 @@ export class UnifiedMap {
   // bank widths in ALL municipalities. If network tiles are unavailable,
   // the vector renderer above remains the complete offline fallback.
   this.lastTileStats=this.tiles.draw(c,this.center,w,h,this.scale);
+  if(this.lastTileStats?.ready>0)this.detail.drawTileLabels(c,this.center,w,h,this.scale,{pixelRatio});
   if(route.length){
    c.beginPath();route.forEach((p,i)=>{const a=this.toScreen(p);i?c.lineTo(a.x,a.y):c.moveTo(a.x,a.y);});
    c.lineWidth=unit(2.4);c.strokeStyle='#f7ca74';c.stroke();
@@ -120,6 +121,7 @@ export class UnifiedMap {
   const pixelRatio=Math.max(1,Math.min(4,width/display));
   const view=this.detail.draw(ctx,position,width,height,width/range,{pixelRatio,mini:true,labels:true});
   const tiles=this.tiles.draw(ctx,position,width,height,width/range);
+  if(tiles.ready>0)this.detail.drawTileLabels(ctx,position,width,height,width/range,{pixelRatio,mini:true});
   return {...view,tiles};
 
  }
