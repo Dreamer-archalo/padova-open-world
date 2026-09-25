@@ -362,13 +362,21 @@ export class RegionalWorld{
     }
    }
   }
-  for(const p of src.water){surface(channels,p.a,p.b,p.w,this.waterSurface(...p.a)+.04,this.waterSurface(...p.b)+.04);}
+  for(const p of src.water){
+   const cx=(p.a[0]+p.b[0])/2,cz=(p.a[1]+p.b[1])/2;
+   if(this.inPoly(this.waterAreas,cx,cz))continue;
+   surface(channels,p.a,p.b,p.w,this.waterSurface(...p.a)+.055,this.waterSurface(...p.b)+.055);
+  }
   for(const a of src.areas){
    if(a.k!=='water'||a.p.length>220)continue;
-   const poly=a.p.map(p=>new THREE.Vector2(p[0],p[1])),tris=THREE.ShapeUtils.triangulateShape(poly,[]);
+   const holes=(a.holes||[]).filter(h=>h.length>=3),
+    contour=a.p.map(p=>new THREE.Vector2(p[0],p[1])),
+    inners=holes.map(h=>h.map(p=>new THREE.Vector2(p[0],p[1]))),
+    tris=THREE.ShapeUtils.triangulateShape(contour,inners),
+    points=[...a.p,...holes.flat()];
    for(const [i,j,k] of tris){
-    const p=a.p[i],q=a.p[j],r=a.p[k];
-    const y=this.waterSurface((p[0]+q[0]+r[0])/3,(p[1]+q[1]+r[1])/3)+.045;
+    const p=points[i],q=points[j],r=points[k];if(!p||!q||!r)continue;
+    const y=this.waterSurface((p[0]+q[0]+r[0])/3,(p[1]+q[1]+r[1])/3)+.055;
     channels.push(p[0],y,p[1],q[0],y,q[1],r[0],y,r[1]);
    }
   }
