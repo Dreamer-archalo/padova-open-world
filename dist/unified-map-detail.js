@@ -37,7 +37,15 @@ export class VectorMapDetail {
  draw(ctx,center,width,height,scale){
   const x0=center.x-width/(2*scale),z0=center.z-height/(2*scale);
   const frame={x0,z0,x1:x0+width/scale,z1:z0+height/scale};
+  // Large lagoon water remains blue even when a metre-by-metre OSM water
+  // polygon has not yet been surveyed. Port basins and island land parcels
+  // are drawn above this background from their mapped polygons.
   ctx.fillStyle='#294b49';ctx.fillRect(0,0,width,height);
+  if(frame.x1>=30000&&frame.z1>=-10000&&frame.z0<=9600){
+   const left=Math.max(0,(30000-x0)*scale),top=Math.max(0,(-10000-z0)*scale),
+     right=Math.min(width,(40500-x0)*scale),bottom=Math.min(height,(9600-z0)*scale);
+   if(right>left&&bottom>top){ctx.fillStyle='#245e89';ctx.fillRect(left,top,right-left,bottom-top);}
+  }
   ctx.save();ctx.beginPath();ctx.rect(0,0,width,height);ctx.clip();
   ctx.lineCap='round';ctx.lineJoin='round';
   for(const kind of KINDS){
