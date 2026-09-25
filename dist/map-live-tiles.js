@@ -25,7 +25,7 @@ export class VisibleMapTiles {
  }
  chooseZoom(scale){
   const metresPerTileAtZero=2*PI*6378137*Math.cos(ORIGIN_LAT*PI/180);
-  const zoom=Math.round(Math.log2(scale*metresPerTileAtZero/TILE));
+  const zoom=Math.ceil(Math.log2(scale*metresPerTileAtZero/TILE));
   return clamp(zoom,5,19);
  }
  request(zoom,x,y){
@@ -75,6 +75,7 @@ export class VisibleMapTiles {
    ctx.drawImage(entry.image,sx,sy,sw+.35,sh+.35);ready++;
   }
   ctx.restore();
-  return {ready,pending,zoom,requested:newRequests};
+  this.lastStats={ready,pending,zoom,requested:newRequests,source:'OpenStreetMap'};
+  return this.lastStats;
  }
 }
