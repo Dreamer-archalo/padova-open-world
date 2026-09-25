@@ -448,7 +448,7 @@ export class RegionalWorld{
   if(energyFaces.length)group.add(new THREE.Mesh(geometry(energyFaces),energySkin));
   if(energyEdges.length){const eg=new THREE.BufferGeometry();eg.setAttribute('position',new THREE.Float32BufferAttribute(energyEdges,3));group.add(new THREE.LineSegments(eg,energyOutline));}
   if(blocks.length){
-   const mesh=new THREE.InstancedMesh(cube,energy,blocks.length),dummy=new THREE.Object3D();
+   const mesh=new THREE.InstancedMesh(cube,near?energy:townWalls,blocks.length),dummy=new THREE.Object3D();
    for(let i=0;i<blocks.length;i++){
     const b=blocks[i],bw=Math.max(1,b.maxX-b.minX),bd=Math.max(1,b.maxZ-b.minZ);dummy.position.set(b.cx,b.minY+b.h/2,b.cz);dummy.scale.set(bw,b.h,bd);dummy.updateMatrix();mesh.setMatrixAt(i,dummy.matrix);
    }mesh.instanceMatrix.needsUpdate=true;group.add(mesh);
@@ -465,6 +465,14 @@ export class RegionalWorld{
   const cx=Math.floor(state.x/CHUNK),cz=Math.floor(state.z/CHUNK),signature=cx+','+cz;
   if(this.key!==signature){
    this.key=signature;const desired=[];
+   // Promote a previously simplified town sector once the player visits it.
+   // Never keep energy-box LOD when the camera reaches an actual commune.
+   const centreKey=key(state.x,state.z,CHUNK),centre=this.visible.get(centreKey);
+   if(centre&&!centre.userData.detailed){
+    this.scene.remove(centre);
+    centre.traverse(o=>{if((o.isMesh||o.isLineSegments)&&o.geometry!==cube)o.geometry.dispose();});
+    this.visible.delete(centreKey);
+   }
    for(let dx=-3;dx<=3;dx++)for(let dz=-3;dz<=3;dz++){
     const d=Math.hypot(dx,dz);if(d>3.5)continue;
     const k=(cx+dx)+','+(cz+dz);if(!this.visible.has(k))desired.push({k,d});
