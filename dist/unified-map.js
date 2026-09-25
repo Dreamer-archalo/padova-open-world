@@ -41,13 +41,16 @@ export class UnifiedMap {
  draw({position,places=[],target=null,route=[]}){
   const c=this.canvas.getContext('2d'),w=this.canvas.width,h=this.canvas.height;
   c.setTransform(1,0,0,1,0,0);c.fillStyle='#152b35';c.fillRect(0,0,w,h);
-  const ratio=this.scale/this.baseScale;
-  c.translate(w/2,h/2);c.scale(ratio,ratio);
-  c.drawImage(this.base,-(this.center.x-this.bounds.x)*this.baseScale,-(this.center.z-this.bounds.z)*this.baseScale);
-  c.setTransform(1,0,0,1,0,0);
-  // At neighbourhood scale always render real polylines/polygons directly
-  // at the target canvas resolution, instead of enlarging the world bitmap.
-  if(this.zoomLevel>=2.1)this.detail.draw(c,this.center,w,h,this.scale);
+  if(this.zoomLevel>=2.1){
+   // At town scale draw directly from indexed OSM geometry; avoid wasting a
+   // frame drawing a blurry full-world bitmap underneath the vectors.
+   this.detail.draw(c,this.center,w,h,this.scale);
+  }else{
+   const ratio=this.scale/this.baseScale;
+   c.translate(w/2,h/2);c.scale(ratio,ratio);
+   c.drawImage(this.base,-(this.center.x-this.bounds.x)*this.baseScale,-(this.center.z-this.bounds.z)*this.baseScale);
+   c.setTransform(1,0,0,1,0,0);
+  }
   if(route.length){c.beginPath();route.forEach((p,i)=>{const a=this.toScreen(p);i?c.lineTo(a.x,a.y):c.moveTo(a.x,a.y);});c.lineWidth=2.6;c.strokeStyle='#edbb65';c.stroke();}
   const dot=(p,size,color)=>{const q=this.toScreen(p);if(!this.isVisible(p))return;c.fillStyle=color;c.beginPath();c.arc(q.x,q.y,size,0,Math.PI*2);c.fill();};
   // All named regional stops exist in the same map. Secondary Padova pins are
