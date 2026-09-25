@@ -52,7 +52,7 @@ for(let i=0;i<70;i++)game.stepSwim(state,{dx:0,dz:0,dive:true},.1,terrain,()=>tr
 assert(state.health<before,'Remaining submerged must decrease health after oxygen expires');
 game.reset();
 assert(!game.active,'R recovery must leave water state');
-const shoreGame=new WaterGameplay();const walker={x:7,z:0,y:.18,speed:0,vy:0,elapsed:0,health:100};
+const shoreGame=new WaterGameplay();const walker={x:7.4,z:0,y:.18,speed:0,vy:0,elapsed:0,health:100};
 shoreGame.startSwimming(walker,.18);
 const shore=shoreGame.stepSwim(walker,{dx:1,dz:0},.5,terrain,()=>true);
 assert(shore.landed&&!shoreGame.active,'Swimming must allow a walkable landing instead of forcing R');
