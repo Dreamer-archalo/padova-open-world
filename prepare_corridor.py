@@ -77,6 +77,34 @@ if len(sys.argv)>4:
     for e in backroads["elements"]:
         add_road(e,.55)
 
+# Marina, industrial basins and coastal dry parcels are sampled separately.
+# Preserve real OSM polygons so sea/land physics uses the same geometry as the
+# visible surfaces. Do not treat all of the Marghera mainland as open water.
+if len(sys.argv)>5:
+    hydro=json.load(open(sys.argv[5],encoding="utf-8"))
+    seen=set()
+    for e in hydro.get("elements",[]):
+        tags=e.get("tags",{});geom=e.get("geometry",[])
+        if len(geom)<4 or e.get("id") in seen:continue
+        waterbody=(tags.get("natural")=="water"
+          or tags.get("waterway")=="riverbank"
+          or tags.get("landuse") in ("basin","reservoir","salt_pond")
+          or tags.get("water") in ("dock","basin","lagoon","harbour","lake","river")
+          or tags.get("man_made")=="dock")
+        land=tags.get("landuse") in ("industrial","residential","commercial","retail","port","harbour") or tags.get("leisure") in ("park","garden") or tags.get("natural") in ("wood","scrub")
+        if not waterbody and not land:continue
+        # Large multipolygons and unclosed coastlines need a separate island
+        # dataset; an open OSM way must NOT fill its entire bounding rectangle.
+        if geom[0]["lat"]!=geom[-1]["lat"] or geom[0]["lon"]!=geom[-1]["lon"]:continue
+        poly=simplify([project(g) for g in geom],1.1 if waterbody else 2.0)
+        if poly and poly[0]==poly[-1]:poly.pop()
+        if len(poly)<3:continue
+        xs=[p[0] for p in poly];zs=[p[1] for p in poly]
+        if max(xs)-min(xs)>8500 or max(zs)-min(zs)>8500:continue
+        areas.append({"p":poly,"k":"water" if waterbody else "land",
+                      "n":tags.get("name",""),"osm":e["id"]})
+        seen.add(e["id"])
+
 # Building footprints in the key corridor communes are downloaded as a second,
 # narrower OSM extract, so regional transport does not depend on a huge query.
 if len(sys.argv)>2:
