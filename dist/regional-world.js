@@ -14,6 +14,7 @@ const green=material('#819675'),roadMat=material('#59666a'),arterialMat=material
 const energy=new THREE.MeshBasicMaterial({color:'#6dd4d5',transparent:true,opacity:.35,wireframe:true,depthWrite:false});
 const energySkin=new THREE.MeshBasicMaterial({color:'#4cb8c2',transparent:true,opacity:.19,side:THREE.DoubleSide,depthWrite:false});
 const energyOutline=new THREE.LineBasicMaterial({color:'#8ef7ec',transparent:true,opacity:.76,depthWrite:false});
+const ambientCar=material('#80919b'),ambientBus=material('#bc9f61'),ambientPedestrian=material('#577d78');
 const cube=new THREE.BoxGeometry(1,1,1);
 const min=(a,b)=>Math.min(a,b),max=(a,b)=>Math.max(a,b);
 const distance=(x,z,a,b)=>Math.hypot(x-a,z-b);
@@ -187,7 +188,7 @@ export class RegionalWorld{
   const transit=roads.filter(r=>!isDetailed(r)&&/primary|secondary|tertiary/.test(r.k));
   const candidates=active.length?active:transit;
   if(!candidates.length)return;
-  const actors=[];const carMat=material('#80919b'),busMat=material('#bc9f61'),peopleMat=material('#577d78');
+  const actors=[];const carMat=ambientCar,busMat=ambientBus,peopleMat=ambientPedestrian;
   const count=Math.min(active.length?3:2,Math.ceil(candidates.length/(active.length?22:35)));
   for(let i=0;i<count;i++){
    const r=candidates[Math.abs((i*97+chunk.roads.length*11)%candidates.length)],bus=i===0&&r.w>=5.5;
@@ -300,7 +301,7 @@ export class RegionalWorld{
    }
    desired.sort((a,b)=>a.d-b.d);this.queue=desired.map(v=>v.k);
    for(const [k,g] of this.visible){const [x,z]=k.split(',').map(Number);if(Math.hypot(x-cx,z-cz)>6){
-    this.scene.remove(g);g.traverse(o=>{if(o.isMesh&&o.geometry!==cube)o.geometry.dispose();});this.visible.delete(k);
+    this.scene.remove(g);g.traverse(o=>{if((o.isMesh||o.isLineSegments)&&o.geometry!==cube)o.geometry.dispose();});this.visible.delete(k);
    }}
   }
   // Spread chunk builds over frames to avoid blocking existing city gameplay.
