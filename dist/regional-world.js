@@ -162,6 +162,27 @@ export class RegionalWorld{
   }
   return false;
  }
+ waterSample(x,z){
+  let closest=Infinity;
+  for(const a of new Set(this.near(this.waterAreas,x,z))){
+   const inside=pointInside(x,z,a.p);
+   let edge=Infinity;
+   for(let i=0;i<a.p.length;i++){
+    const p=a.p[i],q=a.p[(i+1)%a.p.length],
+     vx=q[0]-p[0],vz=q[1]-p[1],den=vx*vx+vz*vz,
+     t=den?Math.max(0,Math.min(1,((x-p[0])*vx+(z-p[1])*vz)/den)):0;
+    edge=Math.min(edge,distance(x,z,p[0]+t*vx,p[1]+t*vz));
+   }
+   closest=Math.min(closest,inside?-Math.max(.01,edge):edge);
+  }
+  for(const w of new Set(this.near(this.waters,x,z))){
+   const vx=w.b[0]-w.a[0],vz=w.b[1]-w.a[1],den=vx*vx+vz*vz,
+    t=den?Math.max(0,Math.min(1,((x-w.a[0])*vx+(z-w.a[1])*vz)/den)):0;
+   closest=Math.min(closest,distance(x,z,w.a[0]+t*vx,w.a[1]+t*vz)-w.w*.5);
+  }
+  if(this.lagoonAt(x,z))closest=Math.min(closest,-120);
+  return {distance:closest,level:Number.isFinite(closest)?this.waterSurface(x,z):undefined};
+ }
  lagoonAt(x,z){
   if(!coastalBand(x,z))return false;
   // True land-use polygons, exposed island building footprints and dry quays
@@ -196,7 +217,8 @@ export class RegionalWorld{
   return null;
  }
  installTerrainHooks(terrain){
-  const original={raw:terrain.rawElevation.bind(terrain),elevation:terrain.elevation.bind(terrain),ground:terrain.groundHeight.bind(terrain),height:terrain.height.bind(terrain),water:terrain.waterAt.bind(terrain),waterHeight:terrain.waterHeight.bind(terrain)};
+  const original={raw:terrain.rawElevation.bind(terrain),elevation:terrain.elevation.bind(terrain),ground:terrain.groundHeight.bind(terrain),height:terrain.height.bind(terrain),water:terrain.waterAt.bind(terrain),waterHeight:terrain.waterHeight.bind(terrain),
+   waterSample:terrain.waterSample.bind(terrain),waterDistance:terrain.waterDistance.bind(terrain),bridge:terrain.bridge.bind(terrain)};
   const active=(x,z)=>this.contains(x,z);
   terrain.rawElevation=(x,z)=>active(x,z)?this.raw(x,z):original.raw(x,z);
   terrain.elevation=(x,z)=>active(x,z)?this.raw(x,z):original.elevation(x,z);
@@ -204,6 +226,14 @@ export class RegionalWorld{
   terrain.height=(x,z,ref=null)=>active(x,z)?this.height(x,z,ref):original.height(x,z,ref);
   terrain.waterAt=(x,z,margin=0,ref=null)=>active(x,z)?this.waterAt(x,z,margin,ref):original.water(x,z,margin,ref);
   terrain.waterHeight=(x,z)=>active(x,z)?this.waterSurface(x,z):original.waterHeight(x,z);
+  terrain.waterSample=(x,z)=>active(x,z)?this.waterSample(x,z):original.waterSample(x,z);
+  terrain.waterDistance=(x,z)=>active(x,z)?this.waterSample(x,z).distance:original.waterDistance(x,z);
+  terrain.bridge=(x,z,margin=0,referenceY=null)=>{
+   if(!active(x,z))return original.bridge(x,z,margin,referenceY);
+   const support=this.nearestRoad(x,z,25);
+   if(support?.road.bri&&support.d<support.road.w*.5+margin+1)return {height:support.y,y:support.y,road:support.road};
+   return null;
+  };
  }
  tile(ix,iz){
   const arr=[],steps=regionalDetail((ix+.5)*CHUNK,(iz+.5)*CHUNK)==='detailed'?24:10,n=CHUNK;
