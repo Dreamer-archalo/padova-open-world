@@ -7,15 +7,18 @@ import {NPC_VEHICLES,createNPCCar,createHelicopter} from './modern-vehicles.js';
 import {SPECIAL_VEHICLES,createSpecialVehicle} from './special-vehicles.js';
 import {MILITARY_FLEET,militaryFleetModel} from './airport-military-fleet.js';
 import {hangarCatalogue,paintHangarVehicle} from './villa-mandria-hangar.js';
+import {createBoatModel} from './nautical-catalog.js';
+import {createMichelangeloModel} from './airport-michelangelo.js';
 
 export const HANGAR_SECTIONS=Object.freeze([
  {id:'air',title:'Aerei e velivoli',subtitle:'Aerei, jet ed elicotteri',symbol:'✈',enabled:true},
  {id:'land',title:'Terrestri',subtitle:'Auto, moto, camion, blindati e carri',symbol:'▰',enabled:true},
  {id:'urban',title:'Mobilità urbana',subtitle:'Biciclette e monopattini',symbol:'♢',enabled:true},
- {id:'water',title:'Barche',subtitle:'In arrivo · nessun mezzo nautico disponibile',symbol:'≈',enabled:false}
+ {id:'water',title:'Barche',subtitle:'Motoscafi, gommoni e navigazione fluviale',symbol:'≈',enabled:true}
 ]);
 export function hangarSection(id,spec=VEHICLES[id]){
  if(!spec)return null;
+ if(spec.watercraft)return 'water';
  if(id==='bicycle'||id==='kick-scooter')return 'urban';
  return spec.aircraft?'air':'land';
 }
@@ -62,7 +65,9 @@ export function hangarPreviewModel(id,color='#b52f3d',game=null){
  // Always select an aircraft model before considering any live actor clone:
  // streamed aircraft can be represented by ground placeholder meshes in the world.
  // Preserve the dedicated original models for legacy aeroplanes/helicopters.
+ if(spec.watercraft)return createBoatModel(id,color);
  if(spec.aircraft){
+  if(id==='airport-michelangelo')return createMichelangeloModel();
   const model=id==='airone'?createHelicopter():SPECIAL_VEHICLES[id]?createSpecialVehicle(id):aircraftModel(id,spec,color);
   model.userData.previewCategory='air';return model;
  }
@@ -154,7 +159,7 @@ function refresh(){
  count.textContent=`${matches} risultati · ${category.length} mezzi nella categoria`;
 }
 function goHome(){mode='home';observer?.disconnect();queue.length=0;refresh();}
-function enter(id){if(id==='water')return;mode=id;$('hangarSearch').value='';$('hangarFilter').value='all';$('hangarFilter').dispatchEvent(new Event('change',{bubbles:true}));refresh();}
+function enter(id){mode=id;$('hangarSearch').value='';$('hangarFilter').value='all';$('hangarFilter').dispatchEvent(new Event('change',{bubbles:true}));refresh();}
 function install(g){
  game=g;if(dialog||typeof document==='undefined')return;
  dialog=$('mandriaHangarDialog');if(!dialog)return;
