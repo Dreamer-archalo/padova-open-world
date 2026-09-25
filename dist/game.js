@@ -24,7 +24,7 @@ import {TrafficSignals,lanePoint,laneCount,laneOffset,trafficLane,trafficSpeed,a
 import {applyCityData,Districts,DISTRICTS} from './districts.js';
 import * as THREE from './vendor/three.module.js';
 import {RegionalWorld} from './regional-world.js?v=water3';
-import {UnifiedMap} from './unified-map.js?v=unified-hd-4';
+import {UnifiedMap} from './unified-map.js?v=unified-hd-6';
 import {LocalRespawn} from './local-respawn.js';
 import {WaterGameplay} from './water-gameplay.js';
 import {REGIONAL_ZONES,PADOVA_EAST} from './unified-regions.js';
