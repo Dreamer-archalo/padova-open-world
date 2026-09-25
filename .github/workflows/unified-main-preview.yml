@@ -9,6 +9,7 @@ on:
       - 'dist/unified-main.css'
       - 'dist/unified-map.js'
       - 'dist/unified-map-detail.js'
+      - 'dist/map-live-tiles.js'
       - 'dist/local-respawn.js'
       - 'dist/unified-regions.js'
       - 'dist/regional-world.js'
@@ -23,6 +24,8 @@ on:
       - 'scripts/padova-venice-local-streets-overpass.ql'
       - 'scripts/padova-venice-backroads-overpass.ql'
       - 'scripts/padova-venice-water-bodies-overpass.ql'
+      - 'scripts/padova-venice-riverbanks-overpass.ql'
+      - 'prepare_hydro_geometry.py'
       - 'scripts/padova-venice-map-hd-west-overpass.ql'
       - 'scripts/padova-venice-map-hd-east-overpass.ql'
       - 'prepare_map_hd.py'
@@ -53,7 +56,7 @@ concurrency:
 jobs:
   build-test-deploy:
     runs-on: ubuntu-latest
-    timeout-minutes: 35
+    timeout-minutes: 50
     steps:
       - name: Checkout unified main-world candidate
         uses: actions/checkout@v6
@@ -80,8 +83,9 @@ jobs:
             /tmp/corridor-local-streets.json
             /tmp/corridor-backroads.json
             /tmp/corridor-hydrology.json
+            /tmp/corridor-riverbanks.json
             /tmp/padova-venice-terrain
-          key: regional-data-v1-${{ hashFiles('scripts/padova-venice-corridor-overpass.ql', 'scripts/padova-venice-buildings-overpass.ql', 'scripts/padova-venice-local-streets-overpass.ql', 'scripts/padova-venice-backroads-overpass.ql', 'scripts/padova-venice-water-bodies-overpass.ql', 'prepare_world_terrain.py') }}
+          key: regional-data-v1-${{ hashFiles('scripts/padova-venice-corridor-overpass.ql', 'scripts/padova-venice-buildings-overpass.ql', 'scripts/padova-venice-local-streets-overpass.ql', 'scripts/padova-venice-backroads-overpass.ql', 'scripts/padova-venice-water-bodies-overpass.ql', 'scripts/padova-venice-riverbanks-overpass.ql', 'prepare_hydro_geometry.py', 'prepare_world_terrain.py') }}
 
       - name: Cache optional HD cartographic extracts
         uses: actions/cache@v4
@@ -157,6 +161,8 @@ jobs:
           node --check dist/game.js
           node --check dist/unified-map.js
           node --check dist/unified-map-detail.js
+          node --check dist/map-live-tiles.js
+          python -m py_compile prepare_hydro_geometry.py prepare_corridor.py prepare_world_map.py
           node verify-unified-hd-map.mjs
           node --check dist/local-respawn.js
           node --check dist/regional-hydro.js
