@@ -1,13 +1,15 @@
 // Padova's own minimap is untouched. This renderer only extends the full M map
 // horizontally into the same coordinates and implements genuine zoom/pan.
 import {REGIONAL_ZONES} from './unified-regions.js';
+import {VectorMapDetail} from './unified-map-detail.js';
 
 export class UnifiedMap {
- constructor(canvas,padovaCanvas,padovaBounds,region){
+ constructor(canvas,padovaCanvas,padovaBounds,region,padovaData=null){
   this.canvas=canvas;this.padova=padovaCanvas;this.padovaBounds=padovaBounds;this.region=region;
   const [x,z,x1,z1]=region.bounds;this.bounds={x,z,w:x1-x,h:z1-z};
   this.zoomLevel=1;this.center={x:x+this.bounds.w/2,z:z+this.bounds.h/2};
-  this.base=document.createElement('canvas');this.base.width=2300;
+  this.base=document.createElement('canvas');this.base.width=3072;
+  this.detail=new VectorMapDetail(region,padovaData);
   this.base.height=Math.ceil(2300*this.bounds.h/this.bounds.w);
   this.baseScale=this.base.width/this.bounds.w;
   this.prepare();
@@ -15,7 +17,7 @@ export class UnifiedMap {
  get scale(){return Math.min(this.canvas.width/this.bounds.w,this.canvas.height/this.bounds.h)*this.zoomLevel;}
  centerOn(x,z,zoom=this.zoomLevel){this.center={x,z};this.zoomLevel=zoom;this.limit();}
  reset(){this.zoomLevel=1;this.center={x:this.bounds.x+this.bounds.w/2,z:this.bounds.z+this.bounds.h/2};}
- zoom(delta){this.zoomLevel=Math.max(1,Math.min(17,this.zoomLevel*(delta>0?1.6:1/1.6)));this.limit();}
+ zoom(delta){this.zoomLevel=Math.max(1,Math.min(32,this.zoomLevel*(delta>0?1.6:1/1.6)));this.limit();}
  pan(screenDx,screenDz){this.center.x-=screenDx/this.scale;this.center.z-=screenDz/this.scale;this.limit();}
  limit(){const halfW=Math.min(this.bounds.w/2,this.canvas.width/(2*this.scale)),halfH=Math.min(this.bounds.h/2,this.canvas.height/(2*this.scale));
  this.center.x=Math.max(this.bounds.x+halfW,Math.min(this.bounds.x+this.bounds.w-halfW,this.center.x));
@@ -43,12 +45,9 @@ export class UnifiedMap {
   c.translate(w/2,h/2);c.scale(ratio,ratio);
   c.drawImage(this.base,-(this.center.x-this.bounds.x)*this.baseScale,-(this.center.z-this.bounds.z)*this.baseScale);
   c.setTransform(1,0,0,1,0,0);
-  // Keep Padova at its native map resolution when zooming in. The wide
-  // 2,300px world bitmap alone is intentionally too coarse for city-level zoom.
-  if(this.zoomLevel>=2.3){
-   const box=this.padovaBounds,topLeft=this.toScreen({x:box.x,z:box.z}),bottomRight=this.toScreen({x:box.x+box.w,z:box.z+box.h});
-   c.drawImage(this.padova,topLeft.x,topLeft.y,bottomRight.x-topLeft.x,bottomRight.y-topLeft.y);
-  }
+  // At neighbourhood scale always render real polylines/polygons directly
+  // at the target canvas resolution, instead of enlarging the world bitmap.
+  if(this.zoomLevel>=2.1)this.detail.draw(c,this.center,w,h,this.scale);
   if(route.length){c.beginPath();route.forEach((p,i)=>{const a=this.toScreen(p);i?c.lineTo(a.x,a.y):c.moveTo(a.x,a.y);});c.lineWidth=2.6;c.strokeStyle='#edbb65';c.stroke();}
   const dot=(p,size,color)=>{const q=this.toScreen(p);if(!this.isVisible(p))return;c.fillStyle=color;c.beginPath();c.arc(q.x,q.y,size,0,Math.PI*2);c.fill();};
   // All named regional stops exist in the same map. Secondary Padova pins are
@@ -61,8 +60,6 @@ export class UnifiedMap {
   c.fillStyle='#f5f3de';c.fillRect(15,h-29,105,2);c.font='600 12px system-ui';c.fillText(Math.round(105/this.scale/1000*10)/10+' km',15,h-12);
  }
  drawMini(ctx,position,range,width,height){
-  const cx=(position.x-this.bounds.x)*this.baseScale,cy=(position.z-this.bounds.z)*this.baseScale;
-  const sw=range*this.baseScale,sh=range*(height/width)*this.baseScale;
-  ctx.drawImage(this.base,cx-sw/2,cy-sh/2,sw,sh,0,0,width,height);
+  this.detail.draw(ctx,position,width,height,width/range);
  }
 }
