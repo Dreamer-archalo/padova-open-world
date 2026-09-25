@@ -32,3 +32,9 @@
  .hud.minimap{left:10px;width:170px}
  .hud.minimap #minimap{height:128px}
 }
+
+/* Show which build the user really loaded and whether map tiles arrived. */
+.map-diagnostics{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;padding:7px 10px;background:#193946;border-top:1px solid #638b98;color:#d8eef2;font:600 10px/1.4 system-ui}
+.map-diagnostics b{font:800 11px/1.4 system-ui;letter-spacing:.05em;color:#ffda83}
+#minimapStatus{color:#c1e5ed;font:700 8px/1.1 system-ui;letter-spacing:0;white-space:nowrap}
+@media(max-width:450px){#minimapStatus{font-size:7px}.map-diagnostics{font-size:9px}}
