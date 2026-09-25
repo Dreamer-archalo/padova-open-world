@@ -4,12 +4,13 @@
 import * as THREE from './vendor/three.module.js';
 import {pointInside} from './core.js';
 import {PADOVA_EAST,regionalDetail,activeRegionalPlace} from './unified-regions.js';
+import {clipPolygon,coastalBand,harborBand} from './regional-hydro.js';
 
 const CHUNK=320,CELL=160,LAGOON_Y=.1;
 const key=(x,z,size)=>Math.floor(x/size)+','+Math.floor(z/size);
 const material=(color,extra={})=>new THREE.MeshStandardMaterial({color,roughness:1,side:THREE.DoubleSide,...extra});
 const green=material('#819675'),roadMat=material('#59666a'),arterialMat=material('#4b595f'),
- canalMat=material('#4a939d',{roughness:.46,transparent:true,opacity:.94}),stone=material('#cdbda1'),
+ canalMat=material('#267da8',{roughness:.35,metalness:.08}),lagoonMat=material('#216c9c',{roughness:.28,metalness:.13}),stone=material('#cdbda1'),
  walls=material('#cfb897'),roofs=material('#a57358');
 const energy=new THREE.MeshBasicMaterial({color:'#6dd4d5',transparent:true,opacity:.35,wireframe:true,depthWrite:false});
 const energySkin=new THREE.MeshBasicMaterial({color:'#4cb8c2',transparent:true,opacity:.19,side:THREE.DoubleSide,depthWrite:false});
@@ -30,7 +31,7 @@ function coast(x,z){return x>33000&&z>-7800&&z<3000;}
 export class RegionalWorld{
  constructor(scene,data,regionalTerrain,originalCollision){
   this.scene=scene;this.data=data;this.grid=regionalTerrain;this.collision=originalCollision;
-  this.chunks=new Map();this.visible=new Map();this.roads=new Map();this.waters=new Map();this.waterAreas=new Map();this.key='';
+  this.chunks=new Map();this.visible=new Map();this.roads=new Map();this.waters=new Map();this.waterAreas=new Map();this.landAreas=new Map();this.buildingAreas=new Map();this.key='';
   this.actors=[];this.queue=[];this.totalBuilt=0;this.lastUpdate=0;this.dataReady=false;
   this.index();
  }
@@ -109,17 +110,26 @@ export class RegionalWorld{
    if(x<PADOVA_EAST-180)continue;
    const obj={...b,minX:x0,maxX:x1,minZ:z0,maxZ:z1,cx:x,cz:z,minY:this.raw(x,z),h:Math.max(2.6,Math.min(75,b.h||7))};
    obj.lod=regionalDetail(x,z);this.bucket(x,z).buildings.push(obj);
-   // A single collision index is shared with existing walking and driving.
    this.collision.add(obj,x0,z0,x1,z1);
+   // The lagoon's island mask must retain full-size quay buildings.
+   if(coastalBand(x,z))this.insertSpatial(this.buildingAreas,obj,[x0,z0],[x1,z1],5);
   }
   for(const a of this.data.areas||[]){
-   if(a.p?.length<3)continue;const x=a.p.reduce((n,p)=>n+p[0],0)/a.p.length,z=a.p.reduce((n,p)=>n+p[1],0)/a.p.length;
-   if(x>=PADOVA_EAST-180){
-    this.bucket(x,z).areas.push(a);
-    if(a.k==='water'){
-      const xs=a.p.map(p=>p[0]),zs=a.p.map(p=>p[1]),dx=Math.max(...xs)-Math.min(...xs),dz=Math.max(...zs)-Math.min(...zs);
-      if(dx<1250&&dz<1250)this.insertSpatial(this.waterAreas,a,[Math.min(...xs),Math.min(...zs)],[Math.max(...xs),Math.max(...zs)],1);
-    }
+   if(a.p?.length<3)continue;
+   const xs=a.p.map(p=>p[0]),zs=a.p.map(p=>p[1]),
+    x0=Math.min(...xs),z0=Math.min(...zs),x1=Math.max(...xs),z1=Math.max(...zs);
+   if(x1<PADOVA_EAST-180)continue;
+   const dx=x1-x0,dz=z1-z0;
+   if(a.k==='water'&&dx<8500&&dz<8500)this.insertSpatial(this.waterAreas,a,[x0,z0],[x1,z1],2);
+   if(a.k==='land'&&dx<6500&&dz<6500)this.insertSpatial(this.landAreas,a,[x0,z0],[x1,z1],1);
+   // A coastal basin spanning several chunks must be clipped and streamed in
+   // EACH intersecting sector, not only in the sector holding its centroid.
+   const minIx=Math.max(Math.floor((PADOVA_EAST-180)/CHUNK),Math.floor(x0/CHUNK)),
+    maxIx=Math.floor(x1/CHUNK),minIz=Math.floor(z0/CHUNK),maxIz=Math.floor(z1/CHUNK);
+   if((maxIx-minIx+1)*(maxIz-minIz+1)>380||a.p.length>220)continue;
+   for(let ix=minIx;ix<=maxIx;ix++)for(let iz=minIz;iz<=maxIz;iz++){
+    const clipped=clipPolygon(a.p,ix*CHUNK,iz*CHUNK,(ix+1)*CHUNK,(iz+1)*CHUNK);
+    if(clipped.length>=3)this.bucket((ix+.5)*CHUNK,(iz+.5)*CHUNK).areas.push({...a,p:clipped});
    }
   }
   this.dataReady=true;
