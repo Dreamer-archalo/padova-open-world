@@ -43,13 +43,13 @@ export class VectorMapDetail {
    frame={x0,z0,x1:x0+width/scale,z1:z0+height/scale};
   const px=clamp(pixelRatio,1,4),minimum=mini?1.25*px:1.0*px;
   const layers=Object.fromEntries(KINDS.map(k=>[k,this.visible(k,frame)]));
-  ctx.save();ctx.setTransform(1,0,0,1,0,0);ctx.fillStyle='#34554d';ctx.fillRect(0,0,width,height);
+  ctx.save();ctx.setTransform(1,0,0,1,0,0);ctx.fillStyle='#414b4d';ctx.fillRect(0,0,width,height);
   // Sea overview in the Venezia region; real OSM parcels and building/road
   // silhouettes are then laid over it at full resolution.
   if(frame.x1>=30000&&frame.z1>=-10000&&frame.z0<=9600){
    const left=clamp((30000-x0)*scale,0,width),top=clamp((-10000-z0)*scale,0,height),
     right=clamp((40500-x0)*scale,0,width),bottom=clamp((9600-z0)*scale,0,height);
-   if(right>left&&bottom>top){ctx.fillStyle='#225f86';ctx.fillRect(left,top,right-left,bottom-top);}
+   if(right>left&&bottom>top){ctx.fillStyle='#386a7d';ctx.fillRect(left,top,right-left,bottom-top);}
   }
   ctx.beginPath();ctx.rect(0,0,width,height);ctx.clip();ctx.lineCap='round';ctx.lineJoin='round';
   const path=f=>{
@@ -59,21 +59,21 @@ export class VectorMapDetail {
   // Draw land before water. Repeated polygons from overlapping extracts are
   // harmless at town scale and never require a blown-up raster.
   for(const a of layers.areas.filter(a=>a.k!=='water')){
-   path(a);ctx.closePath();ctx.fillStyle=a.k==='park'||a.k==='garden'?'#567a5b':'#58715f';ctx.fill();
+   path(a);ctx.closePath();ctx.fillStyle=a.k==='park'||a.k==='garden'?'#515e56':'#485251';ctx.fill();
   }
   for(const a of layers.areas.filter(a=>a.k==='water')){
-   path(a);ctx.closePath();ctx.fillStyle='#286f98';ctx.fill();
-   if(scale>.23){ctx.lineWidth=Math.max(minimum*.6,.65);ctx.strokeStyle='#60a3bd';ctx.stroke();}
+   path(a);ctx.closePath();ctx.fillStyle='#386a7d';ctx.fill();
+   if(scale>.23){ctx.lineWidth=Math.max(minimum*.6,.65);ctx.strokeStyle='#386a7d';ctx.stroke();}
   }
   for(const w of layers.water){
-   path(w);ctx.strokeStyle='#337da0';ctx.lineWidth=Math.max(minimum*.9,(w.w||3)*scale);ctx.stroke();
+   path(w);ctx.strokeStyle='#386a7d';ctx.lineWidth=Math.max(minimum*.9,(w.w||3)*scale);ctx.stroke();
   }
   // Detailed shapes remain legible even when buildings are "energy" boxes
   // in the 3D transit performance mode.
-  const buildingDetail=scale>=.095; // suppress building cost at overview scales
+  const buildingDetail=!mini&&scale>=.45; // suppress building cost at overview scales
   if(buildingDetail)for(const b of layers.buildings){
-   path(b);ctx.closePath();ctx.fillStyle=b.lod==='energy'?'#829890':'#acaaa0';ctx.fill();
-   if(scale>.36){ctx.lineWidth=Math.max(.5,px*.45);ctx.strokeStyle='#53645d';ctx.stroke();}
+   path(b);ctx.closePath();ctx.fillStyle='#535e60';ctx.fill();
+   if(scale>.36){ctx.lineWidth=Math.max(.5,px*.45);ctx.strokeStyle='#535e60';ctx.stroke();}
   }
   const named=[];
   // Draw roads in order: major arteries first and local footpaths on top,
@@ -83,13 +83,13 @@ export class VectorMapDetail {
    path(r);
    const tier=roadTier(r.k),walk=/footway|path|steps|cycleway|pedestrian/.test(r.k||''),
     roadWidth=Math.max(minimum,(r.w||2)*scale);
-   if(scale>.24&&!walk){ctx.lineWidth=roadWidth+Math.max(px*.7,scale*.75);ctx.strokeStyle='#314e55';ctx.stroke();}
+   if(scale>.24&&!walk){ctx.lineWidth=roadWidth+Math.max(px*.7,scale*.75);ctx.strokeStyle='#2e373c';ctx.stroke();}
    ctx.lineWidth=roadWidth;
-   ctx.strokeStyle=walk?'#b2c7b3':tier===2?'#eed1a2':tier===1?'#d0d6c5':'#adbfb3';
+   ctx.strokeStyle=walk?'#c4cbca':tier===2?'#f3f1e8':'#dee1db';
    ctx.stroke();
-   if(labels&&r.n&&scale>.23&&(!walk||scale>.38)&&named.length<1000)named.push(r);
+   if(labels&&r.n&&scale>(mini?.8:.4)&&tier>=1&&!walk&&named.length<(mini?60:180))named.push(r);
   }
-  if(labels&&scale>.23)this.drawRoadLabels(ctx,named,x0,z0,width,height,scale,px,mini);
+  if(labels&&scale>(mini?.8:.4))this.drawRoadLabels(ctx,named,x0,z0,width,height,scale,px,mini);
   ctx.restore();
   return {visible:Object.fromEntries(KINDS.map(k=>[k,layers[k].length])),vector:true};
  }
@@ -108,7 +108,7 @@ export class VectorMapDetail {
  }
  drawRoadLabels(ctx,roads,x0,z0,width,height,scale,px,mini){
   const occupied=new Set(),cell=mini?74*px:92*px,
-   font=Math.round((mini?11.5:12.5)*px),max=mini?13:85;
+   font=Math.round((mini?10:12)*px),max=mini?5:36;
   ctx.font='600 '+font+'px system-ui';ctx.textAlign='center';ctx.textBaseline='middle';
   let count=0;
   for(const r of roads){
