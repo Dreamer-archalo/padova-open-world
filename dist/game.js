@@ -85,6 +85,13 @@ async function startUnifiedRegion(){
   extension.installTerrainHooks(terrain);terrain.unifiedBounds=unifiedBounds;
   regionalWorld=extension;
   unifiedMap=new UnifiedMap($('fullmap'),mapBase,minBounds,map,data);unifiedMap.centerOn(state.x,state.z,11);
+   // Optional 2D-only detail is streamed after the playable region loads.
+   // No extra map buildings are inserted into the 3D scene, preserving Iper Performance.
+   fetch('./data/map-hd-extras.json?v=hd-map1').then(res=>res.ok?res.json():null).then(extras=>{
+    if(!extras)return;
+    if(extras.origin?.join(',')!=='45.4064,11.8768')throw new Error('HD map origin mismatch');
+    if(unifiedMap){unifiedMap.addMapDetail(extras);if($('mapDialog').open)drawFullMap();}
+   }).catch(error=>console.warn('[HD map] Optional extra parcels unavailable; existing vectors remain sharp:',error));
   const full=$('fullmap'),place=$('mapDialog');
   full.onwheel=ev=>{if(!place.open||taxiMapPick)return;ev.preventDefault();unifiedMap.zoom(ev.deltaY<0?1:-1);drawFullMap();};
   full.addEventListener('pointerdown',ev=>{if(!place.open||taxiMapPick||ev.button!==0)return;
