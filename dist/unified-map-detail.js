@@ -87,7 +87,7 @@ export class VectorMapDetail {
    ctx.lineWidth=roadWidth;
    ctx.strokeStyle=walk?'#c4cbca':tier===2?'#f3f1e8':'#dee1db';
    ctx.stroke();
-   if(labels&&r.n&&scale>(mini?.8:.4)&&tier>=1&&!walk&&named.length<(mini?60:180))named.push(r);
+   if(labels&&r.n&&scale>(mini?.8:.4)&&(tier>=1||(!mini&&walk&&scale>=.8))&&named.length<(mini?60:180))named.push(r);
   }
   if(labels&&scale>(mini?.8:.4))this.drawRoadLabels(ctx,named,x0,z0,width,height,scale,px,mini);
   ctx.restore();
