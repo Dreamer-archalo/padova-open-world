@@ -31,6 +31,14 @@ def assemble_rings(members, project, tolerance=0.8):
                     rings.append((role,ring));break
     return rings
 
+def point_inside(x,z,poly):
+    inside=False
+    for i,p in enumerate(poly):
+        q=poly[i-1]
+        if (p[1]>z)!=(q[1]>z) and x<(q[0]-p[0])*(z-p[1])/(q[1]-p[1])+p[0]:
+            inside=not inside
+    return inside
+
 def ingest_hydrology(doc, project, simplify, areas, shorelines, seen):
     for e in doc.get("elements",[]):
         tags=e.get("tags") or {}
