@@ -19,7 +19,13 @@ export class UnifiedMap {
  get scale(){return Math.min(this.canvas.width/this.bounds.w,this.canvas.height/this.bounds.h)*this.zoomLevel;}
  centerOn(x,z,zoom=this.zoomLevel){this.center={x,z};this.zoomLevel=zoom;this.limit();}
  reset(){this.zoomLevel=1;this.center={x:this.bounds.x+this.bounds.w/2,z:this.bounds.z+this.bounds.h/2};}
- zoom(delta){this.zoomLevel=Math.max(1,Math.min(55,this.zoomLevel*(delta>0?1.45:1/1.45)));this.limit();}
+ zoom(delta){this.zoomAt(this.canvas.width/2,this.canvas.height/2,delta);}
+ zoomAt(screenX,screenY,delta,{factor=false}={}){
+  const before=this.fromCanvas(screenX,screenY);
+  this.zoomLevel=Math.max(1,Math.min(55,this.zoomLevel*(factor?delta:(delta>0?1.45:1/1.45))));
+  const after=this.fromCanvas(screenX,screenY);
+  this.center.x+=before.x-after.x;this.center.z+=before.z-after.z;this.limit();
+ }
  pan(screenDx,screenDz){this.center.x-=screenDx/this.scale;this.center.z-=screenDz/this.scale;this.limit();}
  limit(){const halfW=Math.min(this.bounds.w/2,this.canvas.width/(2*this.scale)),halfH=Math.min(this.bounds.h/2,this.canvas.height/(2*this.scale));
  this.center.x=Math.max(this.bounds.x+halfW,Math.min(this.bounds.x+this.bounds.w-halfW,this.center.x));
