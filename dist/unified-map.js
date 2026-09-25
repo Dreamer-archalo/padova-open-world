@@ -69,7 +69,7 @@ export class UnifiedMap {
   // Standard cartographic street tiles supply uniform, surveyed water and
   // bank widths in ALL municipalities. If network tiles are unavailable,
   // the vector renderer above remains the complete offline fallback.
-  this.tiles.draw(c,this.center,w,h,this.scale);
+  this.lastTileStats=this.tiles.draw(c,this.center,w,h,this.scale);
   if(route.length){
    c.beginPath();route.forEach((p,i)=>{const a=this.toScreen(p);i?c.lineTo(a.x,a.y):c.moveTo(a.x,a.y);});
    c.lineWidth=unit(2.4);c.strokeStyle='#f7ca74';c.stroke();
