@@ -69,7 +69,7 @@ const performanceOverlay=new PerformanceOverlay($('performanceOverlay'));
 const fullscreenControls=createFullscreenControls(document,window,{onEnter:closeDialogs,onResize:()=>requestAnimationFrame(resizeViewport)});
 const minBounds={x:-6050,z:-6550,w:13400,h:12900}; // Retain Padova-only taxi/navigation limits.
 let regionalWorld=null,unifiedMap=null,regionalLoading=false,regionalFailure=null;
-let mapPointer=null,mapDragged=false;
+let mapPointer=null,mapDragged=false;const mapTouches=new Map();let mapPinchDistance=0;
 const unifiedBounds={minX:-5970,maxX:39200,minZ:-11900,maxZ:8800};
 function regionalPlayer(){return regionalWorld?.contains(state.x,state.z)||false;}
 async function startUnifiedRegion(){
@@ -98,14 +98,51 @@ async function startUnifiedRegion(){
     unifiedMap.zoomAt((ev.clientX-rect.left)*full.width/rect.width,
       (ev.clientY-rect.top)*full.height/rect.height,ev.deltaY<0?1:-1);
     drawFullMap();};
-  full.addEventListener('pointerdown',ev=>{if(!place.open||taxiMapPick||ev.button!==0)return;
-    mapPointer={x:ev.clientX,y:ev.clientY,id:ev.pointerId};mapDragged=false;full.setPointerCapture(ev.pointerId);});
-  full.addEventListener('pointermove',ev=>{if(!mapPointer||ev.pointerId!==mapPointer.id)return;
-    const dx=ev.clientX-mapPointer.x,dy=ev.clientY-mapPointer.y;if(Math.abs(dx)+Math.abs(dy)>3)mapDragged=true;
-    if(mapDragged){const rect=full.getBoundingClientRect();unifiedMap.pan(dx*full.width/rect.width,dy*full.height/rect.height);drawFullMap();}
-    mapPointer.x=ev.clientX;mapPointer.y=ev.clientY;});
-  full.addEventListener('pointerup',ev=>{if(mapPointer?.id===ev.pointerId)mapPointer=null;});
-  full.addEventListener('pointercancel',()=>{mapPointer=null;});
+  full.addEventListener('pointerdown',ev=>{
+    if(!place.open||taxiMapPick||ev.button!==0)return;
+    full.setPointerCapture(ev.pointerId);
+    if(ev.pointerType==='touch'){
+     mapTouches.set(ev.pointerId,{x:ev.clientX,y:ev.clientY});
+     if(mapTouches.size>=2){
+      const [a,b]=[...mapTouches.values()];mapPinchDistance=Math.hypot(b.x-a.x,b.y-a.y);
+      mapPointer=null;mapDragged=true;return;
+     }
+    }
+    mapPointer={x:ev.clientX,y:ev.clientY,id:ev.pointerId};mapDragged=false;
+   });
+   full.addEventListener('pointermove',ev=>{
+    if(ev.pointerType==='touch'&&mapTouches.has(ev.pointerId)){
+     mapTouches.set(ev.pointerId,{x:ev.clientX,y:ev.clientY});
+     if(mapTouches.size>=2){
+      const [a,b]=[...mapTouches.values()],length=Math.hypot(b.x-a.x,b.y-a.y);
+      if(mapPinchDistance>5&&length>5){
+       const rect=full.getBoundingClientRect(),x=(a.x+b.x)/2,y=(a.y+b.y)/2;
+       unifiedMap.zoomAt((x-rect.left)*full.width/rect.width,
+        (y-rect.top)*full.height/rect.height,length/mapPinchDistance,{factor:true});
+       drawFullMap();
+      }
+      mapPinchDistance=length;mapDragged=true;return;
+     }
+    }
+    if(!mapPointer||ev.pointerId!==mapPointer.id)return;
+    const dx=ev.clientX-mapPointer.x,dy=ev.clientY-mapPointer.y;
+    if(Math.abs(dx)+Math.abs(dy)>3)mapDragged=true;
+    if(mapDragged){
+     const rect=full.getBoundingClientRect();
+     unifiedMap.pan(dx*full.width/rect.width,dy*full.height/rect.height);drawFullMap();
+    }
+    mapPointer.x=ev.clientX;mapPointer.y=ev.clientY;
+   });
+   const release=ev=>{
+    if(ev.pointerType==='touch'){
+     mapTouches.delete(ev.pointerId);
+     if(mapTouches.size<2)mapPinchDistance=0;
+     if(mapTouches.size===1){const [id,p]=[...mapTouches.entries()][0];mapPointer={...p,id};}
+    }
+    if(mapPointer?.id===ev.pointerId)mapPointer=null;
+   };
+   full.addEventListener('pointerup',release);
+   full.addEventListener('pointercancel',release);
   const control=(id,fn)=>{const button=$(id);if(button)button.onclick=()=>{if(taxiMapPick){toast('La mappa taxi copre solo Padova.');return;}fn();drawFullMap();};};
   control('unifiedZoomIn',()=>unifiedMap.zoom(1));control('unifiedZoomOut',()=>unifiedMap.zoom(-1));
   control('unifiedMapAll',()=>unifiedMap.reset());
