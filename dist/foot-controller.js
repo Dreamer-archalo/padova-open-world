@@ -35,3 +35,7 @@ export function animateSwim(mesh,time,speed=0,underwater=false){
  }
  mesh.userData.gait={swimming:true,frequency:4.5,amplitude:motion};
 }
+
+// Character models are upright (+Y); tip the head toward forward +Z rather
+// than using a negative X pitch, which sends the head backwards into water.
+export const swimBodyPitch=(landed=false)=>landed?0:Math.PI/2-0.16;
