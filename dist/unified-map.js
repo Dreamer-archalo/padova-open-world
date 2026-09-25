@@ -1,7 +1,8 @@
 // High-resolution unified geographical map. The same spatially indexed
 // vectors drive detailed Padova, the Brenta towns, Mestre and Venice.
 import {REGIONAL_ZONES} from './unified-regions.js';
-import {VectorMapDetail} from './unified-map-detail.js?v=hd-map6';
+import {VectorMapDetail} from './unified-map-detail.js?v=water-map7';
+import {VisibleMapTiles} from './map-live-tiles.js';
 
 export class UnifiedMap {
  constructor(canvas,padovaCanvas,padovaBounds,region,padovaData=null){
@@ -10,6 +11,10 @@ export class UnifiedMap {
   this.zoomLevel=1;this.center={x:x+this.bounds.w/2,z:z+this.bounds.h/2};
   this.base=document.createElement('canvas');this.base.width=3072;
   this.detail=new VectorMapDetail(region,padovaData);
+  // The exact same high-resolution cartography drives every town, including
+  // low-poly 3D transit zones. All tiles are optional visible-only requests.
+  this.onTileReady=null;
+  this.tiles=new VisibleMapTiles({onLoad:()=>this.onTileReady?.()});
   this.base.height=Math.ceil(this.base.width*this.bounds.h/this.bounds.w);
   this.baseScale=this.base.width/this.bounds.w;
   this.prepare();
@@ -61,6 +66,10 @@ export class UnifiedMap {
    c.drawImage(this.base,-(this.center.x-this.bounds.x)*this.baseScale,-(this.center.z-this.bounds.z)*this.baseScale);
    c.setTransform(1,0,0,1,0,0);
   }
+  // Standard cartographic street tiles supply uniform, surveyed water and
+  // bank widths in ALL municipalities. If network tiles are unavailable,
+  // the vector renderer above remains the complete offline fallback.
+  this.tiles.draw(c,this.center,w,h,this.scale);
   if(route.length){
    c.beginPath();route.forEach((p,i)=>{const a=this.toScreen(p);i?c.lineTo(a.x,a.y):c.moveTo(a.x,a.y);});
    c.lineWidth=unit(2.4);c.strokeStyle='#f7ca74';c.stroke();
@@ -109,7 +118,9 @@ export class UnifiedMap {
  drawMini(ctx,position,range,width,height){
   const display=ctx.canvas?.getBoundingClientRect?.().width||ctx.canvas?.clientWidth||width/2.5;
   const pixelRatio=Math.max(1,Math.min(4,width/display));
-  return this.detail.draw(ctx,position,width,height,width/range,{pixelRatio,mini:true,labels:true});
+  const view=this.detail.draw(ctx,position,width,height,width/range,{pixelRatio,mini:true,labels:true});
+  const tiles=this.tiles.draw(ctx,position,width,height,width/range);
+  return {...view,tiles};
 
  }
 }
