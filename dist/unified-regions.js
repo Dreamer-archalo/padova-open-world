@@ -28,9 +28,12 @@ export const PADOVA_EAST=7350;
 export function regionalDetail(x,z){
  if(x<PADOVA_EAST)return 'padova';
  if(x>=VENEZIA_DETAIL.x0&&x<=VENEZIA_DETAIL.x1&&z>=VENEZIA_DETAIL.z0&&z<=VENEZIA_DETAIL.z1)return 'detailed';
+ // Detailed Marghera must not be demoted just because the outer edge of
+ // the broad Mestre transit zone overlaps it. Mestre's own core stays transit.
  const mestre=REGIONAL_ZONES.find(p=>p.name==='Mestre');
- if(Math.hypot(x-mestre.x,z-mestre.z)<mestre.radius)return 'transit';
- return REGIONAL_ZONES.some(p=>p.lod==='detailed'&&Math.hypot(x-p.x,z-p.z)<p.radius)?'detailed':'transit';
+ if(Math.hypot(x-mestre.x,z-mestre.z)<mestre.radius*.68)return 'transit';
+ if(REGIONAL_ZONES.some(p=>p.lod==='detailed'&&Math.hypot(x-p.x,z-p.z)<p.radius))return 'detailed';
+ return 'transit';
 }
 export function activeRegionalPlace(x,z){
  let best=null,nearest=Infinity;
