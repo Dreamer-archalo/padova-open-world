@@ -59,7 +59,7 @@ assert.equal(map.detail.visible('buildings',{x0:24900,z0:-100,x1:25100,z1:100}).
  'Lazy HD 2D-only source is not indexed after startup');
 assert(game.includes('densityCanvas(mini,2.7,1100)')&&game.includes('densityCanvas($(\'fullmap\'),2.25,3400)'),
  'Map backing resolution must follow high DPI even when WebGL performance mode is active');
-assert(game.includes('map-hd-extras.json')&&renderer.includes('if(true){ // native GTA-style vector'),
+assert(game.includes('map-hd-extras.json')&&renderer.includes('Raster-free GTA-inspired vectors'),
  '2D detail streaming/low zoom boundary missing');
 assert(style.includes('.hud.minimap #minimap')&&style.includes('image-rendering:auto'),
  'Responsive high-resolution minimap CSS missing');
