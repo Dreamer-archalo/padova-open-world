@@ -25,6 +25,7 @@ import {applyCityData,Districts,DISTRICTS} from './districts.js';
 import * as THREE from './vendor/three.module.js';
 import {RegionalWorld} from './regional-world.js?v=water3';
 import {UnifiedMap} from './unified-map.js?v=water-map7';
+import {VisibleMapTiles} from './map-live-tiles.js';
 import {LocalRespawn} from './local-respawn.js';
 import {WaterGameplay} from './water-gameplay.js';
 import {REGIONAL_ZONES,PADOVA_EAST} from './unified-regions.js';
@@ -47,6 +48,7 @@ const clock=new FixedClock();let modelLayer,renderAlpha=1,previousPose=null;cons
 function visualPose(){if(!previousPose||previousPose.mode!==state.mode||dist(previousPose,state)>10)return state;return {x:THREE.MathUtils.lerp(previousPose.x,state.x,renderAlpha),z:THREE.MathUtils.lerp(previousPose.z,state.z,renderAlpha),y:THREE.MathUtils.lerp(previousPose.y,state.y,renderAlpha)};}
 const keys=new Set(),cars=[],people=[],cops=[],micromobility=[];const inputManager=new InputManager(window,keys);let data,world,graph,patrolGraph,renderer,scene,camera,sun,player,marker,mapBase,mapCtx,frameTime=0,lastUi=0,toastUntil=0,collisionCooldown=0,followYaw=0,camOrbit=0,camPitch=.38,drag=null,jumpPressed=false,engineAudio=null,frame=0;
 const canvas=$('world'),mini=$('minimap'),miniCtx=mini.getContext('2d');
+const miniTiles=new VisibleMapTiles();
 function densityCanvas(element,minimum=2.2,maximum=3400){
  const rect=element.getBoundingClientRect(),miniature=element.id==='minimap',
   cssWidth=rect.width||(miniature?242:1120),cssHeight=rect.height||(miniature?180:750),
@@ -85,7 +87,7 @@ async function startUnifiedRegion(){
   extension.installTerrainHooks(terrain);terrain.unifiedBounds=unifiedBounds;
   regionalWorld=extension;
   unifiedMap=new UnifiedMap($('fullmap'),mapBase,minBounds,map,data);unifiedMap.centerOn(state.x,state.z,11);
-   unifiedMap.onTileReady=()=>{if($('mapDialog').open)drawFullMap();};
+   unifiedMap.tiles=miniTiles;miniTiles.onLoad=()=>{if($('mapDialog').open)drawFullMap();};
    // Optional 2D-only detail is streamed after the playable region loads.
    // No extra map buildings are inserted into the 3D scene, preserving Iper Performance.
    fetch('./data/map-hd-extras.json?v=hd-map1').then(res=>res.ok?res.json():null).then(extras=>{
@@ -291,7 +293,11 @@ function makeMap(){mapBase=document.createElement('canvas');mapBase.width=1800;m
  for(const a of data.areas){path(a.p,true);c.fillStyle=a.k==='water'?'#33545d':'#284b42';c.fill();}for(const r of data.water){path(r.p);c.strokeStyle='#335d69';c.lineWidth=Math.max(1,r.w*sx);c.stroke();}c.fillStyle='#33474d';for(const b of data.buildings){path(b.p,true);c.fill();}for(const r of data.roads){path(r.p);c.lineWidth=Math.max(.5,r.w*sx);c.strokeStyle=['footway','path','steps'].includes(r.k)?'#405158':'#607278';c.stroke();}
 }
 function drawRoute(ctx,transform,width=3){if(!state.route.length)return;ctx.beginPath();state.route.forEach((p,i)=>{const a=transform(p);if(!i)ctx.moveTo(a.x,a.y);else ctx.lineTo(a.x,a.y);});ctx.strokeStyle='#edbb65';ctx.lineWidth=width;ctx.lineJoin='round';ctx.lineCap='round';ctx.stroke();}
-function drawMini(){if(!mapBase)return;densityCanvas(mini,2.7,1100);const c=miniCtx,w=mini.width,h=mini.height,density=Math.max(1,Math.min(4,w/(mini.clientWidth||w/2.7))),range=state.mode==='car'?460:270,k=w/range;c.fillStyle='#172e38';c.fillRect(0,0,w,h);const mx=(state.x-minBounds.x)/minBounds.w*mapBase.width,my=(state.z-minBounds.z)/minBounds.h*mapBase.height,sw=range/minBounds.w*mapBase.width,sh=h/k/minBounds.h*mapBase.height;if(unifiedMap)unifiedMap.drawMini(c,state,range,w,h);else c.drawImage(mapBase,mx-sw/2,my-sh/2,sw,sh,0,0,w,h);const tr=p=>({x:(p.x-state.x)*k+w/2,y:(p.z-state.z)*k+h/2});drawRoute(c,tr,5);
+function drawMini(){if(!mapBase)return;densityCanvas(mini,2.7,1100);const c=miniCtx,w=mini.width,h=mini.height,density=Math.max(1,Math.min(4,w/(mini.clientWidth||w/2.7))),range=state.car?.spec.aircraft?Math.max(6000,Math.abs(state.speed)*72):state.mode==='car'?460:270,k=w/range;c.fillStyle='#172e38';c.fillRect(0,0,w,h);const mx=(state.x-minBounds.x)/minBounds.w*mapBase.width,my=(state.z-minBounds.z)/minBounds.h*mapBase.height,sw=range/minBounds.w*mapBase.width,sh=h/k/minBounds.h*mapBase.height;if(unifiedMap)unifiedMap.drawMini(c,state,range,w,h);else{
+  c.drawImage(mapBase,mx-sw/2,my-sh/2,sw,sh,0,0,w,h);
+  miniTiles.draw(c,state,w,h,k);
+ }
+ const tr=p=>({x:(p.x-state.x)*k+w/2,y:(p.z-state.z)*k+h/2});drawRoute(c,tr,5);
  for(const p of PLACES){const t=tr(p);if(t.x>5&&t.x<w-5&&t.y>10&&t.y<h-5){c.fillStyle='#c6b28c';c.beginPath();c.arc(t.x,t.y,3.5*density,0,Math.PI*2);c.fill();}}
  for(const c of cars)if((c.spec.aircraft||c.spec.tracked)&&c.mesh.visible){const t=tr(c);if(t.x>8&&t.x<w-8&&t.y>8&&t.y<h-8){miniCtx.fillStyle='#edbb65';miniCtx.font='bold '+Math.round(12*density)+'px sans-serif';miniCtx.fillText(c.spec.tracked?'T':c.spec.plane?'A':'H',t.x,t.y);}}
  for(const radar of speedCameras?.sites||[])if(dist(radar,state)<220){const t=tr(radar);c.fillStyle='#f3b53f';c.fillRect(t.x-4,t.y-4,8,8);}
