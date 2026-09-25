@@ -35,6 +35,6 @@ assert(air.includes('terrain.unifiedBounds'),'Helicopter still blocked at old Pa
 const aircraft=read('dist/special-vehicles.js');
 assert(aircraft.includes('terrain.unifiedBounds'),'Planes/parachutes still blocked at original Padova boundaries');
 assert(game.includes('if(taxiMapPick){')&&game.includes('taxiMenuController.onSelectFromMap(point.x,point.z,e)'),'Taxi map selection broken with unified map');
-assert(map.includes('Keep Padova at its native map resolution'),'Padova map becomes blurry when zooming in');
-assert(renderer.includes('new THREE.PlaneGeometry(CHUNK,CHUNK)')&&renderer.includes('this.waterAreas')&&renderer.includes('terrain.waterHeight='),'Lagoon surface / water collision / water elevation missing');
+assert(map.includes('this.detail.draw(c,this.center,w,h,this.scale)'),'Padova/venice close zoom must use original vector data');
+assert(renderer.includes('this.lagoonAt(')&&renderer.includes('this.waterAreas')&&renderer.includes('terrain.waterHeight=')&&renderer.includes('clipPolygon('),'Lagoon island mask / polygon-clipped basins / water elevation missing');
 console.log('PASS unified Padova main game:',data.roads.length,'regional roads,',localStreets.length,'local town streets,',data.buildings.length,'regional buildings,',corridor.length,'corridor footprints.');
