@@ -23,11 +23,11 @@ import {CameraRig} from './camera-rig.js';
 import {TrafficSignals,lanePoint,laneCount,laneOffset,trafficLane,trafficSpeed,advanceTrafficSpeed} from './traffic.js';
 import {applyCityData,Districts,DISTRICTS} from './districts.js';
 import * as THREE from './vendor/three.module.js';
-import {RegionalWorld} from './regional-world.js?v=water3';
+import {RegionalWorld} from './regional-world.js?v=hd-water-r4';
 import {UnifiedMap} from './unified-map.js?v=hd-water-r4';
 import {VisibleMapTiles} from './map-live-tiles.js?v=hd-water-r4';
 import {LocalRespawn} from './local-respawn.js';
-import {WaterGameplay} from './water-gameplay.js';
+import {WaterGameplay} from './water-gameplay.js?v=hd-water-r4';
 import {REGIONAL_ZONES,PADOVA_EAST} from './unified-regions.js';
 import {CityWorld,PLACES,createCar,createPerson} from './world.js';
 import {FixedClock,slideMove,vehicleBlocked,cameraBoomContinuous as cameraBoom} from './movement.js';
@@ -78,7 +78,7 @@ async function startUnifiedRegion(){
  if(regionalLoading||regionalWorld)return;
  regionalLoading=true;
  try{
-  const [r,t]=await Promise.all([fetch('./data/region-padova-venice.json?v=coastal-water3'),fetch('./data/world-terrain.json')]);
+  const [r,t]=await Promise.all([fetch('./data/region-padova-venice.json?v=hd-water-r4'),fetch('./data/world-terrain.json')]);
   if(!r.ok||!t.ok)throw new Error('Regional data unavailable ('+r.status+'/'+t.status+')');
   const [map,grid]=await Promise.all([r.json(),t.json()]);
   if((map.buildings?.length||0)<2000||!grid.heights?.length)throw new Error('Regional extract incomplete');
@@ -90,7 +90,7 @@ async function startUnifiedRegion(){
    unifiedMap.tiles=miniTiles;miniTiles.onLoad=()=>{if($('mapDialog').open)drawFullMap();};
    // Optional 2D-only detail is streamed after the playable region loads.
    // No extra map buildings are inserted into the 3D scene, preserving Iper Performance.
-   fetch('./data/map-hd-extras.json?v=hd-map1').then(res=>res.ok?res.json():null).then(extras=>{
+   fetch('./data/map-hd-extras.json?v=hd-water-r4').then(res=>res.ok?res.json():null).then(extras=>{
     if(!extras)return;
     if(extras.origin?.join(',')!=='45.4064,11.8768')throw new Error('HD map origin mismatch');
     if(unifiedMap){unifiedMap.addMapDetail(extras);if($('mapDialog').open)drawFullMap();}
