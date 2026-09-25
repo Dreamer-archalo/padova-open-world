@@ -19,7 +19,7 @@ const extra=[
 ];
 export const REGIONAL_ZONES=[
  ...detailed.map(([name,lat,lon,radius,tag])=>({name,tag,radius,lod:'detailed',...project(lat,lon)})),
- ...extra.map(([name,lat,lon,radius,tag])=>({name,tag,radius,lod:name.startsWith('Venezia')||name==='Piazzale Roma'?'detailed':'transit',...project(lat,lon)}))
+ ...extra.map(([name,lat,lon,radius,tag])=>({name,tag,radius,lod:name.startsWith('Venezia')||name==='Piazzale Roma'||name==='Mirano'||name==='Mestre'?'detailed':'transit',...project(lat,lon)}))
 ];
 // Do not make Mestre detailed just because it is near Marghera.
 // The Venice footprint is a polygonal / bounded city region, not a concentric
@@ -32,7 +32,7 @@ export function regionalDetail(x,z){
  // Detailed Marghera must not be demoted just because the outer edge of
  // the broad Mestre transit zone overlaps it. Mestre's own core stays transit.
  const mestre=REGIONAL_ZONES.find(p=>p.name==='Mestre');
- if(Math.hypot(x-mestre.x,z-mestre.z)<mestre.radius*.68)return 'transit';
+ if(Math.hypot(x-mestre.x,z-mestre.z)<mestre.radius*.68)return 'detailed';
  if(REGIONAL_ZONES.some(p=>p.lod==='detailed'&&Math.hypot(x-p.x,z-p.z)<p.radius))return 'detailed';
  return 'transit';
 }
