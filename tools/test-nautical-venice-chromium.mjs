@@ -10,7 +10,7 @@ page.on('crash',()=>errors.push('browser page crashed'));
 try{
  phase='Venice OSM scene';
  const v=await page.goto('http://127.0.0.1:4173/venice.html',{waitUntil:'domcontentloaded',timeout:45000});assert.equal(v?.status(),200);
- await page.waitForFunction(()=>globalThis.__veniceWorld?.boats?.docks?.length>=3,{timeout:140000});
+ await page.waitForFunction(()=>globalThis.__veniceWorld?.boats?.docks?.length>=3,null,{timeout:140000});
  const stats=await page.evaluate(()=>{
   const w=globalThis.__veniceWorld,d=w.boats.docks.find(d=>d.width>=8.5);
   if(!d)return {error:'no compatible Venice dock',docks:w.boats.docks};
@@ -27,7 +27,7 @@ try{
  await page.screenshot({path:'test-artifacts/venice-navigable-boats.png',timeout:15000});
  phase='Michelangelo streamed flight';
  const flight=await page.goto('http://127.0.0.1:4173/continuous-world.html?vehicle=michelangelo&spawn=padova&x=0&z=0&y=140&yaw=1.5708&speed=75',{waitUntil:'domcontentloaded',timeout:50000});assert.equal(flight?.status(),200);
- await page.waitForFunction(()=>globalThis.__continuousWorld?.state?.vehicle==='michelangelo',{timeout:125000});
+ await page.waitForFunction(()=>globalThis.__continuousWorld?.state?.vehicle==='michelangelo',null,{timeout:125000});
  const before=await page.evaluate(()=>({...globalThis.__continuousWorld.state}));
  await page.keyboard.down('Tab');await page.waitForTimeout(1700);await page.keyboard.up('Tab');await page.waitForTimeout(100);
  const after=await page.evaluate(()=>({...globalThis.__continuousWorld.state}));
@@ -35,7 +35,7 @@ try{
  assert(after.speed<=1000/3.6+.01,'Michelangelo exceeded 1000 km/h');
  assert(after.x>before.x+2,'Michelangelo did not cross streamed map');
  await page.evaluate(()=>{const g=globalThis.__continuousWorld,v=g.venicePoint();Object.assign(g.state,{x:v.x-200,z:v.z,y:140,yaw:Math.PI/2});});
- await page.waitForFunction(()=>document.getElementById('enterVenice')?.hidden===false,{timeout:12000});
+ await page.waitForFunction(()=>document.getElementById('enterVenice')?.hidden===false,null,{timeout:12000});
  console.log('PASS MICHELANGELO '+JSON.stringify({before:{x:before.x,y:before.y,speed:before.speed},after:{x:after.x,y:after.y,speed:after.speed},destinationVisible:true}));
  await page.screenshot({path:'test-artifacts/michelangelo-continuous-world.png',timeout:15000});
  assert.equal(errors.length,0,'Browser errors: '+errors.join(' | '));
