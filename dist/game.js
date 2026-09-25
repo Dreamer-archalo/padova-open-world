@@ -7,7 +7,7 @@ import {TaxiPathfinder} from './Pathfinder.js';
 import {TaxiSystem} from './TaxiSystem.js';
 import {TaxiMenuController} from './TaxiMenuController.js';
 import {groundVehicleStep,groundContact,resetGroundMotion} from './vehicle-dynamics.js';
-import {footMotion,animateGait} from './foot-controller.js';
+import {footMotion,animateGait,animateSwim} from './foot-controller.js';
 import {SpeedCameras} from './speed-cameras.js';
 import {createCharacter,CharacterPicker} from './characters.js';
 import {QUALITY,qualityFor,qualityOptions,actorDetail,AdaptiveResolution} from './quality.js';
@@ -293,7 +293,7 @@ function recover(fromWater=false){
    knockX:0,knockZ:0,spin:0,turboTime:0,vy:0,destroyedUntil:0,parked:false,waterSinking:false});
   state.car.mesh.visible=true;poseVehicle(state.car);previousActors.delete(state.car.mesh);
   player.visible=false;
- }else{state.mode='foot';player.position.set(p.x,p.y,p.z);player.rotation.y=p.yaw;player.visible=true;}
+ }else{state.mode='foot';player.position.set(p.x,p.y,p.z);player.rotation.set(0,p.yaw,0,'YXZ');animateGait(player,state.elapsed,0,false);player.visible=true;}
  waterRecovery.remember(state,terrain);localRespawn.remember(state,terrain,respawnClear,state.elapsed,true);
  if(regionalWorld?.contains(p.x,p.z))regionalWorld.update(state,0);
  else world.update(state.x,state.z,true);
@@ -501,6 +501,8 @@ function movePlayer(dt){if(taxi?.phase==='transition'){state.speed=0;return;}if(
   const result=waterGame.stepSwim(state,{dx,dz,dive:keys.has('Space'),boost},dt,terrain,(x,z,y)=>!collides(x,z,.36,world.collision,y));
   player.position.set(state.x,state.y+.08,state.z);
   player.rotation.set(result?.landed?0:-1.04,state.yaw,0,'YXZ');
+  if(result?.landed)animateGait(player,state.elapsed,0,false);
+  else animateSwim(player,state.elapsed,state.speed,result?.submerged);
   if(result?.landed){toast('Riva raggiunta.',2);waterRecovery.remember(state,terrain);localRespawn.remember(state,terrain,respawnClear,state.elapsed,true);}
   if(state.health<=0)explodePlayer('Esaurimento sott’acqua');
   return;
