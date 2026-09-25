@@ -290,13 +290,25 @@ function makeMap(){mapBase=document.createElement('canvas');mapBase.width=1800;m
  for(const a of data.areas){path(a.p,true);c.fillStyle=a.k==='water'?'#33545d':'#284b42';c.fill();}for(const r of data.water){path(r.p);c.strokeStyle='#335d69';c.lineWidth=Math.max(1,r.w*sx);c.stroke();}c.fillStyle='#33474d';for(const b of data.buildings){path(b.p,true);c.fill();}for(const r of data.roads){path(r.p);c.lineWidth=Math.max(.5,r.w*sx);c.strokeStyle=['footway','path','steps'].includes(r.k)?'#405158':'#607278';c.stroke();}
 }
 function drawRoute(ctx,transform,width=3){if(!state.route.length)return;ctx.beginPath();state.route.forEach((p,i)=>{const a=transform(p);if(!i)ctx.moveTo(a.x,a.y);else ctx.lineTo(a.x,a.y);});ctx.strokeStyle='#edbb65';ctx.lineWidth=width;ctx.lineJoin='round';ctx.lineCap='round';ctx.stroke();}
-function drawMini(){if(!mapBase)return;densityCanvas(mini,2.7,1100);const c=miniCtx,w=mini.width,h=mini.height,range=state.mode==='car'?530:320,k=w/range;c.fillStyle='#172e38';c.fillRect(0,0,w,h);const mx=(state.x-minBounds.x)/minBounds.w*mapBase.width,my=(state.z-minBounds.z)/minBounds.h*mapBase.height,sw=range/minBounds.w*mapBase.width,sh=h/k/minBounds.h*mapBase.height;if(unifiedMap)unifiedMap.drawMini(c,state,range,w,h);else c.drawImage(mapBase,mx-sw/2,my-sh/2,sw,sh,0,0,w,h);const tr=p=>({x:(p.x-state.x)*k+w/2,y:(p.z-state.z)*k+h/2});drawRoute(c,tr,5);
- for(const p of PLACES){const t=tr(p);if(t.x>5&&t.x<w-5&&t.y>10&&t.y<h-5){c.fillStyle='#c6b28c';c.beginPath();c.arc(t.x,t.y,4,0,Math.PI*2);c.fill();}}
- for(const c of cars)if((c.spec.aircraft||c.spec.tracked)&&c.mesh.visible){const t=tr(c);if(t.x>8&&t.x<w-8&&t.y>8&&t.y<h-8){miniCtx.fillStyle='#edbb65';miniCtx.font='bold 14px sans-serif';miniCtx.fillText(c.spec.tracked?'T':c.spec.plane?'A':'H',t.x,t.y);}}
+function drawMini(){if(!mapBase)return;densityCanvas(mini,2.7,1100);const c=miniCtx,w=mini.width,h=mini.height,density=Math.max(1,Math.min(4,w/(mini.clientWidth||w/2.7))),range=state.mode==='car'?460:270,k=w/range;c.fillStyle='#172e38';c.fillRect(0,0,w,h);const mx=(state.x-minBounds.x)/minBounds.w*mapBase.width,my=(state.z-minBounds.z)/minBounds.h*mapBase.height,sw=range/minBounds.w*mapBase.width,sh=h/k/minBounds.h*mapBase.height;if(unifiedMap)unifiedMap.drawMini(c,state,range,w,h);else c.drawImage(mapBase,mx-sw/2,my-sh/2,sw,sh,0,0,w,h);const tr=p=>({x:(p.x-state.x)*k+w/2,y:(p.z-state.z)*k+h/2});drawRoute(c,tr,5);
+ for(const p of PLACES){const t=tr(p);if(t.x>5&&t.x<w-5&&t.y>10&&t.y<h-5){c.fillStyle='#c6b28c';c.beginPath();c.arc(t.x,t.y,3.5*density,0,Math.PI*2);c.fill();}}
+ for(const c of cars)if((c.spec.aircraft||c.spec.tracked)&&c.mesh.visible){const t=tr(c);if(t.x>8&&t.x<w-8&&t.y>8&&t.y<h-8){miniCtx.fillStyle='#edbb65';miniCtx.font='bold '+Math.round(12*density)+'px sans-serif';miniCtx.fillText(c.spec.tracked?'T':c.spec.plane?'A':'H',t.x,t.y);}}
  for(const radar of speedCameras?.sites||[])if(dist(radar,state)<220){const t=tr(radar);c.fillStyle='#f3b53f';c.fillRect(t.x-4,t.y-4,8,8);}
  if(taxi?.car.mesh.visible){const t=tr(taxi.car);if(t.x>8&&t.x<w-8&&t.y>8&&t.y<h-8){c.fillStyle='#ffdc46';c.font='900 15px sans-serif';c.fillText('TX',t.x-8,t.y+5);}}
- for(const p of cops){const t=tr(p);c.fillStyle='#76b7ff';c.beginPath();c.arc(t.x,t.y,5,0,Math.PI*2);c.fill();}const target=currentTarget();if(target){const t=tr(target);c.fillStyle='#ffc56a';c.beginPath();c.arc(clamp(t.x,10,w-10),clamp(t.y,10,h-10),7,0,Math.PI*2);c.fill();}
- c.save();c.translate(w/2,h/2);c.rotate(-state.yaw);c.fillStyle='#fff8de';c.strokeStyle='#18323d';c.lineWidth=2;c.beginPath();c.moveTo(0,11);c.lineTo(-7,-7);c.lineTo(0,-3);c.lineTo(7,-7);c.closePath();c.fill();c.stroke();c.restore();c.fillStyle='#bbcbd0';c.font='600 20px system-ui';c.fillText('N',w-28,26);
+ for(const p of cops){const t=tr(p);c.fillStyle='#76b7ff';c.beginPath();c.arc(t.x,t.y,4*density,0,Math.PI*2);c.fill();}const target=currentTarget();if(target){const t=tr(target);c.fillStyle='#ffc56a';c.beginPath();c.arc(clamp(t.x,10*density,w-10*density),clamp(t.y,10*density,h-10*density),6*density,0,Math.PI*2);c.fill();}
+ c.save();c.translate(w/2,h/2);c.rotate(-state.yaw);c.scale(density,density);
+ c.fillStyle='#fff8de';c.strokeStyle='#18323d';c.lineWidth=2.25;
+ c.beginPath();c.moveTo(0,11);c.lineTo(-7,-7);c.lineTo(0,-3);c.lineTo(7,-7);c.closePath();
+ c.fill();c.stroke();c.restore();
+ c.fillStyle='#f5f4e5';c.strokeStyle='#162f3c';c.lineWidth=density*2.4;
+ c.font='700 '+Math.round(12*density)+'px system-ui';c.strokeText('N',w-22*density,17*density);
+ c.fillText('N',w-22*density,17*density);
+ // A physical distance scale makes the improved map usable while driving
+ // between neighbouring towns, regardless of viewport resolution.
+ const metres=state.mode==='car'?100:50,bar=metres*k;
+ c.fillStyle='#102e3bdc';c.fillRect(6*density,h-29*density,Math.max(67*density,bar+16*density),26*density);
+ c.fillStyle='#f9f3df';c.fillRect(13*density,h-14*density,bar,2*density);
+ c.font='650 '+Math.round(10.5*density)+'px system-ui';c.fillText(metres+' m',13*density,h-17*density);
 }
 function fullTransform(p){if(unifiedMap)return unifiedMap.toScreen(p);const c=$('fullmap');return {x:(p.x-minBounds.x)/minBounds.w*c.width,y:(p.z-minBounds.z)/minBounds.h*c.height};}
 function drawFullMap(){if($('mapDialog')?.open)resizeMapSurfaces();if(unifiedMap){unifiedMap.draw({position:state,places:PLACES,target:currentTarget(),route:state.route});return;}const c=$('fullmap').getContext('2d'),w=$('fullmap').width,h=$('fullmap').height;c.drawImage(mapBase,0,0,w,h);drawRoute(c,fullTransform,3);for(const p of PLACES){const a=fullTransform(p);c.fillStyle='#ffc56a';c.beginPath();c.arc(a.x,a.y,3,0,Math.PI*2);c.fill();}const a=fullTransform(state);c.fillStyle='white';c.strokeStyle='#172e38';c.lineWidth=3;c.beginPath();c.arc(a.x,a.y,8,0,Math.PI*2);c.fill();c.stroke();const target=currentTarget();if(target){const b=fullTransform(target);c.strokeStyle='#ffc56a';c.lineWidth=3;c.beginPath();c.arc(b.x,b.y,10,0,Math.PI*2);c.stroke();c.fillStyle='#ffc56a';c.font='600 19px system-ui';c.fillText('DESTINATION',clamp(b.x+16,5,810),b.y+6);}}
