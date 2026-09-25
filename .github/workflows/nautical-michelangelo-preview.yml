@@ -1,0 +1,205 @@
+name: Marine fleet and Michelangelo test preview
+
+on:
+  push:
+    branches: [feat/boats-michelangelo-20260925]
+    paths:
+      - 'dist/**'
+      - 'verify-nautical-michelangelo.mjs'
+      - 'tools/test-nautical-venice-chromium.mjs'
+      - '.github/workflows/nautical-michelangelo-preview.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: marine-michelangelo-preview
+  cancel-in-progress: true
+
+jobs:
+  static-and-browser:
+    runs-on: ubuntu-latest
+    timeout-minutes: 22
+    steps:
+      - name: Checkout stacked marine candidate from PR60
+        uses: actions/checkout@v6
+        with:
+          ref: feat/boats-michelangelo-20260925
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Restore verified generated PR59 OpenStreetMap geometry
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p dist/data
+          root=https://dreamer-archalo.github.io/padova-open-world/preview/continuous/data
+          for file in venice.json world-padova-venice.json world-terrain.json; do
+            curl --fail --show-error --location --retry 5 --retry-delay 3 --max-time 150 "$root/$file" -o "dist/data/$file"
+          done
+          python - <<'PY'
+          import json
+          base='dist/data/'
+          v=json.load(open(base+'venice.json'))
+          w=json.load(open(base+'world-padova-venice.json'))
+          t=json.load(open(base+'world-terrain.json'))
+          assert len(v['buildings'])>2500 and len(v['water'])>50
+          assert len(w['roads'])>2000 and len(t['heights'])>100
+          print('PASS cached public Venice/continuous source data')
+          PY
+
+      - name: Verify standalone gameplay and current Venice dependencies
+        run: |
+          set -euo pipefail
+          for f in dist/nautical-catalog.js dist/padova-boats.js dist/venice-boats.js dist/airport-michelangelo.js dist/game.js dist/phase2-runtime.js dist/venice-game.js dist/continuous-world.js dist/villa-mandria-hangar.js dist/villa-mandria-catalog-ui.js; do node --check "$f"; done
+          node verify-nautical-michelangelo.mjs
+          node verify-venice-world.mjs
+          node verify-continuous-world.mjs
+          node verify-hospital-elevators.mjs
+          node tools/verify-mandria-catalog-ui.mjs
+          node tools/verify-mandria-hangar.mjs
+          node tools/verify-airport-combat-flight.mjs
+          node tools/verify-air-hunt.mjs
+          node verify-feature-preservation.mjs
+
+      - name: Install Chromium for actual boat and flight controls
+        run: |
+          npm install --no-save playwright@1.55.1
+          npx playwright install --with-deps chromium
+
+      - name: Navigate Venice and fly Michelangelo in WebGL
+        run: |
+          node tools/serve.mjs --host 127.0.0.1 --port 4173 &
+          for i in $(seq 1 25); do if curl -fsS http://127.0.0.1:4173/ -o /dev/null; then break; fi; sleep 1; done
+          node tools/test-nautical-venice-chromium.mjs
+
+      - name: Preserve browser screenshots and failures
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: marine-pr60-browser
+          path: test-artifacts/
+          if-no-files-found: ignore
+
+  deploy:
+    needs: static-and-browser
+    runs-on: ubuntu-latest
+    timeout-minutes: 22
+    steps:
+      - name: Checkout exact unmerged PR60 candidate
+        uses: actions/checkout@v6
+        with:
+          ref: feat/boats-michelangelo-20260925
+
+      - name: Restore verified public regional geometries
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p dist/data
+          root=https://dreamer-archalo.github.io/padova-open-world/preview/continuous/data
+          for file in venice.json world-padova-venice.json world-terrain.json; do
+            curl --fail --show-error --location --retry 5 --retry-delay 3 --max-time 150 "$root/$file" -o "dist/data/$file"
+          done
+
+      - name: Checkout current production main separately
+        uses: actions/checkout@v6
+        with:
+          ref: main
+          path: .production-source
+          persist-credentials: false
+
+      - name: Checkout independent original continuous-world candidate
+        uses: actions/checkout@v6
+        with:
+          ref: feat/padova-venice-continuous-20260925
+          path: .previous-continuous
+          persist-credentials: false
+
+      - name: Preserve production, install isolated PR60 marine and original PR59
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -s .production-source/dist/index.html
+          sha256sum .production-source/dist/index.html .production-source/dist/game.js > /tmp/marine-production-original.sha
+          for folder in marine continuous venice; do mkdir -p ".production-source/dist/preview/$folder"; done
+          cp -a dist/. .production-source/dist/preview/marine/
+          cp -a .previous-continuous/dist/. .production-source/dist/preview/continuous/
+          cp -a .previous-continuous/dist/. .production-source/dist/preview/venice/
+          for folder in continuous venice; do
+            for file in venice.json world-padova-venice.json world-terrain.json; do
+              cp "dist/data/$file" ".production-source/dist/preview/$folder/data/$file"
+            done
+          done
+          test -s .production-source/dist/preview/marine/data/venice.json
+          test -s .production-source/dist/preview/marine/data/world-padova-venice.json
+          cmp dist/airport-michelangelo.js .production-source/dist/preview/marine/airport-michelangelo.js
+          sha256sum -c /tmp/marine-production-original.sha
+
+      - name: Checkout historic PR57
+        uses: actions/checkout@v6
+        with:
+          ref: feat/monoblocco-elevators-20260924
+          path: .pr57
+          persist-credentials: false
+
+      - name: Checkout historic PR56
+        uses: actions/checkout@v6
+        with:
+          ref: fix/shared-street-surface-20260922
+          path: .pr56
+          persist-credentials: false
+
+      - name: Checkout historic PR51
+        uses: actions/checkout@v6
+        with:
+          ref: feat/villa-treves-phase1-20260919
+          path: .pr51
+          persist-credentials: false
+
+      - name: Checkout historic PR52
+        uses: actions/checkout@v6
+        with:
+          ref: 20c6411c215ad57bdc1a57df0f0ae69554d241c2
+          path: .pr52
+          persist-credentials: false
+
+      - name: Checkout historic Mandria v11
+        uses: actions/checkout@v6
+        with:
+          ref: cb6d5fb1f3afedfda68f8f07651916d3a8e12f28
+          path: .mandria-v11
+          persist-credentials: false
+
+      - name: Keep existing public preview links unchanged
+        shell: bash
+        run: |
+          set -euo pipefail
+          for item in "pr-57 .pr57" "pr-56 .pr56" "pr-51 .pr51" "pr-52 .pr52" "mandria-v11 .mandria-v11"; do
+            read -r name folder <<< "$item"
+            test -s "$folder/dist/index.html"
+            mkdir -p ".production-source/dist/preview/$name"
+            cp -a "$folder/dist/." ".production-source/dist/preview/$name/"
+          done
+          touch .production-source/dist/.nojekyll
+          sha256sum -c /tmp/marine-production-original.sha
+
+      - uses: actions/configure-pages@v5
+      - name: Upload unchanged main plus isolated marine/continuous previews
+        uses: actions/upload-pages-artifact@v4
+        with:
+          path: .production-source/dist
+
+      - name: Publish test build WITHOUT merging main
+        id: deploy
+        uses: actions/deploy-pages@v4
+
+      - name: Published test links
+        run: |
+          echo 'PR60 GAME: https://dreamer-archalo.github.io/padova-open-world/preview/marine/'
+          echo 'PR60 VENICE BOATS: https://dreamer-archalo.github.io/padova-open-world/preview/marine/venice.html'
+          echo 'PR60 MICHELANGELO FLIGHT: https://dreamer-archalo.github.io/padova-open-world/preview/marine/continuous-world.html?vehicle=michelangelo'
+          echo "GitHub Pages: ${{ steps.deploy.outputs.page_url }}"

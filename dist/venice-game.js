@@ -1,4 +1,5 @@
 import * as THREE from './vendor/three.module.js';
+import {installVeniceBoats} from './venice-boats.js';
 
 const $=id=>document.getElementById(id);
 const canvas=$('world');
@@ -26,7 +27,7 @@ const MAT={
  park:new THREE.MeshStandardMaterial({color:'#728d62',roughness:1,side:THREE.DoubleSide})
 };
 
-let data=null,player=null,playerYaw=0,toastUntil=0,lastTime=performance.now();
+let data=null,player=null,boats=null,playerYaw=0,toastUntil=0,lastTime=performance.now();
 const keys=new Set();
 const state={x:0,z:0,speed:0};
 const buildingGrid=new Map(),waterGrid=new Map(),bridgeGrid=new Map();
@@ -143,6 +144,8 @@ function nearestPlace(){
  return bd<190?best:null;
 }
 function move(dt){
+ if(boats?.active){boats.step(dt);$('location').textContent='Venezia · Navigazione';return;}
+ boats?.step(dt);
  let f=(keys.has('KeyW')||keys.has('ArrowUp')?1:0)-(keys.has('KeyS')||keys.has('ArrowDown')?1:0);
  let t=(keys.has('KeyA')||keys.has('ArrowLeft')?1:0)-(keys.has('KeyD')||keys.has('ArrowRight')?1:0);
  if(t)playerYaw+=t*dt*2.25;
@@ -185,7 +188,8 @@ async function init(){
   await new Promise(r=>requestAnimationFrame(r));buildWorld();
   player=makePlayer();const spawn=safePlace(data.spawn);state.x=spawn.x;state.z=spawn.z;player.position.set(state.x,.2,state.z);camera.position.set(state.x-8,7,state.z+10);
   $('buildingCount').textContent=data.buildings.length.toLocaleString('it-IT');$('canalCount').textContent=data.water.length.toLocaleString('it-IT');
-  globalThis.__veniceWorld={data,state,buildingGrid,waterGrid,bridgeGrid,teleport};
+  boats=installVeniceBoats({data,scene,state,keys,player,blocked,nearby,bridgeGrid,toast,safePlace,camera});
+  globalThis.__veniceWorld={data,state,buildingGrid,waterGrid,bridgeGrid,teleport,boats};
   progress(100,'Venezia pronta.');setTimeout(()=>{$('loading').hidden=true;$('hud').hidden=false;},300);
   requestAnimationFrame(animate);
  }catch(error){$('loadingStatus').textContent='ERRORE: '+error.message;$('loadingBar').style.width='100%';console.error(error);}
