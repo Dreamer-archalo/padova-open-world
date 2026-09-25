@@ -321,7 +321,7 @@ function drawMini(){if(!mapBase)return;densityCanvas(mini,2.7,1100);const c=mini
  c.font='650 '+Math.round(10.5*density)+'px system-ui';c.fillText(metres+' m',13*density,h-17*density);
  if($('minimapStatus')){
   const st=miniTiles.lastStats||{},online=st.ready>0;
-  $('minimapStatus').textContent=online?'OSM · HD':st.pending?'HD…':'VETTORI';
+  $('minimapStatus').textContent='GTA · HD';
  }
 }
 function fullTransform(p){if(unifiedMap)return unifiedMap.toScreen(p);const c=$('fullmap');return {x:(p.x-minBounds.x)/minBounds.w*c.width,y:(p.z-minBounds.z)/minBounds.h*c.height};}
@@ -330,7 +330,7 @@ function drawFullMap(){if($('mapDialog')?.open)resizeMapSurfaces();if(unifiedMap
  const tiles=unifiedMap.lastTileStats||{};
  if($('mapQuality'))$('mapQuality').textContent=tiles.ready>0?
   'OSM HD: '+tiles.ready+' sezioni nitide caricate'+(tiles.pending?' · '+tiles.pending+' in caricamento':''):
-  tiles.pending?'Scaricamento cartografia HD…':'Modalità vettoriale locale (verifica connessione mappa)';
+  tiles.pending?'Caricamento cartografia…':'MAPPA GTA · VETTORIALE HD · TUTTI I COMUNI';
  if($('waterQuality')){
   const exact=(regionalWorld?.data?.areas||[]).filter(a=>a.k==='water'&&a.osm).length;
   $('waterQuality').textContent=exact?'Acque: '+exact+' bacini/sponde da poligoni geografici reali':
