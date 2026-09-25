@@ -43,13 +43,14 @@ buildings=[*padova.get("buildings",[]),*corridor_buildings,*venice.get("building
 roads=[*padova.get("roads",[]),*corridor.get("roads",[]),*venice.get("roads",[])]
 water=[*padova.get("water",[]),*corridor.get("water",[]),*venice.get("water",[])]
 areas=[*padova.get("areas",[]),*corridor.get("areas",[]),*venice.get("areas",[])]
+shorelines=corridor.get("shorelines",[])
 bounds=PLAYABLE_BOUNDS
 places=[
  {"name":"Padova","tag":"Centro città","x":-150,"z":-49},
  *corridor.get("places",[]),
  *venice.get("places",[])
 ]
-out={"version":1,"origin":PADOVA_ORIGIN,"bounds":bounds,"buildings":buildings,"roads":roads,"water":water,"areas":areas,
+out={"version":1,"origin":PADOVA_ORIGIN,"bounds":bounds,"buildings":buildings,"roads":roads,"water":water,"areas":areas,"shorelines":shorelines,
      "places":places,"regions":{"padova":padova.get("bounds"),"corridor":corridor.get("bounds"),"venice":venice.get("bounds")},
      "attribution":"© OpenStreetMap contributors","source":"https://www.openstreetmap.org/copyright","license":"ODbL 1.0",
      "scale":"One world unit = one metre; unified Padova origin."}
@@ -64,6 +65,7 @@ regional={
  "roads":[r for r in corridor.get("roads",[]) if max(p[0] for p in r["p"])>7000]+venice.get("roads",[]),
  "water":[w for w in corridor.get("water",[]) if max(p[0] for p in w["p"])>7000]+venice.get("water",[]),
  "areas":[a for a in corridor.get("areas",[]) if max(p[0] for p in a["p"])>7000]+venice.get("areas",[]),
+ "shorelines":[s for s in shorelines if max(p[0] for p in s["p"])>26000],
  "places":corridor.get("places",[])+venice.get("places",[]),
  "attribution":"© OpenStreetMap contributors","source":"https://www.openstreetmap.org/copyright","license":"ODbL 1.0"
 }
