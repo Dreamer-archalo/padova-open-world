@@ -6,5 +6,6 @@
  way["highway"~"^(residential|living_street|unclassified|service|track)$"](45.4080,11.9500,45.4600,12.0610); // Padova est, Noventa, Vigonza, Stra
  way["highway"~"^(residential|living_street|unclassified|service|track)$"](45.4080,12.0450,45.4740,12.1570); // Stra, Cazzago, Dolo, Mira
  way["highway"~"^(residential|living_street|unclassified|service|track)$"](45.4260,12.1430,45.4840,12.2890); // Oriago, Malcontenta, Marghera
+ way["highway"~"^(residential|living_street|unclassified|service|track)$"](45.4830,12.0930,45.5090,12.1340); // Mirano
 );
 out geom tags;
