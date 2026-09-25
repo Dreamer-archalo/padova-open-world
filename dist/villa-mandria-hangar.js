@@ -16,23 +16,24 @@ Object.assign(VEHICLES,{
 });
 
 const COLORS=Object.freeze(['#b52f3d','#e9e4d5','#252b36','#397084','#c5a257','#477b53','#bd7041','#8a70a8']);
-const CAT=Object.freeze({aircraft:'Aerei',helicopter:'Elicotteri',bicycle:'Bici e monopattini',motorcycle:'Moto e scooter',tracked:'Carri armati',freight:'Camion e mezzi pesanti',car:'Auto e altri mezzi'});
+const CAT=Object.freeze({watercraft:'Barche',aircraft:'Aerei',helicopter:'Elicotteri',bicycle:'Bici e monopattini',motorcycle:'Moto e scooter',tracked:'Carri armati',freight:'Camion e mezzi pesanti',car:'Auto e altri mezzi'});
 const $=id=>document.getElementById(id);
 const escapeHTML=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 export function hangarCategory(id,s){
- if(s.plane)return 'aircraft';if(s.aircraft)return 'helicopter';if(id==='bicycle'||id==='kick-scooter')return 'bicycle';
+ if(s.watercraft)return 'watercraft';if(s.plane)return 'aircraft';if(s.aircraft)return 'helicopter';if(id==='bicycle'||id==='kick-scooter')return 'bicycle';
  if(s.tracked)return 'tracked';if(s.bike||['motorcycle','scooter'].includes(id)||s.family==='motorcycle')return 'motorcycle';
  if(['freight','work','van','pickup'].includes(s.family)||s.length>=7&&!s.aircraft)return 'freight';return 'car';
 }
 export function hangarCatalogue(){return Object.entries(VEHICLES).filter(([id,s])=>
- s&&typeof s.name==='string'&&Number.isFinite(s.width)&&Number.isFinite(s.length)&&s.width>0&&s.length>0)
+ (!s?.watercraft||s.places?.includes('padova'))&&s&&typeof s.name==='string'&&Number.isFinite(s.width)&&Number.isFinite(s.length)&&s.width>0&&s.length>0)
  .map(([id,s])=>({id,name:s.name,spec:s,category:hangarCategory(id,s)}))
  .sort((a,b)=>Object.keys(CAT).indexOf(a.category)-Object.keys(CAT).indexOf(b.category)||a.name.localeCompare(b.name,'it'));
 }
 // All thumbnails are locally generated SVG images, not external/stock photos.
 export function hangarThumbnail(category,color){
  const ink='#172532',stroke='#91a3af';let silhouette='';
- if(category==='aircraft')silhouette='<path d="M105 10 L117 62 L190 90 L190 103 L121 94 L119 135 L145 154 L145 162 L111 153 L77 162 L77 154 L103 135 L101 94 L32 103 L32 90 L105 62 Z"/>';
+ if(category==='watercraft')silhouette='<path d="M29 99 L192 99 L170 127 L52 127Z M81 96 L91 63 L137 63 L151 96Z"/><path d="M17 140 Q31 127 47 140 T78 140 T109 140 T140 140 T171 140 T205 140" fill="none" stroke="'+color+'" stroke-width="4"/>';
+ else if(category==='aircraft')silhouette='<path d="M105 10 L117 62 L190 90 L190 103 L121 94 L119 135 L145 154 L145 162 L111 153 L77 162 L77 154 L103 135 L101 94 L32 103 L32 90 L105 62 Z"/>';
  else if(category==='helicopter')silhouette='<path d="M22 86h180v5H22zM107 33h8v50h-8zM60 95q3-29 39-31h27q33 2 38 29l-15 20H83zM160 95h41v7h-42zM73 121h82v5H73z"/>';
  else if(category==='bicycle'||category==='motorcycle')silhouette='<circle cx="57" cy="116" r="28" fill="none" stroke="'+color+'" stroke-width="7"/><circle cx="163" cy="116" r="28" fill="none" stroke="'+color+'" stroke-width="7"/><path d="M57 116L90 75l36 41H57l32-41h34l40 41M124 75l-10-17h-19M161 116l-20-55" fill="none" stroke="'+color+'" stroke-width="7"/>';
  else if(category==='tracked')silhouette='<rect x="23" y="96" width="174" height="34" rx="16"/><path d="M48 95L69 68h91l19 27zM108 68V45h11v23M115 49l85-11v7l-85 14z"/>';
@@ -162,6 +163,7 @@ function renderCatalogue(g){
 async function choose(g,id,color){
  if(g.mandriaHangar.busy)return;
  const s=VEHICLES[id],p=bay();if(!s||!g.state.started||!hangarCatalogue().some(e=>e.id===id))return;
+ if(s.watercraft){const d=g.nautical?.docks?.find(d=>d.width>=s.minChannel+1);closeDialog(g);if(!d){g.toast?.('Nessuna darsena compatibile con questa barca nella mappa di Padova.',4);return;}g.nautical.launch(id,d.id,color);return;}
  // Never erase an occupied/mission vehicle; the only replaceable object is our
  // own staged vehicle, and only while it is physically still inside the bay.
  const old=g.mandriaHangar.staged;
