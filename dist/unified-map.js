@@ -79,6 +79,17 @@ export class UnifiedMap {
    c.strokeText?.(p.name,q.x+unit(8),q.y-unit(7));c.fillStyle='#fff6e5';
    c.fillText(p.name,q.x+unit(8),q.y-unit(7));
   }
+  if(this.zoomLevel>=5)for(const p of this.region.places||[]){
+   if(!this.isVisible(p)||REGIONAL_ZONES.some(z=>Math.hypot(z.x-p.x,z.z-p.z)<65))continue;
+   dot(p,2.6,'#f5ca90');
+   if(this.zoomLevel>=9){
+    const q=this.toScreen(p);
+    c.font='600 '+Math.round(unit(11.5))+'px system-ui';
+    c.lineWidth=unit(2.1);c.strokeStyle='#1c3a48';
+    c.strokeText?.(p.name,q.x+unit(6),q.y+unit(10));
+    c.fillStyle='#f3e6c8';c.fillText(p.name,q.x+unit(6),q.y+unit(10));
+   }
+  }
   if(this.zoomLevel>=3)for(const p of places)dot(p,2.8,'#ffce84');
   if(target&&this.isVisible(target)){
    dot(target,6,'#ffc56a');const q=this.toScreen(target);c.strokeStyle='#ffc56a';c.lineWidth=unit(2);
