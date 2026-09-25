@@ -206,7 +206,7 @@ export class RegionalWorld{
   terrain.waterHeight=(x,z)=>active(x,z)?this.waterSurface(x,z):original.waterHeight(x,z);
  }
  tile(ix,iz){
-  const arr=[],steps=8,n=CHUNK;
+  const arr=[],steps=regionalDetail((ix+.5)*CHUNK,(iz+.5)*CHUNK)==='detailed'?24:10,n=CHUNK;
   for(let j=0;j<steps;j++)for(let i=0;i<steps;i++){
    const x=ix*n+i*n/steps,z=iz*n+j*n/steps,x1=x+n/steps,z1=z+n/steps;
    const a=[x,this.ground(x,z),z],b=[x1,this.ground(x1,z),z],c=[x1,this.ground(x1,z1),z1],d=[x,this.ground(x,z1),z1];addQuad(arr,a,b,c,d);
@@ -250,13 +250,20 @@ export class RegionalWorld{
   if(this.visible.has(k))return;
   const [ix,iz]=k.split(',').map(Number),src=this.chunks.get(k)||{buildings:[],roads:[],water:[],areas:[]};
   const group=new THREE.Group();group.add(this.tile(ix,iz));
-  // Shallow regional lagoon approximation; actual channels still follow OSM.
-  // A separate sea plane makes the journey over Ponte della Libertà legible.
-  if(coast((ix+.5)*CHUNK,(iz+.5)*CHUNK)){
-   const lagoon=new THREE.Mesh(new THREE.PlaneGeometry(CHUNK,CHUNK),canalMat);
-   lagoon.rotation.x=-Math.PI/2;lagoon.position.set((ix+.5)*CHUNK,LAGOON_Y,(iz+.5)*CHUNK);
-   lagoon.renderOrder=1;group.add(lagoon);
+  // Fill open lagoon cells with one contiguous blue surface per chunk, but
+  // leave holes for real island streets, industrial parcels and quays.
+  const sea=[];
+  if((ix+1)*CHUNK>=30000&&ix*CHUNK<40500){
+   const steps=regionalDetail((ix+.5)*CHUNK,(iz+.5)*CHUNK)==='detailed'?32:16;
+   for(let j=0;j<steps;j++)for(let i=0;i<steps;i++){
+    const x=ix*CHUNK+(i+.5)*CHUNK/steps,z=iz*CHUNK+(j+.5)*CHUNK/steps;
+    if(!this.lagoonAt(x,z))continue;
+    const x0=ix*CHUNK+i*CHUNK/steps,z0=iz*CHUNK+j*CHUNK/steps,
+      x1=x0+CHUNK/steps,z1=z0+CHUNK/steps,y=LAGOON_Y+.1;
+    addQuad(sea,[x0,y,z0],[x1,y,z0],[x1,y,z1],[x0,y,z1]);
+   }
   }
+  if(sea.length){const sheet=new THREE.Mesh(geometry(sea),lagoonMat);sheet.renderOrder=1;group.add(sheet);}
   const normal=[],arterial=[],channels=[],balustrade=[],bridgeSupports=[],w=[],r=[],blocks=[],energyFaces=[],energyEdges=[];
   for(const p of src.roads){
    surface(/motorway|trunk|primary|secondary/.test(p.k)?arterial:normal,p.a,p.b,p.w,p.yA+.025,p.yB+.025);
@@ -285,14 +292,13 @@ export class RegionalWorld{
     }
    }
   }
-  for(const p of src.water){surface(channels,p.a,p.b,p.w,(coast(...p.a)?LAGOON_Y:this.raw(...p.a))+.075,(coast(...p.b)?LAGOON_Y:this.raw(...p.b))+.075);}
+  for(const p of src.water){surface(channels,p.a,p.b,p.w,this.waterSurface(...p.a)+.04,this.waterSurface(...p.b)+.04);}
   for(const a of src.areas){
-   if(a.k!=='water'||a.p.length>180)continue;
-   const xs=a.p.map(p=>p[0]),zs=a.p.map(p=>p[1]);
-   if(Math.max(...xs)-Math.min(...xs)>850||Math.max(...zs)-Math.min(...zs)>850)continue;
+   if(a.k!=='water'||a.p.length>220)continue;
    const poly=a.p.map(p=>new THREE.Vector2(p[0],p[1])),tris=THREE.ShapeUtils.triangulateShape(poly,[]);
    for(const [i,j,k] of tris){
-    const p=a.p[i],q=a.p[j],r=a.p[k],y=coast(...p)?LAGOON_Y+.09:this.raw(...p)-.16;
+    const p=a.p[i],q=a.p[j],r=a.p[k];
+    const y=this.waterSurface((p[0]+q[0]+r[0])/3,(p[1]+q[1]+r[1])/3)+.045;
     channels.push(p[0],y,p[1],q[0],y,q[1],r[0],y,r[1]);
    }
   }
@@ -314,7 +320,7 @@ export class RegionalWorld{
   }
   if(normal.length)group.add(new THREE.Mesh(geometry(normal),roadMat));
   if(arterial.length)group.add(new THREE.Mesh(geometry(arterial),arterialMat));
-  if(channels.length)group.add(new THREE.Mesh(geometry(channels),canalMat));
+  if(channels.length){const waterMesh=new THREE.Mesh(geometry(channels),canalMat);waterMesh.renderOrder=2;group.add(waterMesh);}
   if(balustrade.length)group.add(new THREE.Mesh(geometry(balustrade),stone));
   if(bridgeSupports.length)group.add(new THREE.Mesh(geometry(bridgeSupports),stone));
   if(w.length)group.add(new THREE.Mesh(geometry(w),walls));
