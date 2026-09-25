@@ -86,6 +86,7 @@ async function startUnifiedRegion(){
   const extension=new RegionalWorld(scene,map,grid,world.collision);
   extension.installTerrainHooks(terrain);terrain.unifiedBounds=unifiedBounds;
   regionalWorld=extension;
+   if($('regionalLoadStatus'))$('regionalLoadStatus').textContent='REGIONE ATTIVA · acqua e nuoto disponibili';
   unifiedMap=new UnifiedMap($('fullmap'),mapBase,minBounds,map,data);unifiedMap.centerOn(state.x,state.z,11);
    unifiedMap.tiles=miniTiles;miniTiles.onLoad=()=>{if($('mapDialog').open)drawFullMap();};
    // Optional 2D-only detail is streamed after the playable region loads.
@@ -152,14 +153,16 @@ async function startUnifiedRegion(){
   control('unifiedMapHere',()=>unifiedMap.centerOn(state.x,state.z,Math.max(11,unifiedMap.zoomLevel)));
   if(place.open){installRegionalMapPlaces();drawFullMap();}
   toast('Estensione Padova–Venezia caricata. Premi M e usa +/- per esplorare.',5);
- }catch(error){regionalFailure=error;console.warn('[Unified map] Padova stays playable:',error);
+ }catch(error){regionalFailure=error;console.error('[REGION NOT LOADED: WATER & SWIMMING UNAVAILABLE OUTSIDE PADOVA]',error);
+   if($('regionalLoadStatus'))$('regionalLoadStatus').textContent='REGIONE NON CARICATA · acqua e nuoto fuori Padova disattivi';
+   if($('waterQuality'))$('waterQuality').textContent='ERRORE: dati acqua regionali non caricati';
    toast('Estensione regionale non caricata: Padova rimane disponibile.',5);
  }finally{regionalLoading=false;}
 }
 function regionalFastTravel(p){
  if(!regionalWorld||!p||state.mission||waterRecovery.active||incidents?.recovery){toast('Termina la missione o attendi il caricamento della regione.');return;}
  const pos=regionalWorld.nearestRoad(p.x,p.z,130),safe=pos&&pos.road.w>=4&&!/footway|pedestrian|steps/.test(pos.road.k)?pos:p;
- state.x=safe.x;state.z=safe.z;state.yaw=pos?.yaw??state.yaw;state.speed=0;state.vy=0;
+ state.x=safe.x;state.z=safe.z;state.yaw=pos?.yaw??state.yaw;state.speed=0;state.vy=0;waterGame.reset();
  state.y=terrain.height(state.x,state.z)+.14;
  if(state.car){state.car.x=state.x;state.car.z=state.z;state.car.y=state.y;state.car.yaw=state.yaw;state.car.speed=0;resetGroundMotion(state.car);poseVehicle(state.car);}
  player.position.set(state.x,state.y,state.z);player.rotation.y=state.yaw;
@@ -381,8 +384,13 @@ function recover(fromWater=false){
  fromWater=fromWater===true;state.knockX=state.knockZ=state.spin=0;
  // Resolve relative to the actual death location; a stale Padova lastDry
  // must not teleport someone drowning immediately after arriving in Venice.
+ const deathRegion=state.x>=32000?'lagoon':state.x>=7350?'riviera':'padova';
  const p=localRespawn.choose(state,terrain,respawnClear,state.car?.spec,
-   {water:fromWater,nearRoad:respawnRoad});
+    {water:fromWater,nearRoad:respawnRoad});
+ if(p&&fromWater&&(p.x>=32000?'lagoon':p.x>=7350?'riviera':'padova')!==deathRegion&&
+    Math.hypot(p.x-state.x,p.z-state.z)>1400){
+  toast('Recupero fuori zona bloccato: premi R vicino alla riva.',4);return false;
+ }
  if(!p){toast('Nessuna posizione sicura vicina. Apri M per scegliere una strada.');return false;}
  state.parachuting=false;if(parachute)parachute.visible=false;
  previousPose=null;keys.clear();waterRecovery.reset();waterGame.reset();document.body.classList.remove('water-fall');
@@ -665,16 +673,15 @@ function movePlayer(dt){if(taxi?.phase==='transition'){state.speed=0;return;}if(
    animateGait(player,state.elapsed,state.speed,boost,state.y<ground+.1);
  }
 
- const onRoof=state.mode==='foot'&&footSurface(state.x,state.z,state.y,terrain,world.collision)>terrain.height(state.x,state.z,state.y)+.2;
- const waterY=onRoof||(state.car?.jump?.airborne&&state.y>terrain.waterHeight?.(state.x,state.z)+.3)?null:terrain.waterAt(state.x,state.z,0,state.y);
- if(waterY!==null){
-   if(state.mode==='car'&&!state.car?.spec.aircraft&&!state.car?.spec.watercraft
-    &&!state.car?.spec.boat&&state.car?.waterDock===undefined){
-    if(waterGame.enterVehicle(state,waterY))toast('Auto in acqua: galleggia, poi affonda. E per nuotare, R per recuperare.',5);
-   }else if(state.mode==='foot'&&waterGame.startSwimming(state,waterY)){
-    player.rotation.x=-1.04;toast('Nuoto: W/A/S/D per muoverti, SPAZIO immergiti, R recupera.',5);
-   }
-  }else waterRecovery.remember(state,terrain);
+ // Allow swimming rather than invoking the legacy instant-drowning path.
+ if(!waterGame.active){
+  const onRoof=state.mode==='foot'&&footSurface(state.x,state.z,state.y,terrain,world.collision)>
+   terrain.height(state.x,state.z,state.y)+.2;
+  if(!onRoof){
+   const waterY=terrain.waterAt(state.x,state.z,0,state.y);
+   if(!enterGameplayWater(waterY))waterRecovery.remember(state,terrain);
+  }
+ }
  const oldX=state.x,oldZ=state.z,bound=regionalWorld?unifiedBounds:{minX:-5970,maxX:7250,minZ:-6480,maxZ:6230};state.x=clamp(state.x,bound.minX,bound.maxX);state.z=clamp(state.z,bound.minZ,bound.maxZ);if(oldX!==state.x||oldZ!==state.z){state.speed=0;toast('Limite dell’attuale mondo percorribile.',2);}
 }
 function trafficChoices(c,node){const edges=node.edges.filter(e=>e.id!==c.prev&&e.road.k!=='pedestrian'&&!['no','private'].includes(e.road?.access)&&e.road.w>c.spec.width+1),fallback=node.edges.filter(e=>e.road.k!=='pedestrian'&&!['no','private'].includes(e.road?.access)&&e.road.w>c.spec.width+1),pool=edges.length?edges:fallback;return pool.map(e=>({e,score:Math.random()*1.2-Math.abs(angleDiff(Math.atan2(graph.nodes[e.id].x-node.x,graph.nodes[e.id].z-node.z),c.yaw))*.25-cars.filter(o=>o!==c&&o.mesh.visible&&o.target===e.id).length*.35})).sort((a,b)=>b.score-a.score).map(v=>v.e);}
