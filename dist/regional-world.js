@@ -31,7 +31,7 @@ function coast(x,z){return x>33000&&z>-7800&&z<3000;}
 export class RegionalWorld{
  constructor(scene,data,regionalTerrain,originalCollision){
   this.scene=scene;this.data=data;this.grid=regionalTerrain;this.collision=originalCollision;
-  this.chunks=new Map();this.visible=new Map();this.roads=new Map();this.waters=new Map();this.waterAreas=new Map();this.landAreas=new Map();this.buildingAreas=new Map();this.key='';
+  this.chunks=new Map();this.visible=new Map();this.roads=new Map();this.waters=new Map();this.waterAreas=new Map();this.landAreas=new Map();this.buildingAreas=new Map();this.shorelines=new Map();this.key='';
   this.actors=[];this.queue=[];this.totalBuilt=0;this.lastUpdate=0;this.dataReady=false;
   this.index();
  }
@@ -104,6 +104,25 @@ export class RegionalWorld{
    for(let i=1;i<r.p.length;i++){const len=lengths[i-1];this.segment('roads',r,r.p[i-1],r.p[i],total?used/total:0,total?(used+len)/total:1);used+=len;}
   }
   for(const w of this.data.water||[])if(w.p?.length>=2)for(let i=1;i<w.p.length;i++)this.segment('water',w,w.p[i-1],w.p[i]);
+  // Preserve the real bank/shore direction. OSM has water on the RIGHT
+  // of coastline ways; in our south-positive world coordinates this means
+  // positive 2D cross product is water and negative is land.
+  for(const shoreline of this.data.shorelines||[]){
+   if(!Array.isArray(shoreline.p))continue;
+   for(let i=1;i<shoreline.p.length;i++){
+    const a=shoreline.p[i-1],b=shoreline.p[i];
+    if(Math.max(a[0],b[0])<27000||Math.min(a[0],b[0])>41000)continue;
+    if(Math.max(a[1],b[1])<-10500||Math.min(a[1],b[1])>9700)continue;
+    const item={a,b},len=distance(...a,...b);
+    if(len<.05)continue;
+    const steps=Math.max(1,Math.ceil(len/160));
+    for(let n=0;n<steps;n++){
+     const p=[a[0]+(b[0]-a[0])*n/steps,a[1]+(b[1]-a[1])*n/steps],
+      q=[a[0]+(b[0]-a[0])*(n+1)/steps,a[1]+(b[1]-a[1])*(n+1)/steps];
+     this.insertSpatial(this.shorelines,{a:p,b:q},p,q,420);
+    }
+   }
+  }
   for(const b of this.data.buildings||[]){
    if(!b.p||b.p.length<3)continue;
    const xs=b.p.map(p=>p[0]),zs=b.p.map(p=>p[1]),x0=Math.min(...xs),z0=Math.min(...zs),x1=Math.max(...xs),z1=Math.max(...zs),x=(x0+x1)/2,z=(z0+z1)/2;
@@ -183,6 +202,18 @@ export class RegionalWorld{
   if(this.lagoonAt(x,z))closest=Math.min(closest,-120);
   return {distance:closest,level:Number.isFinite(closest)?this.waterSurface(x,z):undefined};
  }
+ shoreSide(x,z){
+  let nearest=Infinity,sign=null;
+  for(const line of new Set(this.near(this.shorelines,x,z))){
+   const vx=line.b[0]-line.a[0],vz=line.b[1]-line.a[1],
+    den=vx*vx+vz*vz;if(den<1e-6)continue;
+   const t=Math.max(0,Math.min(1,((x-line.a[0])*vx+(z-line.a[1])*vz)/den)),
+    nx=line.a[0]+vx*t,nz=line.a[1]+vz*t,d=distance(x,z,nx,nz);
+   if(d<nearest){nearest=d;sign=(vx*(z-line.a[1])-vz*(x-line.a[0]));}
+  }
+  // Do not let a remote segment decide land vs sea across another island.
+  return nearest<530&&sign!==null?sign>=0?1:-1:0;
+ }
  lagoonAt(x,z){
   if(!coastalBand(x,z))return false;
   // True land-use polygons, exposed island building footprints and dry quays
@@ -192,6 +223,9 @@ export class RegionalWorld{
    if(x>=b.minX-8&&x<=b.maxX+8&&z>=b.minZ-8&&z<=b.maxZ+8)return false;
   const road=this.nearestRoad(x,z,18);
   if(road&&road.d<road.road.w*.5+7&&!road.road.bri)return false;
+  const shore=this.shoreSide(x,z);
+  if(shore<0)return false; // inland side of an actually mapped shoreline
+  if(shore>0)return true;  // sea side at the real Venetian coast
   if(x<33500&&this.raw(x,z)>LAGOON_Y+.65)return false;
   return true;
  }
