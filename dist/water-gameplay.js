@@ -90,7 +90,7 @@ export class WaterGameplay {
     car.mesh.position.set(car.x,car.y,car.z);
     car.mesh.rotation.z=Math.sin(phase.elapsed)*.035+phase.sink*.045;
    }
-   if(phase.sink>9){car.health=0;car.mesh.visible=false;car.waterSinking=false;this.abandoned.delete(car);}
+   if(phase.sink>9){car.health=0;car.mesh.visible=false;car.waterSinking=false;car.budgetSleeping=true;this.abandoned.delete(car);}
   }
  }
 }
