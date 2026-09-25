@@ -264,8 +264,9 @@ function respawnAtHospitalRoof(){
 function recover(fromWater=false){
  if(incidents?.recovery)return false;
  fromWater=fromWater===true;state.knockX=state.knockZ=state.spin=0;
- const origin=fromWater?(waterRecovery.lastDry||state):state;
- const p=localRespawn.choose(origin,terrain,respawnClear,state.car?.spec,
+ // Resolve relative to the actual death location; a stale Padova lastDry
+ // must not teleport someone drowning immediately after arriving in Venice.
+ const p=localRespawn.choose(state,terrain,respawnClear,state.car?.spec,
    {water:fromWater,nearRoad:respawnRoad});
  if(!p){toast('Nessuna posizione sicura vicina. Apri M per scegliere una strada.');return false;}
  state.parachuting=false;if(parachute)parachute.visible=false;
