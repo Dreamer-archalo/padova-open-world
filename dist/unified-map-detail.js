@@ -1,73 +1,124 @@
-// High-resolution, demand-driven vector detail for both the full M map and
-// its minimap. Keeps the 45 km overview bitmap as a cheap zoomed-out layer.
+// One geographic renderer for Padova, all Riviera/Marghera towns and Venice.
+// Geometry is drawn from real world-metre OSM vectors at the DESTINATION canvas
+// resolution, independently of the simplified 3D rendering LOD.
 const KINDS=['areas','water','buildings','roads'];
+const GRID=240;
+const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
+const roadTier=k=>/motorway|trunk|primary|secondary/.test(k||'')?2:/tertiary|residential|unclassified|living_street/.test(k||'')?1:0;
 export class VectorMapDetail {
- constructor(regional,padova){
-  this.cell=260;this.grid=new Map();
-  this.large={areas:[],water:[],buildings:[],roads:[]};
-  for(const source of [regional,padova].filter(Boolean))
-   for(const kind of KINDS)for(const feature of source[kind]||[])this.index(kind,feature);
+ constructor(regional,padova,extras=null){
+  this.grid=new Map();this.large={areas:[],water:[],buildings:[],roads:[]};
+  this.total={areas:0,water:0,buildings:0,roads:0};
+  // Preserve Padova's own surveyed dense map rather than rendering the
+  // regional overlap above it. Add map-only (never 3D) Mestre/route detail.
+  for(const source of [regional,padova,extras].filter(Boolean))this.addSource(source);
+ }
+ addSource(source){
+  for(const kind of KINDS)for(const feature of source[kind]||[])this.index(kind,feature);
  }
  index(kind,feature){
-  const p=feature?.p;if(!p?.length)return;
+  const p=feature?.p;if(!Array.isArray(p)||p.length<(kind==='roads'||kind==='water'?2:3))return;
   let x0=Infinity,x1=-Infinity,z0=Infinity,z1=-Infinity;
-  for(const v of p){x0=Math.min(x0,v[0]);x1=Math.max(x1,v[0]);z0=Math.min(z0,v[1]);z1=Math.max(z1,v[1]);}
-  if(!Number.isFinite(x0))return;
-  const entry={feature,x0,x1,z0,z1},ax=Math.floor(x0/this.cell),
-   bx=Math.floor(x1/this.cell),az=Math.floor(z0/this.cell),bz=Math.floor(z1/this.cell);
-  if((bx-ax+1)*(bz-az+1)>180){this.large[kind].push(entry);return;}
+  for(const [x,z] of p){if(!Number.isFinite(x)||!Number.isFinite(z))return;x0=Math.min(x0,x);x1=Math.max(x1,x);z0=Math.min(z0,z);z1=Math.max(z1,z);}
+  const e={f:feature,x0,x1,z0,z1},ax=Math.floor(x0/GRID),bx=Math.floor(x1/GRID),az=Math.floor(z0/GRID),bz=Math.floor(z1/GRID);
+  // A lagoon outline covering many cells should be tested once per viewport.
+  if((bx-ax+1)*(bz-az+1)>160){this.large[kind].push(e);this.total[kind]++;return;}
   for(let x=ax;x<=bx;x++)for(let z=az;z<=bz;z++){
-   const key=x+','+z;
-   if(!this.grid.has(key))this.grid.set(key,{areas:[],water:[],buildings:[],roads:[]});
-   this.grid.get(key)[kind].push(entry);
+   const k=x+','+z;if(!this.grid.has(k))this.grid.set(k,{areas:[],water:[],buildings:[],roads:[]});
+   this.grid.get(k)[kind].push(e);
   }
+  this.total[kind]++;
  }
  visible(kind,frame){
   const seen=new Set(),list=[];
-  const collect=e=>{
-   if(seen.has(e)||e.x1<frame.x0||e.x0>frame.x1||e.z1<frame.z0||e.z0>frame.z1)return;
-   seen.add(e);list.push(e.feature);
-  };
-  for(let x=Math.floor(frame.x0/this.cell);x<=Math.floor(frame.x1/this.cell);x++)
-   for(let z=Math.floor(frame.z0/this.cell);z<=Math.floor(frame.z1/this.cell);z++)
-    for(const e of this.grid.get(x+','+z)?.[kind]||[])collect(e);
-  for(const e of this.large[kind])collect(e);
+  const add=e=>{if(seen.has(e)||e.x1<frame.x0||e.x0>frame.x1||e.z1<frame.z0||e.z0>frame.z1)return;seen.add(e);list.push(e.f);};
+  for(let x=Math.floor(frame.x0/GRID);x<=Math.floor(frame.x1/GRID);x++)
+   for(let z=Math.floor(frame.z0/GRID);z<=Math.floor(frame.z1/GRID);z++)
+    for(const e of this.grid.get(x+','+z)?.[kind]||[])add(e);
+  for(const e of this.large[kind])add(e);
   return list;
  }
- draw(ctx,center,width,height,scale){
-  const x0=center.x-width/(2*scale),z0=center.z-height/(2*scale);
-  const frame={x0,z0,x1:x0+width/scale,z1:z0+height/scale};
-  // Large lagoon water remains blue even when a metre-by-metre OSM water
-  // polygon has not yet been surveyed. Port basins and island land parcels
-  // are drawn above this background from their mapped polygons.
-  ctx.fillStyle='#294b49';ctx.fillRect(0,0,width,height);
+ draw(ctx,center,width,height,scale,{pixelRatio=1,mini=false,labels=true}={}){
+  const x0=center.x-width/(2*scale),z0=center.z-height/(2*scale),
+   frame={x0,z0,x1:x0+width/scale,z1:z0+height/scale};
+  const px=clamp(pixelRatio,1,4),minimum=mini?1.25*px:1.0*px;
+  const layers=Object.fromEntries(KINDS.map(k=>[k,this.visible(k,frame)]));
+  ctx.save();ctx.setTransform(1,0,0,1,0,0);ctx.fillStyle='#34554d';ctx.fillRect(0,0,width,height);
+  // Sea overview in the Venezia region; real OSM parcels and building/road
+  // silhouettes are then laid over it at full resolution.
   if(frame.x1>=30000&&frame.z1>=-10000&&frame.z0<=9600){
-   const left=Math.max(0,(30000-x0)*scale),top=Math.max(0,(-10000-z0)*scale),
-     right=Math.min(width,(40500-x0)*scale),bottom=Math.min(height,(9600-z0)*scale);
-   if(right>left&&bottom>top){ctx.fillStyle='#245e89';ctx.fillRect(left,top,right-left,bottom-top);}
+   const left=clamp((30000-x0)*scale,0,width),top=clamp((-10000-z0)*scale,0,height),
+    right=clamp((40500-x0)*scale,0,width),bottom=clamp((9600-z0)*scale,0,height);
+   if(right>left&&bottom>top){ctx.fillStyle='#225f86';ctx.fillRect(left,top,right-left,bottom-top);}
   }
-  ctx.save();ctx.beginPath();ctx.rect(0,0,width,height);ctx.clip();
-  ctx.lineCap='round';ctx.lineJoin='round';
-  for(const kind of KINDS){
-   const features=this.visible(kind,frame);
-   for(const feature of features){
-    ctx.beginPath();
-    feature.p.forEach(([x,z],i)=>i?ctx.lineTo((x-x0)*scale,(z-z0)*scale):
-     ctx.moveTo((x-x0)*scale,(z-z0)*scale));
-    if(kind==='water'){
-     ctx.strokeStyle='#3a899e';ctx.lineWidth=Math.max(1.25,(feature.w||5)*scale);ctx.stroke();
-    }else if(kind==='roads'){
-     ctx.strokeStyle=/motorway|trunk|primary|secondary/.test(feature.k)?'#c0c4b7':
-      /footway|path|steps|pedestrian|cycleway/.test(feature.k)?'#a1b9ae':'#849b97';
-     ctx.lineWidth=Math.max(.9,(feature.w||2)*scale);ctx.stroke();
-    }else{
-     ctx.closePath();
-     ctx.fillStyle=kind==='areas'?(feature.k==='water'?'#326b7c':'#456c54'):
-      feature.lod==='energy'?'#477c86':'#b5aa94';
-     ctx.fill();
-    }
-   }
+  ctx.beginPath();ctx.rect(0,0,width,height);ctx.clip();ctx.lineCap='round';ctx.lineJoin='round';
+  const path=f=>{
+   ctx.beginPath();
+   f.p.forEach(([x,z],i)=>i?ctx.lineTo((x-x0)*scale,(z-z0)*scale):ctx.moveTo((x-x0)*scale,(z-z0)*scale));
+  };
+  // Draw land before water. Repeated polygons from overlapping extracts are
+  // harmless at town scale and never require a blown-up raster.
+  for(const a of layers.areas.filter(a=>a.k!=='water')){
+   path(a);ctx.closePath();ctx.fillStyle=a.k==='park'||a.k==='garden'?'#567a5b':'#58715f';ctx.fill();
   }
+  for(const a of layers.areas.filter(a=>a.k==='water')){
+   path(a);ctx.closePath();ctx.fillStyle='#286f98';ctx.fill();
+   if(scale>.23){ctx.lineWidth=Math.max(minimum*.6,.65);ctx.strokeStyle='#60a3bd';ctx.stroke();}
+  }
+  for(const w of layers.water){
+   path(w);ctx.strokeStyle='#337da0';ctx.lineWidth=Math.max(minimum*.9,(w.w||3)*scale);ctx.stroke();
+  }
+  // Detailed shapes remain legible even when buildings are "energy" boxes
+  // in the 3D transit performance mode.
+  const buildingDetail=scale>=.095; // suppress building cost at overview scales
+  if(buildingDetail)for(const b of layers.buildings){
+   path(b);ctx.closePath();ctx.fillStyle=b.lod==='energy'?'#829890':'#acaaa0';ctx.fill();
+   if(scale>.36){ctx.lineWidth=Math.max(.5,px*.45);ctx.strokeStyle='#53645d';ctx.stroke();}
+  }
+  const named=[];
+  // Draw roads in order: major arteries first and local footpaths on top,
+  // using a dark casing at street-level zoom rather than thin grey hairlines.
+  const sorted=layers.roads.sort((a,b)=>roadTier(b.k)-roadTier(a.k));
+  for(const r of sorted){
+   path(r);
+   const tier=roadTier(r.k),walk=/footway|path|steps|cycleway|pedestrian/.test(r.k||''),
+    roadWidth=Math.max(minimum,(r.w||2)*scale);
+   if(scale>.24&&!walk){ctx.lineWidth=roadWidth+Math.max(px*.7,scale*.75);ctx.strokeStyle='#314e55';ctx.stroke();}
+   ctx.lineWidth=roadWidth;
+   ctx.strokeStyle=walk?'#b2c7b3':tier===2?'#eed1a2':tier===1?'#d0d6c5':'#adbfb3';
+   ctx.stroke();
+   if(labels&&r.n&&scale>.23&&!walk&&named.length<1000)named.push(r);
+  }
+  if(labels&&scale>.23)this.drawRoadLabels(ctx,named,x0,z0,width,height,scale,px,mini);
   ctx.restore();
+  return {visible:Object.fromEntries(KINDS.map(k=>[k,layers[k].length])),vector:true};
+ }
+ drawRoadLabels(ctx,roads,x0,z0,width,height,scale,px,mini){
+  const occupied=new Set(),cell=mini?74*px:92*px,
+   font=Math.round((mini?11.5:12.5)*px),max=mini?13:85;
+  ctx.font='600 '+font+'px system-ui';ctx.textAlign='center';ctx.textBaseline='middle';
+  let count=0;
+  for(const r of roads){
+   if(count>=max||!r.n||r.p.length<2)break;
+   // Choose the longest named segment VISIBLE in this viewport, not the
+   // first OSM node which can be kilometres off-screen.
+   let best=null,score=0;
+   for(let i=1;i<r.p.length;i++){
+    const a=r.p[i-1],b=r.p[i],x=(a[0]+b[0])*.5,z=(a[1]+b[1])*.5,
+     sx=(x-x0)*scale,sy=(z-z0)*scale,len=Math.hypot(b[0]-a[0],b[1]-a[1])*scale;
+    if(sx<font||sx>width-font||sy<font||sy>height-font||len<25*px||len<score)continue;
+    best={sx,sy,a,b};score=len;
+   }
+   if(!best)continue;
+   const column=Math.floor(best.sx/cell),row=Math.floor(best.sy/cell),
+    key=column+','+row,name=r.n.trim();
+   if(!name||occupied.has(key)||ctx.measureText&&ctx.measureText(name).width>score*1.8)continue;
+   occupied.add(key);count++;
+   let angle=Math.atan2((best.b[1]-best.a[1]),(best.b[0]-best.a[0]));
+   if(angle>Math.PI*.5)angle-=Math.PI;if(angle<-Math.PI*.5)angle+=Math.PI;
+   ctx.save();ctx.translate(best.sx,best.sy);ctx.rotate(angle);
+   ctx.lineWidth=Math.max(2,px*2.3);ctx.strokeStyle='#28424c';
+   ctx.strokeText?.(name,0,0);ctx.fillStyle='#edf0dd';ctx.fillText(name,0,0);ctx.restore();
+  }
  }
 }
