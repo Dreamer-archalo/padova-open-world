@@ -14,6 +14,8 @@ assert(water.includes('sheet.renderOrder=1')&&water.includes('waterMesh.renderOr
 assert(!water.includes('new THREE.PlaneGeometry(CHUNK,CHUNK)'),'Unmasked rectangular sea plane still floods islands');
 assert(source.includes('waterGame.leaveVehicle(')&&source.includes('waterGame.startSwimming('),'Swimming and exiting vehicles not active');
 assert(source.includes('waterGame.stepVehicle(')&&source.includes('waterGame.stepSwim('),'Sinking/swimming missing from main movement loop');
+assert(source.includes('animateSwim(player'),'Character does not perform swim strokes');
+assert(water.includes('terrain.waterSample=')&&water.includes('terrain.bridge='),'Lagoon water/bridge samples not shared with boat systems');
 assert(source.includes('if(e.code===\'KeyR\')requestRecover()')&&source.includes('waterGame.active'),'Local R water recovery not wired');
 assert(html.includes('id="waterStatus"')&&html.includes('unified-water.css'),'Water status HUD unavailable');
 assert(workflow.includes('/tmp/corridor-hydrology.json'),'Build missing dedicated lagoon OSM input');
@@ -50,6 +52,8 @@ for(let i=0;i<40;i++)game.stepSwim(state,{dx:0,dz:0,dive:true},.1,terrain,()=>tr
 const before=state.health;
 for(let i=0;i<70;i++)game.stepSwim(state,{dx:0,dz:0,dive:true},.1,terrain,()=>true);
 assert(state.health<before,'Remaining submerged must decrease health after oxygen expires');
+for(let i=0;i<230;i++)game.updateAbandoned(.1,terrain);
+assert(!car.mesh.visible&&car.budgetSleeping&&!game.abandoned.has(car),'Abandoned sunken cars must disappear without joining traffic again');
 game.reset();
 assert(!game.active,'R recovery must leave water state');
 const shoreGame=new WaterGameplay();const walker={x:7.4,z:0,y:.18,speed:0,vy:0,elapsed:0,health:100};
