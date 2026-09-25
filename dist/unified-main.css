@@ -16,6 +16,8 @@
  #mapPlaces{max-height:18vh}
  #fullmap{max-height:55vh}
 }
+.minimap-osm-credit{position:absolute;right:5px;bottom:44px;font:9px/1.2 system-ui,sans-serif;color:#f4f7f2;background:#214151d9;padding:2px 4px;border-radius:3px;text-decoration:none;z-index:2;pointer-events:auto}
+#mapDialog .map-legend a{color:#bddde8;text-decoration:underline}
 /* Both map canvases keep their independent high-DPI buffers regardless of
    low/medium/performance quality chosen for the 3D scene. */
 #mapDialog .fullmap-wrap{background:#274e58;overflow:hidden}
