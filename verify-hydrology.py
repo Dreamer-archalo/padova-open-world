@@ -22,7 +22,7 @@ mapped=[a for a in areas if a["k"]=="water"]
 assert len(mapped)>=2,mapped
 lake=next(a for a in mapped if a.get("osm")==15)
 assert len(lake.get("holes",[]))==1,lake
-assert point_inside(20,20,lake["p"]) and not point_inside(50,50,lake["holes"][0])
+assert point_inside(20,20,lake["p"]) and point_inside(50,50,lake["holes"][0])
 assert any(a["k"]=="land" and a.get("osm")==15 for a in areas)
 assert any(s.get("osm")==16 and not s["closed"] for s in shores)
 assert any(s.get("osm")==17 and s["closed"] for s in shores)
