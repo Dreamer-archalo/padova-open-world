@@ -491,6 +491,20 @@ function explodePlayer(reason){if(incidents?.recovery)return;state.respawnHospit
 function kickActor(actor,vx,vz){actor.knockX=clamp(vx,-40,40);actor.knockZ=clamp(vz,-40,40);actor.spin=Math.sign(vx||1)*1.4;if(actor===state){state.health=Math.max(0,state.health-25*(state.car?.spec.armor||1));toast('Tram impact! Keep clear of the rails.',2);}else if(actor.health!==undefined)actor.health=Math.max(0,actor.health-25*(actor.spec?.armor||1));}
 function applyKnock(actor,dt){const spec=actor===state?state.car?.spec:actor.spec;if(!actor.knockX&&!actor.knockZ&&!actor.spin)return;const p=slideMove(actor,(actor.knockX||0)*dt,(actor.knockZ||0)*dt,spec?.width/2||.36,world.collision,actor.y);actor.x=p.x;actor.z=p.z;const yaw=actor.yaw+(actor.spin||0)*dt;if(!spec||!vehicleBlocked(actor.x,actor.z,yaw,world.collision,spec,actor.y))actor.yaw=yaw;actor.knockX=(actor.knockX||0)*Math.exp(-3*dt);actor.knockZ=(actor.knockZ||0)*Math.exp(-3*dt);actor.spin=(actor.spin||0)*Math.exp(-2*dt);if(actor!==state&&actor.mesh&&actor.spec)poseVehicle(actor);}
 function movePlayer(dt){if(taxi?.phase==='transition'){state.speed=0;return;}if(incidents?.recovery){state.speed=0;if(state.elapsed>=incidents.recovery.until){incidents.recovery=null;if(state.respawnHospitalRoof){respawnAtHospitalRoof();return;}if(state.respawnHome){state.respawnHome=false;}recover(waterGame.active||waterRecovery.active);}return;}if(waterRecovery.active){falling(dt);return;}if(state.mode==='foot'&&state.health<=0){explodePlayer('Personaggio neutralizzato');return;}const f=(keys.has('KeyW')||keys.has('ArrowUp')?1:0)-(keys.has('KeyS')||keys.has('ArrowDown')?1:0),turn=(keys.has('KeyA')||keys.has('ArrowLeft')?1:0)-(keys.has('KeyD')||keys.has('ArrowRight')?1:0),boost=keys.has('ShiftLeft')||keys.has('ShiftRight');
+ if(waterGame.vehicle&&state.car){
+  const waterY=terrain.waterHeight(state.x,state.z),result=waterGame.stepVehicle(state,dt,waterY);
+  if(result?.submerged&&!waterGame.vehicle.warning){waterGame.vehicle.warning=true;toast('L’auto affonda: premi E per uscire o R per recuperare.',5);}
+  if(state.health<=0)explodePlayer('Veicolo sommerso');return;
+ }
+ if(waterGame.swimming){
+  const {dx,dz}=footMotion(state,cameraRig,{forward:f,turn,run:boost},dt);
+  const result=waterGame.stepSwim(state,{dx,dz,dive:keys.has('Space'),boost},dt,terrain,(x,z,y)=>!collides(x,z,.36,world.collision,y));
+  player.position.set(state.x,state.y+.08,state.z);
+  player.rotation.set(result?.landed?0:-1.04,state.yaw,0,'YXZ');
+  if(result?.landed){toast('Riva raggiunta.',2);waterRecovery.remember(state,terrain);localRespawn.remember(state,terrain,respawnClear,state.elapsed,true);}
+  if(state.health<=0)explodePlayer('Esaurimento sott’acqua');
+  return;
+ }
  if(state.parachuting){const landed=parachuteStep(state,{forward:f,turn},dt,terrain,world.collision);parachute.position.set(state.x,state.y,state.z);parachute.rotation.y=state.yaw;player.position.set(state.x,state.y,state.z);if(landed){state.parachuting=false;parachute.visible=false;state.vy=0;}else return;}
  if(state.mode==='car'&&state.car.spec.aircraft){const result=(state.car.spec.plane?planeStep:helicopterStep)(state,{forward:f,turn,up:keys.has('Space'),down:boost},dt,terrain,world.collision);if(result?.crashed){explodePlayer('Incidente aereo');return;}Object.assign(state.car,{x:state.x,z:state.z,y:state.y,yaw:state.yaw,speed:state.speed});poseVehicle(state.car);state.distance+=Math.abs(state.speed)*dt;return;}
  if(state.mode==='car'){const car=state.car,spec=car.spec,previousSpeed=state.speed,handbrake=keys.has('Space'),turbo=car.style==='cinquecento'&&keys.has('Tab'),condition=vehiclePerformanceFactor(state.health);if(state.health<=0){state.speed*=Math.exp(-dt*4);if(f)toast('Vehicle disabled. Press R to recover and repair.',1.5);}else if(!car.jump?.airborne){const acceleration=(f>0?turbo?spec.turboAccel:boost?spec.accel*1.3:spec.accel:f<0?(state.speed>1?-spec.brake:-spec.accel*.65):0)*(f>0?condition:1);state.speed+=(acceleration+Math.sin(terrain.slope(state.x,state.z,state.yaw,spec.wheelbase,state.y))*5)*dt;state.speed*=Math.exp(-dt*(handbrake?2.8:f?.045:.65));const speedLimit=(turbo?spec.turboMax:boost?spec.boost:spec.max)*condition;state.speed=clamp(state.speed,-spec.reverse,Math.max(speedLimit,previousSpeed-spec.brake*.5*dt));if(updateTurbo(car,state.speed,dt).explode){explodePlayer('Turbo overheated after 6 seconds');return;}}
@@ -515,7 +529,13 @@ function movePlayer(dt){if(taxi?.phase==='transition'){state.speed=0;return;}if(
 
  const onRoof=state.mode==='foot'&&footSurface(state.x,state.z,state.y,terrain,world.collision)>terrain.height(state.x,state.z,state.y)+.2;
  const waterY=onRoof||(state.car?.jump?.airborne&&state.y>terrain.waterHeight?.(state.x,state.z)+.3)?null:terrain.waterAt(state.x,state.z,0,state.y);
- if(waterY!==null){if(waterRecovery.enter(Math.max(state.y,terrain.elevation(state.x,state.z)),waterY)){state.y=waterRecovery.y;state.speed=0;keys.clear();document.body.classList.add('water-fall');toast('Water! Returning to dry land…',2);}}else waterRecovery.remember(state,terrain);
+ if(waterY!==null){
+   if(state.mode==='car'&&!state.car?.spec.aircraft&&!state.car?.spec.watercraft){
+    if(waterGame.enterVehicle(state,waterY))toast('Auto in acqua: galleggia, poi affonda. E per nuotare, R per recuperare.',5);
+   }else if(state.mode==='foot'&&waterGame.startSwimming(state,waterY)){
+    player.rotation.x=-1.04;toast('Nuoto: W/A/S/D per muoverti, SPAZIO immergiti, R recupera.',5);
+   }
+  }else waterRecovery.remember(state,terrain);
  const oldX=state.x,oldZ=state.z,bound=regionalWorld?unifiedBounds:{minX:-5970,maxX:7250,minZ:-6480,maxZ:6230};state.x=clamp(state.x,bound.minX,bound.maxX);state.z=clamp(state.z,bound.minZ,bound.maxZ);if(oldX!==state.x||oldZ!==state.z){state.speed=0;toast('Limite dell’attuale mondo percorribile.',2);}
 }
 function trafficChoices(c,node){const edges=node.edges.filter(e=>e.id!==c.prev&&e.road.k!=='pedestrian'&&!['no','private'].includes(e.road?.access)&&e.road.w>c.spec.width+1),fallback=node.edges.filter(e=>e.road.k!=='pedestrian'&&!['no','private'].includes(e.road?.access)&&e.road.w>c.spec.width+1),pool=edges.length?edges:fallback;return pool.map(e=>({e,score:Math.random()*1.2-Math.abs(angleDiff(Math.atan2(graph.nodes[e.id].x-node.x,graph.nodes[e.id].z-node.z),c.yaw))*.25-cars.filter(o=>o!==c&&o.mesh.visible&&o.target===e.id).length*.35})).sort((a,b)=>b.score-a.score).map(v=>v.e);}
@@ -647,7 +667,7 @@ function simulate(dt){
  for(const a of [...cars,...people,...cops])if(a.mesh.visible&&(a===state.car||!a.parked))previousActors.set(a.mesh,{x:a.x,z:a.z,y:a.y,yaw:a.yaw});
  const flying=state.car;if(flying?.spec.aircraft&&flying.mesh.visible){const u=flying.mesh.userData;if(u.rotor)u.rotor.rotation.y+=dt*35;if(u.tailRotor)u.tailRotor.rotation.x+=dt*45;if(u.propeller){if(u.propeller.children.some(o=>o.name==='engine-prop')){for(const o of u.propeller.children)o.rotation.z+=dt*(25+Math.abs(state.speed));}else u.propeller.rotation.z+=dt*(25+Math.abs(state.speed));}}
  state.elapsed+=dt;collisionCooldown=Math.max(0,collisionCooldown-dt);
- if(state.started){applyKnock(state,dt);for(const a of [...cars,...people,...cops])if(a!==state.car)applyKnock(a,dt);movePlayer(dt);if(!waterRecovery.active&&!incidents?.recovery)localRespawn.remember(state,terrain,respawnClear,state.elapsed);if(taxi?.phase==='transition'){taxiDriverNPC?.update(state.elapsed);}else{if(!regionalPlayer()){speedCameras?.update();updateTraffic(dt);updateTaxi(dt);updatePeople(dt);trams?.update(dt,state.elapsed,state,[state,...cars.filter(c=>c!==state.car),...people,...cops],kickActor);}incidents?.update(state.elapsed);if(!waterRecovery.active&&!incidents?.recovery){updatePolice(dt);gameplay?.update(dt);updateMission(dt);}}
+ if(state.started){applyKnock(state,dt);for(const a of [...cars,...people,...cops])if(a!==state.car)applyKnock(a,dt);movePlayer(dt);waterGame.updateAbandoned(dt,terrain);if(!waterGame.active&&!waterRecovery.active&&!incidents?.recovery)localRespawn.remember(state,terrain,respawnClear,state.elapsed);if(taxi?.phase==='transition'){taxiDriverNPC?.update(state.elapsed);}else{if(!regionalPlayer()){speedCameras?.update();updateTraffic(dt);updateTaxi(dt);updatePeople(dt);trams?.update(dt,state.elapsed,state,[state,...cars.filter(c=>c!==state.car),...people,...cops],kickActor);}incidents?.update(state.elapsed);if(!waterGame.active&&!waterRecovery.active&&!incidents?.recovery){updatePolice(dt);gameplay?.update(dt);updateMission(dt);}}
    if(state.waypoint&&!state.mission&&dist(state,state.waypoint)<15){state.waypoint=null;state.route=[];toast('You’ve reached your waypoint.');}
  }
 }
@@ -666,7 +686,7 @@ function animate(time){
     regionalWorld?.update(state,dt);
    renderAlpha=clock.advance(dt,simulate);
    const pose=visualPose();if(state.mode==='foot')player.position.set(pose.x,pose.y+.08,pose.z);
-   for(const a of [...cars,...people,...cops]){if(!a.mesh.visible||a.parked&&a!==state.car)continue;const prev=a.lodFrom||previousActors.get(a.mesh);if(!prev||dist(prev,a)>10)continue;const blend=a.lodFrom?clamp((state.elapsed-a.lodAt+renderAlpha*clock.step)/a.lodSpan,0,1):renderAlpha;a.mesh.position.x=THREE.MathUtils.lerp(prev.x,a.x,blend);a.mesh.position.z=THREE.MathUtils.lerp(prev.z,a.z,blend);a.mesh.position.y=a===state.car&&waterRecovery.active?pose.y:THREE.MathUtils.lerp(prev.y,a.y,blend);a.mesh.rotation.y=prev.yaw+angleDiff(a.yaw,prev.yaw)*blend;}
+   for(const a of [...cars,...people,...cops]){if(!a.mesh.visible||a.waterSinking||a.parked&&a!==state.car)continue;const prev=a.lodFrom||previousActors.get(a.mesh);if(!prev||dist(prev,a)>10)continue;const blend=a.lodFrom?clamp((state.elapsed-a.lodAt+renderAlpha*clock.step)/a.lodSpan,0,1):renderAlpha;a.mesh.position.x=THREE.MathUtils.lerp(prev.x,a.x,blend);a.mesh.position.z=THREE.MathUtils.lerp(prev.z,a.z,blend);a.mesh.position.y=a===state.car&&waterRecovery.active?pose.y:THREE.MathUtils.lerp(prev.y,a.y,blend);a.mesh.rotation.y=prev.yaw+angleDiff(a.yaw,prev.yaw)*blend;}
    // Chunk creation is scheduled before the simulation catch-up loop.
    if(state.elapsed>=detailAt){refreshActorDetail();detailAt=state.elapsed+.3;}
    if(!regionalPlayer()&&!world.streaming?.metrics.pressure)modelLayer?.update(state.x,state.z,!qualityFor(state.quality).simple);
