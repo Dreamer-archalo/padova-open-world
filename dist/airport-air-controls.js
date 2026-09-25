@@ -3,7 +3,7 @@
 // retain their original keys. No global terrain/physics changes.
 import {ModernGameplay} from './modern-gameplay.js';
 export const airControlHeld=new Set();
-const military=c=>!!c&&['airport-jet','airport-interceptor','airport-strike','airport-blackbird'].includes(c.style);
+const military=c=>!!c&&['airport-jet','airport-interceptor','airport-strike','airport-blackbird','airport-michelangelo'].includes(c.style);
 let activeGame=null;
 const previousPopulate=ModernGameplay.prototype.populate;
 const previousUpdate=ModernGameplay.prototype.update;
