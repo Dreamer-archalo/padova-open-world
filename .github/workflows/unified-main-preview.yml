@@ -14,7 +14,6 @@ on:
       - 'dist/regional-world.js'
       - 'dist/regional-hydro.js'
       - 'dist/unified-water.css'
-      - 'dist/unified-map-detail.js'
       - 'dist/water-gameplay.js'
       - 'verify-unified-water.mjs'
       - 'dist/modern-driving.js'
@@ -24,6 +23,10 @@ on:
       - 'scripts/padova-venice-local-streets-overpass.ql'
       - 'scripts/padova-venice-backroads-overpass.ql'
       - 'scripts/padova-venice-water-bodies-overpass.ql'
+      - 'scripts/padova-venice-map-hd-west-overpass.ql'
+      - 'scripts/padova-venice-map-hd-east-overpass.ql'
+      - 'prepare_map_hd.py'
+      - 'verify-unified-hd-map.mjs'
       - 'dist/continuous-world.html'
       - 'dist/continuous-world.css'
       - 'dist/continuous-world.js'
@@ -80,6 +83,14 @@ jobs:
             /tmp/padova-venice-terrain
           key: regional-data-v1-${{ hashFiles('scripts/padova-venice-corridor-overpass.ql', 'scripts/padova-venice-buildings-overpass.ql', 'scripts/padova-venice-local-streets-overpass.ql', 'scripts/padova-venice-backroads-overpass.ql', 'scripts/padova-venice-water-bodies-overpass.ql', 'prepare_world_terrain.py') }}
 
+      - name: Cache optional HD cartographic extracts
+        uses: actions/cache@v4
+        with:
+          path: |
+            /tmp/map-hd-west.json
+            /tmp/map-hd-east.json
+          key: hd-map-data-v1-${{ hashFiles('scripts/padova-venice-map-hd-west-overpass.ql', 'scripts/padova-venice-map-hd-east-overpass.ql') }}
+
       - name: Download OpenStreetMap extracts
         shell: bash
         run: |
@@ -113,6 +124,16 @@ jobs:
           fetch_query scripts/padova-venice-local-streets-overpass.ql /tmp/corridor-local-streets.json
           fetch_query scripts/padova-venice-backroads-overpass.ql /tmp/corridor-backroads.json
           fetch_query scripts/padova-venice-water-bodies-overpass.ql /tmp/corridor-hydrology.json
+          # These two queries enhance the 2D map only. If a public Overpass
+          # endpoint is busy, never block playability or the existing map.
+          if ! fetch_query scripts/padova-venice-map-hd-west-overpass.ql /tmp/map-hd-west.json; then
+            echo '{"elements":[]}' > /tmp/map-hd-west.json
+            echo 'HD west extras unavailable; all existing corridors remain vector sharp.'
+          fi
+          if ! fetch_query scripts/padova-venice-map-hd-east-overpass.ql /tmp/map-hd-east.json; then
+            echo '{"elements":[]}' > /tmp/map-hd-east.json
+            echo 'HD east extras unavailable; all existing corridors remain vector sharp.'
+          fi
 
       - name: Build unified world data
         run: |
@@ -120,9 +141,11 @@ jobs:
           python prepare_corridor.py /tmp/corridor-overpass.json /tmp/corridor-buildings.json /tmp/corridor-local-streets.json /tmp/corridor-backroads.json /tmp/corridor-hydrology.json
           python prepare_world_terrain.py --cache /tmp/padova-venice-terrain
           python prepare_world_map.py
+          python prepare_map_hd.py /tmp/map-hd-west.json /tmp/map-hd-east.json
           test -s dist/data/world-padova-venice.json
           test -s dist/data/world-terrain.json
           test -s dist/data/region-padova-venice.json
+          test -s dist/data/map-hd-extras.json
 
       - name: Verify continuous world
         run: |
@@ -134,6 +157,7 @@ jobs:
           node --check dist/game.js
           node --check dist/unified-map.js
           node --check dist/unified-map-detail.js
+          node verify-unified-hd-map.mjs
           node --check dist/local-respawn.js
           node --check dist/regional-hydro.js
           node --check dist/water-gameplay.js
