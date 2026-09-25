@@ -7,7 +7,7 @@ import {TaxiPathfinder} from './Pathfinder.js';
 import {TaxiSystem} from './TaxiSystem.js';
 import {TaxiMenuController} from './TaxiMenuController.js';
 import {groundVehicleStep,groundContact,resetGroundMotion} from './vehicle-dynamics.js';
-import {footMotion,animateGait,animateSwim} from './foot-controller.js?v=swim3';
+import {footMotion,animateGait,animateSwim,swimBodyPitch} from './foot-controller.js?v=swim-front-r6';
 import {SpeedCameras} from './speed-cameras.js';
 import {createCharacter,CharacterPicker} from './characters.js';
 import {QUALITY,qualityFor,qualityOptions,actorDetail,AdaptiveResolution} from './quality.js';
@@ -23,8 +23,8 @@ import {CameraRig} from './camera-rig.js';
 import {TrafficSignals,lanePoint,laneCount,laneOffset,trafficLane,trafficSpeed,advanceTrafficSpeed} from './traffic.js';
 import {applyCityData,Districts,DISTRICTS} from './districts.js';
 import * as THREE from './vendor/three.module.js';
-import {RegionalWorld} from './regional-world.js?v=hd-water-r4';
-import {UnifiedMap} from './unified-map.js?v=hd-water-r4';
+import {RegionalWorld} from './regional-world.js?v=town-detail-r6';
+import {UnifiedMap} from './unified-map.js?v=gta-vector-r6';
 import {VisibleMapTiles} from './map-live-tiles.js?v=hd-water-r4';
 import {LocalRespawn} from './local-respawn.js';
 import {WaterGameplay} from './water-gameplay.js?v=hd-water-r4';
@@ -350,7 +350,7 @@ function toggleVehicle(){
    state.x=car.x;state.z=car.z;
   }
   player.visible=true;player.position.set(state.x,state.y,state.z);
-  player.rotation.set(-1.04,state.yaw,0,'YXZ');
+  player.rotation.set(swimBodyPitch(false),state.yaw,0,'YXZ');
   previousPose=null;followYaw=state.yaw;cameraRig.reset(state.yaw);
   toast('Fuori dal veicolo: nuota verso riva. W/A/S/D · SPAZIO immergiti · R recupero.',5);
   return;
@@ -629,7 +629,7 @@ function movePlayer(dt){if(taxi?.phase==='transition'){state.speed=0;return;}if(
   const {dx,dz}=footMotion(state,cameraRig,{forward:f,turn,run:boost},dt);
   const result=waterGame.stepSwim(state,{dx,dz,dive:keys.has('Space'),boost},dt,terrain,(x,z,y)=>!collides(x,z,.36,world.collision,y));
   player.position.set(state.x,state.y+.08,state.z);
-  player.rotation.set(result?.landed?0:-1.04,state.yaw,0,'YXZ');
+  player.rotation.set(swimBodyPitch(result?.landed),state.yaw,0,'YXZ');
   if(result?.landed)animateGait(player,state.elapsed,0,false);
   else animateSwim(player,state.elapsed,state.speed,result?.submerged);
   if(result?.landed){toast('Riva raggiunta.',2);waterRecovery.remember(state,terrain);localRespawn.remember(state,terrain,respawnClear,state.elapsed,true);}
