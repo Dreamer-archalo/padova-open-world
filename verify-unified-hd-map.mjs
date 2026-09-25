@@ -44,6 +44,7 @@ const b=canvas(1920,1280);
 const full=detail.draw(b.ctx,{x:27000,z:0},1920,1280,.65,{pixelRatio:2.2});
 assert(full.visible.roads>=1&&b.stats.stroke>0,'Full Mestre map relies on stretched pixel texture');
 const c=canvas(1920,1280);detail.draw(c.ctx,{x:37000,z:-3000},1920,1280,.9,{pixelRatio:2});
+assert(c.stats.labels>=1,'Named Venetian pedestrian calli are not drawn at city zoom');
 assert(c.stats.fill>=1,'Venice full map land/water geometry missing');
 const fullCanvas={width:1920,height:1280,clientWidth:960,getBoundingClientRect:()=>({width:960,height:640}),getContext:()=>canvas(1920,1280).ctx};
 globalThis.document={createElement:()=>({width:0,height:0,getContext:()=>canvas(3072,1450).ctx})};
@@ -62,4 +63,8 @@ assert(game.includes('map-hd-extras.json')&&renderer.includes('this.zoomLevel>=1
  '2D detail streaming/low zoom boundary missing');
 assert(style.includes('.hud.minimap #minimap')&&style.includes('image-rendering:auto'),
  'Responsive high-resolution minimap CSS missing');
+assert(game.includes("mapTouches")&&game.includes('mapPinchDistance')&&renderer.includes('zoomAt(screenX,screenY'),
+ 'Mobile pinch zoom is no longer anchored on the actual location');
+assert(game.includes("const metres=state.mode==='car'?100:50")&&game.includes('c.scale(density,density)'),
+ 'Minimap player arrow and accurate distance scale must stay readable on high-density displays');
 console.log('PASS: Padova, Riviera, Mestre, Venice at arbitrary native vector zoom; DPR mini/full; optional HD parcels; anchor-preserving zoom.');
