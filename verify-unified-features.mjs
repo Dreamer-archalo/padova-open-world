@@ -4,7 +4,7 @@ import {LocalRespawn} from './dist/local-respawn.js';
 import {VectorMapDetail} from './dist/unified-map-detail.js';
 
 const read=p=>fs.readFileSync(p,'utf8');
-const game=read('dist/game.js'),map=read('dist/unified-map.js');
+const game=read('dist/game.js'),map=read('dist/unified-map.js'),html=read('dist/index.html');
 const region=JSON.parse(read('dist/data/region-padova-venice.json'));
 const roadTypes=new Set(['residential','living_street','unclassified','service','track']);
 const spans=[[8500,14500],[14500,23500],[23500,33500]];
@@ -17,6 +17,8 @@ assert(game.includes('unifiedMap.drawMini(c,state,range,w,h)'),'Minimap must use
 assert(game.includes('Math.max(7,unifiedMap.zoomLevel)'),'Opening M must zoom into actual position');
 assert(map.includes('this.detail.draw(c,this.center,w,h,this.scale)'),'High-zoom M map still uses a stretched raster');
 assert(map.includes('this.detail.draw(ctx,position,width,height,width/range)'),'Minimap still uses a stretched raster');
+assert(html.includes('id="minimap" width="660" height="510"')&&html.includes('id="fullmap" width="1920" height="1280"'),'Both map canvas resolutions are too low');
+assert(game.includes('state.respawnHospitalRoof=roof;return respawnAtHospitalRoof()'),'Manual rooftop R fallback missing');
 
 const terrain={
  height:(x,z)=>Math.abs(x-40)<4?-3:2,
