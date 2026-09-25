@@ -60,6 +60,11 @@ jobs:
           node verify-venice-world.mjs
           node verify-continuous-world.mjs
           node verify-hospital-elevators.mjs
+          node tools/verify-mandria-catalog-ui.mjs
+          node tools/verify-mandria-hangar.mjs
+          node tools/verify-airport-combat-flight.mjs
+          node tools/verify-air-hunt.mjs
+          node verify-feature-preservation.mjs
 
       - name: Install Chromium for actual boat and flight controls
         run: |
