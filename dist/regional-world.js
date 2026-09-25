@@ -11,7 +11,7 @@ const key=(x,z,size)=>Math.floor(x/size)+','+Math.floor(z/size);
 const material=(color,extra={})=>new THREE.MeshStandardMaterial({color,roughness:1,side:THREE.DoubleSide,...extra});
 const green=material('#819675'),roadMat=material('#59666a'),arterialMat=material('#4b595f'),
  canalMat=material('#167bbc',{roughness:.29,metalness:.04,emissive:'#0c3560',emissiveIntensity:.30}),lagoonMat=material('#145ca4',{roughness:.30,metalness:.06,emissive:'#0c3058',emissiveIntensity:.28}),stone=material('#cdbda1'),
- walls=material('#cfb897'),roofs=material('#a57358');
+ walls=material('#cfb897'),roofs=material('#a57358'),glass=material('#526c78'),mark=material('#dddacf'),sign=material('#dfdfd5'),townWalls=material('#8b9690');
 const energy=new THREE.MeshBasicMaterial({color:'#6dd4d5',transparent:true,opacity:.35,wireframe:true,depthWrite:false});
 const energySkin=new THREE.MeshBasicMaterial({color:'#4cb8c2',transparent:true,opacity:.19,side:THREE.DoubleSide,depthWrite:false});
 const energyOutline=new THREE.LineBasicMaterial({color:'#8ef7ec',transparent:true,opacity:.76,depthWrite:false});
@@ -52,7 +52,8 @@ export class RegionalWorld{
   // Cosine lift starts AND ends with zero slope, unlike a sine arch which
   // has an abrupt gradient at the junction to the approaching road.
   const eased=Math.sin(Math.PI*Math.max(0,Math.min(1,t)))**2;
-  return base+(rise+safe)*eased;
+  const arch=coast(x,z)&&road.b?(/motorway|trunk|primary|secondary/.test(road.k)?6.5:4.1):rise;
+  return base+(Math.max(rise,arch)+safe)*eased;
  }
  insertSpatial(index,obj,a,b,pad){
   const x0=Math.floor((min(a[0],b[0])-pad)/CELL),x1=Math.floor((max(a[0],b[0])+pad)/CELL),z0=Math.floor((min(a[1],b[1])-pad)/CELL),z1=Math.floor((max(a[1],b[1])+pad)/CELL);
@@ -70,7 +71,7 @@ export class RegionalWorld{
   const len=distance(a[0],a[1],b[0],b[1]);if(len<.12)return;
   // Long OSM ways are split before chunking: no road disappears between
   // adjacent 320 m sectors when its original way spans several kilometres.
-  const steps=Math.max(1,Math.ceil(len/110));
+  const steps=Math.max(1,Math.ceil(len/(source.b||source.bridge?28:110)));
   for(let i=0;i<steps;i++){
    const f=i/steps,g=(i+1)/steps,p=[a[0]+(b[0]-a[0])*f,a[1]+(b[1]-a[1])*f],q=[a[0]+(b[0]-a[0])*g,a[1]+(b[1]-a[1])*g];
    if(max(p[0],q[0])<PADOVA_EAST-180)continue;
@@ -282,7 +283,7 @@ export class RegionalWorld{
   };
  }
  tile(ix,iz){
-  const arr=[],steps=regionalDetail((ix+.5)*CHUNK,(iz+.5)*CHUNK)==='detailed'?24:10,n=CHUNK;
+  const arr=[],steps=regionalDetail((ix+.5)*CHUNK,(iz+.5)*CHUNK)==='detailed'?14:8,n=CHUNK;
   for(let j=0;j<steps;j++)for(let i=0;i<steps;i++){
    const x=ix*n+i*n/steps,z=iz*n+j*n/steps,x1=x+n/steps,z1=z+n/steps;
    const a=[x,this.ground(x,z),z],b=[x1,this.ground(x1,z),z],c=[x1,this.ground(x1,z1),z1],d=[x,this.ground(x,z1),z1];addQuad(arr,a,b,c,d);
@@ -326,11 +327,12 @@ export class RegionalWorld{
   if(this.visible.has(k))return;
   const [ix,iz]=k.split(',').map(Number),src=this.chunks.get(k)||{buildings:[],roads:[],water:[],areas:[]};
   const group=new THREE.Group();group.add(this.tile(ix,iz));
+  const near=Math.hypot((ix+.5)*CHUNK-(this.focus?.x||0),(iz+.5)*CHUNK-(this.focus?.z||0))<700;
   // Fill open lagoon cells with one contiguous blue surface per chunk, but
   // leave holes for real island streets, industrial parcels and quays.
   const sea=[];
   if((ix+1)*CHUNK>=30000&&ix*CHUNK<40500){
-   const steps=regionalDetail((ix+.5)*CHUNK,(iz+.5)*CHUNK)==='detailed'?32:16;
+   const steps=near?14:7;
    for(let j=0;j<steps;j++)for(let i=0;i<steps;i++){
     const x=ix*CHUNK+(i+.5)*CHUNK/steps,z=iz*CHUNK+(j+.5)*CHUNK/steps;
     if(!this.lagoonAt(x,z))continue;
@@ -340,10 +342,22 @@ export class RegionalWorld{
    }
   }
   if(sea.length){const sheet=new THREE.Mesh(geometry(sea),lagoonMat);sheet.renderOrder=1;group.add(sheet);}
-  const normal=[],arterial=[],channels=[],balustrade=[],bridgeSupports=[],w=[],r=[],blocks=[],energyFaces=[],energyEdges=[];
+  const normal=[],arterial=[],channels=[],balustrade=[],bridgeSupports=[],w=[],r=[],blocks=[],energyFaces=[],energyEdges=[],glassFaces=[],roadStripes=[],roadSigns=[],distantWalls=[];
   for(const p of src.roads){
    surface(/motorway|trunk|primary|secondary/.test(p.k)?arterial:normal,p.a,p.b,p.w,p.yA+.025,p.yB+.025);
-   if(p.bri&&regionalDetail((p.a[0]+p.b[0])/2,(p.a[1]+p.b[1])/2)==='detailed'){
+   if(near&&p.w>=5&&roadStripes.length<900&&distance(...p.a,...p.b)>2){
+    const a=[p.a[0]+(p.b[0]-p.a[0])*.15,p.a[1]+(p.b[1]-p.a[1])*.15],
+     b=[p.a[0]+(p.b[0]-p.a[0])*.52,p.a[1]+(p.b[1]-p.a[1])*.52];
+    surface(roadStripes,a,b,.13,p.yA+.052,p.yA+(p.yB-p.yA)*.52+.052);
+   }
+   if(near&&!coast(...p.a)&&p.w>=5.3&&distance(...p.a,...p.b)>12&&roadSigns.length<250){
+    const len=distance(...p.a,...p.b),nx=-(p.b[1]-p.a[1])/len,nz=(p.b[0]-p.a[0])/len,
+     x=(p.a[0]+p.b[0])*.5+nx*(p.w*.5+1.2),
+     z=(p.a[1]+p.b[1])*.5+nz*(p.w*.5+1.2),y=(p.yA+p.yB)*.5;
+    addQuad(roadSigns,[x,y,z],[x+.09,y,z],[x+.09,y+2,z],[x,y+2,z]);
+    addQuad(roadSigns,[x-.4,y+1.75,z],[x+.4,y+1.75,z],[x+.4,y+2.34,z],[x-.4,y+2.34,z]);
+   }
+   if(p.bri&&near&&regionalDetail((p.a[0]+p.b[0])/2,(p.a[1]+p.b[1])/2)==='detailed'){
     const dx=p.b[0]-p.a[0],dz=p.b[1]-p.a[1],len=Math.hypot(dx,dz)||1,
      nx=-dz/len*(p.w*.5+.18),nz=dx/len*(p.w*.5+.18);
     // Real vertical rails, not thin horizontal strips floating above a deck.
@@ -387,7 +401,25 @@ export class RegionalWorld{
    }
   }
   for(const b of src.buildings){
-   if(b.lod==='detailed'&&b.p.length<=100){this.detailedBuilding(b,w,r);continue;}
+   if(near&&b.lod==='detailed'&&b.p.length<=100){
+    this.detailedBuilding(b,w,r);
+    if(glassFaces.length<2400&&b.h>=6&&b.p.length>=2){
+     const a=b.p[0],d=b.p[1],len=distance(...a,...d),n=Math.min(7,Math.floor(len/3));
+     if(len>4&&n>0)for(let i=0;i<n;i++)for(let j=0;j<Math.min(5,Math.floor(b.h/3));j++){
+      const t=(i+1)/(n+1),x=a[0]+(d[0]-a[0])*t,z=a[1]+(d[1]-a[1])*t,y=b.minY+1.1+j*3,
+       vx=(d[0]-a[0])/len*.9,vz=(d[1]-a[1])/len*.9;
+      addQuad(glassFaces,[x,y,z],[x+vx,y,z+vz],[x+vx,y+1.1,z+vz],[x,y+1.1,z]);
+     }
+    }
+    continue;
+   }
+   if(!near&&b.p.length>=3&&b.p.length<=28){
+    for(let i=0;i<b.p.length;i++){
+     const a=b.p[i],d=b.p[(i+1)%b.p.length];
+     addQuad(distantWalls,[a[0],b.minY,a[1]],[d[0],b.minY,d[1]],[d[0],b.minY+b.h,d[1]],[a[0],b.minY+b.h,a[1]]);
+    }
+    continue;
+   }
    // Energy-mode proxies preserve the OSM footprint rather than replacing
    // every building with an arbitrary axis-aligned rectangle. All outlines
    // and translucent walls are batched into just two draw calls per chunk.
@@ -404,6 +436,10 @@ export class RegionalWorld{
   }
   if(normal.length)group.add(new THREE.Mesh(geometry(normal),roadMat));
   if(arterial.length)group.add(new THREE.Mesh(geometry(arterial),arterialMat));
+  if(glassFaces.length)group.add(new THREE.Mesh(geometry(glassFaces),glass));
+  if(roadStripes.length)group.add(new THREE.Mesh(geometry(roadStripes),mark));
+  if(roadSigns.length)group.add(new THREE.Mesh(geometry(roadSigns),sign));
+  if(distantWalls.length)group.add(new THREE.Mesh(geometry(distantWalls),townWalls));
   if(channels.length){const waterMesh=new THREE.Mesh(geometry(channels),canalMat);waterMesh.renderOrder=2;group.add(waterMesh);}
   if(balustrade.length)group.add(new THREE.Mesh(geometry(balustrade),stone));
   if(bridgeSupports.length)group.add(new THREE.Mesh(geometry(bridgeSupports),stone));
@@ -419,25 +455,27 @@ export class RegionalWorld{
   }
   // Cues only for transitional traffic in this first integration phase.
   // Full Padova vehicle/NPC simulation is unchanged and remains local to Padova.
-  this.ambient(group,src);
+  if(near)this.ambient(group,src);
+  group.userData.detailed=near;
   this.scene.add(group);this.visible.set(k,group);this.totalBuilt++;
  }
  update(state,dt=0){
   if(!this.contains(state.x+550,state.z))return;
+  this.focus={x:state.x,z:state.z};
   const cx=Math.floor(state.x/CHUNK),cz=Math.floor(state.z/CHUNK),signature=cx+','+cz;
   if(this.key!==signature){
    this.key=signature;const desired=[];
-   for(let dx=-4;dx<=4;dx++)for(let dz=-4;dz<=4;dz++){
-    const d=Math.hypot(dx,dz);if(d>4.4)continue;
+   for(let dx=-3;dx<=3;dx++)for(let dz=-3;dz<=3;dz++){
+    const d=Math.hypot(dx,dz);if(d>3.5)continue;
     const k=(cx+dx)+','+(cz+dz);if(!this.visible.has(k))desired.push({k,d});
    }
    desired.sort((a,b)=>a.d-b.d);this.queue=desired.map(v=>v.k);
-   for(const [k,g] of this.visible){const [x,z]=k.split(',').map(Number);if(Math.hypot(x-cx,z-cz)>6){
+   for(const [k,g] of this.visible){const [x,z]=k.split(',').map(Number);if(Math.hypot(x-cx,z-cz)>4.7){
     this.scene.remove(g);g.traverse(o=>{if((o.isMesh||o.isLineSegments)&&o.geometry!==cube)o.geometry.dispose();});this.visible.delete(k);
    }}
   }
   // Spread chunk builds over frames to avoid blocking existing city gameplay.
-  for(let i=0;i<2&&this.queue.length;i++)this.build(this.queue.shift());
+  for(let i=0;i<1&&this.queue.length;i++)this.build(this.queue.shift());
   for(const group of this.visible.values())for(const actor of group.userData.ambient||[]){
    const r=actor.r,roadLength=Math.max(1,distance(...r.a,...r.b));
    actor.t+=actor.dir*Math.min(.05,dt)*(actor.person?1.3:actor.bus?5.5:8.3)/roadLength;
