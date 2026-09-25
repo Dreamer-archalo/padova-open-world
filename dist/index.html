@@ -3,13 +3,14 @@
 <head>
   <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#101b22"><meta name="description" content="Explore Padua at real-world scale in a playable 3D browser sandbox. Drive, walk, deliver, race and escape the police.">
-  <title>PADOVA — Open World</title>
+  <title>PADOVA ↔ VENEZIA — Open World</title>
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect fill='%23101b22' width='64' height='64' rx='12'/%3E%3Ctext x='14' y='49' fill='%23ffc56a' font-family='Arial' font-weight='bold' font-size='46'%3EP%3C/text%3E%3C/svg%3E">
   <link rel="stylesheet" href="./style.css">
   <link rel="stylesheet" href="./hud.css">
   <link rel="stylesheet" href="./taxi-loading-layout.css">
   <link rel="stylesheet" href="./phase2-ui.css">
   <link rel="stylesheet" href="./initial-loader.css">
+  <link rel="stylesheet" href="./unified-main.css?v=1">
 </head>
 <body>
   <div id="initialLoader" role="status" aria-live="polite" aria-label="Caricamento iniziale città">
@@ -115,17 +116,16 @@
     <div id="touchControls"><div><button data-key="KeyA">←</button><button data-key="KeyW">↑</button><button data-key="KeyD">→</button><button data-key="KeyS">↓</button></div><div><button id="touchCar">E · VEHICLE</button><button data-key="Space">BRAKE / UP</button><button id="touchDescend" class="modern-only" data-key="ShiftLeft" hidden>DOWN</button><button id="touchChute" class="modern-only" hidden>F · PARACADUTE</button><button id="touchTurbo" data-key="Tab" hidden>TURBO</button></div></div>
   </div>
   <dialog id="menu"><div class="dialog-head"><div><span class="eyebrow">PADOVA / YOUR CITY</span><h2 id="menuTitle">Take a breather.</h2></div><button class="close" id="closeMenu" aria-label="Close menu">×</button></div><div id="menuContent"></div></dialog>
-  <dialog id="mapDialog"><div class="dialog-head"><div><span class="eyebrow">CITY MAP</span><h2>Know your way around.</h2></div><button class="close" id="closeMap" aria-label="Close map">×</button></div><div class="map-layout"><div class="fullmap-wrap"><canvas id="fullmap" width="1000" height="1000" aria-label="Full map; click to set waypoint"></canvas></div><div id="mapPlaces"></div></div><div class="map-legend"><span>● You</span><span>◆ Destination</span><span>Click the map to set a waypoint</span></div></dialog>
+  <dialog id="mapDialog"><div class="dialog-head"><div><span class="eyebrow">MONDO UNICO · PADOVA / VENEZIA</span><h2>Mappa regionale</h2></div><div class="unified-zoom"><button id="unifiedZoomOut" type="button" aria-label="Riduci mappa">−</button><button id="unifiedZoomIn" type="button" aria-label="Ingrandisci mappa">+</button><button id="unifiedMapHere" type="button">POSIZIONE</button><button id="unifiedMapAll" type="button">TUTTO</button></div><button class="close" id="closeMap" aria-label="Chiudi mappa">×</button></div><div class="map-layout"><div class="fullmap-wrap"><canvas id="fullmap" width="1200" height="800" aria-label="Full map; click to set waypoint"></canvas></div><div id="mapPlaces"></div></div><div class="map-legend"><span>● You</span><span>◆ Destination</span><span>Rotellina/+/- = zoom · Trascina = sposta · Clic = indicatore</span></div></dialog>
   <div id="taxiLoading" class="taxi-loading" hidden role="status" aria-live="polite"><div id="taxiMeme" class="taxi-meme"><div><span>TAXI ABUSIVO IN TRANSITO…</span><strong>Caricamento destinazione</strong><p id="taxiFact"></p><small id="taxiLoadingStatus">Preparazione di terreno e strade</small><button id="taxiNext" type="button">CLICCA / TOCCA · PROSSIMA CURIOSITÀ</button></div></div></div>
   <footer id="credits"><a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">© OpenStreetMap contributors</a><a href="https://github.com/tilezen/joerd/blob/master/docs/attribution.md" target="_blank" rel="noopener">Terrain: Copernicus EU-DEM / USGS via Mapzen</a><span id="modelCredits"></span><span id="scaleCredit">Real-world scale · stylised reconstruction</span></footer>
   <script type="module" src="./initial-loader.js"></script>
-  <script type="module" src="./game.js?v=taxi-dropoff-20260915-1"></script>
+  <script type="module" src="./game.js?v=unified-main-20260925-1"></script>
   <script type="module" src="./taxi-facts-extra.js"></script>
   <script type="module" src="./taxi-affordability.js"></script>
   <script type="module" src="./zone-indicator.js"></script>
   <script type="module" src="./ambient-audio.js"></script>
   <script type="module" src="./phase2-runtime.js"></script>
   <script type="module" src="./cruise-control.js"></script>
-<pre id="performanceOverlay" hidden aria-hidden="true"></pre>
-  <script type="module" src="./venice-map-entry.js"></script>\n</body>
+<pre id="performanceOverlay" hidden aria-hidden="true"></pre></body>
 </html>
