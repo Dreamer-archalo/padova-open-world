@@ -211,7 +211,7 @@ export class RegionalWorld{
   if(support&&support.road.bri&&support.d<support.road.w*.5+margin+1
     &&(referenceY===null||referenceY>=support.y-.8))return null;
   if(support&&support.d<support.road.w*.5+margin
-    &&support.y>this.waterSurface(x,z)+.08
+    &&support.y>=this.waterSurface(x,z)-.12
     &&(referenceY===null||referenceY>=support.y-.8))return null;
   if(this.mappedWater(x,z)||this.lagoonAt(x,z))return this.waterSurface(x,z);
   return null;
