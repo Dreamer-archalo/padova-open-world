@@ -3,6 +3,7 @@ Usage: python prepare_corridor.py /tmp/corridor-overpass.json
 Map data © OpenStreetMap contributors, ODbL 1.0.
 """
 import json, math, pathlib, re, sys
+from prepare_hydro_geometry import ingest_hydrology
 
 ORIGIN=[45.4064,11.8768]
 KX=111320*math.cos(math.radians(ORIGIN[0]))
@@ -31,7 +32,7 @@ widths={"motorway":13,"motorway_link":7,"trunk":12,"trunk_link":7,"primary":10,"
         "residential":6.5,"living_street":5.5,"service":4.2,"pedestrian":3.6,
         "footway":2.0,"path":1.7,"steps":1.7,"cycleway":2.2}
 src=json.load(open(sys.argv[1]))
-roads=[];water=[];areas=[];buildings=[]
+roads=[];water=[];areas=[];buildings=[];shorelines=[]
 road_ids=set()
 
 def add_road(e, tolerance=.7):
@@ -53,10 +54,20 @@ for e in src.get("elements",[]):
     if "highway" in tags and tags["highway"] in widths:
         add_road(e)
     elif tags.get("waterway") in ("river","canal","stream"):
-        k=tags["waterway"];water.append({"p":p,"w":max(2,min(90,number(tags.get("width"),{"river":35,"canal":14,"stream":5}[k]))),"k":k})
+        k=tags["waterway"];name=tags.get("name","").lower()
+        # These are visibly approximate fallbacks. Exact OSM riverbank
+        # polygons (when mapped) override centreline ribbon width in 3D.
+        nominal=({"river":35,"canal":14,"stream":5}[k])
+        if "brenta" in name:nominal=44 if k=="river" else 21
+        elif "piovego" in name:nominal=19
+        elif "marzenego" in name:nominal=12
+        explicit=tags.get("width",tags.get("est_width"))
+        water.append({"p":p,"w":max(2,min(120,number(explicit,nominal))),
+                      "approx":not bool(explicit),"n":tags.get("name",""),"k":k})
     elif tags.get("natural")=="water" and len(p)>=4:
-        if p[0]==p[-1]:p.pop()
-        if len(p)>=3:areas.append({"p":p,"k":"water"})
+        if p[0]==p[-1]:
+            p.pop()
+            if len(p)>=3:areas.append({"p":p,"k":"water"})
 
 # Dedicated focused extract supplies walkable local street networks in each
 # specifically requested detailed municipality. Keep main transit extraction
@@ -77,33 +88,15 @@ if len(sys.argv)>4:
     for e in backroads["elements"]:
         add_road(e,.55)
 
-# Marina, industrial basins and coastal dry parcels are sampled separately.
-# Preserve real OSM polygons so sea/land physics uses the same geometry as the
-# visible surfaces. Do not treat all of the Marghera mainland as open water.
+# Basins, exact riverbank multipolygons and oriented lagoon coastlines.
+# Keep the 3D and map overlay in the SAME regional world coordinate system.
+seen_hydro=set()
 if len(sys.argv)>5:
-    hydro=json.load(open(sys.argv[5],encoding="utf-8"))
-    seen=set()
-    for e in hydro.get("elements",[]):
-        tags=e.get("tags",{});geom=e.get("geometry",[])
-        if len(geom)<4 or e.get("id") in seen:continue
-        waterbody=(tags.get("natural")=="water"
-          or tags.get("waterway")=="riverbank"
-          or tags.get("landuse") in ("basin","reservoir","salt_pond")
-          or tags.get("water") in ("dock","basin","lagoon","harbour","lake","river")
-          or tags.get("man_made")=="dock")
-        land=tags.get("landuse") in ("industrial","residential","commercial","retail","port","harbour") or tags.get("leisure") in ("park","garden") or tags.get("natural") in ("wood","scrub")
-        if not waterbody and not land:continue
-        # Large multipolygons and unclosed coastlines need a separate island
-        # dataset; an open OSM way must NOT fill its entire bounding rectangle.
-        if geom[0]["lat"]!=geom[-1]["lat"] or geom[0]["lon"]!=geom[-1]["lon"]:continue
-        poly=simplify([project(g) for g in geom],1.1 if waterbody else 2.0)
-        if poly and poly[0]==poly[-1]:poly.pop()
-        if len(poly)<3:continue
-        xs=[p[0] for p in poly];zs=[p[1] for p in poly]
-        if max(xs)-min(xs)>8500 or max(zs)-min(zs)>8500:continue
-        areas.append({"p":poly,"k":"water" if waterbody else "land",
-                      "n":tags.get("name",""),"osm":e["id"]})
-        seen.add(e["id"])
+    coast=json.load(open(sys.argv[5],encoding="utf-8"))
+    ingest_hydrology(coast,project,simplify,areas,shorelines,seen_hydro)
+if len(sys.argv)>6:
+    inland=json.load(open(sys.argv[6],encoding="utf-8"))
+    ingest_hydrology(inland,project,simplify,areas,shorelines,seen_hydro)
 
 # Building footprints in the key corridor communes are downloaded as a second,
 # narrower OSM extract, so regional transport does not depend on a huge query.
@@ -149,10 +142,10 @@ places=[
 ]
 xs=[q for r in roads for q,_ in r["p"]];zs=[q for r in roads for _,q in r["p"]]
 bounds=[min(xs)-500,min(zs)-500,max(xs)+500,max(zs)+500] if xs else [5000,-9000,39000,9000]
-out={"origin":ORIGIN,"bounds":[round(v,1) for v in bounds],"buildings":buildings,"roads":roads,"areas":areas,"water":water,
+out={"origin":ORIGIN,"bounds":[round(v,1) for v in bounds],"buildings":buildings,"roads":roads,"areas":areas,"water":water,"shorelines":shorelines,
      "places":places,"attribution":"© OpenStreetMap contributors","source":"https://www.openstreetmap.org/copyright",
      "license":"ODbL 1.0","dataDate":src.get("osm3s",{}).get("timestamp_osm_base",""),
      "scale":"One world unit = one metre; Padova global origin."}
 dest=pathlib.Path(__file__).parent/"dist/data/corridor.json"
 dest.write_text(json.dumps(out,separators=(",",":")))
-print(json.dumps({"buildings":len(buildings),"roads":len(roads),"water":len(water),"areas":len(areas),"bounds":out["bounds"],"bytes":dest.stat().st_size}))
+print(json.dumps({"buildings":len(buildings),"roads":len(roads),"water":len(water),"areas":len(areas),"shorelines":len(shorelines),"bounds":out["bounds"],"bytes":dest.stat().st_size}))
