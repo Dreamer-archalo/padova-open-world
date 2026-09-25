@@ -127,22 +127,26 @@ jobs:
           fetch_query scripts/padova-venice-buildings-overpass.ql /tmp/corridor-buildings.json
           fetch_query scripts/padova-venice-local-streets-overpass.ql /tmp/corridor-local-streets.json
           fetch_query scripts/padova-venice-backroads-overpass.ql /tmp/corridor-backroads.json
-          fetch_query scripts/padova-venice-water-bodies-overpass.ql /tmp/corridor-hydrology.json
-          # These two queries enhance the 2D map only. If a public Overpass
-          # endpoint is busy, never block playability or the existing map.
-          if ! fetch_query scripts/padova-venice-map-hd-west-overpass.ql /tmp/map-hd-west.json; then
-            echo '{"elements":[]}' > /tmp/map-hd-west.json
-            echo 'HD west extras unavailable; all existing corridors remain vector sharp.'
+          # A hydrology endpoint may be busy. Publish current drivable world
+          # with the tiled HD map instead of failing the entire deployment.
+          if ! fetch_query scripts/padova-venice-water-bodies-overpass.ql /tmp/corridor-hydrology.json 10; then
+            echo '{"elements":[]}' > /tmp/corridor-hydrology.json
+            echo 'WARNING: coastal extract unavailable; fallback waterways and OSM map tiles remain.'
           fi
-          if ! fetch_query scripts/padova-venice-map-hd-east-overpass.ql /tmp/map-hd-east.json; then
-            echo '{"elements":[]}' > /tmp/map-hd-east.json
-            echo 'HD east extras unavailable; all existing corridors remain vector sharp.'
+          if ! fetch_query scripts/padova-venice-riverbanks-overpass.ql /tmp/corridor-riverbanks.json 5; then
+            echo '{"elements":[]}' > /tmp/corridor-riverbanks.json
+            echo 'WARNING: inland riverbank polygons unavailable; use named-width fallback.'
           fi
+          # Extra map-only extracts are OPTIONAL now: accurately rendered OSM
+          # tiles are requested only for the displayed user viewport, and the
+          # local vector basemap is the network-independent fallback.
+          test -s /tmp/map-hd-west.json || echo '{"elements":[]}' > /tmp/map-hd-west.json
+          test -s /tmp/map-hd-east.json || echo '{"elements":[]}' > /tmp/map-hd-east.json
 
       - name: Build unified world data
         run: |
           set -euo pipefail
-          python prepare_corridor.py /tmp/corridor-overpass.json /tmp/corridor-buildings.json /tmp/corridor-local-streets.json /tmp/corridor-backroads.json /tmp/corridor-hydrology.json
+          python prepare_corridor.py /tmp/corridor-overpass.json /tmp/corridor-buildings.json /tmp/corridor-local-streets.json /tmp/corridor-backroads.json /tmp/corridor-hydrology.json /tmp/corridor-riverbanks.json
           python prepare_world_terrain.py --cache /tmp/padova-venice-terrain
           python prepare_world_map.py
           python prepare_map_hd.py /tmp/map-hd-west.json /tmp/map-hd-east.json
