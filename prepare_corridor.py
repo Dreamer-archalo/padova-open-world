@@ -30,7 +30,7 @@ widths={"motorway":13,"motorway_link":7,"trunk":12,"trunk_link":7,"primary":10,"
         "secondary":9,"secondary_link":7,"tertiary":8,"tertiary_link":6,"unclassified":6.5,
         "residential":6.5,"living_street":5.5}
 src=json.load(open(sys.argv[1]))
-roads=[];water=[];areas=[]
+roads=[];water=[];areas=[];buildings=[]
 for e in src.get("elements",[]):
     tags=e.get("tags",{});geom=e.get("geometry",[])
     if len(geom)<2:continue
@@ -45,24 +45,54 @@ for e in src.get("elements",[]):
         if p[0]==p[-1]:p.pop()
         if len(p)>=3:areas.append({"p":p,"k":"water"})
 
+# Building footprints in the key corridor communes are downloaded as a second,
+# narrower OSM extract, so regional transport does not depend on a huge query.
+if len(sys.argv)>2:
+    extra=json.load(open(sys.argv[2]))
+    for e in extra.get("elements",[]):
+        tags=e.get("tags",{});geom=e.get("geometry",[])
+        if "building" not in tags or len(geom)<4:continue
+        pts=simplify([project(g) for g in geom],.38)
+        if pts and pts[0]==pts[-1]:pts.pop()
+        if len(pts)<3:continue
+        levels=number(tags.get("building:levels"),2+e["id"]%3)
+        height=number(tags.get("height"),levels*3)
+        if tags["building"] in ("shed","garage","garages","roof"):height=min(height,5)
+        x=sum(p[0] for p in pts)/len(pts)
+        lod="energy"
+        for lat,lon,r in [
+            (45.44004,12.07439,1050),(45.4259,12.0773,1500),
+            (45.43851,12.13862,1150),(45.46531,12.11765,850),
+            (45.45141,12.17107,1500),(45.469,12.231,1600),
+            (45.457,12.265,2400)
+        ]:
+            cx=round((lon-ORIGIN[1])*KX,1);cz=round((ORIGIN[0]-lat)*KZ,1)
+            if math.hypot(x-cx,sum(p[1] for p in pts)/len(pts)-cz)<r:lod="detailed";break
+        buildings.append({"p":pts,"h":round(max(2.6,min(75,height)),1),
+                          "n":tags.get("name",""),"t":tags["building"],"c":e["id"]%7,"lod":lod})
+
 def place(name,lat,lon,tag):
     x,z=project({"lat":lat,"lon":lon});return {"name":name,"x":x,"z":z,"tag":tag}
 
 places=[
  place("Padova Est",45.4162,11.9530,"Ingresso corridoio verso Venezia"),
- place("Dolo",45.4252,12.0828,"Riviera del Brenta"),
- place("Mira",45.4348,12.1348,"Riviera del Brenta"),
- place("Marghera",45.4700,12.2530,"Area industriale e porto"),
+ place("Cazzago",45.44004,12.07439,"Centro dettagliato"),
+ place("Dolo",45.4259,12.0773,"Centro dettagliato"),
+ place("Mira Porte",45.43851,12.13862,"Centro dettagliato"),
+ place("Marano Veneziano",45.46531,12.11765,"Centro dettagliato"),
+ place("Oriago",45.45141,12.17107,"Centro dettagliato"),
+ place("Marghera",45.469,12.231,"Centro dettagliato"),
+ place("Porto Marghera",45.457,12.265,"Porti e terminal merci"),
  place("Mestre",45.4931,12.2427,"Terraferma veneziana"),
  place("Ponte della Libertà",45.4567,12.2965,"Collegamento con la laguna"),
  place("Piazzale Roma",45.4380,12.3182,"Fine accesso automobilistico")
 ]
 xs=[q for r in roads for q,_ in r["p"]];zs=[q for r in roads for _,q in r["p"]]
 bounds=[min(xs)-500,min(zs)-500,max(xs)+500,max(zs)+500] if xs else [5000,-9000,39000,9000]
-out={"origin":ORIGIN,"bounds":[round(v,1) for v in bounds],"buildings":[],"roads":roads,"areas":areas,"water":water,
+out={"origin":ORIGIN,"bounds":[round(v,1) for v in bounds],"buildings":buildings,"roads":roads,"areas":areas,"water":water,
      "places":places,"attribution":"© OpenStreetMap contributors","source":"https://www.openstreetmap.org/copyright",
      "license":"ODbL 1.0","dataDate":src.get("osm3s",{}).get("timestamp_osm_base",""),
      "scale":"One world unit = one metre; Padova global origin."}
 dest=pathlib.Path(__file__).parent/"dist/data/corridor.json"
 dest.write_text(json.dumps(out,separators=(",",":")))
-print(json.dumps({"roads":len(roads),"water":len(water),"areas":len(areas),"bounds":out["bounds"],"bytes":dest.stat().st_size}))
+print(json.dumps({"buildings":len(buildings),"roads":len(roads),"water":len(water),"areas":len(areas),"bounds":out["bounds"],"bytes":dest.stat().st_size}))

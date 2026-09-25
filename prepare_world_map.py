@@ -38,7 +38,8 @@ padova=json.load(open(ROOT/"dist/data/padova.json"))
 corridor=json.load(open(ROOT/"dist/data/corridor.json"))
 venice=convert_venice(json.load(open(ROOT/"dist/data/venice.json")))
 
-buildings=[*padova.get("buildings",[]),*venice.get("buildings",[])]
+corridor_buildings=[b for b in corridor.get("buildings",[]) if max(p[0] for p in b["p"])>7100]
+buildings=[*padova.get("buildings",[]),*corridor_buildings,*venice.get("buildings",[])]
 roads=[*padova.get("roads",[]),*corridor.get("roads",[]),*venice.get("roads",[])]
 water=[*padova.get("water",[]),*corridor.get("water",[]),*venice.get("water",[])]
 areas=[*padova.get("areas",[]),*corridor.get("areas",[]),*venice.get("areas",[])]
@@ -54,3 +55,20 @@ out={"version":1,"origin":PADOVA_ORIGIN,"bounds":bounds,"buildings":buildings,"r
      "scale":"One world unit = one metre; unified Padova origin."}
 dest=ROOT/"dist/data/world-padova-venice.json";dest.write_text(json.dumps(out,separators=(",",":")))
 print(json.dumps({"buildings":len(buildings),"roads":len(roads),"water":len(water),"areas":len(areas),"bounds":bounds,"bytes":dest.stat().st_size}))
+
+# Regional chunks are shipped separately: loading the full 90k-building
+# Padova JSON a second time would waste memory and stall the user's current game.
+regional={
+ "version":1,"origin":PADOVA_ORIGIN,"bounds":PLAYABLE_BOUNDS,
+ "buildings":corridor_buildings+venice.get("buildings",[]),
+ "roads":[r for r in corridor.get("roads",[]) if max(p[0] for p in r["p"])>7000]+venice.get("roads",[]),
+ "water":[w for w in corridor.get("water",[]) if max(p[0] for p in w["p"])>7000]+venice.get("water",[]),
+ "areas":[a for a in corridor.get("areas",[]) if max(p[0] for p in a["p"])>7000]+venice.get("areas",[]),
+ "places":corridor.get("places",[])+venice.get("places",[]),
+ "attribution":"© OpenStreetMap contributors","source":"https://www.openstreetmap.org/copyright","license":"ODbL 1.0"
+}
+regionalDest=ROOT/"dist/data/region-padova-venice.json"
+regionalDest.write_text(json.dumps(regional,separators=(",",":"),ensure_ascii=False),encoding="utf-8")
+print(json.dumps({"regionalBuildings":len(regional["buildings"]),
+                  "regionalRoads":len(regional["roads"]),
+                  "regionalBytes":regionalDest.stat().st_size}))
