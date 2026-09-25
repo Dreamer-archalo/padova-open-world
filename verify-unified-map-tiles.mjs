@@ -7,10 +7,15 @@ import {VectorMapDetail} from './dist/unified-map-detail.js';
 const src=fs.readFileSync('dist/game.js','utf8');
 const html=fs.readFileSync('dist/index.html','utf8');
 const layout=fs.readFileSync('dist/unified-main.css','utf8');
-assert(src.includes('miniTiles.draw(c,state,w,h,k,density)'),'Padova minimap lacks independent HD tile fallback');
+assert(src.includes('miniTiles.draw(c,state,w,h,k,density)'),'Padova fallback minimap must remain available');
+const vector=fs.readFileSync('dist/unified-map.js','utf8');
+const detail=fs.readFileSync('dist/unified-map-detail.js','utf8');
+assert(vector.includes('this.lastTileStats={ready:0,pending:0,vector:true}'),'Full map must be pure GTA-style vector');
+assert(vector.includes('const tiles={ready:0,pending:0,vector:true}'),'Minimap must use exactly the same pure-vector style');
+assert(detail.includes('const buildingDetail=!mini&&scale>=.45'),'Minimap building clutter not suppressed');
 assert(src.includes('unifiedMap.tiles=miniTiles'),'Full world and minimap are not using a shared tile cache');
 assert(src.includes('state.car?.spec.aircraft?Math.max(6000'),'Fast aircraft could hammer local high zoom');
-assert(html.includes('MAPPA-H2O-R5')&&html.includes('minimapStatus'),'Stale preview cannot be distinguished from current build');
+assert(html.includes('MAPPA-H2O-R6')&&html.includes('minimapStatus'),'Stale preview cannot be distinguished from current build');
 assert(layout.includes('minimap-osm-credit'),'OSM attribution must stay visible on the minimap');
 
 const coords={
