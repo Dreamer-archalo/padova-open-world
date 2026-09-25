@@ -10,7 +10,7 @@ const CHUNK=320,CELL=160,LAGOON_Y=.1;
 const key=(x,z,size)=>Math.floor(x/size)+','+Math.floor(z/size);
 const material=(color,extra={})=>new THREE.MeshStandardMaterial({color,roughness:1,side:THREE.DoubleSide,...extra});
 const green=material('#819675'),roadMat=material('#59666a'),arterialMat=material('#4b595f'),
- canalMat=material('#267da8',{roughness:.35,metalness:.08}),lagoonMat=material('#216c9c',{roughness:.28,metalness:.13}),stone=material('#cdbda1'),
+ canalMat=material('#167bbc',{roughness:.29,metalness:.04,emissive:'#0c3560',emissiveIntensity:.30}),lagoonMat=material('#145ca4',{roughness:.30,metalness:.06,emissive:'#0c3058',emissiveIntensity:.28}),stone=material('#cdbda1'),
  walls=material('#cfb897'),roofs=material('#a57358');
 const energy=new THREE.MeshBasicMaterial({color:'#6dd4d5',transparent:true,opacity:.35,wireframe:true,depthWrite:false});
 const energySkin=new THREE.MeshBasicMaterial({color:'#4cb8c2',transparent:true,opacity:.19,side:THREE.DoubleSide,depthWrite:false});
@@ -234,7 +234,7 @@ export class RegionalWorld{
   const shore=this.shoreSide(x,z);
   if(shore<0)return false; // inland side of an actually mapped shoreline
   if(shore>0)return true;  // sea side at the real Venetian coast
-  if(x<33500&&this.raw(x,z)>LAGOON_Y+.65)return false;
+  if(x<33500&&this.raw(x,z)>LAGOON_Y+.04)return false;
   return true;
  }
  ground(x,z){
