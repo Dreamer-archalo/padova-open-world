@@ -632,7 +632,8 @@ function movePlayer(dt){if(taxi?.phase==='transition'){state.speed=0;return;}if(
  const onRoof=state.mode==='foot'&&footSurface(state.x,state.z,state.y,terrain,world.collision)>terrain.height(state.x,state.z,state.y)+.2;
  const waterY=onRoof||(state.car?.jump?.airborne&&state.y>terrain.waterHeight?.(state.x,state.z)+.3)?null:terrain.waterAt(state.x,state.z,0,state.y);
  if(waterY!==null){
-   if(state.mode==='car'&&!state.car?.spec.aircraft&&!state.car?.spec.watercraft){
+   if(state.mode==='car'&&!state.car?.spec.aircraft&&!state.car?.spec.watercraft
+    &&!state.car?.spec.boat&&state.car?.waterDock===undefined){
     if(waterGame.enterVehicle(state,waterY))toast('Auto in acqua: galleggia, poi affonda. E per nuotare, R per recuperare.',5);
    }else if(state.mode==='foot'&&waterGame.startSwimming(state,waterY)){
     player.rotation.x=-1.04;toast('Nuoto: W/A/S/D per muoverti, SPAZIO immergiti, R recupera.',5);
