@@ -17,6 +17,7 @@ on:
       - 'dist/unified-water.css'
       - 'dist/water-gameplay.js'
       - 'verify-unified-water.mjs'
+      - 'verify-unified-map-tiles.mjs'
       - 'dist/modern-driving.js'
       - 'verify-unified-main.mjs'
       - 'verify-unified-features.mjs'
@@ -168,6 +169,7 @@ jobs:
           node --check dist/map-live-tiles.js
           python -m py_compile prepare_hydro_geometry.py prepare_corridor.py prepare_world_map.py
           node verify-unified-hd-map.mjs
+          node verify-unified-map-tiles.mjs
           node --check dist/local-respawn.js
           node --check dist/regional-hydro.js
           node --check dist/water-gameplay.js
