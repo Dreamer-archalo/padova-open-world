@@ -295,7 +295,7 @@ function makeMap(){mapBase=document.createElement('canvas');mapBase.width=1800;m
 function drawRoute(ctx,transform,width=3){if(!state.route.length)return;ctx.beginPath();state.route.forEach((p,i)=>{const a=transform(p);if(!i)ctx.moveTo(a.x,a.y);else ctx.lineTo(a.x,a.y);});ctx.strokeStyle='#edbb65';ctx.lineWidth=width;ctx.lineJoin='round';ctx.lineCap='round';ctx.stroke();}
 function drawMini(){if(!mapBase)return;densityCanvas(mini,2.7,1100);const c=miniCtx,w=mini.width,h=mini.height,density=Math.max(1,Math.min(4,w/(mini.clientWidth||w/2.7))),range=state.car?.spec.aircraft?Math.max(6000,Math.abs(state.speed)*72):state.mode==='car'?460:270,k=w/range;c.fillStyle='#172e38';c.fillRect(0,0,w,h);const mx=(state.x-minBounds.x)/minBounds.w*mapBase.width,my=(state.z-minBounds.z)/minBounds.h*mapBase.height,sw=range/minBounds.w*mapBase.width,sh=h/k/minBounds.h*mapBase.height;if(unifiedMap)unifiedMap.drawMini(c,state,range,w,h);else{
   c.drawImage(mapBase,mx-sw/2,my-sh/2,sw,sh,0,0,w,h);
-  miniTiles.draw(c,state,w,h,k);
+  miniTiles.draw(c,state,w,h,k,density);
  }
  const tr=p=>({x:(p.x-state.x)*k+w/2,y:(p.z-state.z)*k+h/2});drawRoute(c,tr,5);
  for(const p of PLACES){const t=tr(p);if(t.x>5&&t.x<w-5&&t.y>10&&t.y<h-5){c.fillStyle='#c6b28c';c.beginPath();c.arc(t.x,t.y,3.5*density,0,Math.PI*2);c.fill();}}
