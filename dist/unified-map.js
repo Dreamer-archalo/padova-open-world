@@ -1,5 +1,5 @@
-// Padova's own minimap is untouched. This renderer only extends the full M map
-// horizontally into the same coordinates and implements genuine zoom/pan.
+// High-resolution unified geographical map. The same spatially indexed
+// vectors drive detailed Padova, the Brenta towns, Mestre and Venice.
 import {REGIONAL_ZONES} from './unified-regions.js';
 import {VectorMapDetail} from './unified-map-detail.js?v=coast3';
 
@@ -10,14 +10,16 @@ export class UnifiedMap {
   this.zoomLevel=1;this.center={x:x+this.bounds.w/2,z:z+this.bounds.h/2};
   this.base=document.createElement('canvas');this.base.width=3072;
   this.detail=new VectorMapDetail(region,padovaData);
-  this.base.height=Math.ceil(2300*this.bounds.h/this.bounds.w);
+  this.base.height=Math.ceil(this.base.width*this.bounds.h/this.bounds.w);
   this.baseScale=this.base.width/this.bounds.w;
   this.prepare();
  }
+ addMapDetail(source){if(source)this.detail.addSource(source);}
+ get uiScale(){const displayed=this.canvas.getBoundingClientRect?.().width||this.canvas.clientWidth||this.canvas.width;return Math.max(1,Math.min(3.5,this.canvas.width/displayed));}
  get scale(){return Math.min(this.canvas.width/this.bounds.w,this.canvas.height/this.bounds.h)*this.zoomLevel;}
  centerOn(x,z,zoom=this.zoomLevel){this.center={x,z};this.zoomLevel=zoom;this.limit();}
  reset(){this.zoomLevel=1;this.center={x:this.bounds.x+this.bounds.w/2,z:this.bounds.z+this.bounds.h/2};}
- zoom(delta){this.zoomLevel=Math.max(1,Math.min(32,this.zoomLevel*(delta>0?1.6:1/1.6)));this.limit();}
+ zoom(delta){this.zoomLevel=Math.max(1,Math.min(55,this.zoomLevel*(delta>0?1.45:1/1.45)));this.limit();}
  pan(screenDx,screenDz){this.center.x-=screenDx/this.scale;this.center.z-=screenDz/this.scale;this.limit();}
  limit(){const halfW=Math.min(this.bounds.w/2,this.canvas.width/(2*this.scale)),halfH=Math.min(this.bounds.h/2,this.canvas.height/(2*this.scale));
  this.center.x=Math.max(this.bounds.x+halfW,Math.min(this.bounds.x+this.bounds.w-halfW,this.center.x));
@@ -39,30 +41,58 @@ export class UnifiedMap {
   // from painting over existing Padova details and its road markings.
  }
  draw({position,places=[],target=null,route=[]}){
-  const c=this.canvas.getContext('2d'),w=this.canvas.width,h=this.canvas.height;
-  c.setTransform(1,0,0,1,0,0);c.fillStyle='#152b35';c.fillRect(0,0,w,h);
-  if(this.zoomLevel>=2.1){
-   // At town scale draw directly from indexed OSM geometry; avoid wasting a
-   // frame drawing a blurry full-world bitmap underneath the vectors.
-   this.detail.draw(c,this.center,w,h,this.scale);
+  const c=this.canvas.getContext('2d'),w=this.canvas.width,h=this.canvas.height,pixelRatio=this.uiScale,
+   unit=n=>n*pixelRatio;
+  c.setTransform(1,0,0,1,0,0);c.clearRect(0,0,w,h);
+  // Only the fully zoomed-out 45 km overview is rasterized. Any user-visible
+  // zoom into a municipality uses OSM polylines/polygons at native resolution.
+  if(this.zoomLevel>=1.65){
+   this.detail.draw(c,this.center,w,h,this.scale,{pixelRatio,labels:this.zoomLevel>=3});
   }else{
+   c.fillStyle='#152b35';c.fillRect(0,0,w,h);
    const ratio=this.scale/this.baseScale;
    c.translate(w/2,h/2);c.scale(ratio,ratio);
    c.drawImage(this.base,-(this.center.x-this.bounds.x)*this.baseScale,-(this.center.z-this.bounds.z)*this.baseScale);
    c.setTransform(1,0,0,1,0,0);
   }
-  if(route.length){c.beginPath();route.forEach((p,i)=>{const a=this.toScreen(p);i?c.lineTo(a.x,a.y):c.moveTo(a.x,a.y);});c.lineWidth=2.6;c.strokeStyle='#edbb65';c.stroke();}
-  const dot=(p,size,color)=>{const q=this.toScreen(p);if(!this.isVisible(p))return;c.fillStyle=color;c.beginPath();c.arc(q.x,q.y,size,0,Math.PI*2);c.fill();};
-  // All named regional stops exist in the same map. Secondary Padova pins are
-  // visible when zooming rather than covering the wide-area view with labels.
-  const labels=this.zoomLevel>=1.55?REGIONAL_ZONES:REGIONAL_ZONES.filter(p=>['Dolo','Mira Porte','Oriago','Marghera','Piazzale Roma','Venezia - San Marco'].includes(p.name));
-  for(const p of labels){if(!this.isVisible(p))continue;dot(p,4,p.lod==='detailed'?'#f6bd69':'#77b9c3');const q=this.toScreen(p);c.fillStyle='#e6e4d7';c.font='600 13px system-ui';c.fillText(p.name,q.x+7,q.y-8);}
-  for(const p of places)if(this.zoomLevel>=2.5)dot(p,3,'#ffc56a');
-  if(target){dot(target,8,'#ffc56a');const q=this.toScreen(target);c.strokeStyle='#ffc56a';c.lineWidth=2;c.beginPath();c.arc(q.x,q.y,12,0,Math.PI*2);c.stroke();}
-  dot(position,7,'white');const q=this.toScreen(position);c.strokeStyle='#172e38';c.lineWidth=3;c.beginPath();c.arc(q.x,q.y,8,0,Math.PI*2);c.stroke();
-  c.fillStyle='#f5f3de';c.fillRect(15,h-29,105,2);c.font='600 12px system-ui';c.fillText(Math.round(105/this.scale/1000*10)/10+' km',15,h-12);
+  if(route.length){
+   c.beginPath();route.forEach((p,i)=>{const a=this.toScreen(p);i?c.lineTo(a.x,a.y):c.moveTo(a.x,a.y);});
+   c.lineWidth=unit(2.4);c.strokeStyle='#f7ca74';c.stroke();
+  }
+  const dot=(p,size,color)=>{
+   if(!this.isVisible(p))return;const q=this.toScreen(p);
+   c.fillStyle=color;c.beginPath();c.arc(q.x,q.y,unit(size),0,Math.PI*2);c.fill();
+  };
+  const labels=this.zoomLevel>=2?REGIONAL_ZONES:REGIONAL_ZONES.filter(p=>
+   ['Dolo','Mira Porte','Oriago','Marghera','Piazzale Roma','Venezia - San Marco'].includes(p.name));
+  c.font='650 '+Math.round(unit(13))+'px system-ui';
+  c.textAlign='left';c.textBaseline='alphabetic';
+  for(const p of labels){
+   if(!this.isVisible(p))continue;dot(p,4,p.lod==='detailed'?'#ffc778':'#9ed5d4');
+   const q=this.toScreen(p);c.lineWidth=unit(2.7);c.strokeStyle='#243f48';
+   c.strokeText?.(p.name,q.x+unit(8),q.y-unit(7));c.fillStyle='#fff6e5';
+   c.fillText(p.name,q.x+unit(8),q.y-unit(7));
+  }
+  if(this.zoomLevel>=3)for(const p of places)dot(p,2.8,'#ffce84');
+  if(target&&this.isVisible(target)){
+   dot(target,6,'#ffc56a');const q=this.toScreen(target);c.strokeStyle='#ffc56a';c.lineWidth=unit(2);
+   c.beginPath();c.arc(q.x,q.y,unit(11),0,Math.PI*2);c.stroke();
+  }
+  if(this.isVisible(position)){
+   const q=this.toScreen(position);
+   c.strokeStyle='#152f3d';c.lineWidth=unit(3);c.fillStyle='#fff';
+   c.beginPath();c.arc(q.x,q.y,unit(8),0,Math.PI*2);c.fill();c.stroke();
+   c.strokeStyle='#fff';c.lineWidth=unit(1.4);c.beginPath();c.arc(q.x,q.y,unit(12),0,Math.PI*2);c.stroke();
+  }
+  const line=unit(94),metres=line/this.scale;
+  const label=metres>=1000?(metres/1000).toFixed(1)+' km':Math.round(metres)+' m';
+  c.fillStyle='#f5f3de';c.fillRect(unit(14),h-unit(29),line,unit(2.5));
+  c.font='650 '+Math.round(unit(12))+'px system-ui';c.fillText(label,unit(14),h-unit(11));
  }
  drawMini(ctx,position,range,width,height){
-  this.detail.draw(ctx,position,width,height,width/range);
+  const display=ctx.canvas?.getBoundingClientRect?.().width||ctx.canvas?.clientWidth||width/2.5;
+  const pixelRatio=Math.max(1,Math.min(4,width/display));
+  return this.detail.draw(ctx,position,width,height,width/range,{pixelRatio,mini:true,labels:true});
+
  }
 }
