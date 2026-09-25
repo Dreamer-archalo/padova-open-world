@@ -144,7 +144,42 @@ export class RegionalWorld{
   }
   return best;
  }
- ground(x,z){return this.raw(x,z)+.05;}
+ waterSurface(x,z){
+  // Venice/Marghera share a lagoon datum; inland river strips retain the
+  // local smoothed DEM until real surveyed channel levels are supplied.
+  return harborBand(x)?LAGOON_Y+.08:this.raw(x,z)+.08;
+ }
+ inPoly(index,x,z){
+  for(const a of new Set(this.near(index,x,z)))if(pointInside(x,z,a.p))return true;
+  return false;
+ }
+ mappedWater(x,z){
+  if(this.inPoly(this.waterAreas,x,z))return true;
+  for(const w of new Set(this.near(this.waters,x,z))){
+   const vx=w.b[0]-w.a[0],vz=w.b[1]-w.a[1],den=vx*vx+vz*vz,
+    t=den?Math.max(0,Math.min(1,((x-w.a[0])*vx+(z-w.a[1])*vz)/den)):0;
+   if(distance(x,z,w.a[0]+t*vx,w.a[1]+t*vz)<w.w*.5)return true;
+  }
+  return false;
+ }
+ lagoonAt(x,z){
+  if(!coastalBand(x,z))return false;
+  // True land-use polygons, exposed island building footprints and dry quays
+  // carve holes in the broad open-lagoon surface.
+  if(this.inPoly(this.landAreas,x,z))return false;
+  for(const b of new Set(this.near(this.buildingAreas,x,z)))
+   if(x>=b.minX-4&&x<=b.maxX+4&&z>=b.minZ-4&&z<=b.maxZ+4)return false;
+  const road=this.nearestRoad(x,z,12);
+  if(road&&road.d<road.road.w*.5+3&&!road.road.bri)return false;
+  if(x<33500&&this.raw(x,z)>LAGOON_Y+.65)return false;
+  return true;
+ }
+ ground(x,z){
+  if(this.mappedWater(x,z)||this.lagoonAt(x,z))return Math.min(this.raw(x,z),this.waterSurface(x,z)-.4)+.05;
+  // Elevated island/industrial parcels must not disappear beneath the water
+  // plane merely because a coarse DEM returned a sea-level sample.
+  return coastalBand(x,z)?Math.max(this.raw(x,z),LAGOON_Y+.23)+.05:this.raw(x,z)+.05;
+ }
  height(x,z,referenceY=null){
   const support=this.nearestRoad(x,z,25);
   if(support&&support.d<support.road.w*.5+.85&&(referenceY===null||Math.abs(support.y-referenceY)<3.7))return support.y+.065;
@@ -152,15 +187,12 @@ export class RegionalWorld{
  }
  waterAt(x,z,margin=0,referenceY=null){
   const support=this.nearestRoad(x,z,25);
-  if(support&&support.road.bri&&support.d<support.road.w*.5+margin+1)return null;
-  if(support&&support.d<support.road.w*.5+margin&&support.y>LAGOON_Y+.12)return null;
-  for(const w of this.near(this.waters,x,z)){
-   const vx=w.b[0]-w.a[0],vz=w.b[1]-w.a[1],den=vx*vx+vz*vz;
-   const t=den?Math.max(0,Math.min(1,((x-w.a[0])*vx+(z-w.a[1])*vz)/den)):0;
-   if(distance(x,z,w.a[0]+t*vx,w.a[1]+t*vz)<w.w*.5+margin)return coast(x,z)?LAGOON_Y:this.raw(x,z)-.2;
-  }
-  for(const area of this.near(this.waterAreas,x,z))if(pointInside(x,z,area.p))return coast(x,z)?LAGOON_Y:this.raw(x,z)-.2;
-  if(coast(x,z)&&this.raw(x,z)<LAGOON_Y-.13)return LAGOON_Y;
+  if(support&&support.road.bri&&support.d<support.road.w*.5+margin+1
+    &&(referenceY===null||referenceY>=support.y-.8))return null;
+  if(support&&support.d<support.road.w*.5+margin
+    &&support.y>this.waterSurface(x,z)+.08
+    &&(referenceY===null||referenceY>=support.y-.8))return null;
+  if(this.mappedWater(x,z)||this.lagoonAt(x,z))return this.waterSurface(x,z);
   return null;
  }
  installTerrainHooks(terrain){
@@ -171,7 +203,7 @@ export class RegionalWorld{
   terrain.groundHeight=(x,z)=>active(x,z)?this.ground(x,z):original.ground(x,z);
   terrain.height=(x,z,ref=null)=>active(x,z)?this.height(x,z,ref):original.height(x,z,ref);
   terrain.waterAt=(x,z,margin=0,ref=null)=>active(x,z)?this.waterAt(x,z,margin,ref):original.water(x,z,margin,ref);
-  terrain.waterHeight=(x,z)=>active(x,z)?(coast(x,z)?LAGOON_Y:this.raw(x,z)-.2):original.waterHeight(x,z);
+  terrain.waterHeight=(x,z)=>active(x,z)?this.waterSurface(x,z):original.waterHeight(x,z);
  }
  tile(ix,iz){
   const arr=[],steps=8,n=CHUNK;
