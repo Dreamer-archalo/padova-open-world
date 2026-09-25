@@ -1,0 +1,41 @@
+name: Michelangelo airport parking and boarding browser test
+
+on:
+  push:
+    branches: [feat/boats-michelangelo-20260925]
+    paths:
+      - 'dist/airport-michelangelo.js'
+      - 'tools/test-michelangelo-airport-chromium.mjs'
+      - '.github/workflows/michelangelo-airport-acceptance.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  browser-airport:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: feat/boats-michelangelo-20260925
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install headless Chromium
+        run: |
+          npm install --no-save playwright@1.55.1
+          npx playwright install --with-deps chromium
+      - name: Full Padova scene - verify parked and boardable Michelangelo
+        run: |
+          node tools/serve.mjs --host 127.0.0.1 --port 4173 &
+          for i in $(seq 1 25); do if curl -fsS http://127.0.0.1:4173/ -o /dev/null; then break; fi; sleep 1; done
+          node tools/test-michelangelo-airport-chromium.mjs
+      - name: Preserve acceptance evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: michelangelo-airport-browser
+          path: test-artifacts/
+          if-no-files-found: ignore
