@@ -65,7 +65,7 @@ async function startUnifiedRegion(){
   const extension=new RegionalWorld(scene,map,grid,world.collision);
   extension.installTerrainHooks(terrain);terrain.unifiedBounds=unifiedBounds;
   regionalWorld=extension;
-  unifiedMap=new UnifiedMap($('fullmap'),mapBase,minBounds,map,data);
+  unifiedMap=new UnifiedMap($('fullmap'),mapBase,minBounds,map,data);unifiedMap.centerOn(state.x,state.z,7);
   const full=$('fullmap'),place=$('mapDialog');
   full.onwheel=ev=>{if(!place.open||taxiMapPick)return;ev.preventDefault();unifiedMap.zoom(ev.deltaY<0?1:-1);drawFullMap();};
   full.addEventListener('pointerdown',ev=>{if(!place.open||taxiMapPick||ev.button!==0)return;
@@ -634,7 +634,13 @@ function animate(time){
  if(!state.ready)return;frame++;
  if(characterPicker?.active){world.update(state.x,state.z);characterPicker.update(time,innerWidth,innerHeight);renderer.render(characterPicker.scene,characterPicker.camera);return;}
  if(!state.paused){
-   const streamFocus=state;world.update(streamFocus.x,streamFocus.z,false,{speed:state.speed,yaw:state.yaw,aircraft:!!state.car?.spec.aircraft,altitude:Math.max(0,state.y-terrain.elevation(state.x,state.z))});if(!regionalPlayer())updateMicromobility(dt);regionalWorld?.update(state,dt);
+   const streamFocus=state;
+    if(!regionalPlayer()){
+     world.update(streamFocus.x,streamFocus.z,false,{speed:state.speed,yaw:state.yaw,
+      aircraft:!!state.car?.spec.aircraft,altitude:Math.max(0,state.y-terrain.elevation(state.x,state.z))});
+     updateMicromobility(dt);
+    }
+    regionalWorld?.update(state,dt);
    renderAlpha=clock.advance(dt,simulate);
    const pose=visualPose();if(state.mode==='foot')player.position.set(pose.x,pose.y+.08,pose.z);
    for(const a of [...cars,...people,...cops]){if(!a.mesh.visible||a.parked&&a!==state.car)continue;const prev=a.lodFrom||previousActors.get(a.mesh);if(!prev||dist(prev,a)>10)continue;const blend=a.lodFrom?clamp((state.elapsed-a.lodAt+renderAlpha*clock.step)/a.lodSpan,0,1):renderAlpha;a.mesh.position.x=THREE.MathUtils.lerp(prev.x,a.x,blend);a.mesh.position.z=THREE.MathUtils.lerp(prev.z,a.z,blend);a.mesh.position.y=a===state.car&&waterRecovery.active?pose.y:THREE.MathUtils.lerp(prev.y,a.y,blend);a.mesh.rotation.y=prev.yaw+angleDiff(a.yaw,prev.yaw)*blend;}
