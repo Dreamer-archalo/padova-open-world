@@ -28,22 +28,45 @@ def simplify(points,tol=1.2):
 
 widths={"motorway":13,"motorway_link":7,"trunk":12,"trunk_link":7,"primary":10,"primary_link":7,
         "secondary":9,"secondary_link":7,"tertiary":8,"tertiary_link":6,"unclassified":6.5,
-        "residential":6.5,"living_street":5.5}
+        "residential":6.5,"living_street":5.5,"service":4.2,"pedestrian":3.6,
+        "footway":2.0,"path":1.7,"steps":1.7,"cycleway":2.2}
 src=json.load(open(sys.argv[1]))
 roads=[];water=[];areas=[];buildings=[]
+road_ids=set()
+
+def add_road(e, tolerance=.7):
+    tags=e.get("tags",{});geom=e.get("geometry",[]);kind=tags.get("highway")
+    if kind not in widths or len(geom)<2 or e["id"] in road_ids:return
+    # Local narrow streets need their original junction/bridge geometry.
+    points=[project(g) for g in geom]
+    p=points if kind in ("footway","pedestrian","steps","path","cycleway") else simplify(points,tolerance)
+    if len(p)<2:return
+    roads.append({"p":p,"w":max(1.3,min(28,number(tags.get("width"),widths[kind]))),
+      "k":kind,"n":tags.get("name",""),"b":tags.get("bridge","no") not in ("no","false","0"),
+      "one":tags.get("oneway")=="yes",
+      "layer":int(tags.get("layer","0") or 0) if str(tags.get("layer","0")).lstrip("-").isdigit() else 0})
+    road_ids.add(e["id"])
 for e in src.get("elements",[]):
     tags=e.get("tags",{});geom=e.get("geometry",[])
     if len(geom)<2:continue
     p=simplify([project(g) for g in geom],.7 if "highway" in tags else 1.5)
     if "highway" in tags and tags["highway"] in widths:
-        k=tags["highway"];roads.append({"p":p,"w":max(2,min(28,number(tags.get("width"),widths[k]))),
-          "k":k,"n":tags.get("name",""),"b":tags.get("bridge") in ("yes","viaduct"),
-          "one":tags.get("oneway")=="yes","layer":int(tags.get("layer","0") or 0) if str(tags.get("layer","0")).lstrip("-").isdigit() else 0})
+        add_road(e)
     elif tags.get("waterway") in ("river","canal","stream"):
         k=tags["waterway"];water.append({"p":p,"w":max(2,min(90,number(tags.get("width"),{"river":35,"canal":14,"stream":5}[k]))),"k":k})
     elif tags.get("natural")=="water" and len(p)>=4:
         if p[0]==p[-1]:p.pop()
         if len(p)>=3:areas.append({"p":p,"k":"water"})
+
+# Dedicated focused extract supplies walkable local street networks in each
+# specifically requested detailed municipality. Keep main transit extraction
+# lean and discard duplicates across overlapping bounding boxes.
+if len(sys.argv)>3:
+    local=json.load(open(sys.argv[3],encoding="utf-8"))
+    if len(local.get("elements",[]))<150:
+        raise ValueError("Detailed municipality street extract is unexpectedly small")
+    for e in local["elements"]:
+        add_road(e,.3)
 
 # Building footprints in the key corridor communes are downloaded as a second,
 # narrower OSM extract, so regional transport does not depend on a huge query.
