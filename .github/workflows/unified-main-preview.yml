@@ -13,6 +13,7 @@ on:
       - 'dist/modern-driving.js'
       - 'verify-unified-main.mjs'
       - 'scripts/padova-venice-buildings-overpass.ql'
+      - 'scripts/padova-venice-local-streets-overpass.ql'
       - 'dist/continuous-world.html'
       - 'dist/continuous-world.css'
       - 'dist/continuous-world.js'
@@ -63,8 +64,9 @@ jobs:
           path: |
             /tmp/corridor-overpass.json
             /tmp/corridor-buildings.json
+            /tmp/corridor-local-streets.json
             /tmp/padova-venice-terrain
-          key: regional-data-v1-${{ hashFiles('scripts/padova-venice-corridor-overpass.ql', 'scripts/padova-venice-buildings-overpass.ql', 'prepare_world_terrain.py') }}
+          key: regional-data-v1-${{ hashFiles('scripts/padova-venice-corridor-overpass.ql', 'scripts/padova-venice-buildings-overpass.ql', 'scripts/padova-venice-local-streets-overpass.ql', 'prepare_world_terrain.py') }}
 
       - name: Download OpenStreetMap extracts
         shell: bash
@@ -96,11 +98,12 @@ jobs:
           python -c 'import json; d=json.load(open("dist/data/venice.json")); assert len(d.get("buildings",[]))>2500'
           fetch_query scripts/padova-venice-corridor-overpass.ql /tmp/corridor-overpass.json
           fetch_query scripts/padova-venice-buildings-overpass.ql /tmp/corridor-buildings.json
+          fetch_query scripts/padova-venice-local-streets-overpass.ql /tmp/corridor-local-streets.json
 
       - name: Build unified world data
         run: |
           set -euo pipefail
-          python prepare_corridor.py /tmp/corridor-overpass.json /tmp/corridor-buildings.json
+          python prepare_corridor.py /tmp/corridor-overpass.json /tmp/corridor-buildings.json /tmp/corridor-local-streets.json
           python prepare_world_terrain.py --cache /tmp/padova-venice-terrain
           python prepare_world_map.py
           test -s dist/data/world-padova-venice.json
