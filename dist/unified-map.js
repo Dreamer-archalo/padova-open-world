@@ -69,8 +69,9 @@ export class UnifiedMap {
   // Standard cartographic street tiles supply uniform, surveyed water and
   // bank widths in ALL municipalities. If network tiles are unavailable,
   // the vector renderer above remains the complete offline fallback.
-  this.lastTileStats=this.tiles.draw(c,this.center,w,h,this.scale,pixelRatio);
-  if(this.lastTileStats?.ready>0)this.detail.drawTileLabels(c,this.center,w,h,this.scale,{pixelRatio});
+  // Consistent GTA-inspired vector cartography, no painted OSM raster tiles.
+  this.lastTileStats={ready:0,pending:0,vector:true};
+  
   if(route.length){
    c.beginPath();route.forEach((p,i)=>{const a=this.toScreen(p);i?c.lineTo(a.x,a.y):c.moveTo(a.x,a.y);});
    c.lineWidth=unit(2.4);c.strokeStyle='#f7ca74';c.stroke();
@@ -120,8 +121,8 @@ export class UnifiedMap {
   const display=ctx.canvas?.getBoundingClientRect?.().width||ctx.canvas?.clientWidth||width/2.5;
   const pixelRatio=Math.max(1,Math.min(4,width/display));
   const view=this.detail.draw(ctx,position,width,height,width/range,{pixelRatio,mini:true,labels:true});
-  const tiles=this.tiles.draw(ctx,position,width,height,width/range,pixelRatio);
-  if(tiles.ready>0)this.detail.drawTileLabels(ctx,position,width,height,width/range,{pixelRatio,mini:true});
+  const tiles={ready:0,pending:0,vector:true};
+  
   return {...view,tiles};
 
  }
