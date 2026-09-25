@@ -21,6 +21,7 @@ try{
  const start=await page.evaluate(()=>{const s=globalThis.__veniceWorld.boats.current;return {x:s.x,z:s.z};});
  await page.keyboard.down('w');await page.waitForTimeout(1200);await page.keyboard.up('w');await page.waitForTimeout(250);
  const end=await page.evaluate(()=>{const s=globalThis.__veniceWorld.boats.current;return {x:s.x,z:s.z,speed:s.speed};});
+ console.log('VENICE_BROWSER_DIAGNOSTICS '+JSON.stringify({stats,start,end,position:await page.evaluate(async()=>{const g=globalThis.__veniceWorld,b=g.boats.current,{canalAt}=await import('./venice-boats.js');return {dock:g.boats.docks.find(x=>x.id===b.dock),navStart:canalAt(g.data,b.x,b.z,1.65),yaw:b.yaw,near:g.data.water.length};})}));
  assert(end.speed>0,'Venice boat did not respond to throttle');
  assert(Math.hypot(end.x-start.x,end.z-start.z)>.3,'Venice boat did not move along water');
  console.log('PASS VENICE_BOATS '+JSON.stringify({docks:stats.docks,traffic:stats.traffic,start,end}));
