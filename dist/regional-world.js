@@ -148,7 +148,11 @@ export class RegionalWorld{
    if((maxIx-minIx+1)*(maxIz-minIz+1)>380||a.p.length>220)continue;
    for(let ix=minIx;ix<=maxIx;ix++)for(let iz=minIz;iz<=maxIz;iz++){
     const clipped=clipPolygon(a.p,ix*CHUNK,iz*CHUNK,(ix+1)*CHUNK,(iz+1)*CHUNK);
-    if(clipped.length>=3)this.bucket((ix+.5)*CHUNK,(iz+.5)*CHUNK).areas.push({...a,p:clipped});
+    if(clipped.length>=3){
+     const holes=(a.holes||[]).map(h=>clipPolygon(h,ix*CHUNK,iz*CHUNK,(ix+1)*CHUNK,(iz+1)*CHUNK))
+      .filter(h=>h.length>=3);
+     this.bucket((ix+.5)*CHUNK,(iz+.5)*CHUNK).areas.push({...a,p:clipped,holes});
+    }
    }
   }
   this.dataReady=true;
@@ -169,7 +173,9 @@ export class RegionalWorld{
   return harborBand(x)?LAGOON_Y+.08:this.raw(x,z)+.08;
  }
  inPoly(index,x,z){
-  for(const a of new Set(this.near(index,x,z)))if(pointInside(x,z,a.p))return true;
+  for(const a of new Set(this.near(index,x,z))){
+   if(pointInside(x,z,a.p)&&!(a.holes||[]).some(h=>pointInside(x,z,h)))return true;
+  }
   return false;
  }
  mappedWater(x,z){
