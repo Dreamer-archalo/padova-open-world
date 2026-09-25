@@ -41,11 +41,14 @@ export function createMichelangeloModel(){
  part(g,'#173e5d',0,3.66,-9.15,.25,3.10,4.0);
  part(g,'#e0b76a',0,4.88,-9.4,.30,.15,1.7);
  for(const z of [-3.8,-.9,2.1])for(const side of [-1,1])part(g,'#476779',side*1.08,2.78,z,.07,.18,.72);
- const canvas=document.createElement('canvas');canvas.width=640;canvas.height=112;
- const ctx=canvas.getContext('2d');ctx.fillStyle='#123f5d';ctx.fillRect(0,0,640,112);ctx.fillStyle='#e8c884';ctx.font='bold 64px system-ui';ctx.textAlign='center';ctx.fillText('MICHELANGELO',320,75);
- const texture=new THREE.CanvasTexture(canvas);texture.colorSpace=THREE.SRGBColorSpace;
- const badge=new THREE.Mesh(new THREE.PlaneGeometry(8.2,1.4),new THREE.MeshBasicMaterial({map:texture,side:THREE.DoubleSide,transparent:true}));
- badge.position.set(0,4.19,0);badge.rotation.x=-Math.PI/2;g.add(badge);g.userData.previewCategory='air';return g;
+ if(typeof document!=='undefined'){
+  const canvas=document.createElement('canvas');canvas.width=640;canvas.height=112;
+  const ctx=canvas.getContext('2d');ctx.fillStyle='#123f5d';ctx.fillRect(0,0,640,112);ctx.fillStyle='#e8c884';ctx.font='bold 64px system-ui';ctx.textAlign='center';ctx.fillText('MICHELANGELO',320,75);
+  const texture=new THREE.CanvasTexture(canvas);texture.colorSpace=THREE.SRGBColorSpace;
+  const badge=new THREE.Mesh(new THREE.PlaneGeometry(8.2,1.4),new THREE.MeshBasicMaterial({map:texture,side:THREE.DoubleSide,transparent:true}));
+  badge.position.set(0,4.19,0);badge.rotation.x=-Math.PI/2;g.add(badge);
+ }
+ g.userData.previewCategory='air';return g;
 }
 let live=null,button=null,transitioning=false;
 export function veniceFlightUrl(s){
