@@ -36,6 +36,8 @@ import './airport-life-v3.js';
 import './airport-blast-ballistics.js';
 // Installed last so its enemy arrows, mission HUD and control hints win visually.
 import './airport-air-hunt.js';
+// Dedicated non-combat 1,000 km/h Padova–Venezia transport aircraft.
+import './airport-michelangelo.js';
 // Decorative estate details are separate from the collision-aware hangar shell.
 import './villa-treves-estate.js';
 // Poplars follow the access road; optional plots and staff are proximity-loaded.
@@ -48,12 +50,14 @@ import './villa-mandria-estate-v2.js';
 import './villa-mandria-security-placement.js';
 import './villa-mandria-respawn-label.js';
 // All models registered before the hangar catalogue is first opened.
+// Register map-snapped darsene and all river craft before the hangar builds its list.
+import './padova-boats.js';
 import './villa-mandria-hangar.js';
 // Final populate/addCar wrapper creates distinct military models both at the
 // airport and when selecting one from the Mandria hangar.
 import './airport-military-fleet.js';
-// Home screen groups air, ground and urban vehicles. Boat slot is future-only;
-// actual vehicle previews render lazily from 3-D meshes, not generic icons.
+// Home screen now includes the playable boat slot alongside air and ground;
+// actual previews render lazily from dedicated 3-D meshes.
 import './villa-mandria-catalog-ui.js';
 // Protect the aircraft cards from displaying stale ground placeholders while
 // their per-model GPU thumbnails are still being generated.
