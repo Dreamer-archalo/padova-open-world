@@ -16,6 +16,7 @@ on:
       - 'dist/regional-hydro.js'
       - 'dist/unified-water.css'
       - 'dist/water-gameplay.js'
+      - 'verify-water-entry.mjs'
       - 'verify-unified-water.mjs'
       - 'verify-unified-map-tiles.mjs'
       - 'dist/modern-driving.js'
@@ -53,7 +54,7 @@ permissions:
 
 concurrency:
   group: padova-venice-unified-main-preview
-  cancel-in-progress: true
+  cancel-in-progress: false
 
 jobs:
   build-test-deploy:
@@ -180,6 +181,7 @@ jobs:
           node verify-unified-main.mjs
           node verify-unified-features.mjs
           node verify-unified-water.mjs
+          node verify-water-entry.mjs
 
       - name: Checkout current production main separately
         uses: actions/checkout@v6
