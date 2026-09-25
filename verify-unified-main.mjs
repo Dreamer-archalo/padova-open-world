@@ -10,6 +10,12 @@ assert(data.buildings.length>6000,'Missing regional buildings');
 const corridor=data.buildings.filter(b=>{const x=b.p.reduce((a,v)=>a+v[0],0)/b.p.length;return x>8000&&x<33000;});
 assert(corridor.length>350,'Corridor footprints missing; Venice alone is not a unified world');
 assert(corridor.some(b=>b.lod==='energy')&&corridor.some(b=>b.lod==='detailed'),'Named hub / transit LOD missing');
+// Without focused municipality extracts the first iteration draws major roads,
+// but named detailed towns have no walkable local network.
+const localKinds=new Set(['residential','living_street','service','unclassified','pedestrian','footway','path','steps','cycleway']);
+const localStreets=data.roads.filter(r=>localKinds.has(r.k)&&r.p.some(([x])=>x>11500&&x<33500));
+assert(localStreets.length>120,'Detailed municipalities missing their local streets and footways');
+assert(localStreets.some(r=>['footway','pedestrian','steps'].includes(r.k)),'Municipality pedestrian paths / bridge approaches missing');
 for(const p of ['Cazzago','Dolo','Mira Porte','Marano Veneziano','Oriago','Marghera','Piazzale Roma'])assert(data.places.some(v=>v.name===p),'Missing '+p);
 assert(terrain.x0<=data.bounds[0]&&terrain.x0+(terrain.width-1)*terrain.step>=data.bounds[2],'Terrain X coverage incomplete');
 assert(terrain.z0<=data.bounds[1]&&terrain.z0+(terrain.height-1)*terrain.step>=data.bounds[3],'Terrain Z coverage incomplete');
@@ -20,10 +26,13 @@ assert(game.includes('installRegionalMapPlaces()')&&game.includes('regionalFastT
 assert(game.includes('unifiedMap.fromCanvas')&&map.includes('pan(screenDx,screenDz)'),'Map zoom/pan not active');
 assert(lod.includes('Mestre')&&lod.includes('transit')&&lod.includes('VENEZIA_DETAIL'),'Mestre transition / Venice detail incorrect');
 assert(renderer.includes('this.collision.add(obj')&&renderer.includes('installTerrainHooks(terrain)'),'Regional physics/collision missing');
+assert(renderer.includes('energyFaces')&&renderer.includes('energyEdges'),'Lightweight regional buildings must retain their OSM polygon silhouettes');
+assert(renderer.includes('const transit=roads.filter'),'No low-poly traffic outside detailed towns');
+assert(lod.includes("mestre.radius*.68"),'Marghera details incorrectly overridden by Mestre transition zone');
 assert(air.includes('terrain.unifiedBounds'),'Helicopter still blocked at old Padova limits');
 const aircraft=read('dist/special-vehicles.js');
 assert(aircraft.includes('terrain.unifiedBounds'),'Planes/parachutes still blocked at original Padova boundaries');
 assert(game.includes('if(taxiMapPick){')&&game.includes('taxiMenuController.onSelectFromMap(point.x,point.z,e)'),'Taxi map selection broken with unified map');
 assert(map.includes('Keep Padova at its native map resolution'),'Padova map becomes blurry when zooming in');
 assert(renderer.includes('new THREE.PlaneGeometry(CHUNK,CHUNK)')&&renderer.includes('this.waterAreas')&&renderer.includes('terrain.waterHeight='),'Lagoon surface / water collision / water elevation missing');
-console.log('PASS unified Padova main game:',data.roads.length,'regional roads,',data.buildings.length,'regional buildings,',corridor.length,'corridor footprints.');
+console.log('PASS unified Padova main game:',data.roads.length,'regional roads,',localStreets.length,'local town streets,',data.buildings.length,'regional buildings,',corridor.length,'corridor footprints.');
