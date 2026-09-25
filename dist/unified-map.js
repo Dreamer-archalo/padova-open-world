@@ -43,6 +43,12 @@ export class UnifiedMap {
   c.translate(w/2,h/2);c.scale(ratio,ratio);
   c.drawImage(this.base,-(this.center.x-this.bounds.x)*this.baseScale,-(this.center.z-this.bounds.z)*this.baseScale);
   c.setTransform(1,0,0,1,0,0);
+  // Keep Padova at its native map resolution when zooming in. The wide
+  // 2,300px world bitmap alone is intentionally too coarse for city-level zoom.
+  if(this.zoomLevel>=2.3){
+   const box=this.padovaBounds,topLeft=this.toScreen({x:box.x,z:box.z}),bottomRight=this.toScreen({x:box.x+box.w,z:box.z+box.h});
+   c.drawImage(this.padova,topLeft.x,topLeft.y,bottomRight.x-topLeft.x,bottomRight.y-topLeft.y);
+  }
   if(route.length){c.beginPath();route.forEach((p,i)=>{const a=this.toScreen(p);i?c.lineTo(a.x,a.y):c.moveTo(a.x,a.y);});c.lineWidth=2.6;c.strokeStyle='#edbb65';c.stroke();}
   const dot=(p,size,color)=>{const q=this.toScreen(p);if(!this.isVisible(p))return;c.fillStyle=color;c.beginPath();c.arc(q.x,q.y,size,0,Math.PI*2);c.fill();};
   // All named regional stops exist in the same map. Secondary Padova pins are

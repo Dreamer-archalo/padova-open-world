@@ -27,7 +27,7 @@ function coast(x,z){return x>33000&&z>-7800&&z<3000;}
 export class RegionalWorld{
  constructor(scene,data,regionalTerrain,originalCollision){
   this.scene=scene;this.data=data;this.grid=regionalTerrain;this.collision=originalCollision;
-  this.chunks=new Map();this.visible=new Map();this.roads=new Map();this.waters=new Map();this.key='';
+  this.chunks=new Map();this.visible=new Map();this.roads=new Map();this.waters=new Map();this.waterAreas=new Map();this.key='';
   this.actors=[];this.queue=[];this.totalBuilt=0;this.lastUpdate=0;this.dataReady=false;
   this.index();
  }
@@ -39,7 +39,7 @@ export class RegionalWorld{
   return coast(x,z)?Math.max(-.25,value):value;
  }
  roadY(road,x,z,t){
-  const base=this.raw(x,z)+.14;
+  const base=coast(x,z)?Math.max(this.raw(x,z)+.14,LAGOON_Y+.24):this.raw(x,z)+.14;
   if(!road.b&&!road.bridge)return base;
   // Continuous deck profile. Both ends join the neighboring street height;
   // raised pedestrian bridges gain a mild arch without a vertical step.
@@ -91,7 +91,13 @@ export class RegionalWorld{
   }
   for(const a of this.data.areas||[]){
    if(a.p?.length<3)continue;const x=a.p.reduce((n,p)=>n+p[0],0)/a.p.length,z=a.p.reduce((n,p)=>n+p[1],0)/a.p.length;
-   if(x>=PADOVA_EAST-180)this.bucket(x,z).areas.push(a);
+   if(x>=PADOVA_EAST-180){
+    this.bucket(x,z).areas.push(a);
+    if(a.k==='water'){
+      const xs=a.p.map(p=>p[0]),zs=a.p.map(p=>p[1]),dx=Math.max(...xs)-Math.min(...xs),dz=Math.max(...zs)-Math.min(...zs);
+      if(dx<1250&&dz<1250)this.insertSpatial(this.waterAreas,a,[Math.min(...xs),Math.min(...zs)],[Math.max(...xs),Math.max(...zs)],1);
+    }
+   }
   }
   this.dataReady=true;
  }
@@ -114,22 +120,25 @@ export class RegionalWorld{
  waterAt(x,z,margin=0,referenceY=null){
   const support=this.nearestRoad(x,z,25);
   if(support&&support.road.bri&&support.d<support.road.w*.5+margin+1)return null;
-  if(support&&support.d<support.road.w*.5+margin&&support.y>LAGOON_Y+.25)return null;
+  if(support&&support.d<support.road.w*.5+margin&&support.y>LAGOON_Y+.12)return null;
   for(const w of this.near(this.waters,x,z)){
    const vx=w.b[0]-w.a[0],vz=w.b[1]-w.a[1],den=vx*vx+vz*vz;
    const t=den?Math.max(0,Math.min(1,((x-w.a[0])*vx+(z-w.a[1])*vz)/den)):0;
    if(distance(x,z,w.a[0]+t*vx,w.a[1]+t*vz)<w.w*.5+margin)return coast(x,z)?LAGOON_Y:this.raw(x,z)-.2;
   }
+  for(const area of this.near(this.waterAreas,x,z))if(pointInside(x,z,area.p))return coast(x,z)?LAGOON_Y:this.raw(x,z)-.2;
+  if(coast(x,z)&&this.raw(x,z)<LAGOON_Y-.13)return LAGOON_Y;
   return null;
  }
  installTerrainHooks(terrain){
-  const original={raw:terrain.rawElevation.bind(terrain),elevation:terrain.elevation.bind(terrain),ground:terrain.groundHeight.bind(terrain),height:terrain.height.bind(terrain),water:terrain.waterAt.bind(terrain)};
+  const original={raw:terrain.rawElevation.bind(terrain),elevation:terrain.elevation.bind(terrain),ground:terrain.groundHeight.bind(terrain),height:terrain.height.bind(terrain),water:terrain.waterAt.bind(terrain),waterHeight:terrain.waterHeight.bind(terrain)};
   const active=(x,z)=>this.contains(x,z);
   terrain.rawElevation=(x,z)=>active(x,z)?this.raw(x,z):original.raw(x,z);
   terrain.elevation=(x,z)=>active(x,z)?this.raw(x,z):original.elevation(x,z);
   terrain.groundHeight=(x,z)=>active(x,z)?this.ground(x,z):original.ground(x,z);
   terrain.height=(x,z,ref=null)=>active(x,z)?this.height(x,z,ref):original.height(x,z,ref);
   terrain.waterAt=(x,z,margin=0,ref=null)=>active(x,z)?this.waterAt(x,z,margin,ref):original.water(x,z,margin,ref);
+  terrain.waterHeight=(x,z)=>active(x,z)?(coast(x,z)?LAGOON_Y:this.raw(x,z)-.2):original.waterHeight(x,z);
  }
  tile(ix,iz){
   const arr=[],steps=8,n=CHUNK;
@@ -169,6 +178,13 @@ export class RegionalWorld{
   if(this.visible.has(k))return;
   const [ix,iz]=k.split(',').map(Number),src=this.chunks.get(k)||{buildings:[],roads:[],water:[],areas:[]};
   const group=new THREE.Group();group.add(this.tile(ix,iz));
+  // Shallow regional lagoon approximation; actual channels still follow OSM.
+  // A separate sea plane makes the journey over Ponte della Libertà legible.
+  if(coast((ix+.5)*CHUNK,(iz+.5)*CHUNK)){
+   const lagoon=new THREE.Mesh(new THREE.PlaneGeometry(CHUNK,CHUNK),canalMat);
+   lagoon.rotation.x=-Math.PI/2;lagoon.position.set((ix+.5)*CHUNK,LAGOON_Y,(iz+.5)*CHUNK);
+   lagoon.renderOrder=1;group.add(lagoon);
+  }
   const normal=[],arterial=[],channels=[],balustrade=[],w=[],r=[],blocks=[];
   for(const p of src.roads){
    surface(/motorway|trunk|primary|secondary/.test(p.k)?arterial:normal,p.a,p.b,p.w,p.yA+.025,p.yB+.025);
@@ -179,6 +195,16 @@ export class RegionalWorld{
    }
   }
   for(const p of src.water){surface(channels,p.a,p.b,p.w,(coast(...p.a)?LAGOON_Y:this.raw(...p.a))+.075,(coast(...p.b)?LAGOON_Y:this.raw(...p.b))+.075);}
+  for(const a of src.areas){
+   if(a.k!=='water'||a.p.length>180)continue;
+   const xs=a.p.map(p=>p[0]),zs=a.p.map(p=>p[1]);
+   if(Math.max(...xs)-Math.min(...xs)>850||Math.max(...zs)-Math.min(...zs)>850)continue;
+   const poly=a.p.map(p=>new THREE.Vector2(p[0],p[1])),tris=THREE.ShapeUtils.triangulateShape(poly,[]);
+   for(const [i,j,k] of tris){
+    const p=a.p[i],q=a.p[j],r=a.p[k],y=coast(...p)?LAGOON_Y+.09:this.raw(...p)-.16;
+    channels.push(p[0],y,p[1],q[0],y,q[1],r[0],y,r[1]);
+   }
+  }
   for(const b of src.buildings)if(b.lod==='detailed'&&b.p.length<=100)this.detailedBuilding(b,w,r);else blocks.push(b);
   if(normal.length)group.add(new THREE.Mesh(geometry(normal),roadMat));
   if(arterial.length)group.add(new THREE.Mesh(geometry(arterial),arterialMat));

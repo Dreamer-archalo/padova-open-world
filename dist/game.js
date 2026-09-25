@@ -518,11 +518,16 @@ function openMap(){if(!state.ready)return;taxiMapPick=false;setPaused(true);$('m
 $('fullmap').onclick=e=>{
  try{
   if(mapDragged){mapDragged=false;return;}
-  if(unifiedMap&&!taxiMapPick){
+  if(unifiedMap){
    const rect=$('fullmap').getBoundingClientRect();
    const point=unifiedMap.fromCanvas((e.clientX-rect.left)*$('fullmap').width/rect.width,(e.clientY-rect.top)*$('fullmap').height/rect.height);
    const envelope=unifiedMap.bounds;
    if(point.x<envelope.x||point.z<envelope.z||point.x>envelope.x+envelope.w||point.z>envelope.z+envelope.h)return;
+   if(taxiMapPick){
+    if(!validTaxiDestination(point)){toast('Il taxi è disponibile soltanto nella zona di Padova.');return;}
+    if(!taxiMenuController)throw new Error('Taxi map controller missing');
+    taxiMenuController.onSelectFromMap(point.x,point.z,e);return;
+   }
    if(state.mission){toast('Termina la missione per scegliere una nuova destinazione.');return;}
    if(regionalWorld&&regionalWorld.contains(point.x,point.z)){
     const road=regionalWorld.nearestRoad(point.x,point.z,120);
@@ -535,10 +540,13 @@ $('fullmap').onclick=e=>{
    state.waypoint={x:road.x,z:road.z,name:'Indicatore'};routeTo(state.waypoint);drawFullMap();closeDialogs();return;
   }
 
-  const r=$('fullmap').getBoundingClientRect(),size=Math.min(r.width,r.height);if(!Number.isFinite(size)||size<=0||!Number.isFinite(e?.clientX)||!Number.isFinite(e?.clientY))throw new Error('Invalid map pointer/geometry');
-  const offsetX=(r.width-size)/2,offsetY=(r.height-size)/2,px=e.clientX-r.left-offsetX,py=e.clientY-r.top-offsetY;if(!Number.isFinite(px)||!Number.isFinite(py))throw new Error('Map conversion returned NaN');if(px<0||py<0||px>size||py>size)return;
+  const rect=$('fullmap').getBoundingClientRect();
+  if(!(rect.width>0&&rect.height>0)||!Number.isFinite(e?.clientX)||!Number.isFinite(e?.clientY))throw new Error('Invalid map pointer/geometry');
+  const px=(e.clientX-rect.left)/rect.width,py=(e.clientY-rect.top)/rect.height;
+  if(!Number.isFinite(px)||!Number.isFinite(py))throw new Error('Map conversion returned NaN');
+  if(px<0||py<0||px>1||py>1)return;
   if(state.mission){toast('Finish or cancel your activity to set a waypoint.');return;}
-  const p={x:minBounds.x+px/size*minBounds.w,z:minBounds.z+py/size*minBounds.h,name:taxiMapPick?'Destinazione personalizzata':'Waypoint'};if(!validTaxiDestination(p))throw new Error('Map click outside valid world bounds');
+  const p={x:minBounds.x+px*minBounds.w,z:minBounds.z+py*minBounds.h,name:taxiMapPick?'Destinazione personalizzata':'Waypoint'};if(!validTaxiDestination(p))throw new Error('Map click outside valid world bounds');
   if(taxiMapPick){if(!taxiMenuController)throw new Error('TaxiMenuController not initialized');taxiMenuController.onSelectFromMap(p.x,p.z,e);return;}
   const road=taxiFastRoad(p);if(!road)throw new Error('Waypoint has no bounded road node');state.waypoint={x:road.x,z:road.z,name:p.name};routeTo(state.waypoint);drawFullMap();closeDialogs();
  }catch(error){taxiDestinationFailure(error,'map click');}
@@ -607,7 +615,7 @@ async function init(){try{progress(5,'Loading the city map…');const [response,
  taxiLoadingOverlay=new TaxiLoadingOverlay({overlay:$('taxiLoading'),meme:$('taxiMeme'),status:$('taxiLoadingStatus'),assetTimeoutMs:1000});
  taxiDriverNPC=new TaxiDriverNPC({scene,createPerson,THREE,terrain,collision:world.collision,collides});
  taxiSystem=new TaxiSystem({inputManager,timeoutMs:3000,executeTeleport:({targetCoords,destination,price})=>applyTaxiDestination(destination,targetCoords,price),forcePlayerPosition:({targetCoords,destination,price})=>applyTaxiDestination(destination,targetCoords,price,{fallback:true}),onFinally:()=>{document.body.classList.remove('taxi-transit');if($('taxiLoading'))$('taxiLoading').hidden=true;setPaused(false);keys.clear();}});
- taxiMenuController=new TaxiMenuController({document,menu:$('menu'),mapDialog:$('mapDialog'),menuContent:$('menuContent'),mapPlaces:$('mapPlaces'),fullMap:$('fullmap'),overlay:$('taxiLoading'),status:$('taxiLoadingStatus'),inputManager,bounds:minBounds,setPaused,drawFullMap,getFare:coords=>taxiFare(taxi.car,coords),executeTransition:executeTaxiTransition,onError:(error,context)=>taxiDestinationFailure(error,context),onMapPickingChange:value=>{taxiMapPick=value;},delayMs:50});
+ taxiMenuController=new TaxiMenuController({document,menu:$('menu'),mapDialog:$('mapDialog'),menuContent:$('menuContent'),mapPlaces:$('mapPlaces'),fullMap:$('fullmap'),overlay:$('taxiLoading'),status:$('taxiLoadingStatus'),inputManager,bounds:minBounds,setPaused,drawFullMap,getFare:coords=>taxiFare(taxi.car,coords),executeTransition:executeTaxiTransition,onError:(error,context)=>taxiDestinationFailure(error,context),onMapPickingChange:value=>{taxiMapPick=value;if(unifiedMap){if(value)unifiedMap.centerOn(-100,-50,5);else unifiedMap.reset();}},delayMs:50});
  signals=new TrafficSignals(graph,data.signals);trams=new Trams(scene,data,terrain,state.quality);incidents=new Incidents(scene);player=createPerson('#d9bf8f');scene.add(player);createPopulation();world.update(state.x,state.z,true);progress(85,'Drawing your map…');await yieldFrame();makeMap();
  marker=new THREE.Group();const ring=new THREE.Mesh(new THREE.TorusGeometry(11,.27,8,48),new THREE.MeshBasicMaterial({color:'#ffcb72'}));ring.rotation.x=Math.PI/2;const arrow=new THREE.Mesh(new THREE.OctahedronGeometry(1.8),new THREE.MeshStandardMaterial({color:'#ffc56a',emissive:'#8b5d1f',emissiveIntensity:.3}));arrow.position.y=7;marker.add(ring,arrow);const beam=new THREE.Mesh(new THREE.CylinderGeometry(2,10,26,24,1,true),new THREE.MeshBasicMaterial({color:'#ffc56a',transparent:true,opacity:.045,depthWrite:false,side:THREE.DoubleSide}));beam.position.y=13;marker.add(beam);marker.visible=false;scene.add(marker);progress(100,'Ready. '+data.buildings.length.toLocaleString('en-GB')+' buildings · real-world scale');state.ready=true;$('playBtn').disabled=false;$('playBtn').textContent='Scegli il personaggio  →';$('playBtn').onclick=start;updateUI();characterPicker=new CharacterPicker(document,enterCity);characterPicker.open(state.character);requestAnimationFrame(animate);void startUnifiedRegion();
  }catch(e){console.error(e);progress(100,'');$('loadingText').className='fatal';$('loadingText').textContent='The city could not start. '+(String(e).includes('WebGL')?'Enable WebGL / hardware acceleration in your browser and reload.':'Check your connection and reload to try again.');$('playBtn').textContent='Reload city';$('playBtn').disabled=false;$('playBtn').onclick=()=>location.reload();}}

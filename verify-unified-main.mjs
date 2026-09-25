@@ -20,5 +20,10 @@ assert(game.includes('installRegionalMapPlaces()')&&game.includes('regionalFastT
 assert(game.includes('unifiedMap.fromCanvas')&&map.includes('pan(screenDx,screenDz)'),'Map zoom/pan not active');
 assert(lod.includes('Mestre')&&lod.includes('transit')&&lod.includes('VENEZIA_DETAIL'),'Mestre transition / Venice detail incorrect');
 assert(renderer.includes('this.collision.add(obj')&&renderer.includes('installTerrainHooks(terrain)'),'Regional physics/collision missing');
-assert(air.includes('terrain.unifiedBounds'),'Aircraft still blocked at old Padova limits');
+assert(air.includes('terrain.unifiedBounds'),'Helicopter still blocked at old Padova limits');
+const aircraft=read('dist/special-vehicles.js');
+assert(aircraft.includes('terrain.unifiedBounds'),'Planes/parachutes still blocked at original Padova boundaries');
+assert(game.includes('if(taxiMapPick){')&&game.includes('taxiMenuController.onSelectFromMap(point.x,point.z,e)'),'Taxi map selection broken with unified map');
+assert(map.includes('Keep Padova at its native map resolution'),'Padova map becomes blurry when zooming in');
+assert(renderer.includes('new THREE.PlaneGeometry(CHUNK,CHUNK)')&&renderer.includes('this.waterAreas')&&renderer.includes('terrain.waterHeight='),'Lagoon surface / water collision / water elevation missing');
 console.log('PASS unified Padova main game:',data.roads.length,'regional roads,',data.buildings.length,'regional buildings,',corridor.length,'corridor footprints.');
