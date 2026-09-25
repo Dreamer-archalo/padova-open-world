@@ -181,6 +181,7 @@ export class RegionalWorld{
  mappedWater(x,z){
   if(this.inPoly(this.waterAreas,x,z))return true;
   for(const w of new Set(this.near(this.waters,x,z))){
+   if(this.inPoly(this.waterAreas,(w.a[0]+w.b[0])/2,(w.a[1]+w.b[1])/2))continue;
    const vx=w.b[0]-w.a[0],vz=w.b[1]-w.a[1],den=vx*vx+vz*vz,
     t=den?Math.max(0,Math.min(1,((x-w.a[0])*vx+(z-w.a[1])*vz)/den)):0;
    if(distance(x,z,w.a[0]+t*vx,w.a[1]+t*vz)<w.w*.5)return true;
@@ -201,6 +202,7 @@ export class RegionalWorld{
    closest=Math.min(closest,inside?-Math.max(.01,edge):edge);
   }
   for(const w of new Set(this.near(this.waters,x,z))){
+   if(this.inPoly(this.waterAreas,(w.a[0]+w.b[0])/2,(w.a[1]+w.b[1])/2))continue;
    const vx=w.b[0]-w.a[0],vz=w.b[1]-w.a[1],den=vx*vx+vz*vz,
     t=den?Math.max(0,Math.min(1,((x-w.a[0])*vx+(z-w.a[1])*vz)/den)):0;
    closest=Math.min(closest,distance(x,z,w.a[0]+t*vx,w.a[1]+t*vz)-w.w*.5);
