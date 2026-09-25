@@ -56,10 +56,10 @@ assert(reg.includes('const peopleRoads=chunk.roads.filter(r=>/') &&
  'Simple NPCs are still restricted to just a few detailed hubs');
 // Evaluate the real road-height method in isolation: the curvature must
 // leave navigable clearance while maintaining flat, driveable approach ends.
-const start=reg.indexOf(' roadY(road,x,z,t){');
-const finish=reg.indexOf('\n insertSpatial(',start);
-assert(start>=0&&finish>start,'Could not extract the live 3D bridge height code');
-const method=reg.slice(start,finish).trim().replace(/^roadY\(/,'function roadY(');
+const methodStart=reg.indexOf(' roadY(road,x,z,t){');
+const finish=reg.indexOf('\n insertSpatial(',methodStart);
+assert(methodStart>=0&&finish>methodStart,'Could not extract the live 3D bridge height code');
+const method=reg.slice(methodStart,finish).trim().replace(/^roadY\(/,'function roadY(');
 const roadY=new Function('coast','LAGOON_Y',
  'return ('+method+')')((x,z)=>x>33000&&z>-7800&&z<3000,.1);
 const terrain={raw:()=>0};
