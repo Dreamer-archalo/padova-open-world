@@ -93,7 +93,11 @@ async function startUnifiedRegion(){
     if(unifiedMap){unifiedMap.addMapDetail(extras);if($('mapDialog').open)drawFullMap();}
    }).catch(error=>console.warn('[HD map] Optional extra parcels unavailable; existing vectors remain sharp:',error));
   const full=$('fullmap'),place=$('mapDialog');
-  full.onwheel=ev=>{if(!place.open||taxiMapPick)return;ev.preventDefault();unifiedMap.zoom(ev.deltaY<0?1:-1);drawFullMap();};
+  full.onwheel=ev=>{if(!place.open||taxiMapPick)return;ev.preventDefault();
+    const rect=full.getBoundingClientRect();
+    unifiedMap.zoomAt((ev.clientX-rect.left)*full.width/rect.width,
+      (ev.clientY-rect.top)*full.height/rect.height,ev.deltaY<0?1:-1);
+    drawFullMap();};
   full.addEventListener('pointerdown',ev=>{if(!place.open||taxiMapPick||ev.button!==0)return;
     mapPointer={x:ev.clientX,y:ev.clientY,id:ev.pointerId};mapDragged=false;full.setPointerCapture(ev.pointerId);});
   full.addEventListener('pointermove',ev=>{if(!mapPointer||ev.pointerId!==mapPointer.id)return;
