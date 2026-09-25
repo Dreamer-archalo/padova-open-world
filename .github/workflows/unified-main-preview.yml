@@ -27,6 +27,7 @@ on:
       - 'scripts/padova-venice-water-bodies-overpass.ql'
       - 'scripts/padova-venice-riverbanks-overpass.ql'
       - 'prepare_hydro_geometry.py'
+      - 'verify-hydrology.py'
       - 'scripts/padova-venice-map-hd-west-overpass.ql'
       - 'scripts/padova-venice-map-hd-east-overpass.ql'
       - 'prepare_map_hd.py'
@@ -168,6 +169,7 @@ jobs:
           node --check dist/unified-map-detail.js
           node --check dist/map-live-tiles.js
           python -m py_compile prepare_hydro_geometry.py prepare_corridor.py prepare_world_map.py
+          python verify-hydrology.py
           node verify-unified-hd-map.mjs
           node verify-unified-map-tiles.mjs
           node --check dist/local-respawn.js
