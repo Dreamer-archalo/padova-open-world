@@ -18,4 +18,10 @@ const html=fs.readFileSync('dist/continuous-world.html','utf8');
 if(!html.includes('FAST TRAVEL · VENEZIA')||!html.includes('continuous-world.js'))throw new Error('Continuous world UI incomplete');
 const runtime=fs.readFileSync('dist/continuous-world.js','utf8');
 if(!runtime.includes('const LAGOON=')||!runtime.includes('bridgeBase')||!runtime.includes('installLagoon()'))throw new Error('Lagoon/bridge treatment missing');
+
+const css=fs.readFileSync('dist/continuous-world.css','utf8');
+if(!/\[hidden\]\s*\{\s*display\s*:\s*none\s*!important\s*\}/.test(css))throw new Error('Missing hidden-state CSS override: loading overlay remains visible');
+if(!runtime.includes("loading.style.display='none'"))throw new Error('Missing explicit loading overlay teardown');
+if(!html.includes('loading-fix-1'))throw new Error('Loading fix assets need cache-busting version');
+
 console.log('PASS continuous world:',world.buildings.length,'buildings,',world.roads.length,'roads, bounds',world.bounds,'terrain',terrain.width+'x'+terrain.height);

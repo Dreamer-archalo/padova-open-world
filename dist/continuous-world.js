@@ -119,7 +119,7 @@ async function init(){
   progress(8,'Carico il mondo unico…');const [wr,tr]=await Promise.all([fetch('./data/world-padova-venice.json'),fetch('./data/world-terrain.json')]);if(!wr.ok)throw new Error('world map '+wr.status);if(!tr.ok)throw new Error('terrain '+tr.status);
   data=await wr.json();progress(35,'Indicizzo Padova, corridoio e Venezia…');terrain=await tr.json();installLagoon();await new Promise(r=>requestAnimationFrame(r));indexWorld();progress(68,'Preparo lo streaming dei settori…');
   const q=new URLSearchParams(location.search);if(q.get('spawn')==='venice'){const v=venicePoint();state.x=v.x;state.z=v.z;state.yaw=-Math.PI/2;}stream(true);const y=terrainHeight(state.x,state.z);car.position.set(state.x,y+.2,state.z);camera.position.set(state.x-12,y+8,state.z-14);
-  progress(100,'Mondo continuo pronto.');setTimeout(()=>{$('loading').hidden=true;$('hud').hidden=false;},250);requestAnimationFrame(animate);
+  progress(100,'Mondo continuo pronto.');requestAnimationFrame(animate);setTimeout(()=>{const loading=$('loading');loading.hidden=true;loading.style.display='none';$('hud').hidden=false;},250);
  }catch(error){console.error(error);$('loadingText').textContent='ERRORE: '+error.message;$('loadingBar').style.width='100%';}
 }
 addEventListener('resize',()=>{renderer.setSize(innerWidth,innerHeight);camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();});
