@@ -93,6 +93,19 @@ export class VectorMapDetail {
   ctx.restore();
   return {visible:Object.fromEntries(KINDS.map(k=>[k,layers[k].length])),vector:true};
  }
+ // Raster map tiles contain fine streets/water but bake their own labels
+ // too small for high-DPI phone screens. These real OSM road/calle names are
+ // deliberately redrawn ON TOP of loaded tiles at true CSS font sizes.
+ drawTileLabels(ctx,center,width,height,scale,{pixelRatio=1,mini=false}={}){
+  if(scale<.18)return;
+  const x0=center.x-width/(2*scale),z0=center.z-height/(2*scale),
+   frame={x0,z0,x1:x0+width/scale,z1:z0+height/scale},
+   roads=this.visible('roads',frame).filter(r=>r.n&&
+    (!/footway|path|steps|cycleway|pedestrian/.test(r.k||'')||scale>.36));
+  ctx.save();ctx.beginPath();ctx.rect(0,0,width,height);ctx.clip();
+  this.drawRoadLabels(ctx,roads,x0,z0,width,height,scale,clamp(pixelRatio,1,4),mini);
+  ctx.restore();
+ }
  drawRoadLabels(ctx,roads,x0,z0,width,height,scale,px,mini){
   const occupied=new Set(),cell=mini?74*px:92*px,
    font=Math.round((mini?11.5:12.5)*px),max=mini?13:85;
