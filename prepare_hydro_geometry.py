@@ -84,6 +84,7 @@ def ingest_hydrology(doc, project, simplify, areas, shorelines, seen):
                 p=[project(g) for g in geom]
                 if hypot(p[-1][0]-p[0][0],p[-1][1]-p[0][1])<.8:
                     geometries=[("outer",p)]
+        polygons=[]
         for role,p in geometries:
             if len(p)<4:continue
             p=simplify(p,.38 if waterbody else .8)
@@ -91,6 +92,15 @@ def ingest_hydrology(doc, project, simplify, areas, shorelines, seen):
             if len(p)<3:continue
             xs=[x for x,_ in p];zs=[z for _,z in p]
             if max(xs)-min(xs)>8500 or max(zs)-min(zs)>8500:continue
-            # The inner ring of a water multipolygon is NOT water.
-            kind="land" if role=="inner" else "water" if waterbody else "land"
-            areas.append({"p":p,"k":kind,"n":tags.get("name",""),"osm":e["id"]})
+            polygons.append((role,p))
+        outers=[p for role,p in polygons if role=="outer"]
+        inners=[p for role,p in polygons if role=="inner"]
+        for p in outers:
+            holes=[q for q in inners if point_inside(q[0][0],q[0][1],p)]
+            item={"p":p,"k":"water" if waterbody else "land",
+                  "n":tags.get("name",""),"osm":e["id"]}
+            if holes and waterbody:item["holes"]=holes
+            areas.append(item)
+        for p in inners:
+            areas.append({"p":p,"k":"land" if waterbody else "water",
+                          "n":"Inner area","osm":e["id"]})
