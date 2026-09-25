@@ -28,6 +28,8 @@ assert(lod.includes('Mestre')&&lod.includes('transit')&&lod.includes('VENEZIA_DE
 assert(renderer.includes('this.collision.add(obj')&&renderer.includes('installTerrainHooks(terrain)'),'Regional physics/collision missing');
 assert(renderer.includes('energyFaces')&&renderer.includes('energyEdges'),'Lightweight regional buildings must retain their OSM polygon silhouettes');
 assert(renderer.includes('const transit=roads.filter'),'No low-poly traffic outside detailed towns');
+assert(renderer.includes('bridgeSupports')&&renderer.includes('const barrier={p:poly'),'Regional bridges lack visible supports / physical edge protection');
+assert(renderer.includes('Math.sin(Math.PI*Math.max(0,Math.min(1,t)))**2'),'Bridge entry profiles have abrupt vertical slope');
 assert(lod.includes("mestre.radius*.68"),'Marghera details incorrectly overridden by Mestre transition zone');
 assert(air.includes('terrain.unifiedBounds'),'Helicopter still blocked at old Padova limits');
 const aircraft=read('dist/special-vehicles.js');
