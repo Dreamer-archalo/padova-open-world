@@ -10,7 +10,7 @@ const layout=fs.readFileSync('dist/unified-main.css','utf8');
 assert(src.includes('miniTiles.draw(c,state,w,h,k)'),'Padova minimap lacks independent HD tile fallback');
 assert(src.includes('unifiedMap.tiles=miniTiles'),'Full world and minimap are not using a shared tile cache');
 assert(src.includes('state.car?.spec.aircraft?Math.max(6000'),'Fast aircraft could hammer local high zoom');
-assert(html.includes('MAPPA-H2O-R3')&&html.includes('minimapStatus'),'Stale preview cannot be distinguished from current build');
+assert(html.includes('MAPPA-H2O-R4')&&html.includes('minimapStatus'),'Stale preview cannot be distinguished from current build');
 assert(layout.includes('minimap-osm-credit'),'OSM attribution must stay visible on the minimap');
 
 const coords={
