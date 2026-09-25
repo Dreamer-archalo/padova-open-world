@@ -11,6 +11,7 @@
   <link rel="stylesheet" href="./phase2-ui.css">
   <link rel="stylesheet" href="./initial-loader.css">
   <link rel="stylesheet" href="./unified-main.css?v=2">
+  <link rel="stylesheet" href="./unified-water.css?v=1">
 </head>
 <body>
   <div id="initialLoader" role="status" aria-live="polite" aria-label="Caricamento iniziale città">
@@ -112,6 +113,7 @@
     <div class="hud keybar"><span><kbd>W A S D</kbd> move</span><span><kbd>E</kbd> vehicle</span><span><kbd>V</kbd> vehicles</span><span><kbd>SPACE</kbd> brake / jump</span><span><kbd>SHIFT</kbd> boost / sprint</span><span><kbd>C</kbd> camera</span><span><kbd>ESC</kbd> pause</span></div>
     <div id="interact" class="interaction" hidden></div>
     <div id="toast" class="toast" role="status" hidden></div>
+    <div id="waterStatus" role="status" aria-live="polite" hidden></div>
     <div id="targetDistance" class="target-distance" hidden></div>
     <div id="touchControls"><div><button data-key="KeyA">←</button><button data-key="KeyW">↑</button><button data-key="KeyD">→</button><button data-key="KeyS">↓</button></div><div><button id="touchCar">E · VEHICLE</button><button data-key="Space">BRAKE / UP</button><button id="touchDescend" class="modern-only" data-key="ShiftLeft" hidden>DOWN</button><button id="touchChute" class="modern-only" hidden>F · PARACADUTE</button><button id="touchTurbo" data-key="Tab" hidden>TURBO</button></div></div>
   </div>
@@ -120,7 +122,7 @@
   <div id="taxiLoading" class="taxi-loading" hidden role="status" aria-live="polite"><div id="taxiMeme" class="taxi-meme"><div><span>TAXI ABUSIVO IN TRANSITO…</span><strong>Caricamento destinazione</strong><p id="taxiFact"></p><small id="taxiLoadingStatus">Preparazione di terreno e strade</small><button id="taxiNext" type="button">CLICCA / TOCCA · PROSSIMA CURIOSITÀ</button></div></div></div>
   <footer id="credits"><a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">© OpenStreetMap contributors</a><a href="https://github.com/tilezen/joerd/blob/master/docs/attribution.md" target="_blank" rel="noopener">Terrain: Copernicus EU-DEM / USGS via Mapzen</a><span id="modelCredits"></span><span id="scaleCredit">Real-world scale · stylised reconstruction</span></footer>
   <script type="module" src="./initial-loader.js"></script>
-  <script type="module" src="./game.js?v=unified-main-20260925-2"></script>
+  <script type="module" src="./game.js?v=unified-water-20260925-1"></script>
   <script type="module" src="./taxi-facts-extra.js"></script>
   <script type="module" src="./taxi-affordability.js"></script>
   <script type="module" src="./zone-indicator.js"></script>
