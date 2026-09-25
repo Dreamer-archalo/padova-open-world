@@ -68,6 +68,15 @@ if len(sys.argv)>3:
     for e in local["elements"]:
         add_road(e,.3)
 
+# Local rural/suburban connectors bridge the gaps between designated towns.
+# Merge by OSM way ID before building the combined regional data.
+if len(sys.argv)>4:
+    backroads=json.load(open(sys.argv[4],encoding="utf-8"))
+    if len(backroads.get("elements",[]))<150:
+        raise ValueError("Backroad corridor extract unexpectedly small")
+    for e in backroads["elements"]:
+        add_road(e,.55)
+
 # Building footprints in the key corridor communes are downloaded as a second,
 # narrower OSM extract, so regional transport does not depend on a huge query.
 if len(sys.argv)>2:
