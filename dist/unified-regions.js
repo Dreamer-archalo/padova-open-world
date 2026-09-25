@@ -11,6 +11,7 @@ const detailed=[
  ['Porto Marghera',45.457,12.265,2400,'area industriale e portuale']
 ];
 const extra=[
+ ['Mirano',45.4926,12.1119,1750,'centro Miranese'],
  ['Mestre',45.4931,12.2427,1750,'area di transito'],
  ['Ponte della Libertà',45.4567,12.2965,650,'collegamento stradale'],
  ['Piazzale Roma',45.43868,12.31811,450,'arrivo Venezia'],
