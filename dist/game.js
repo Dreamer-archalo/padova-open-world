@@ -26,6 +26,7 @@ import * as THREE from './vendor/three.module.js';
 import {RegionalWorld} from './regional-world.js';
 import {UnifiedMap} from './unified-map.js?v=2';
 import {LocalRespawn} from './local-respawn.js';
+import {WaterGameplay} from './water-gameplay.js';
 import {REGIONAL_ZONES,PADOVA_EAST} from './unified-regions.js';
 import {CityWorld,PLACES,createCar,createPerson} from './world.js';
 import {FixedClock,slideMove,vehicleBlocked,cameraBoomContinuous as cameraBoom} from './movement.js';
@@ -40,7 +41,7 @@ import {clamp,dist,angleDiff,collides,makeRoadGraph,nearestRoad,nearestOnSegment
 
 const $=s=>document.getElementById(s);
 const state={ready:false,started:false,paused:false,mode:'foot',x:-150,z:-49,y:0,yaw:-.5,speed:0,vy:0,health:100,money:0,wanted:0,escape:0,busted:0,car:null,mission:null,waypoint:null,route:[],camera:0,quality:'low',sound:false,elapsed:0,distance:0,jobs:0,character:'fede',parachuting:false,respawnHome:false,respawnHospitalRoof:null};
-let characterPicker;const cameraRig=new CameraRig();let signals,trams,incidents,gameplay,parachute,speedCameras,taxi=null,taxiMapPick=false,taxiDispatcher=null,taxiPathfinder=null,taxiLoadingOverlay=null,taxiDriverNPC=null,taxiSystem=null,taxiMenuController=null;const waterRecovery=new WaterRecovery(),localRespawn=new LocalRespawn();let terrain,districts;
+let characterPicker;const cameraRig=new CameraRig();let signals,trams,incidents,gameplay,parachute,speedCameras,taxi=null,taxiMapPick=false,taxiDispatcher=null,taxiPathfinder=null,taxiLoadingOverlay=null,taxiDriverNPC=null,taxiSystem=null,taxiMenuController=null;const waterRecovery=new WaterRecovery(),localRespawn=new LocalRespawn(),waterGame=new WaterGameplay();let terrain,districts;
 const resolution=new AdaptiveResolution();let detailAt=0;
 const clock=new FixedClock();let modelLayer,renderAlpha=1,previousPose=null;const previousActors=new Map();
 function visualPose(){if(!previousPose||previousPose.mode!==state.mode||dist(previousPose,state)>10)return state;return {x:THREE.MathUtils.lerp(previousPose.x,state.x,renderAlpha),z:THREE.MathUtils.lerp(previousPose.z,state.z,renderAlpha),y:THREE.MathUtils.lerp(previousPose.y,state.y,renderAlpha)};}
@@ -57,7 +58,7 @@ async function startUnifiedRegion(){
  if(regionalLoading||regionalWorld)return;
  regionalLoading=true;
  try{
-  const [r,t]=await Promise.all([fetch('./data/region-padova-venice.json?v=roads2'),fetch('./data/world-terrain.json')]);
+  const [r,t]=await Promise.all([fetch('./data/region-padova-venice.json?v=coastal-water3'),fetch('./data/world-terrain.json')]);
   if(!r.ok||!t.ok)throw new Error('Regional data unavailable ('+r.status+'/'+t.status+')');
   const [map,grid]=await Promise.all([r.json(),t.json()]);
   if((map.buildings?.length||0)<2000||!grid.heights?.length)throw new Error('Regional extract incomplete');
@@ -153,7 +154,7 @@ function compactCar(group){const positions=[],colors=[],normals=[];group.updateM
 const vehicleStyles=[...Object.keys(TRAFFIC_VEHICLES),'mito','cinquecento','motorcycle','truck','scooter','sedan','sport','compact','wagon','utility'];
 let helicopterTemplate;
 function pooledHelicopter(){if(!helicopterTemplate){const g=createHelicopter(),{rotor,tailRotor}=g.userData;g.remove(rotor,tailRotor);compactCar(g);compactCar(rotor);compactCar(tailRotor);rotor.name='rotor';tailRotor.name='tailRotor';g.add(rotor,tailRotor);g.userData={};helicopterTemplate=g;}const g=helicopterTemplate.clone(true);g.userData.rotor=g.getObjectByName('rotor');g.userData.tailRotor=g.getObjectByName('tailRotor');return g;}
-function poseVehicle(c){updateVehicleDamage(c,c.health,state.elapsed);if(c.spec.aircraft){c.y??=terrain.height(c.x,c.z);c.mesh.position.set(c.x,c.y,c.z);c.mesh.rotation.set(-c.speed*.002,c.yaw,0,'YXZ');return;}if(!c.jump?.airborne)c.y=groundContact(terrain,c.x,c.z,c.y).y;c.mesh.position.set(c.x,c.y,c.z);if(!c.jump){const pitch=terrain.slope(c.x,c.z,c.yaw,c.spec.wheelbase,c.y);c.pitch=(c.pitch??pitch)+(pitch-(c.pitch??pitch))*.18;}c.mesh.rotation.set(c.pitch||0,c.yaw,0,'YXZ');if(c.rider)c.rider.visible=!c.simple&&(c===state.car||!c.parked);}
+function poseVehicle(c){if(c.waterSinking)return;updateVehicleDamage(c,c.health,state.elapsed);if(c.spec.aircraft){c.y??=terrain.height(c.x,c.z);c.mesh.position.set(c.x,c.y,c.z);c.mesh.rotation.set(-c.speed*.002,c.yaw,0,'YXZ');return;}if(!c.jump?.airborne)c.y=groundContact(terrain,c.x,c.z,c.y).y;c.mesh.position.set(c.x,c.y,c.z);if(!c.jump){const pitch=terrain.slope(c.x,c.z,c.yaw,c.spec.wheelbase,c.y);c.pitch=(c.pitch??pitch)+(pitch-(c.pitch??pitch))*.18;}c.mesh.rotation.set(c.pitch||0,c.yaw,0,'YXZ');if(c.rider)c.rider.visible=!c.simple&&(c===state.car||!c.parked);}
 function addCar(x,z,yaw=0,police=false,parked=false,requestedStyle=null){
  const palette=['#a92731','#567e7e','#c87358','#e4dbba','#48677b','#8f9b6f','#9b4e4a','#59606b','#d0d3ce'],index=cars.length,style=police?'sedan':requestedStyle||vehicleStyles[index%vehicleStyles.length],color=police?'#193b54':palette[index%palette.length];
  const m=SPECIAL_VEHICLES[style]?createSpecialVehicle(style):style==='airone'?pooledHelicopter():compactCar(NPC_VEHICLES[style]?createNPCCar(style,color):['mito','cinquecento','motorcycle','scooter','truck','taxi'].includes(style)?createVehicle(style,color):createCar(color,police,style)),spec=VEHICLES[style];
@@ -238,7 +239,21 @@ function routeTo(target){if(target&&regionalWorld?.contains(target.x,target.z)){
 function updateMarker(){const t=currentTarget();marker.visible=!!t;if(!t)return;marker.position.set(t.x,terrain.height(t.x,t.z)+.16,t.z);const d=dist(state,t);$('targetDistance').hidden=false;$('targetDistance').textContent=(t.name||'Destination')+' · '+(d>=1000?(d/1000).toFixed(1)+' km':Math.round(d)+' m');}
 
 function vehicleReach(p,c){const dx=p.x-c.x,dz=p.z-c.z,side=Math.cos(c.yaw)*dx-Math.sin(c.yaw)*dz,along=Math.sin(c.yaw)*dx+Math.cos(c.yaw)*dz;return Math.hypot(Math.max(0,Math.abs(side)-c.spec.width/2),Math.max(0,Math.abs(along)-c.spec.length/2));}
-function toggleVehicle(){if(!state.started||state.paused||waterRecovery.active||incidents?.recovery||state.parachuting||taxi?.phase==='loading')return;if(state.mode==='car'){if(Math.abs(state.speed)>7){toast('Slow down before getting out.');return;}const c=state.car;if(c.jump?.airborne){toast('Aspetta di atterrare prima di scendere.');return;}if(c.spec.aircraft&&state.y>terrain.height(state.x,state.z)+.4){toast('Land before leaving the helicopter.');return;}c.turboTime=0;let out=null;for(const a of [Math.PI/2,-Math.PI/2,Math.PI,0]){const p={x:state.x+Math.sin(state.yaw+a)*(Math.abs(Math.sin(a))>.5?c.spec.width/2+1:c.spec.length/2+1),z:state.z+Math.cos(state.yaw+a)*(Math.abs(Math.sin(a))>.5?c.spec.width/2+1:c.spec.length/2+1)};if(!collides(p.x,p.z,.4,world.collision,terrain.height(p.x,p.z,state.y))&&terrain.dry(p.x,p.z,.5)){out=p;break;}}if(!out){toast('No room to get out here.');return;}state.mode='foot';c.parked=true;c.speed=0;c.health=state.health;state.car=null;state.x=out.x;state.z=out.z;state.speed=0;state.y=terrain.height(state.x,state.z,state.y);state.vy=0;player.position.set(state.x,state.y,state.z);player.visible=true;if(c===taxi?.car){taxi.phase='ready';setTaxiHazards(true);placeTaxiDriver();}toast('On foot. E to get back in.');}else{let nearest=null,d=2.4;for(const c of cars){const dd=vehicleReach(state,c);if(c.mesh.visible&&c.health>0&&dd<d&&Math.abs(c.speed)<8&&Math.abs((c.y||0)-state.y)<4){nearest=c;d=dd;}}if(!nearest){toast('Walk closer to a parked or slow-moving car.');return;}state.mode='car';state.y=nearest.y??terrain.height(nearest.x,nearest.z);state.vy=0;state.car=nearest;resetGroundMotion(nearest);state.x=nearest.x;state.z=nearest.z;state.yaw=nearest.yaw;state.speed=0;state.health=nearest.health;nearest.parked=true;if(nearest===taxi?.car)taxiDriverNPC?.hide();gameplay?.claim(nearest);player.visible=false;toast(nearest.name+(nearest.spec.tracked?' · WASD guida · TAB spara':nearest.spec.aircraft?' · W accelera · Space sale · Shift scende · F paracadute':' · WASD drive, Space handbrake, Shift boost'),5);}camOrbit=0;followYaw=state.yaw;cameraRig.reset(state.yaw);}
+function toggleVehicle(){
+ if(!state.started||state.paused||waterRecovery.active||incidents?.recovery||state.parachuting||taxi?.phase==='loading')return;
+ if(waterGame.vehicle&&state.car){
+  const car=waterGame.leaveVehicle(state,terrain.waterHeight(state.x,state.z));
+  if(!respawnClear(state.x,state.z,terrain.waterHeight(state.x,state.z)-.3)){
+   state.x=car.x;state.z=car.z;
+  }
+  player.visible=true;player.position.set(state.x,state.y,state.z);
+  player.rotation.set(-1.04,state.yaw,0,'YXZ');
+  previousPose=null;followYaw=state.yaw;cameraRig.reset(state.yaw);
+  toast('Fuori dal veicolo: nuota verso riva. W/A/S/D · SPAZIO immergiti · R recupero.',5);
+  return;
+ }
+ if(waterGame.swimming){toast('Nuota fino alla riva oppure premi R.',3);return;}
+if(state.mode==='car'){if(Math.abs(state.speed)>7){toast('Slow down before getting out.');return;}const c=state.car;if(c.jump?.airborne){toast('Aspetta di atterrare prima di scendere.');return;}if(c.spec.aircraft&&state.y>terrain.height(state.x,state.z)+.4){toast('Land before leaving the helicopter.');return;}c.turboTime=0;let out=null;for(const a of [Math.PI/2,-Math.PI/2,Math.PI,0]){const p={x:state.x+Math.sin(state.yaw+a)*(Math.abs(Math.sin(a))>.5?c.spec.width/2+1:c.spec.length/2+1),z:state.z+Math.cos(state.yaw+a)*(Math.abs(Math.sin(a))>.5?c.spec.width/2+1:c.spec.length/2+1)};if(!collides(p.x,p.z,.4,world.collision,terrain.height(p.x,p.z,state.y))&&terrain.dry(p.x,p.z,.5)){out=p;break;}}if(!out){toast('No room to get out here.');return;}state.mode='foot';c.parked=true;c.speed=0;c.health=state.health;state.car=null;state.x=out.x;state.z=out.z;state.speed=0;state.y=terrain.height(state.x,state.z,state.y);state.vy=0;player.position.set(state.x,state.y,state.z);player.visible=true;if(c===taxi?.car){taxi.phase='ready';setTaxiHazards(true);placeTaxiDriver();}toast('On foot. E to get back in.');}else{let nearest=null,d=2.4;for(const c of cars){const dd=vehicleReach(state,c);if(c.mesh.visible&&!c.waterSinking&&c.health>0&&dd<d&&Math.abs(c.speed)<8&&Math.abs((c.y||0)-state.y)<4){nearest=c;d=dd;}}if(!nearest){toast('Walk closer to a parked or slow-moving car.');return;}state.mode='car';state.y=nearest.y??terrain.height(nearest.x,nearest.z);state.vy=0;state.car=nearest;resetGroundMotion(nearest);state.x=nearest.x;state.z=nearest.z;state.yaw=nearest.yaw;state.speed=0;state.health=nearest.health;nearest.parked=true;if(nearest===taxi?.car)taxiDriverNPC?.hide();gameplay?.claim(nearest);player.visible=false;toast(nearest.name+(nearest.spec.tracked?' · WASD guida · TAB spara':nearest.spec.aircraft?' · W accelera · Space sale · Shift scende · F paracadute':' · WASD drive, Space handbrake, Shift boost'),5);}camOrbit=0;followYaw=state.yaw;cameraRig.reset(state.yaw);}
 function hospitalRoofRespawnPoint(){
  const lifts=gameplay?.hospitalElevators,site=lifts?.site,car=state.car;
  if(state.mode!=='car'||!car||!(isBike(car.style)||car.spec?.bike)||state.wanted===5||!site?.polygon?.length||!Number.isFinite(site.roofY))return null;
@@ -252,7 +267,7 @@ function respawnAtHospitalRoof(){
  const p=state.respawnHospitalRoof,bike=state.car;
  state.respawnHospitalRoof=null;state.respawnHome=false;
  if(!p||!bike)return false;
- previousPose=null;keys.clear();waterRecovery.reset();document.body.classList.remove('water-fall');resetGroundMotion(bike);
+ previousPose=null;keys.clear();waterRecovery.reset();waterGame.reset();document.body.classList.remove('water-fall');resetGroundMotion(bike);
  Object.assign(state,{x:p.x,z:p.z,y:p.y,yaw:p.yaw,speed:0,vy:0,health:100,mode:'car',parachuting:false,spin:0,knockX:0,knockZ:0});
  Object.assign(bike,{x:p.x,z:p.z,y:p.y,yaw:p.yaw,speed:0,health:100,knockX:0,knockZ:0,spin:0,turboTime:0,parked:false,missionUnit:true,budgetSleeping:false,destroyedUntil:0});
  bike.mesh.visible=true;poseVehicle(bike);previousActors.delete(bike.mesh);player.visible=false;if(parachute)parachute.visible=false;
@@ -270,12 +285,12 @@ function recover(fromWater=false){
    {water:fromWater,nearRoad:respawnRoad});
  if(!p){toast('Nessuna posizione sicura vicina. Apri M per scegliere una strada.');return false;}
  state.parachuting=false;if(parachute)parachute.visible=false;
- previousPose=null;keys.clear();waterRecovery.reset();document.body.classList.remove('water-fall');
+ previousPose=null;keys.clear();waterRecovery.reset();waterGame.reset();document.body.classList.remove('water-fall');
  Object.assign(state,{x:p.x,z:p.z,y:p.y,yaw:p.yaw,speed:0,vy:0,health:100,respawnHome:false,respawnHospitalRoof:null});
  if(state.car){
   resetGroundMotion(state.car);
   Object.assign(state.car,{x:p.x,z:p.z,y:p.y,yaw:p.yaw,speed:0,health:100,
-   knockX:0,knockZ:0,spin:0,turboTime:0,vy:0,destroyedUntil:0,parked:false});
+   knockX:0,knockZ:0,spin:0,turboTime:0,vy:0,destroyedUntil:0,parked:false,waterSinking:false});
   state.car.mesh.visible=true;poseVehicle(state.car);previousActors.delete(state.car.mesh);
   player.visible=false;
  }else{state.mode='foot';player.position.set(p.x,p.y,p.z);player.rotation.y=p.yaw;player.visible=true;}
@@ -290,7 +305,7 @@ function recover(fromWater=false){
 function requestRecover(){
  // Manual R on the Monoblocco bike circuit must retain the roof, rather
  // than selecting an ordinary street hundreds of metres below the player.
- const roof=waterRecovery.active?null:hospitalRoofRespawnPoint();
+ const roof=waterRecovery.active||waterGame.active?null:hospitalRoofRespawnPoint();
  if(roof){
   if(incidents?.recovery)incidents.recovery=null;
   state.respawnHospitalRoof=roof;return respawnAtHospitalRoof();
@@ -300,14 +315,14 @@ function requestRecover(){
   if(state.respawnHospitalRoof)return respawnAtHospitalRoof();
   state.respawnHome=false;
  }
- return recover(waterRecovery.active);
+ return recover(waterRecovery.active||waterGame.active);
 }
 function falling(dt){
  const done=waterRecovery.step(dt);state.y=waterRecovery.y;
  if(state.car){state.car.mesh.position.y=state.y;state.car.mesh.rotation.x+=dt*.5;}else player.position.set(state.x,state.y,state.z);
  if(done)recover(true);
 }
-function travel(p){if(incidents?.recovery)return;state.parachuting=false;if(parachute)parachute.visible=false;previousPose=null;cancelMission(false);clearPolice();const n=dryRoad(p,state.car?.spec);if(!n)return;waterRecovery.reset();document.body.classList.remove('water-fall');state.x=n.x;state.z=n.z;state.yaw=n.yaw;state.speed=0;state.y=n.y??terrain.height(state.x,state.z,state.y);state.vy=0;state.health=100;state.waypoint=null;state.route=[];if(state.car){resetGroundMotion(state.car);state.car.x=n.x;state.car.z=n.z;state.car.yaw=n.yaw;state.car.speed=0;state.car.health=100;state.car.y=state.y;state.car.turboTime=0;poseVehicle(state.car);previousActors.delete(state.car.mesh);}else{let c=cars.find(c=>c.parked&&!c.fixedSpawn&&!c.spec.aircraft&&!c.hostile);if(c){const parking=dryRoad({x:n.x+8*Math.sin(n.yaw),z:n.z+8*Math.cos(n.yaw)},c.spec);if(parking){c.x=parking.x;c.z=parking.z;c.yaw=parking.yaw;poseVehicle(c);previousActors.delete(c.mesh);}}}world.update(state.x,state.z,true);for(const c of cars)if(c!==state.car&&!c.parked)placeTraffic(c);people.forEach(placePerson);waterRecovery.remember(state,terrain);localRespawn.remember(state,terrain,respawnClear,state.elapsed,true);camera.position.set(state.x-12,state.y+12,state.z-16);followYaw=state.yaw;cameraRig.reset(state.yaw);toast('Welcome to '+p.name);closeDialogs();}
+function travel(p){if(incidents?.recovery)return;state.parachuting=false;if(parachute)parachute.visible=false;previousPose=null;cancelMission(false);clearPolice();const n=dryRoad(p,state.car?.spec);if(!n)return;waterRecovery.reset();waterGame.reset();document.body.classList.remove('water-fall');state.x=n.x;state.z=n.z;state.yaw=n.yaw;state.speed=0;state.y=n.y??terrain.height(state.x,state.z,state.y);state.vy=0;state.health=100;state.waypoint=null;state.route=[];if(state.car){resetGroundMotion(state.car);state.car.x=n.x;state.car.z=n.z;state.car.yaw=n.yaw;state.car.speed=0;state.car.health=100;state.car.y=state.y;state.car.turboTime=0;poseVehicle(state.car);previousActors.delete(state.car.mesh);}else{let c=cars.find(c=>c.parked&&!c.fixedSpawn&&!c.spec.aircraft&&!c.hostile);if(c){const parking=dryRoad({x:n.x+8*Math.sin(n.yaw),z:n.z+8*Math.cos(n.yaw)},c.spec);if(parking){c.x=parking.x;c.z=parking.z;c.yaw=parking.yaw;poseVehicle(c);previousActors.delete(c.mesh);}}}world.update(state.x,state.z,true);for(const c of cars)if(c!==state.car&&!c.parked)placeTraffic(c);people.forEach(placePerson);waterRecovery.remember(state,terrain);localRespawn.remember(state,terrain,respawnClear,state.elapsed,true);camera.position.set(state.x-12,state.y+12,state.z-16);followYaw=state.yaw;cameraRig.reset(state.yaw);toast('Welcome to '+p.name);closeDialogs();}
 function ensureCar(){if(state.mode==='car'&&!state.car.spec.aircraft)return true;toast('Get into a car first. A parked car is waiting nearby.');return false;}
 const missionTypes={portavalori:{title:'CATTURA PORTAVALORI',desc:'Insegui e blocca il furgone. Tienilo fermo vicino a te per 2,5 secondi. La polizia può intervenire.',reward:'Ricompensa: €1.000'},delivery:{title:'Special delivery',desc:'Pick up a parcel, then deliver it across the centre.',reward:'€350'},race:{title:'The Padova run',desc:'Six checkpoints. Five minutes. Your best line.',reward:'€600'},escape:{title:'Lose the tail',desc:'Get the police’s attention, then disappear.',reward:'€500'}};
 function safeTarget(p){const n=dryRoad(p);return n?{x:n.x,z:n.z,name:p.name}:p;}
@@ -475,7 +490,7 @@ function updatePolice(dt){if(!state.wanted)return;let nearest=Infinity,arrestDis
 function explodePlayer(reason){if(incidents?.recovery)return;state.respawnHospitalRoof=hospitalRoofRespawnPoint();const clearPursuit=state.wanted===5||state.mode==='foot';state.respawnHome=false;if(!incidents?.explode(state,state.elapsed,reason)){state.respawnHospitalRoof=null;return;}state.speed=0;state.health=0;state.spin=state.knockX=state.knockZ=0;keys.clear();if(state.car){state.car.health=0;state.car.mesh.visible=false;}if(clearPursuit){cancelMission(false);clearPolice();}toast(reason+(state.respawnHospitalRoof?' · Respawn sul tetto…':' · Respawn nella zona attuale…'),2);}
 function kickActor(actor,vx,vz){actor.knockX=clamp(vx,-40,40);actor.knockZ=clamp(vz,-40,40);actor.spin=Math.sign(vx||1)*1.4;if(actor===state){state.health=Math.max(0,state.health-25*(state.car?.spec.armor||1));toast('Tram impact! Keep clear of the rails.',2);}else if(actor.health!==undefined)actor.health=Math.max(0,actor.health-25*(actor.spec?.armor||1));}
 function applyKnock(actor,dt){const spec=actor===state?state.car?.spec:actor.spec;if(!actor.knockX&&!actor.knockZ&&!actor.spin)return;const p=slideMove(actor,(actor.knockX||0)*dt,(actor.knockZ||0)*dt,spec?.width/2||.36,world.collision,actor.y);actor.x=p.x;actor.z=p.z;const yaw=actor.yaw+(actor.spin||0)*dt;if(!spec||!vehicleBlocked(actor.x,actor.z,yaw,world.collision,spec,actor.y))actor.yaw=yaw;actor.knockX=(actor.knockX||0)*Math.exp(-3*dt);actor.knockZ=(actor.knockZ||0)*Math.exp(-3*dt);actor.spin=(actor.spin||0)*Math.exp(-2*dt);if(actor!==state&&actor.mesh&&actor.spec)poseVehicle(actor);}
-function movePlayer(dt){if(taxi?.phase==='transition'){state.speed=0;return;}if(incidents?.recovery){state.speed=0;if(state.elapsed>=incidents.recovery.until){incidents.recovery=null;if(state.respawnHospitalRoof){respawnAtHospitalRoof();return;}if(state.respawnHome){state.respawnHome=false;}recover();}return;}if(waterRecovery.active){falling(dt);return;}if(state.mode==='foot'&&state.health<=0){explodePlayer('Personaggio neutralizzato');return;}const f=(keys.has('KeyW')||keys.has('ArrowUp')?1:0)-(keys.has('KeyS')||keys.has('ArrowDown')?1:0),turn=(keys.has('KeyA')||keys.has('ArrowLeft')?1:0)-(keys.has('KeyD')||keys.has('ArrowRight')?1:0),boost=keys.has('ShiftLeft')||keys.has('ShiftRight');
+function movePlayer(dt){if(taxi?.phase==='transition'){state.speed=0;return;}if(incidents?.recovery){state.speed=0;if(state.elapsed>=incidents.recovery.until){incidents.recovery=null;if(state.respawnHospitalRoof){respawnAtHospitalRoof();return;}if(state.respawnHome){state.respawnHome=false;}recover(waterGame.active||waterRecovery.active);}return;}if(waterRecovery.active){falling(dt);return;}if(state.mode==='foot'&&state.health<=0){explodePlayer('Personaggio neutralizzato');return;}const f=(keys.has('KeyW')||keys.has('ArrowUp')?1:0)-(keys.has('KeyS')||keys.has('ArrowDown')?1:0),turn=(keys.has('KeyA')||keys.has('ArrowLeft')?1:0)-(keys.has('KeyD')||keys.has('ArrowRight')?1:0),boost=keys.has('ShiftLeft')||keys.has('ShiftRight');
  if(state.parachuting){const landed=parachuteStep(state,{forward:f,turn},dt,terrain,world.collision);parachute.position.set(state.x,state.y,state.z);parachute.rotation.y=state.yaw;player.position.set(state.x,state.y,state.z);if(landed){state.parachuting=false;parachute.visible=false;state.vy=0;}else return;}
  if(state.mode==='car'&&state.car.spec.aircraft){const result=(state.car.spec.plane?planeStep:helicopterStep)(state,{forward:f,turn,up:keys.has('Space'),down:boost},dt,terrain,world.collision);if(result?.crashed){explodePlayer('Incidente aereo');return;}Object.assign(state.car,{x:state.x,z:state.z,y:state.y,yaw:state.yaw,speed:state.speed});poseVehicle(state.car);state.distance+=Math.abs(state.speed)*dt;return;}
  if(state.mode==='car'){const car=state.car,spec=car.spec,previousSpeed=state.speed,handbrake=keys.has('Space'),turbo=car.style==='cinquecento'&&keys.has('Tab'),condition=vehiclePerformanceFactor(state.health);if(state.health<=0){state.speed*=Math.exp(-dt*4);if(f)toast('Vehicle disabled. Press R to recover and repair.',1.5);}else if(!car.jump?.airborne){const acceleration=(f>0?turbo?spec.turboAccel:boost?spec.accel*1.3:spec.accel:f<0?(state.speed>1?-spec.brake:-spec.accel*.65):0)*(f>0?condition:1);state.speed+=(acceleration+Math.sin(terrain.slope(state.x,state.z,state.yaw,spec.wheelbase,state.y))*5)*dt;state.speed*=Math.exp(-dt*(handbrake?2.8:f?.045:.65));const speedLimit=(turbo?spec.turboMax:boost?spec.boost:spec.max)*condition;state.speed=clamp(state.speed,-spec.reverse,Math.max(speedLimit,previousSpeed-spec.brake*.5*dt));if(updateTurbo(car,state.speed,dt).explode){explodePlayer('Turbo overheated after 6 seconds');return;}}
