@@ -24,7 +24,7 @@ import {TrafficSignals,lanePoint,laneCount,laneOffset,trafficLane,trafficSpeed,a
 import {applyCityData,Districts,DISTRICTS} from './districts.js';
 import * as THREE from './vendor/three.module.js';
 import {RegionalWorld} from './regional-world.js';
-import {UnifiedMap} from './unified-map.js';
+import {UnifiedMap} from './unified-map.js?v=2';
 import {LocalRespawn} from './local-respawn.js';
 import {REGIONAL_ZONES,PADOVA_EAST} from './unified-regions.js';
 import {CityWorld,PLACES,createCar,createPerson} from './world.js';
@@ -57,7 +57,7 @@ async function startUnifiedRegion(){
  if(regionalLoading||regionalWorld)return;
  regionalLoading=true;
  try{
-  const [r,t]=await Promise.all([fetch('./data/region-padova-venice.json'),fetch('./data/world-terrain.json')]);
+  const [r,t]=await Promise.all([fetch('./data/region-padova-venice.json?v=roads2'),fetch('./data/world-terrain.json')]);
   if(!r.ok||!t.ok)throw new Error('Regional data unavailable ('+r.status+'/'+t.status+')');
   const [map,grid]=await Promise.all([r.json(),t.json()]);
   if((map.buildings?.length||0)<2000||!grid.heights?.length)throw new Error('Regional extract incomplete');
