@@ -168,9 +168,9 @@ export class RegionalWorld{
   // carve holes in the broad open-lagoon surface.
   if(this.inPoly(this.landAreas,x,z))return false;
   for(const b of new Set(this.near(this.buildingAreas,x,z)))
-   if(x>=b.minX-4&&x<=b.maxX+4&&z>=b.minZ-4&&z<=b.maxZ+4)return false;
-  const road=this.nearestRoad(x,z,12);
-  if(road&&road.d<road.road.w*.5+3&&!road.road.bri)return false;
+   if(x>=b.minX-8&&x<=b.maxX+8&&z>=b.minZ-8&&z<=b.maxZ+8)return false;
+  const road=this.nearestRoad(x,z,18);
+  if(road&&road.d<road.road.w*.5+7&&!road.road.bri)return false;
   if(x<33500&&this.raw(x,z)>LAGOON_Y+.65)return false;
   return true;
  }
