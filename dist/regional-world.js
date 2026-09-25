@@ -316,8 +316,8 @@ export class RegionalWorld{
   }
   // People only appear on actual town streets/paths; remote transit zones
   // retain their simplified low-poly vehicle traffic.
-  const peopleRoads=chunk.roads.filter(r=>isDetailed(r)&&/footway|pedestrian|path|residential|living_street/.test(r.k));
-  for(let i=0;i<Math.min(5,Math.ceil(peopleRoads.length/14));i++){
+  const peopleRoads=chunk.roads.filter(r=>/footway|pedestrian|path|residential|living_street/.test(r.k));
+  for(let i=0;i<Math.min(active.length?4:2,Math.ceil(peopleRoads.length/17));i++){
    const r=peopleRoads[(i*13+peopleRoads.length*5)%peopleRoads.length];
    if(!r)continue;const mesh=new THREE.Mesh(new THREE.BoxGeometry(.38,1.55,.35),peopleMat);group.add(mesh);actors.push({mesh,r,t:(i*.29)%1,dir:i%2?1:-1,person:true});
   }
