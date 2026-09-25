@@ -100,16 +100,16 @@ jobs:
         run: |
           set -euo pipefail
           fetch_query () {
-            local query="$1" out="$2"
+            local query="$1" out="$2" minimum="${3:-200}"
             fetch_one () {
               local endpoint="$1"
               echo "Trying $endpoint for $query"
               curl --fail --show-error --silent --location --retry 1 --retry-delay 4 --max-time 90 \
                 -A 'PadovaOpenWorld-ContinuousPreview/1.0' \
                 --data-urlencode "data@$query" "$endpoint" -o "$out"
-              python -c 'import json,sys; p=sys.argv[1]; d=json.load(open(p)); assert len(d.get("elements",[]))>200, "OSM response unexpectedly small"; print(p,"elements:",len(d["elements"]))' "$out"
+              python -c 'import json,sys; p=sys.argv[1]; d=json.load(open(p)); assert len(d.get("elements",[]))>=int(sys.argv[2]), "OSM response unexpectedly small"; print(p,"elements:",len(d["elements"]))' "$out" "$minimum"
             }
-            if test -s "$out" && python -c 'import json,sys; assert len(json.load(open(sys.argv[1])).get("elements",[]))>200' "$out"; then
+            if test -s "$out" && python -c 'import json,sys; assert len(json.load(open(sys.argv[1])).get("elements",[]))>=int(sys.argv[2])' "$out" "$minimum"; then
               echo "Using cached OSM extract: $out"
               return 0
             fi
