@@ -125,14 +125,19 @@ export function installVeniceBoats({data,scene,state,keys,player,blocked,nearby,
  for(const w of data.water.filter(w=>w.w>=9&&w.p?.length>=2).sort((a,b)=>b.w-a.w).slice(0,7)){
   const a=w.p[0],end=w.p[w.p.length-1],len=Math.hypot(end[0]-a[0],end[1]-a[1]);if(len<45)continue;
   const id=w.w>=17?'boat-water-taxi':'boat-electric',s=BOAT_SPECS[id],mesh=createBoatModel(id,'#cfdfdc');scene.add(mesh);
-  traffic.push({s,mesh,p:w.p,x:a[0],z:a[1],progress:Math.random()*.6,reverse:false,speed:Math.min(3,s.maxKmh/3.6)*.60});
+  const seg=w.p.slice(1).map((q,i)=>Math.hypot(q[0]-w.p[i][0],q[1]-w.p[i][1]));const total=seg.reduce((sum,v)=>sum+v,0);
+  if(total<45)continue;
+  traffic.push({s,mesh,p:w.p,segmentLengths:seg,total,x:a[0],z:a[1],progress:Math.random()*.6,reverse:false,speed:Math.min(3,s.maxKmh/3.6)*.60});
   if(traffic.length>=5)break;
  }
  function tickTraffic(dt){
-  for(const v of traffic){const first=v.p[0],last=v.p[v.p.length-1],d=Math.hypot(last[0]-first[0],last[1]-first[1]);if(!d)continue;
-   v.progress+=v.speed*dt/d*(v.reverse?-1:1);if(v.progress>1){v.progress=1;v.reverse=true;}else if(v.progress<0){v.progress=0;v.reverse=false;}
-   v.x=first[0]+(last[0]-first[0])*v.progress;v.z=first[1]+(last[1]-first[1])*v.progress;
-   v.mesh.position.set(v.x,.30,v.z);v.mesh.rotation.y=Math.atan2((last[0]-first[0])*(v.reverse?-1:1),(last[1]-first[1])*(v.reverse?-1:1));
+  for(const v of traffic){if(!v.total)continue;
+   v.progress+=v.speed*dt/v.total*(v.reverse?-1:1);if(v.progress>1){v.progress=1;v.reverse=true;}else if(v.progress<0){v.progress=0;v.reverse=false;}
+   let remaining=v.progress*v.total,idx=0;
+   while(idx<v.segmentLengths.length-1&&remaining>v.segmentLengths[idx])remaining-=v.segmentLengths[idx++];
+   const a=v.p[idx],b=v.p[idx+1],fraction=Math.min(1,remaining/Math.max(.01,v.segmentLengths[idx]));
+   v.x=a[0]+(b[0]-a[0])*fraction;v.z=a[1]+(b[1]-a[1])*fraction;
+   v.mesh.position.set(v.x,.30,v.z);v.mesh.rotation.y=Math.atan2((b[0]-a[0])*(v.reverse?-1:1),(b[1]-a[1])*(v.reverse?-1:1));
   }
  }
  addEventListener('keydown',e=>{if(e.code==='KeyB'&&!e.repeat&&!document.querySelector('dialog[open]')){e.preventDefault();show();}if(e.code==='KeyE'&&!e.repeat&&active&&!document.querySelector('dialog[open]')){e.preventDefault();disembark();}},true);
