@@ -145,9 +145,13 @@ export class RegionalWorld{
    // EACH intersecting sector, not only in the sector holding its centroid.
    const minIx=Math.max(Math.floor((PADOVA_EAST-180)/CHUNK),Math.floor(x0/CHUNK)),
     maxIx=Math.floor(x1/CHUNK),minIz=Math.floor(z0/CHUNK),maxIz=Math.floor(z1/CHUNK);
-   if((maxIx-minIx+1)*(maxIz-minIz+1)>380||a.p.length>220)continue;
+   if((maxIx-minIx+1)*(maxIz-minIz+1)>1100)continue;
    for(let ix=minIx;ix<=maxIx;ix++)for(let iz=minIz;iz<=maxIz;iz++){
-    const clipped=clipPolygon(a.p,ix*CHUNK,iz*CHUNK,(ix+1)*CHUNK,(iz+1)*CHUNK);
+    let clipped=clipPolygon(a.p,ix*CHUNK,iz*CHUNK,(ix+1)*CHUNK,(iz+1)*CHUNK);
+    if(clipped.length>220){
+     const step=Math.ceil(clipped.length/200);
+     clipped=clipped.filter((_,n)=>n%step===0);
+    }
     if(clipped.length>=3){
      const holes=(a.holes||[]).map(h=>clipPolygon(h,ix*CHUNK,iz*CHUNK,(ix+1)*CHUNK,(iz+1)*CHUNK))
       .filter(h=>h.length>=3);
