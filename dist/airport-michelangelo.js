@@ -6,6 +6,7 @@ import {ModernGameplay} from './modern-gameplay.js';
 import {VEHICLES} from './vehicles.js';
 import {AIRPORT,areaPoint} from './gameplay-areas.js';
 import {vehicleBlocked} from './movement.js';
+import {project} from './core.js';
 import {airControlHeld,flightCommand,controlSpeed} from './airport-air-controls.js';
 import {aircraftControlStep} from './airport-combat-flight.js';
 
@@ -52,7 +53,10 @@ export function createMichelangeloModel(){
 }
 let live=null,button=null,transitioning=false;
 export function veniceFlightUrl(s){
- const q=new URLSearchParams({spawn:'padova',vehicle:'michelangelo',x:String(Math.round(s.x)),z:String(Math.round(s.z)),y:String(Math.round(Math.max(85,s.y))),yaw:String(Math.PI/2),speed:String(Math.max(75,Math.min(MAX_SPEED,s.speed||75)))});
+ // The real airport is north-west of Piazzale Roma: preserve a direct
+ // east/south-east starting heading instead of blindly flying due east.
+ const arrival=project(45.43868,12.31811),heading=Math.atan2(arrival.x-s.x,arrival.z-s.z);
+ const q=new URLSearchParams({spawn:'padova',vehicle:'michelangelo',x:String(Math.round(s.x)),z:String(Math.round(s.z)),y:String(Math.round(Math.max(85,s.y))),yaw:String(heading),speed:String(Math.max(75,Math.min(MAX_SPEED,s.speed||75)))});
  return './continuous-world.html?'+q.toString();
 }
 function transfer(g){
