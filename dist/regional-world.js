@@ -45,9 +45,12 @@ export class RegionalWorld{
   if(!road.b&&!road.bridge)return base;
   // Continuous deck profile. Both ends join the neighboring street height;
   // raised pedestrian bridges gain a mild arch without a vertical step.
-  const rise=/motorway|trunk|primary/.test(road.k)?2.4:1.35;
+  const rise=/motorway|trunk|primary/.test(road.k)?2.4:/footway|pedestrian|path|steps/.test(road.k)?1.05:1.35;
   const safe=coast(x,z)?Math.max(0,LAGOON_Y+.9-base):0;
-  return base+(rise+safe)*Math.sin(Math.PI*t);
+  // Cosine lift starts AND ends with zero slope, unlike a sine arch which
+  // has an abrupt gradient at the junction to the approaching road.
+  const eased=Math.sin(Math.PI*Math.max(0,Math.min(1,t)))**2;
+  return base+(rise+safe)*eased;
  }
  insertSpatial(index,obj,a,b,pad){
   const x0=Math.floor((min(a[0],b[0])-pad)/CELL),x1=Math.floor((max(a[0],b[0])+pad)/CELL),z0=Math.floor((min(a[1],b[1])-pad)/CELL),z1=Math.floor((max(a[1],b[1])+pad)/CELL);
@@ -71,7 +74,24 @@ export class RegionalWorld{
    if(max(p[0],q[0])<PADOVA_EAST-180)continue;
    const m=[(p[0]+q[0])/2,(p[1]+q[1])/2],item={a:p,b:q,w:source.w||4,k:source.k||'',bri:!!(source.b||source.bridge),yA:type==='roads'?this.roadY(source,...p,t0+(t1-t0)*f):this.raw(...p),yB:type==='roads'?this.roadY(source,...q,t0+(t1-t0)*g):this.raw(...q)};
    this.bucket(...m)[type].push(item);
-   if(type==='roads')this.insertSpatial(this.roads,item,p,q,item.w*.5+3);
+   if(type==='roads'){
+    this.insertSpatial(this.roads,item,p,q,item.w*.5+3);
+    // Simple physical parapets match the rendered bridge edges and prevent
+    // stepping/driving through a bridge side straight into the water.
+    if(item.bri&&regionalDetail(...m)==='detailed'){
+     const dx=q[0]-p[0],dz=q[1]-p[1],len=Math.hypot(dx,dz)||1,
+      nx=-dz/len,nz=dx/len,offset=item.w*.5+.18,thickness=.20;
+     for(const side of [-1,1]){
+      const edge=offset*side,outer=(offset+thickness)*side;
+      const poly=[[p[0]+nx*edge,p[1]+nz*edge],[q[0]+nx*edge,q[1]+nz*edge],
+       [q[0]+nx*outer,q[1]+nz*outer],[p[0]+nx*outer,p[1]+nz*outer]],
+       xs=poly.map(v=>v[0]),zs=poly.map(v=>v[1]);
+      const barrier={p:poly,minX:Math.min(...xs),maxX:Math.max(...xs),minZ:Math.min(...zs),maxZ:Math.max(...zs),
+       minY:Math.min(item.yA,item.yB)+.08,h:.82+Math.abs(item.yB-item.yA)};
+      this.collision.add(barrier,barrier.minX,barrier.minZ,barrier.maxX,barrier.maxZ);
+     }
+    }
+   }
    if(type==='water')this.insertSpatial(this.waters,item,p,q,item.w*.5+3);
   }
  }
@@ -194,13 +214,32 @@ export class RegionalWorld{
    lagoon.rotation.x=-Math.PI/2;lagoon.position.set((ix+.5)*CHUNK,LAGOON_Y,(iz+.5)*CHUNK);
    lagoon.renderOrder=1;group.add(lagoon);
   }
-  const normal=[],arterial=[],channels=[],balustrade=[],w=[],r=[],blocks=[],energyFaces=[],energyEdges=[];
+  const normal=[],arterial=[],channels=[],balustrade=[],bridgeSupports=[],w=[],r=[],blocks=[],energyFaces=[],energyEdges=[];
   for(const p of src.roads){
    surface(/motorway|trunk|primary|secondary/.test(p.k)?arterial:normal,p.a,p.b,p.w,p.yA+.025,p.yB+.025);
-   if(p.bri&&coast(...p.a)&&/footway|steps|pedestrian|path/.test(p.k)){
-    // Visual parapets follow bridge deck, with a gap-free foot surface.
-    const dx=p.b[0]-p.a[0],dz=p.b[1]-p.a[1],len=Math.hypot(dx,dz)||1,nx=-dz/len*p.w*.55,nz=dx/len*p.w*.55;
-    for(const side of [-1,1])surface(balustrade,[p.a[0]+nx*side,p.a[1]+nz*side],[p.b[0]+nx*side,p.b[1]+nz*side],.17,p.yA+.63,p.yB+.63);
+   if(p.bri&&regionalDetail((p.a[0]+p.b[0])/2,(p.a[1]+p.b[1])/2)==='detailed'){
+    const dx=p.b[0]-p.a[0],dz=p.b[1]-p.a[1],len=Math.hypot(dx,dz)||1,
+     nx=-dz/len*(p.w*.5+.18),nz=dx/len*(p.w*.5+.18);
+    // Real vertical rails, not thin horizontal strips floating above a deck.
+    for(const side of [-1,1]){
+     const a=[p.a[0]+nx*side,p.a[1]+nz*side],
+      b=[p.b[0]+nx*side,p.b[1]+nz*side];
+     addQuad(balustrade,[a[0],p.yA+.08,a[1]],[b[0],p.yB+.08,b[1]],
+      [b[0],p.yB+.82,b[1]],[a[0],p.yA+.82,a[1]]);
+    }
+    // Major lagoon bridges get visible supporting pillars, so the Ponte
+    // della Libertà is not perceived as a road suspended in empty space.
+    const mid=[(p.a[0]+p.b[0])/2,(p.a[1]+p.b[1])/2],top=(p.yA+p.yB)/2-.1;
+    if(p.w>=7&&coast(...mid)){
+     const bottom=LAGOON_Y-1.5,half=.42;
+     if(top-bottom>.8)for(const side of [-1,1]){
+      const cx=mid[0]+nx*side*.54,cz=mid[1]+nz*side*.54;
+      addQuad(bridgeSupports,[cx-half,bottom,cz-half],[cx+half,bottom,cz-half],
+       [cx+half,top,cz-half],[cx-half,top,cz-half]);
+      addQuad(bridgeSupports,[cx+half,bottom,cz-half],[cx+half,bottom,cz+half],
+       [cx+half,top,cz+half],[cx+half,top,cz-half]);
+     }
+    }
    }
   }
   for(const p of src.water){surface(channels,p.a,p.b,p.w,(coast(...p.a)?LAGOON_Y:this.raw(...p.a))+.075,(coast(...p.b)?LAGOON_Y:this.raw(...p.b))+.075);}
@@ -234,6 +273,7 @@ export class RegionalWorld{
   if(arterial.length)group.add(new THREE.Mesh(geometry(arterial),arterialMat));
   if(channels.length)group.add(new THREE.Mesh(geometry(channels),canalMat));
   if(balustrade.length)group.add(new THREE.Mesh(geometry(balustrade),stone));
+  if(bridgeSupports.length)group.add(new THREE.Mesh(geometry(bridgeSupports),stone));
   if(w.length)group.add(new THREE.Mesh(geometry(w),walls));
   if(r.length)group.add(new THREE.Mesh(geometry(r),roofs));
   if(energyFaces.length)group.add(new THREE.Mesh(geometry(energyFaces),energySkin));
