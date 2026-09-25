@@ -36,8 +36,9 @@ try{
   Object.assign(s,{x,z,y,mode:'foot',car:null,speed:0,vy:0,health:100,wanted:0,paused:false});});
  await page.keyboard.press('e');
  await page.waitForFunction(()=>{const g=globalThis.__michelangeloFullTest;return g?.state?.mode==='car'&&g.state.car?.style==='airport-michelangelo';},null,{timeout:11000});
+ await page.waitForFunction(()=>document.getElementById('michelangeloVeniceTransfer')?.hidden===false,null,{timeout:11000});
  const boarded=await page.evaluate(()=>{const g=globalThis.__michelangeloFullTest;return {mode:g.state.mode,style:g.state.car?.style,ready:!!document.getElementById('michelangeloVeniceTransfer')&&!document.getElementById('michelangeloVeniceTransfer').hidden};});
- assert(boarded.style==='airport-michelangelo','Michelangelo boarding failed');
+ assert(boarded.style==='airport-michelangelo'&&boarded.ready,'Michelangelo boarding or Venice-flight action missing');
  console.log('PASS MICHELANGELO_AIRPORT_BOARDING '+JSON.stringify(boarded));
  await page.screenshot({path:'test-artifacts/michelangelo-padova-airport.png',timeout:20000});
  assert.equal(errors.length,0,'Full-world browser errors: '+errors.join(' | '));
