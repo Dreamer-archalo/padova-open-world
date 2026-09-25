@@ -57,7 +57,7 @@ export class UnifiedMap {
   c.setTransform(1,0,0,1,0,0);c.clearRect(0,0,w,h);
   // Only the fully zoomed-out 45 km overview is rasterized. Any user-visible
   // zoom into a municipality uses OSM polylines/polygons at native resolution.
-  if(this.zoomLevel>=1.65){
+  if(true){ // native GTA-style vector at EVERY map zoom, including whole-world view
    this.detail.draw(c,this.center,w,h,this.scale,{pixelRatio,labels:this.zoomLevel>=3});
   }else{
    c.fillStyle='#152b35';c.fillRect(0,0,w,h);
