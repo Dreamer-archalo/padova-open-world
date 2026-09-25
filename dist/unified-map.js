@@ -1,7 +1,7 @@
 // Padova's own minimap is untouched. This renderer only extends the full M map
 // horizontally into the same coordinates and implements genuine zoom/pan.
 import {REGIONAL_ZONES} from './unified-regions.js';
-import {VectorMapDetail} from './unified-map-detail.js';
+import {VectorMapDetail} from './unified-map-detail.js?v=coast3';
 
 export class UnifiedMap {
  constructor(canvas,padovaCanvas,padovaBounds,region,padovaData=null){
