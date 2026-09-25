@@ -8,7 +8,11 @@ export class WaterGameplay {
  reset(){this.vehicle=null;this.swimming=false;this.swimDepth=0;this.underwater=0;}
  enterVehicle(state,waterY){
   if(this.vehicle||!state.car)return false;
-  this.vehicle={car:state.car,waterY,elapsed:0,enteredY:state.y,sink:0,warning:false};
+  // Water entry must not inherit the terrain solver's submerged riverbed
+  // height, otherwise the car disappears before buoyancy begins.
+  const initialY=clamp(state.y,waterY-.10,waterY+.42);
+  state.y=initialY;
+  this.vehicle={car:state.car,waterY,elapsed:0,enteredY:initialY,sink:0,warning:false};
   state.speed=Math.min(5,Math.max(-2,state.speed));
   state.vy=0;
   return true;
