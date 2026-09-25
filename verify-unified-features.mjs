@@ -34,7 +34,7 @@ const current=checkpoint.choose(onDry,terrain,clear);
 assert(current&&Math.abs(current.x-22)<.01,'Manual R failed to use safe current position');
 assert(!checkpoint.remember({...start,x:60,y:200,car:{spec:{aircraft:true}}},terrain,clear,1,true),'Mid-air plane may not overwrite dry checkpoint');
 const blocked=new LocalRespawn();
-assert(blocked.choose(drowned,terrain,clear,null,{water:true,nearRoad:()=>null})===null,'No safe local spawn may fabricate a remote teleporter');
+assert(blocked.choose({...drowned,y:0},{height:()=>0,dry:()=>false},clear,null,{water:true,nearRoad:()=>null})===null,'No safe local spawn may fabricate a remote teleporter');
 
 const roads=[{p:[[0,0],[70,0]],k:'residential',w:6},{p:[[1200,0],[1300,0]],k:'primary',w:9}];
 const detail=new VectorMapDetail({roads,buildings:[],water:[],areas:[]},null);
