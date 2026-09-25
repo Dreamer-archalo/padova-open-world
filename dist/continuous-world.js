@@ -156,6 +156,7 @@ async function init(){
    const info=document.querySelector('#hud .controls');if(info)info.textContent='MICHELANGELO · W/S accelera-frena · TAB 1.000 km/h · CTRL frena · A/D curva · ↑/↓ quota · M mappa';
   }
   stream(true);const y=state.vehicle==='michelangelo'?state.y:terrainHeight(state.x,state.z)+.2;car.position.set(state.x,y,state.z);michelangelo.position.set(state.x,y,state.z);car.visible=state.vehicle!=='michelangelo';michelangelo.visible=!car.visible;camera.position.set(state.x-12,y+8,state.z-14);
+  globalThis.__continuousWorld={state,scene,car,michelangelo,venicePoint,teleport};
   progress(100,'Mondo continuo pronto.');requestAnimationFrame(animate);setTimeout(()=>{const loading=$('loading');loading.hidden=true;loading.style.display='none';$('hud').hidden=false;},250);
  }catch(error){console.error(error);$('loadingText').textContent='ERRORE: '+error.message;$('loadingBar').style.width='100%';}
 }
