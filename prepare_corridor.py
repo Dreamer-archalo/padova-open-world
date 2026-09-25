@@ -133,6 +133,7 @@ places=[
  place("Dolo",45.4259,12.0773,"Centro dettagliato"),
  place("Mira Porte",45.43851,12.13862,"Centro dettagliato"),
  place("Marano Veneziano",45.46531,12.11765,"Centro dettagliato"),
+  place("Mirano",45.4926,12.1119,"Centro Miranese"),
  place("Oriago",45.45141,12.17107,"Centro dettagliato"),
  place("Marghera",45.469,12.231,"Centro dettagliato"),
  place("Porto Marghera",45.457,12.265,"Porti e terminal merci"),
