@@ -590,6 +590,27 @@ function updatePolice(dt){if(!state.wanted)return;let nearest=Infinity,arrestDis
 function explodePlayer(reason){if(incidents?.recovery)return;state.respawnHospitalRoof=hospitalRoofRespawnPoint();const clearPursuit=state.wanted===5||state.mode==='foot';state.respawnHome=false;if(!incidents?.explode(state,state.elapsed,reason)){state.respawnHospitalRoof=null;return;}state.speed=0;state.health=0;state.spin=state.knockX=state.knockZ=0;keys.clear();if(state.car){state.car.health=0;state.car.mesh.visible=false;}if(clearPursuit){cancelMission(false);clearPolice();}toast(reason+(state.respawnHospitalRoof?' · Respawn sul tetto…':' · Respawn nella zona attuale…'),2);}
 function kickActor(actor,vx,vz){actor.knockX=clamp(vx,-40,40);actor.knockZ=clamp(vz,-40,40);actor.spin=Math.sign(vx||1)*1.4;if(actor===state){state.health=Math.max(0,state.health-25*(state.car?.spec.armor||1));toast('Tram impact! Keep clear of the rails.',2);}else if(actor.health!==undefined)actor.health=Math.max(0,actor.health-25*(actor.spec?.armor||1));}
 function applyKnock(actor,dt){const spec=actor===state?state.car?.spec:actor.spec;if(!actor.knockX&&!actor.knockZ&&!actor.spin)return;const p=slideMove(actor,(actor.knockX||0)*dt,(actor.knockZ||0)*dt,spec?.width/2||.36,world.collision,actor.y);actor.x=p.x;actor.z=p.z;const yaw=actor.yaw+(actor.spin||0)*dt;if(!spec||!vehicleBlocked(actor.x,actor.z,yaw,world.collision,spec,actor.y))actor.yaw=yaw;actor.knockX=(actor.knockX||0)*Math.exp(-3*dt);actor.knockZ=(actor.knockZ||0)*Math.exp(-3*dt);actor.spin=(actor.spin||0)*Math.exp(-2*dt);if(actor!==state&&actor.mesh&&actor.spec)poseVehicle(actor);}
+function enterGameplayWater(waterY){
+ if(waterY===null||!Number.isFinite(waterY)||waterGame.active)return false;
+ if(state.car?.spec.aircraft||state.car?.spec.watercraft||state.car?.spec.boat||
+    state.car?.waterDock!==undefined)return false;
+ const threshold=state.mode==='car'?Math.max(.9,(state.car?.spec.height||1.4)*.55):.50;
+ if(state.y>waterY+threshold)return false;
+ if(state.mode==='car'&&state.car){
+  if(!waterGame.enterVehicle(state,waterY))return false;
+  waterGame.stepVehicle(state,0,waterY);
+  player.visible=false;previousPose=null;
+  toast('AUTO IN ACQUA · galleggia 4,5 s. E esci e nuota · R recupera.',5);
+  return true;
+ }
+ if(state.mode==='foot'&&waterGame.startSwimming(state,waterY)){
+  state.vy=0;player.visible=true;player.position.set(state.x,state.y+.08,state.z);
+  player.rotation.set(-1.04,state.yaw,0,'YXZ');
+  toast('NUOTO ATTIVO · W/A/S/D per nuotare · SPAZIO per immergerti · R recupera.',5);
+  return true;
+ }
+ return false;
+}
 function movePlayer(dt){if(taxi?.phase==='transition'){state.speed=0;return;}if(incidents?.recovery){state.speed=0;if(state.elapsed>=incidents.recovery.until){incidents.recovery=null;if(state.respawnHospitalRoof){respawnAtHospitalRoof();return;}if(state.respawnHome){state.respawnHome=false;}recover(waterGame.active||waterRecovery.active);}return;}if(waterRecovery.active){falling(dt);return;}if(state.mode==='foot'&&state.health<=0){explodePlayer('Personaggio neutralizzato');return;}const f=(keys.has('KeyW')||keys.has('ArrowUp')?1:0)-(keys.has('KeyS')||keys.has('ArrowDown')?1:0),turn=(keys.has('KeyA')||keys.has('ArrowLeft')?1:0)-(keys.has('KeyD')||keys.has('ArrowRight')?1:0),boost=keys.has('ShiftLeft')||keys.has('ShiftRight');
  if(waterGame.vehicle&&state.car){
   const waterY=terrain.waterHeight(state.x,state.z),result=waterGame.stepVehicle(state,dt,waterY);
@@ -607,10 +628,25 @@ function movePlayer(dt){if(taxi?.phase==='transition'){state.speed=0;return;}if(
   if(state.health<=0)explodePlayer('Esaurimento sott’acqua');
   return;
  }
+ // Catch immersion before the terrain solver can treat the riverbed as
+ // solid or award crash damage for contact with the sea.
+ if(!state.parachuting&&!waterGame.active){
+  if(enterGameplayWater(terrain.waterAt(state.x,state.z,0,state.y)))return;
+  if(state.mode==='car'&&state.car&&!state.car.jump?.airborne&&
+     !state.car.spec.aircraft&&!state.car.spec.watercraft&&!state.car.spec.boat){
+   const nx=state.x+Math.sin(state.yaw)*state.speed*dt,nz=state.z+Math.cos(state.yaw)*state.speed*dt;
+   const approaching=terrain.waterAt(nx,nz,0,state.y);
+   if(approaching!==null&&state.y<=approaching+.75){
+    state.x=nx;state.z=nz;
+    if(enterGameplayWater(approaching))return;
+   }
+  }
+ }
  if(state.parachuting){const landed=parachuteStep(state,{forward:f,turn},dt,terrain,world.collision);parachute.position.set(state.x,state.y,state.z);parachute.rotation.y=state.yaw;player.position.set(state.x,state.y,state.z);if(landed){state.parachuting=false;parachute.visible=false;state.vy=0;}else return;}
  if(state.mode==='car'&&state.car.spec.aircraft){const result=(state.car.spec.plane?planeStep:helicopterStep)(state,{forward:f,turn,up:keys.has('Space'),down:boost},dt,terrain,world.collision);if(result?.crashed){explodePlayer('Incidente aereo');return;}Object.assign(state.car,{x:state.x,z:state.z,y:state.y,yaw:state.yaw,speed:state.speed});poseVehicle(state.car);state.distance+=Math.abs(state.speed)*dt;return;}
  if(state.mode==='car'){const car=state.car,spec=car.spec,previousSpeed=state.speed,handbrake=keys.has('Space'),turbo=car.style==='cinquecento'&&keys.has('Tab'),condition=vehiclePerformanceFactor(state.health);if(state.health<=0){state.speed*=Math.exp(-dt*4);if(f)toast('Vehicle disabled. Press R to recover and repair.',1.5);}else if(!car.jump?.airborne){const acceleration=(f>0?turbo?spec.turboAccel:boost?spec.accel*1.3:spec.accel:f<0?(state.speed>1?-spec.brake:-spec.accel*.65):0)*(f>0?condition:1);state.speed+=(acceleration+Math.sin(terrain.slope(state.x,state.z,state.yaw,spec.wheelbase,state.y))*5)*dt;state.speed*=Math.exp(-dt*(handbrake?2.8:f?.045:.65));const speedLimit=(turbo?spec.turboMax:boost?spec.boost:spec.max)*condition;state.speed=clamp(state.speed,-spec.reverse,Math.max(speedLimit,previousSpeed-spec.brake*.5*dt));if(updateTurbo(car,state.speed,dt).explode){explodePlayer('Turbo overheated after 6 seconds');return;}}
  const motion=groundVehicleStep(state,car,{turn:state.health>0?turn:0,handbrake},dt,terrain,world.collision);
+  if(enterGameplayWater(terrain.waterAt(state.x,state.z,0,state.y)))return; // BEFORE impact damage
  if(motion.hitSpeed>4&&collisionCooldown<=0){const response=impactResponse(motion.hitSpeed);state.health=Math.max(0,state.health-response.damage*(spec.armor||1));state.spin=(Math.sin(state.yaw)>=0?1:-1)*response.spin/(spec.mass||1);if(response.destroy&&!spec.armor){explodePlayer('High-speed crash');return;}collisionCooldown=.7;playHit();}
  if(motion.landed&&motion.landingSpeed>12){state.health=Math.max(0,state.health-(motion.landingSpeed-12)*3*(spec.armor||1));playHit();}
 
