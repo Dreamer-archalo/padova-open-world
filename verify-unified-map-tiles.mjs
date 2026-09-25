@@ -7,7 +7,7 @@ import {VectorMapDetail} from './dist/unified-map-detail.js';
 const src=fs.readFileSync('dist/game.js','utf8');
 const html=fs.readFileSync('dist/index.html','utf8');
 const layout=fs.readFileSync('dist/unified-main.css','utf8');
-assert(src.includes('miniTiles.draw(c,state,w,h,k)'),'Padova minimap lacks independent HD tile fallback');
+assert(src.includes('miniTiles.draw(c,state,w,h,k,density)'),'Padova minimap lacks independent HD tile fallback');
 assert(src.includes('unifiedMap.tiles=miniTiles'),'Full world and minimap are not using a shared tile cache');
 assert(src.includes('state.car?.spec.aircraft?Math.max(6000'),'Fast aircraft could hammer local high zoom');
 assert(html.includes('MAPPA-H2O-R4')&&html.includes('minimapStatus'),'Stale preview cannot be distinguished from current build');
@@ -45,6 +45,12 @@ assert(second.requested<=8,'Tile requests must remain bounded');
 for(let i=0;i<10;i++)tiles.draw(canvas,here,660,510,1.8);
 assert(requests<=65,'Repeated identical frames must not download invisible cities');
 assert(tiles.chooseZoom(1.8)>tiles.chooseZoom(.09),'Local streets must use better-quality images than regional overview');
+assert(tiles.chooseZoom(1.8,2.7)<tiles.chooseZoom(1.8,1),
+ 'High-DPI tile selection must consider CSS pixel size to keep names readable');
+const retina=new VisibleMapTiles({maxNewPerDraw:8});
+const large=retina.draw(canvas,here,2700,1800,.65,2.5);
+assert(!large.overview&&large.requested>0&&large.requested<=8,
+ 'Full-HD desktop map must not fall back to blurry overview or bulk fetch 150 tiles');
 globalThis.Image=undefined;
 const offline=new VisibleMapTiles();
 const noNetwork=offline.draw(canvas,here,660,510,1.8);
