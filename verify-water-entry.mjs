@@ -34,6 +34,6 @@ assert(source.includes('if(enterGameplayWater(terrain.waterAt(state.x,state.z,0,
 assert(source.indexOf('if(enterGameplayWater(terrain.waterAt(state.x,state.z,0,state.y)))return')<
  source.indexOf('const motion=groundVehicleStep('),'Vehicle can explode before entering water');
 assert(source.includes('if(enterGameplayWater(waterY))')===false,'Legacy drowning path reintroduced');
-assert(source.includes('NUOTO ATTIVO')&&source.includes('REGION NOT LOADED'),'Swim/region error indicators missing');
+assert(source.includes('waterGame.startSwimming(state,waterY)')&&source.includes('REGION NOT LOADED'),'Swim/region error paths missing');
 assert(workflow.includes('cancel-in-progress: false'),'Build is still cancelled by each new code change');
 console.log('PASS local Brenta/Venice respawn, float/sink, E swim, pre-crash water priority, unclogged preview.');
