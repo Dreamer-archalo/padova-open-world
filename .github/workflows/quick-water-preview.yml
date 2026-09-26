@@ -1,4 +1,4 @@
-name: Rapid R5 unified swimming preview
+name: Rapid unified gameplay preview
 on:
   push:
     branches: [feat/unified-main-world-20260925]
@@ -13,6 +13,7 @@ on:
       - 'dist/unified-regions.js'
       - 'verify-regional-r6.mjs'
       - 'dist/index.html'
+      - 'dist/unified-water.css'
       - 'dist/unified-map.js'
       - 'verify-water-entry.mjs'
       - 'verify-unified-map-tiles.mjs'
@@ -94,7 +95,7 @@ jobs:
           mkdir -p site/preview/unified
           cp -a dist/. site/preview/unified/
           sha256sum -c /tmp/production-unchanged.sha
-          grep -q 'MAPPA-GTA-R6' site/preview/unified/index.html
+          grep -q 'MAPPA-GTA-R7' site/preview/unified/index.html
           test -s site/preview/unified/game.js
           test -s site/preview/unified/water-gameplay.js
           test -s site/preview/unified/map-live-tiles.js
@@ -116,9 +117,9 @@ jobs:
         with:
           path: site
 
-      - name: Deploy R6 playable game only to the preview URL
+      - name: Deploy R7 playable game only to the preview URL
         id: publish
         uses: actions/deploy-pages@v4
 
       - name: Show verified test address
-        run: echo 'R5 fixed swimming and local water respawn at https://dreamer-archalo.github.io/padova-open-world/preview/unified/'
+        run: echo 'R7: Venice taxi-style loading and automatic bank exit at https://dreamer-archalo.github.io/padova-open-world/preview/unified/?v=R7'
