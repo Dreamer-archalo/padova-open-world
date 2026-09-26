@@ -16,6 +16,7 @@ on:
       - 'dist/unified-water.css'
       - 'dist/unified-map.js'
       - 'verify-water-entry.mjs'
+      - 'verify-lagoon-r7.mjs'
       - 'verify-unified-map-tiles.mjs'
   workflow_dispatch:
 
@@ -29,7 +30,7 @@ permissions:
 # which can upgrade the same isolated preview when its full data pass.
 concurrency:
   group: padova-unified-rapid-r5
-  cancel-in-progress: false
+  cancel-in-progress: true
 
 jobs:
   publish-playable-preview:
@@ -57,6 +58,7 @@ jobs:
           node verify-regional-r6.mjs
           node --check dist/unified-map.js
           node verify-water-entry.mjs
+          node verify-lagoon-r7.mjs
           node verify-unified-map-tiles.mjs
 
       - name: Find the latest SUCCESSFUL unified preview artifact
