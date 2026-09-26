@@ -16,6 +16,7 @@ const energy=new THREE.MeshBasicMaterial({color:'#6dd4d5',transparent:true,opaci
 const energySkin=new THREE.MeshBasicMaterial({color:'#4cb8c2',transparent:true,opacity:.19,side:THREE.DoubleSide,depthWrite:false});
 const energyOutline=new THREE.LineBasicMaterial({color:'#8ef7ec',transparent:true,opacity:.76,depthWrite:false});
 const ambientCar=material('#80919b'),ambientBus=material('#bc9f61'),ambientPedestrian=material('#577d78');
+const facadeFrame=material('#c6b7a0'),facadeDoor=material('#746454'),facadeBrick=material('#ad7861'),facadeStucco=material('#dec6a6');
 const cube=new THREE.BoxGeometry(1,1,1);
 const min=(a,b)=>Math.min(a,b),max=(a,b)=>Math.max(a,b);
 const distance=(x,z,a,b)=>Math.hypot(x-a,z-b);
@@ -301,7 +302,7 @@ export class RegionalWorld{
   const roads=chunk.roads.filter(r=>r.w>=3&&!/motorway|trunk|footway|path|steps|cycleway|pedestrian/.test(r.k));
   if(!roads.length)return;
   const isDetailed=r=>regionalDetail((r.a[0]+r.b[0])/2,(r.a[1]+r.b[1])/2)==='detailed';
-  const active=roads.filter(isDetailed);
+  const active=roads.filter(r=>isDetailed(r)||this.focus&&distance((r.a[0]+r.b[0])*.5,(r.a[1]+r.b[1])*.5,this.focus.x,this.focus.z)<600);
   // Transit towns remain inhabited, not empty: fewer low-poly cars/buses on
   // real mapped arteries even where the buildings use energy-mode LOD.
   const transit=roads.filter(r=>!isDetailed(r)&&/primary|secondary|tertiary/.test(r.k));
@@ -317,7 +318,7 @@ export class RegionalWorld{
   // People only appear on actual town streets/paths; remote transit zones
   // retain their simplified low-poly vehicle traffic.
   const peopleRoads=chunk.roads.filter(r=>/footway|pedestrian|path|residential|living_street/.test(r.k));
-  for(let i=0;i<Math.min(active.length?4:2,Math.ceil(peopleRoads.length/17));i++){
+  for(let i=0;i<Math.min(active.length?6:2,Math.ceil(peopleRoads.length/14));i++){
    const r=peopleRoads[(i*13+peopleRoads.length*5)%peopleRoads.length];
    if(!r)continue;const mesh=new THREE.Mesh(new THREE.BoxGeometry(.38,1.55,.35),peopleMat);group.add(mesh);actors.push({mesh,r,t:(i*.29)%1,dir:i%2?1:-1,person:true});
   }
@@ -342,7 +343,7 @@ export class RegionalWorld{
    }
   }
   if(sea.length){const sheet=new THREE.Mesh(geometry(sea),lagoonMat);sheet.renderOrder=1;group.add(sheet);}
-  const normal=[],arterial=[],channels=[],balustrade=[],bridgeSupports=[],w=[],r=[],blocks=[],energyFaces=[],energyEdges=[],glassFaces=[],roadStripes=[],roadSigns=[],distantWalls=[];
+  const normal=[],arterial=[],channels=[],balustrade=[],bridgeSupports=[],w=[],r=[],blocks=[],energyFaces=[],energyEdges=[],glassFaces=[],roadStripes=[],roadSigns=[],distantWalls=[],facadeFaces=[],frameFaces=[],doorFaces=[];
   for(const p of src.roads){
    surface(/motorway|trunk|primary|secondary/.test(p.k)?arterial:normal,p.a,p.b,p.w,p.yA+.025,p.yB+.025);
    if(near&&p.w>=5&&roadStripes.length<900&&distance(...p.a,...p.b)>2){
@@ -400,20 +401,59 @@ export class RegionalWorld{
     channels.push(p[0],y,p[1],q[0],y,q[1],r[0],y,r[1]);
    }
   }
-  for(const b of src.buildings){
-   if(near&&b.lod==='detailed'&&b.p.length<=100){
+  // Promote all visited municipalities to Padova-like geometry, preserving
+  // a stricter detailed-building limit near the lagoon for stable frame times.
+  let detailedCount=0;
+  const detailCap=coast((ix+.5)*CHUNK,(iz+.5)*CHUNK)?68:122;
+  const buildings=near?[...src.buildings].sort((a,b)=>{
+   const x=(ix+.5)*CHUNK,z=(iz+.5)*CHUNK;
+   return distance(a.cx,a.cz,x,z)-distance(b.cx,b.cz,x,z);
+  }):src.buildings;
+  for(const b of buildings){
+   if(near&&detailedCount<detailCap&&b.p.length<=60){
+    detailedCount++;
     this.detailedBuilding(b,w,r);
-    if(glassFaces.length<2400&&b.h>=6&&b.p.length>=2){
-     const a=b.p[0],d=b.p[1],len=distance(...a,...d),n=Math.min(7,Math.floor(len/3));
-     if(len>4&&n>0)for(let i=0;i<n;i++)for(let j=0;j<Math.min(5,Math.floor(b.h/3));j++){
-      const t=(i+1)/(n+1),x=a[0]+(d[0]-a[0])*t,z=a[1]+(d[1]-a[1])*t,y=b.minY+1.1+j*3,
-       vx=(d[0]-a[0])/len*.9,vz=(d[1]-a[1])/len*.9;
-      addQuad(glassFaces,[x,y,z],[x+vx,y,z+vz],[x+vx,y+1.1,z+vz],[x,y+1.1,z]);
+    // Batched architectural facade generation follows real OSM polygons;
+    // no individual window mesh or texture loading per building.
+    if(b.h>=4.8&&glassFaces.length<7600){
+     const edges=Math.min(coast(b.cx,b.cz)?2:3,b.p.length);
+     for(let e=0;e<edges&&glassFaces.length<7600;e++){
+      const a=b.p[e],d=b.p[(e+1)%b.p.length],len=distance(...a,...d);
+      if(len<3.6||len>120)continue;
+      const ux=(d[0]-a[0])/len,uz=(d[1]-a[1])/len,nx=-uz*.095,nz=ux*.095;
+      if(e===0&&facadeFaces.length<7200){
+       const y=b.minY+.15,top=b.minY+b.h-.18;
+       addQuad(facadeFaces,[a[0]+nx*.35,y,a[1]+nz*.35],
+        [d[0]+nx*.35,y,d[1]+nz*.35],
+        [d[0]+nx*.35,top,d[1]+nz*.35],[a[0]+nx*.35,top,a[1]+nz*.35]);
+      }
+      const count=Math.min(7,Math.floor(len/3.1)),floors=Math.min(5,Math.floor((b.h-1.2)/3));
+      for(let level=0;level<floors&&glassFaces.length<7600;level++){
+       const y=b.minY+1.1+level*3,top=y+1.15;if(top>b.minY+b.h-.2)break;
+       for(let i=0;i<count&&glassFaces.length<7600;i++){
+        const t=len*(i+.5)/count,w=Math.min(.46,len/count*.28),
+         x=a[0]+ux*(t-w)+nx,z=a[1]+uz*(t-w)+nz,
+         x2=x+ux*2*w,z2=z+uz*2*w;
+        addQuad(glassFaces,[x,y,z],[x2,y,z2],[x2,top,z2],[x,top,z]);
+        if(frameFaces.length<12000){
+         addQuad(frameFaces,[x-.06*ux,y-.09,z-.06*uz],
+          [x2+.06*ux,y-.09,z2+.06*uz],[x2+.06*ux,y,z2+.06*uz],[x-.06*ux,y,z-.06*uz]);
+         addQuad(frameFaces,[x-.06*ux,top,z-.06*uz],
+          [x2+.06*ux,top,z2+.06*uz],[x2+.06*ux,top+.08,z2+.06*uz],
+          [x-.06*ux,top+.08,z-.06*uz]);
+        }
+       }
+      }
+      if(e===0&&len>4.8&&doorFaces.length<900){
+       const t=len*.5-.61,x=a[0]+ux*t+nx,z=a[1]+uz*t+nz,y=b.minY+.07;
+       addQuad(doorFaces,[x,y,z],[x+ux*1.22,y,z+uz*1.22],
+        [x+ux*1.22,y+2.08,z+uz*1.22],[x,y+2.08,z]);
+      }
      }
     }
     continue;
    }
-   if(!near&&b.p.length>=3&&b.p.length<=28){
+   if(b.p.length>=3&&b.p.length<=28){
     for(let i=0;i<b.p.length;i++){
      const a=b.p[i],d=b.p[(i+1)%b.p.length];
      addQuad(distantWalls,[a[0],b.minY,a[1]],[d[0],b.minY,d[1]],[d[0],b.minY+b.h,d[1]],[a[0],b.minY+b.h,a[1]]);
@@ -434,6 +474,9 @@ export class RegionalWorld{
    for(const [a,c,d] of THREE.ShapeUtils.triangulateShape(poly,[]))
     energyFaces.push(poly[a].x,top,poly[a].y,poly[c].x,top,poly[c].y,poly[d].x,top,poly[d].y);
   }
+  if(facadeFaces.length)group.add(new THREE.Mesh(geometry(facadeFaces),facadeStucco));
+  if(frameFaces.length)group.add(new THREE.Mesh(geometry(frameFaces),facadeFrame));
+  if(doorFaces.length)group.add(new THREE.Mesh(geometry(doorFaces),facadeDoor));
   if(normal.length)group.add(new THREE.Mesh(geometry(normal),roadMat));
   if(arterial.length)group.add(new THREE.Mesh(geometry(arterial),arterialMat));
   if(glassFaces.length)group.add(new THREE.Mesh(geometry(glassFaces),glass));
