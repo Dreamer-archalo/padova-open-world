@@ -7,7 +7,7 @@ import {TaxiPathfinder} from './Pathfinder.js';
 import {TaxiSystem} from './TaxiSystem.js';
 import {TaxiMenuController} from './TaxiMenuController.js';
 import {groundVehicleStep,groundContact,resetGroundMotion} from './vehicle-dynamics.js';
-import {footMotion,animateGait} from './foot-controller.js';
+import {footMotion,animateGait,animateSwim,swimBodyPitch} from './foot-controller.js?v=swim-front-r6';
 import {SpeedCameras} from './speed-cameras.js';
 import {createCharacter,CharacterPicker} from './characters.js';
 import {QUALITY,qualityFor,qualityOptions,actorDetail,AdaptiveResolution} from './quality.js';
@@ -23,6 +23,12 @@ import {CameraRig} from './camera-rig.js';
 import {TrafficSignals,lanePoint,laneCount,laneOffset,trafficLane,trafficSpeed,advanceTrafficSpeed} from './traffic.js';
 import {applyCityData,Districts,DISTRICTS} from './districts.js';
 import * as THREE from './vendor/three.module.js';
+import {RegionalWorld} from './regional-world.js?v=municipal-detail-r8';
+import {UnifiedMap} from './unified-map.js?v=gta-vector-r6';
+import {VisibleMapTiles} from './map-live-tiles.js?v=hd-water-r4';
+import {LocalRespawn} from './local-respawn.js';
+import {WaterGameplay} from './water-gameplay.js?v=hd-water-r4';
+import {REGIONAL_ZONES,PADOVA_EAST} from './unified-regions.js';
 import {CityWorld,PLACES,createCar,createPerson} from './world.js';
 import {FixedClock,slideMove,vehicleBlocked,cameraBoomContinuous as cameraBoom} from './movement.js';
 import {Terrain, WaterRecovery, safeDryRoad} from './terrain.js';
@@ -36,15 +42,187 @@ import {clamp,dist,angleDiff,collides,makeRoadGraph,nearestRoad,nearestOnSegment
 
 const $=s=>document.getElementById(s);
 const state={ready:false,started:false,paused:false,mode:'foot',x:-150,z:-49,y:0,yaw:-.5,speed:0,vy:0,health:100,money:0,wanted:0,escape:0,busted:0,car:null,mission:null,waypoint:null,route:[],camera:0,quality:'low',sound:false,elapsed:0,distance:0,jobs:0,character:'fede',parachuting:false,respawnHome:false,respawnHospitalRoof:null};
-let characterPicker;const cameraRig=new CameraRig();let signals,trams,incidents,gameplay,parachute,speedCameras,taxi=null,taxiMapPick=false,taxiDispatcher=null,taxiPathfinder=null,taxiLoadingOverlay=null,taxiDriverNPC=null,taxiSystem=null,taxiMenuController=null;const waterRecovery=new WaterRecovery();let terrain,districts;
+let characterPicker;const cameraRig=new CameraRig();let signals,trams,incidents,gameplay,parachute,speedCameras,taxi=null,taxiMapPick=false,taxiDispatcher=null,taxiPathfinder=null,taxiLoadingOverlay=null,taxiDriverNPC=null,taxiSystem=null,taxiMenuController=null;const waterRecovery=new WaterRecovery(),localRespawn=new LocalRespawn(),waterGame=new WaterGameplay();let terrain,districts;
 const resolution=new AdaptiveResolution();let detailAt=0;
 const clock=new FixedClock();let modelLayer,renderAlpha=1,previousPose=null;const previousActors=new Map();
 function visualPose(){if(!previousPose||previousPose.mode!==state.mode||dist(previousPose,state)>10)return state;return {x:THREE.MathUtils.lerp(previousPose.x,state.x,renderAlpha),z:THREE.MathUtils.lerp(previousPose.z,state.z,renderAlpha),y:THREE.MathUtils.lerp(previousPose.y,state.y,renderAlpha)};}
 const keys=new Set(),cars=[],people=[],cops=[],micromobility=[];const inputManager=new InputManager(window,keys);let data,world,graph,patrolGraph,renderer,scene,camera,sun,player,marker,mapBase,mapCtx,frameTime=0,lastUi=0,toastUntil=0,collisionCooldown=0,followYaw=0,camOrbit=0,camPitch=.38,drag=null,jumpPressed=false,engineAudio=null,frame=0;
 const canvas=$('world'),mini=$('minimap'),miniCtx=mini.getContext('2d');
+const miniTiles=new VisibleMapTiles();
+function densityCanvas(element,minimum=2.2,maximum=3400){
+ const rect=element.getBoundingClientRect(),miniature=element.id==='minimap',
+  cssWidth=rect.width||(miniature?242:1120),cssHeight=rect.height||(miniature?180:750),
+  density=Math.max(minimum,Math.min(3.25,window.devicePixelRatio||minimum)),
+  factor=Math.min(density,maximum/cssWidth,2400/cssHeight),
+  width=Math.max(1,Math.round(cssWidth*factor)),height=Math.max(1,Math.round(cssHeight*factor));
+ if(Math.abs(element.width-width)>1||Math.abs(element.height-height)>1){
+  element.width=width;element.height=height;return true;
+ }
+ return false;
+}
+function resizeMapSurfaces(){
+ // Canvas backing pixels follow the VISIBLE CSS viewport on mobile and desktop.
+ // The WebGL quality setting does not reduce either map's native resolution.
+ densityCanvas(mini,2.7,1100);
+ if($('mapDialog')?.open&&densityCanvas($('fullmap'),2.25,3400))unifiedMap?.limit();
+}
+
 const performanceOverlay=new PerformanceOverlay($('performanceOverlay'));
 const fullscreenControls=createFullscreenControls(document,window,{onEnter:closeDialogs,onResize:()=>requestAnimationFrame(resizeViewport)});
-const minBounds={x:-6050,z:-6550,w:13400,h:12900};
+const minBounds={x:-6050,z:-6550,w:13400,h:12900}; // Retain Padova-only taxi/navigation limits.
+let regionalWorld=null,unifiedMap=null,regionalLoading=false,regionalFailure=null;
+let lagoonPreloadActive=false,lagoonPreloadDone=false,lagoonPreloadCooloff=false;
+let mapPointer=null,mapDragged=false;const mapTouches=new Map();let mapPinchDistance=0;
+const unifiedBounds={minX:-5970,maxX:39200,minZ:-11900,maxZ:8800};
+function regionalPlayer(){return regionalWorld?.contains(state.x,state.z)||false;}
+async function startUnifiedRegion(){
+ if(regionalLoading||regionalWorld)return;
+ regionalLoading=true;
+ try{
+  const [r,t]=await Promise.all([fetch('./data/region-padova-venice.json?v=hd-water-r4'),fetch('./data/world-terrain.json')]);
+  if(!r.ok||!t.ok)throw new Error('Regional data unavailable ('+r.status+'/'+t.status+')');
+  const [map,grid]=await Promise.all([r.json(),t.json()]);
+  if((map.buildings?.length||0)<2000||!grid.heights?.length)throw new Error('Regional extract incomplete');
+  await yieldFrame();
+  const extension=new RegionalWorld(scene,map,grid,world.collision);
+  extension.installTerrainHooks(terrain);terrain.unifiedBounds=unifiedBounds;
+  regionalWorld=extension;
+   if($('regionalLoadStatus'))$('regionalLoadStatus').textContent='REGIONE ATTIVA · acqua e nuoto disponibili';
+  unifiedMap=new UnifiedMap($('fullmap'),mapBase,minBounds,map,data);unifiedMap.centerOn(state.x,state.z,11);
+   unifiedMap.tiles=miniTiles;miniTiles.onLoad=()=>{if($('mapDialog').open)drawFullMap();};
+   // Optional 2D-only detail is streamed after the playable region loads.
+   // No extra map buildings are inserted into the 3D scene, preserving Iper Performance.
+   fetch('./data/map-hd-extras.json?v=hd-water-r4').then(res=>res.ok?res.json():null).then(extras=>{
+    if(!extras)return;
+    if(extras.origin?.join(',')!=='45.4064,11.8768')throw new Error('HD map origin mismatch');
+    if(unifiedMap){unifiedMap.addMapDetail(extras);if($('mapDialog').open)drawFullMap();}
+   }).catch(error=>console.warn('[HD map] Optional extra parcels unavailable; existing vectors remain sharp:',error));
+  const full=$('fullmap'),place=$('mapDialog');
+  full.onwheel=ev=>{if(!place.open||taxiMapPick)return;ev.preventDefault();
+    const rect=full.getBoundingClientRect();
+    unifiedMap.zoomAt((ev.clientX-rect.left)*full.width/rect.width,
+      (ev.clientY-rect.top)*full.height/rect.height,ev.deltaY<0?1:-1);
+    drawFullMap();};
+  full.addEventListener('pointerdown',ev=>{
+    if(!place.open||taxiMapPick||ev.button!==0)return;
+    full.setPointerCapture(ev.pointerId);
+    if(ev.pointerType==='touch'){
+     mapTouches.set(ev.pointerId,{x:ev.clientX,y:ev.clientY});
+     if(mapTouches.size>=2){
+      const [a,b]=[...mapTouches.values()];mapPinchDistance=Math.hypot(b.x-a.x,b.y-a.y);
+      mapPointer=null;mapDragged=true;return;
+     }
+    }
+    mapPointer={x:ev.clientX,y:ev.clientY,id:ev.pointerId};mapDragged=false;
+   });
+   full.addEventListener('pointermove',ev=>{
+    if(ev.pointerType==='touch'&&mapTouches.has(ev.pointerId)){
+     mapTouches.set(ev.pointerId,{x:ev.clientX,y:ev.clientY});
+     if(mapTouches.size>=2){
+      const [a,b]=[...mapTouches.values()],length=Math.hypot(b.x-a.x,b.y-a.y);
+      if(mapPinchDistance>5&&length>5){
+       const rect=full.getBoundingClientRect(),x=(a.x+b.x)/2,y=(a.y+b.y)/2;
+       unifiedMap.zoomAt((x-rect.left)*full.width/rect.width,
+        (y-rect.top)*full.height/rect.height,length/mapPinchDistance,{factor:true});
+       drawFullMap();
+      }
+      mapPinchDistance=length;mapDragged=true;return;
+     }
+    }
+    if(!mapPointer||ev.pointerId!==mapPointer.id)return;
+    const dx=ev.clientX-mapPointer.x,dy=ev.clientY-mapPointer.y;
+    if(Math.abs(dx)+Math.abs(dy)>3)mapDragged=true;
+    if(mapDragged){
+     const rect=full.getBoundingClientRect();
+     unifiedMap.pan(dx*full.width/rect.width,dy*full.height/rect.height);drawFullMap();
+    }
+    mapPointer.x=ev.clientX;mapPointer.y=ev.clientY;
+   });
+   const release=ev=>{
+    if(ev.pointerType==='touch'){
+     mapTouches.delete(ev.pointerId);
+     if(mapTouches.size<2)mapPinchDistance=0;
+     if(mapTouches.size===1){const [id,p]=[...mapTouches.entries()][0];mapPointer={...p,id};}
+    }
+    if(mapPointer?.id===ev.pointerId)mapPointer=null;
+   };
+   full.addEventListener('pointerup',release);
+   full.addEventListener('pointercancel',release);
+  const control=(id,fn)=>{const button=$(id);if(button)button.onclick=()=>{if(taxiMapPick){toast('La mappa taxi copre solo Padova.');return;}fn();drawFullMap();};};
+  control('unifiedZoomIn',()=>unifiedMap.zoom(1));control('unifiedZoomOut',()=>unifiedMap.zoom(-1));
+  control('unifiedMapAll',()=>unifiedMap.reset());
+  control('unifiedMapHere',()=>unifiedMap.centerOn(state.x,state.z,Math.max(11,unifiedMap.zoomLevel)));
+  if(place.open){installRegionalMapPlaces();drawFullMap();}
+  toast('Estensione Padova–Venezia caricata. Premi M e usa +/- per esplorare.',5);
+ }catch(error){regionalFailure=error;console.error('[REGION NOT LOADED: WATER & SWIMMING UNAVAILABLE OUTSIDE PADOVA]',error);
+   if($('regionalLoadStatus'))$('regionalLoadStatus').textContent='REGIONE NON CARICATA · acqua e nuoto fuori Padova disattivi';
+   if($('waterQuality'))$('waterQuality').textContent='ERRORE: dati acqua regionali non caricati';
+   toast('Estensione regionale non caricata: Padova rimane disponibile.',5);
+ }finally{regionalLoading=false;}
+}
+// The taxi-style 2D intermission covers ACTUAL chunk construction, not a fake timer.
+async function preloadLagoon(){
+ if(lagoonPreloadActive||!regionalWorld||!state.ready||!state.started)return;
+ lagoonPreloadActive=true;
+ const overlay=$('veniceLoading'),status=$('veniceLoadingStatus');
+ const previousPause=state.paused,focus={x:Math.min(38900,state.x+420),z:state.z};
+ if(overlay){overlay.hidden=false;overlay.setAttribute('aria-busy','true');}
+ setPaused(true);
+ try{
+  await new Promise(resolve=>requestAnimationFrame(resolve)); // show 2D art first
+  const start=performance.now(),budget=9000;let count=0;
+  do{
+   regionalWorld.update(focus,0);count++;
+   const remaining=regionalWorld.queue?.length||0;
+   if(status)status.textContent=count+' settori caricati · '+remaining+' in attesa';
+   await new Promise(resolve=>requestAnimationFrame(resolve));
+   if(!remaining&&count>=8)break;
+  }while(performance.now()-start<budget);
+  lagoonPreloadDone=true;
+ }catch(error){
+  console.warn('[Venice streaming] Ordinary region loading will continue:',error);
+  lagoonPreloadDone=true;
+ }finally{
+  if(overlay){overlay.hidden=true;overlay.removeAttribute('aria-busy');}
+  lagoonPreloadActive=false;
+  if(!previousPause)setPaused(false);
+  clock.reset();
+ }
+}
+async function regionalFastTravel(p){
+ if(!regionalWorld||!p||state.mission||waterRecovery.active||incidents?.recovery){toast('Termina la missione o attendi il caricamento della regione.');return;}
+ const pos=regionalWorld.nearestRoad(p.x,p.z,130),safe=pos&&pos.road.w>=4&&!/footway|pedestrian|steps/.test(pos.road.k)?pos:p;
+ state.x=safe.x;state.z=safe.z;state.yaw=pos?.yaw??state.yaw;state.speed=0;state.vy=0;waterGame.reset();
+ state.y=terrain.height(state.x,state.z)+.14;
+ if(state.car){state.car.x=state.x;state.car.z=state.z;state.car.y=state.y;state.car.yaw=state.yaw;state.car.speed=0;resetGroundMotion(state.car);poseVehicle(state.car);}
+ player.position.set(state.x,state.y,state.z);player.rotation.y=state.yaw;
+ state.waypoint=null;state.route=[];previousPose=null;clock.reset();waterRecovery.reset();waterRecovery.remember(state,terrain);
+ regionalWorld.update(state,0);localRespawn.remember(state,terrain,respawnClear,state.elapsed,true);closeDialogs();
+ if(state.x>=33500&&!lagoonPreloadDone)await preloadLagoon();
+ toast('Spostamento rapido · '+p.name,4);
+}
+function installRegionalMapPlaces(){
+ if(!$('mapPlaces'))return;
+ if(!regionalWorld){const info=document.createElement('span');info.className='eyebrow';
+  info.textContent=regionalLoading?'Caricamento mappa regionale…':'Mappa regionale non disponibile';$('mapPlaces').prepend(info);return;}
+ const places=$('mapPlaces'),heading=document.createElement('span');heading.className='eyebrow';heading.textContent='VIAGGIO CONTINUO · DESTINAZIONI';places.prepend(heading);
+ const targets=REGIONAL_ZONES.filter(p=>!['Mestre','Ponte della Libertà','Venezia - San Marco'].includes(p.name));
+ for(const p of targets){
+  const button=document.createElement('button');button.textContent=p.name;
+  const tag=document.createElement('small');tag.textContent=p.tag+(p.lod==='detailed'?' · Zona dettagliata':'');button.append(tag);
+  button.onclick=()=>{if(taxiMapPick){toast('Il taxi copre solo Padova.');return;}state.waypoint={x:p.x,z:p.z,name:p.name};state.route=[];
+   unifiedMap.centerOn(p.x,p.z,5);drawFullMap();closeDialogs();toast('Indicatore impostato: '+p.name,3);};
+  places.insertBefore(button,heading.nextSibling);
+ }
+ const city=REGIONAL_ZONES.find(p=>p.name==='Piazzale Roma');
+ const travel=document.createElement('button');travel.className='primary';
+ travel.innerHTML='<b>SPOSTAMENTO RAPIDO · VENEZIA</b><small>Stessa partita, senza cambiare mappa</small>';
+ travel.onclick=()=>regionalFastTravel(city);places.prepend(travel);
+ const returnPadova=document.createElement('button');
+ returnPadova.innerHTML='<b>SPOSTAMENTO RAPIDO · PADOVA</b><small>Ritorno al centro città</small>';
+ returnPadova.onclick=()=>regionalFastTravel({name:'Padova',x:-150,z:-49});places.prepend(returnPadova);
+}
+
 function save(){try{localStorage.setItem('padova-game-v1',JSON.stringify({money:state.money,jobs:state.jobs,quality:state.quality,character:state.character}));}catch{}}
 try{const s=JSON.parse(localStorage.getItem('padova-game-v1')||'{}');state.money=Number.isFinite(s.money)?s.money:0;state.jobs=Number.isFinite(s.jobs)?s.jobs:0;state.quality=Object.hasOwn(QUALITY,s.quality)?s.quality:'low';state.character=CHARACTERS.some(c=>c.id===s.character)?s.character:'fede';}catch{}
 function toast(t,seconds=3.5){$('toast').textContent=t;$('toast').hidden=false;toastUntil=state.elapsed+seconds;}
@@ -80,7 +258,7 @@ function compactCar(group){const positions=[],colors=[],normals=[];group.updateM
 const vehicleStyles=[...Object.keys(TRAFFIC_VEHICLES),'mito','cinquecento','motorcycle','truck','scooter','sedan','sport','compact','wagon','utility'];
 let helicopterTemplate;
 function pooledHelicopter(){if(!helicopterTemplate){const g=createHelicopter(),{rotor,tailRotor}=g.userData;g.remove(rotor,tailRotor);compactCar(g);compactCar(rotor);compactCar(tailRotor);rotor.name='rotor';tailRotor.name='tailRotor';g.add(rotor,tailRotor);g.userData={};helicopterTemplate=g;}const g=helicopterTemplate.clone(true);g.userData.rotor=g.getObjectByName('rotor');g.userData.tailRotor=g.getObjectByName('tailRotor');return g;}
-function poseVehicle(c){updateVehicleDamage(c,c.health,state.elapsed);if(c.spec.aircraft){c.y??=terrain.height(c.x,c.z);c.mesh.position.set(c.x,c.y,c.z);c.mesh.rotation.set(-c.speed*.002,c.yaw,0,'YXZ');return;}if(!c.jump?.airborne)c.y=groundContact(terrain,c.x,c.z,c.y).y;c.mesh.position.set(c.x,c.y,c.z);if(!c.jump){const pitch=terrain.slope(c.x,c.z,c.yaw,c.spec.wheelbase,c.y);c.pitch=(c.pitch??pitch)+(pitch-(c.pitch??pitch))*.18;}c.mesh.rotation.set(c.pitch||0,c.yaw,0,'YXZ');if(c.rider)c.rider.visible=!c.simple&&(c===state.car||!c.parked);}
+function poseVehicle(c){if(c.waterSinking)return;updateVehicleDamage(c,c.health,state.elapsed);if(c.spec.aircraft){c.y??=terrain.height(c.x,c.z);c.mesh.position.set(c.x,c.y,c.z);c.mesh.rotation.set(-c.speed*.002,c.yaw,0,'YXZ');return;}if(!c.jump?.airborne)c.y=groundContact(terrain,c.x,c.z,c.y).y;c.mesh.position.set(c.x,c.y,c.z);if(!c.jump){const pitch=terrain.slope(c.x,c.z,c.yaw,c.spec.wheelbase,c.y);c.pitch=(c.pitch??pitch)+(pitch-(c.pitch??pitch))*.18;}c.mesh.rotation.set(c.pitch||0,c.yaw,0,'YXZ');if(c.rider)c.rider.visible=!c.simple&&(c===state.car||!c.parked);}
 function addCar(x,z,yaw=0,police=false,parked=false,requestedStyle=null){
  const palette=['#a92731','#567e7e','#c87358','#e4dbba','#48677b','#8f9b6f','#9b4e4a','#59606b','#d0d3ce'],index=cars.length,style=police?'sedan':requestedStyle||vehicleStyles[index%vehicleStyles.length],color=police?'#193b54':palette[index%palette.length];
  const m=SPECIAL_VEHICLES[style]?createSpecialVehicle(style):style==='airone'?pooledHelicopter():compactCar(NPC_VEHICLES[style]?createNPCCar(style,color):['mito','cinquecento','motorcycle','scooter','truck','taxi'].includes(style)?createVehicle(style,color):createCar(color,police,style)),spec=VEHICLES[style];
@@ -90,12 +268,28 @@ function addCar(x,z,yaw=0,police=false,parked=false,requestedStyle=null){
  if(police){const mat=new THREE.MeshBasicMaterial({color:'#419cff'});const lamp=new THREE.Mesh(new THREE.BoxGeometry(.4,.18,.32),mat);lamp.position.set(-.35,1.84,-.15);m.add(lamp);c.lamp=lamp;c.beacon=new THREE.PointLight('#298aff',0,13,2);c.beacon.position.set(0,2,0);m.add(c.beacon);cops.push(c);}else cars.push(c);return c;
 }
 function dryRoad(pos,spec=null,ignore=state.car){return safeDryRoad(pos,graph,world.collision,terrain,spec,p=>![...cars,...cops].some(c=>c!==ignore&&c.mesh.visible&&dist(c,p)<(c.spec.length+(spec?.length||1))/2+1));}
+// One respawn system for Padova, the Brenta corridor, mainland and Venice.
+function respawnClear(x,z,y,spec){
+ const radius=spec?Math.max(.6,(spec.width||2)/2):.36;
+ const bound=regionalWorld?unifiedBounds:{minX:-5970,maxX:7250,minZ:-6480,maxZ:6230};
+ return x>bound.minX+2&&x<bound.maxX-2&&z>bound.minZ+2&&z<bound.maxZ-2
+   &&!collides(x,z,radius,world.collision,y);
+}
+function respawnRoad(pos,spec){
+ if(regionalWorld?.contains(pos.x,pos.z)){
+  const p=regionalWorld.nearestRoad(pos.x,pos.z,160);
+  return p&&p.road.w>=(spec?.width||1)+1.1&&!/steps|footway|path|cycleway/.test(p.road.k)
+    ?{x:p.x,z:p.z,y:p.y+.08,yaw:p.yaw}:null;
+ }
+ const p=dryRoad(pos,spec);
+ return p?{...p,y:p.y??terrain.height(p.x,p.z)}:null;
+}
 function taxiFastRoad(pos){return validTaxiDestination(pos)?findTaxiRoad(pos,graph,terrain,{maxRadius:520,maxCandidates:2500,maxMs:18}):null;}
-function vehiclesMenu(){if(!state.started||waterRecovery.active||incidents?.recovery)return;showMenu('Choose a vehicle','<p class="about-copy">Bring a vehicle to a clear road nearby. E to get in. V opens this menu.</p><div class="activities">'+['mito','cinquecento','cruiser','scooter','truck'].map(type=>'<button class="activity" data-vehicle="'+type+'"><span><b>'+VEHICLES[type].name+'</b><small>'+Math.round(VEHICLES[type].max*3.6)+' km/h · '+VEHICLES[type].length+' m</small></span></button>').join('')+'</div>');document.querySelectorAll('[data-vehicle]').forEach(button=>button.onclick=()=>{
+function vehiclesMenu(){if(!state.started||waterGame.active||waterRecovery.active||incidents?.recovery)return;showMenu('Choose a vehicle','<p class="about-copy">Bring a vehicle to a clear road nearby. E to get in. V opens this menu.</p><div class="activities">'+['mito','cinquecento','cruiser','scooter','truck'].map(type=>'<button class="activity" data-vehicle="'+type+'"><span><b>'+VEHICLES[type].name+'</b><small>'+Math.round(VEHICLES[type].max*3.6)+' km/h · '+VEHICLES[type].length+' m</small></span></button>').join('')+'</div>');document.querySelectorAll('[data-vehicle]').forEach(button=>button.onclick=()=>{
  const type=button.dataset.vehicle,spec=VEHICLES[type];let p=null;
  for(const offset of [12,24,40,70]){const candidate=dryRoad({x:state.x+Math.sin(state.yaw)*offset,z:state.z+Math.cos(state.yaw)*offset},spec);if(candidate&&dist(candidate,state)>spec.length/2+3&&![...cars,...cops].some(c=>c.mesh.visible&&dist(c,candidate)<(c.spec.length+spec.length)/2+2)){p=candidate;break;}}
  if(!p){toast('No clear space nearby. Move to a wider road.');return;}
- let c=cars.find(c=>c!==state.car&&c.style===type);if(!c)c=addCar(p.x,p.z,p.yaw,false,true,type);c.x=p.x;c.z=p.z;c.y=p.y??terrain.height(p.x,p.z);c.yaw=p.yaw;c.speed=0;c.health=100;c.parked=true;c.mesh.visible=true;poseVehicle(c);previousActors.delete(c.mesh);closeDialogs();state.waypoint={x:c.x,z:c.z,name:c.name};routeTo(state.waypoint);toast(c.name+' is waiting '+Math.round(dist(state,c))+' m away. Follow the marker.',5);
+ let c=cars.find(c=>c!==state.car&&c.style===type&&!c.waterSinking);if(!c)c=addCar(p.x,p.z,p.yaw,false,true,type);c.x=p.x;c.z=p.z;c.y=p.y??terrain.height(p.x,p.z);c.yaw=p.yaw;c.speed=0;c.health=100;c.parked=true;c.budgetSleeping=false;c.destroyedUntil=0;c.mesh.visible=true;poseVehicle(c);previousActors.delete(c.mesh);closeDialogs();state.waypoint={x:c.x,z:c.z,name:c.name};routeTo(state.waypoint);toast(c.name+' is waiting '+Math.round(dist(state,c))+' m away. Follow the marker.',5);
  });}
 function goodNearbyNode(pos,minD=50,maxD=500,spec=null,style=null){const candidates=[],seen=new Set();let total=0;
  for(const s of graph.index.near(pos.x,pos.z,maxD)){const road=s.road;if(!s.connected||road.w<(spec?.length>6?7:spec?4:0)||['no','private'].includes(road.access)||spec&&road.k==='pedestrian'||!spec&&/motorway|trunk/.test(road.k))continue;
@@ -134,22 +328,67 @@ function makeMap(){mapBase=document.createElement('canvas');mapBase.width=1800;m
  for(const a of data.areas){path(a.p,true);c.fillStyle=a.k==='water'?'#33545d':'#284b42';c.fill();}for(const r of data.water){path(r.p);c.strokeStyle='#335d69';c.lineWidth=Math.max(1,r.w*sx);c.stroke();}c.fillStyle='#33474d';for(const b of data.buildings){path(b.p,true);c.fill();}for(const r of data.roads){path(r.p);c.lineWidth=Math.max(.5,r.w*sx);c.strokeStyle=['footway','path','steps'].includes(r.k)?'#405158':'#607278';c.stroke();}
 }
 function drawRoute(ctx,transform,width=3){if(!state.route.length)return;ctx.beginPath();state.route.forEach((p,i)=>{const a=transform(p);if(!i)ctx.moveTo(a.x,a.y);else ctx.lineTo(a.x,a.y);});ctx.strokeStyle='#edbb65';ctx.lineWidth=width;ctx.lineJoin='round';ctx.lineCap='round';ctx.stroke();}
-function drawMini(){if(!mapBase)return;const c=miniCtx,w=mini.width,h=mini.height,range=state.mode==='car'?530:320,k=w/range;c.fillStyle='#172e38';c.fillRect(0,0,w,h);const mx=(state.x-minBounds.x)/minBounds.w*mapBase.width,my=(state.z-minBounds.z)/minBounds.h*mapBase.height,sw=range/minBounds.w*mapBase.width,sh=h/k/minBounds.h*mapBase.height;c.drawImage(mapBase,mx-sw/2,my-sh/2,sw,sh,0,0,w,h);const tr=p=>({x:(p.x-state.x)*k+w/2,y:(p.z-state.z)*k+h/2});drawRoute(c,tr,5);
- for(const p of PLACES){const t=tr(p);if(t.x>5&&t.x<w-5&&t.y>10&&t.y<h-5){c.fillStyle='#c6b28c';c.beginPath();c.arc(t.x,t.y,4,0,Math.PI*2);c.fill();}}
- for(const c of cars)if((c.spec.aircraft||c.spec.tracked)&&c.mesh.visible){const t=tr(c);if(t.x>8&&t.x<w-8&&t.y>8&&t.y<h-8){miniCtx.fillStyle='#edbb65';miniCtx.font='bold 14px sans-serif';miniCtx.fillText(c.spec.tracked?'T':c.spec.plane?'A':'H',t.x,t.y);}}
+function drawMini(){if(!mapBase)return;densityCanvas(mini,2.7,1100);const c=miniCtx,w=mini.width,h=mini.height,density=Math.max(1,Math.min(4,w/(mini.clientWidth||w/2.7))),range=state.car?.spec.aircraft?Math.max(6000,Math.abs(state.speed)*72):state.mode==='car'?460:270,k=w/range;c.fillStyle='#172e38';c.fillRect(0,0,w,h);const mx=(state.x-minBounds.x)/minBounds.w*mapBase.width,my=(state.z-minBounds.z)/minBounds.h*mapBase.height,sw=range/minBounds.w*mapBase.width,sh=h/k/minBounds.h*mapBase.height;if(unifiedMap)unifiedMap.drawMini(c,state,range,w,h);else{
+  c.drawImage(mapBase,mx-sw/2,my-sh/2,sw,sh,0,0,w,h);
+  miniTiles.draw(c,state,w,h,k,density);
+ }
+ const tr=p=>({x:(p.x-state.x)*k+w/2,y:(p.z-state.z)*k+h/2});drawRoute(c,tr,5);
+ for(const p of PLACES){const t=tr(p);if(t.x>5&&t.x<w-5&&t.y>10&&t.y<h-5){c.fillStyle='#c6b28c';c.beginPath();c.arc(t.x,t.y,3.5*density,0,Math.PI*2);c.fill();}}
+ for(const c of cars)if((c.spec.aircraft||c.spec.tracked)&&c.mesh.visible){const t=tr(c);if(t.x>8&&t.x<w-8&&t.y>8&&t.y<h-8){miniCtx.fillStyle='#edbb65';miniCtx.font='bold '+Math.round(12*density)+'px sans-serif';miniCtx.fillText(c.spec.tracked?'T':c.spec.plane?'A':'H',t.x,t.y);}}
  for(const radar of speedCameras?.sites||[])if(dist(radar,state)<220){const t=tr(radar);c.fillStyle='#f3b53f';c.fillRect(t.x-4,t.y-4,8,8);}
  if(taxi?.car.mesh.visible){const t=tr(taxi.car);if(t.x>8&&t.x<w-8&&t.y>8&&t.y<h-8){c.fillStyle='#ffdc46';c.font='900 15px sans-serif';c.fillText('TX',t.x-8,t.y+5);}}
- for(const p of cops){const t=tr(p);c.fillStyle='#76b7ff';c.beginPath();c.arc(t.x,t.y,5,0,Math.PI*2);c.fill();}const target=currentTarget();if(target){const t=tr(target);c.fillStyle='#ffc56a';c.beginPath();c.arc(clamp(t.x,10,w-10),clamp(t.y,10,h-10),7,0,Math.PI*2);c.fill();}
- c.save();c.translate(w/2,h/2);c.rotate(-state.yaw);c.fillStyle='#fff8de';c.strokeStyle='#18323d';c.lineWidth=2;c.beginPath();c.moveTo(0,11);c.lineTo(-7,-7);c.lineTo(0,-3);c.lineTo(7,-7);c.closePath();c.fill();c.stroke();c.restore();c.fillStyle='#bbcbd0';c.font='600 20px system-ui';c.fillText('N',w-28,26);
+ for(const p of cops){const t=tr(p);c.fillStyle='#76b7ff';c.beginPath();c.arc(t.x,t.y,4*density,0,Math.PI*2);c.fill();}const target=currentTarget();if(target){const t=tr(target);c.fillStyle='#ffc56a';c.beginPath();c.arc(clamp(t.x,10*density,w-10*density),clamp(t.y,10*density,h-10*density),6*density,0,Math.PI*2);c.fill();}
+ c.save();c.translate(w/2,h/2);c.rotate(-state.yaw);c.scale(density,density);
+ c.fillStyle='#fff8de';c.strokeStyle='#18323d';c.lineWidth=2.25;
+ c.beginPath();c.moveTo(0,11);c.lineTo(-7,-7);c.lineTo(0,-3);c.lineTo(7,-7);c.closePath();
+ c.fill();c.stroke();c.restore();
+ c.fillStyle='#f5f4e5';c.strokeStyle='#162f3c';c.lineWidth=density*2.4;
+ c.font='700 '+Math.round(12*density)+'px system-ui';c.strokeText('N',w-22*density,17*density);
+ c.fillText('N',w-22*density,17*density);
+ // A physical distance scale makes the improved map usable while driving
+ // between neighbouring towns, regardless of viewport resolution.
+ const metres=state.mode==='car'?100:50,bar=metres*k;
+ c.fillStyle='#102e3bdc';c.fillRect(6*density,h-29*density,Math.max(67*density,bar+16*density),26*density);
+ c.fillStyle='#f9f3df';c.fillRect(13*density,h-14*density,bar,2*density);
+ c.font='650 '+Math.round(10.5*density)+'px system-ui';c.fillText(metres+' m',13*density,h-17*density);
+ if($('minimapStatus')){
+  const st=miniTiles.lastStats||{},online=st.ready>0;
+  $('minimapStatus').textContent='GTA · HD';
+ }
 }
-function fullTransform(p){const c=$('fullmap');return {x:(p.x-minBounds.x)/minBounds.w*c.width,y:(p.z-minBounds.z)/minBounds.h*c.height};}
-function drawFullMap(){const c=$('fullmap').getContext('2d'),w=$('fullmap').width,h=$('fullmap').height;c.drawImage(mapBase,0,0,w,h);drawRoute(c,fullTransform,3);for(const p of PLACES){const a=fullTransform(p);c.fillStyle='#ffc56a';c.beginPath();c.arc(a.x,a.y,3,0,Math.PI*2);c.fill();}const a=fullTransform(state);c.fillStyle='white';c.strokeStyle='#172e38';c.lineWidth=3;c.beginPath();c.arc(a.x,a.y,8,0,Math.PI*2);c.fill();c.stroke();const target=currentTarget();if(target){const b=fullTransform(target);c.strokeStyle='#ffc56a';c.lineWidth=3;c.beginPath();c.arc(b.x,b.y,10,0,Math.PI*2);c.stroke();c.fillStyle='#ffc56a';c.font='600 19px system-ui';c.fillText('DESTINATION',clamp(b.x+16,5,810),b.y+6);}}
+function fullTransform(p){if(unifiedMap)return unifiedMap.toScreen(p);const c=$('fullmap');return {x:(p.x-minBounds.x)/minBounds.w*c.width,y:(p.z-minBounds.z)/minBounds.h*c.height};}
+function drawFullMap(){if($('mapDialog')?.open)resizeMapSurfaces();if(unifiedMap){
+ unifiedMap.draw({position:state,places:PLACES,target:currentTarget(),route:state.route});
+ const tiles=unifiedMap.lastTileStats||{};
+ if($('mapQuality'))$('mapQuality').textContent=tiles.ready>0?
+  'OSM HD: '+tiles.ready+' sezioni nitide caricate'+(tiles.pending?' · '+tiles.pending+' in caricamento':''):
+  tiles.pending?'Caricamento cartografia…':'MAPPA GTA · VETTORIALE HD · TUTTI I COMUNI';
+ if($('waterQuality')){
+  const exact=(regionalWorld?.data?.areas||[]).filter(a=>a.k==='water'&&a.osm).length;
+  $('waterQuality').textContent=exact?'Acque: '+exact+' bacini/sponde da poligoni geografici reali':
+   'Acque: geometria approssimata nel 3D; cartografia OSM HD online';
+ }
+ return;}const c=$('fullmap').getContext('2d'),w=$('fullmap').width,h=$('fullmap').height;c.drawImage(mapBase,0,0,w,h);drawRoute(c,fullTransform,3);for(const p of PLACES){const a=fullTransform(p);c.fillStyle='#ffc56a';c.beginPath();c.arc(a.x,a.y,3,0,Math.PI*2);c.fill();}const a=fullTransform(state);c.fillStyle='white';c.strokeStyle='#172e38';c.lineWidth=3;c.beginPath();c.arc(a.x,a.y,8,0,Math.PI*2);c.fill();c.stroke();const target=currentTarget();if(target){const b=fullTransform(target);c.strokeStyle='#ffc56a';c.lineWidth=3;c.beginPath();c.arc(b.x,b.y,10,0,Math.PI*2);c.stroke();c.fillStyle='#ffc56a';c.font='600 19px system-ui';c.fillText('DESTINATION',clamp(b.x+16,5,810),b.y+6);}}
 function currentTarget(){return state.mission?.target||state.waypoint;}
-function routeTo(target){try{state.route=target?roadRoute(state,target,graph,{maxSteps:30000,maxMs:60}):[];}catch(error){console.warn('[Navigation] route failed',error);state.route=[];}if(target&&!state.route.length)toast('No connected road route here. Follow the destination marker.');}
+function routeTo(target){if(target&&regionalWorld?.contains(target.x,target.z)){state.route=[];return;}try{state.route=target?roadRoute(state,target,graph,{maxSteps:30000,maxMs:60}):[];}catch(error){console.warn('[Navigation] route failed',error);state.route=[];}if(target&&!state.route.length)toast('No connected road route here. Follow the destination marker.');}
 function updateMarker(){const t=currentTarget();marker.visible=!!t;if(!t)return;marker.position.set(t.x,terrain.height(t.x,t.z)+.16,t.z);const d=dist(state,t);$('targetDistance').hidden=false;$('targetDistance').textContent=(t.name||'Destination')+' · '+(d>=1000?(d/1000).toFixed(1)+' km':Math.round(d)+' m');}
 
 function vehicleReach(p,c){const dx=p.x-c.x,dz=p.z-c.z,side=Math.cos(c.yaw)*dx-Math.sin(c.yaw)*dz,along=Math.sin(c.yaw)*dx+Math.cos(c.yaw)*dz;return Math.hypot(Math.max(0,Math.abs(side)-c.spec.width/2),Math.max(0,Math.abs(along)-c.spec.length/2));}
-function toggleVehicle(){if(!state.started||state.paused||waterRecovery.active||incidents?.recovery||state.parachuting||taxi?.phase==='loading')return;if(state.mode==='car'){if(Math.abs(state.speed)>7){toast('Slow down before getting out.');return;}const c=state.car;if(c.jump?.airborne){toast('Aspetta di atterrare prima di scendere.');return;}if(c.spec.aircraft&&state.y>terrain.height(state.x,state.z)+.4){toast('Land before leaving the helicopter.');return;}c.turboTime=0;let out=null;for(const a of [Math.PI/2,-Math.PI/2,Math.PI,0]){const p={x:state.x+Math.sin(state.yaw+a)*(Math.abs(Math.sin(a))>.5?c.spec.width/2+1:c.spec.length/2+1),z:state.z+Math.cos(state.yaw+a)*(Math.abs(Math.sin(a))>.5?c.spec.width/2+1:c.spec.length/2+1)};if(!collides(p.x,p.z,.4,world.collision,terrain.height(p.x,p.z,state.y))&&terrain.dry(p.x,p.z,.5)){out=p;break;}}if(!out){toast('No room to get out here.');return;}state.mode='foot';c.parked=true;c.speed=0;c.health=state.health;state.car=null;state.x=out.x;state.z=out.z;state.speed=0;state.y=terrain.height(state.x,state.z,state.y);state.vy=0;player.position.set(state.x,state.y,state.z);player.visible=true;if(c===taxi?.car){taxi.phase='ready';setTaxiHazards(true);placeTaxiDriver();}toast('On foot. E to get back in.');}else{let nearest=null,d=2.4;for(const c of cars){const dd=vehicleReach(state,c);if(c.mesh.visible&&c.health>0&&dd<d&&Math.abs(c.speed)<8&&Math.abs((c.y||0)-state.y)<4){nearest=c;d=dd;}}if(!nearest){toast('Walk closer to a parked or slow-moving car.');return;}state.mode='car';state.y=nearest.y??terrain.height(nearest.x,nearest.z);state.vy=0;state.car=nearest;resetGroundMotion(nearest);state.x=nearest.x;state.z=nearest.z;state.yaw=nearest.yaw;state.speed=0;state.health=nearest.health;nearest.parked=true;if(nearest===taxi?.car)taxiDriverNPC?.hide();gameplay?.claim(nearest);player.visible=false;toast(nearest.name+(nearest.spec.tracked?' · WASD guida · TAB spara':nearest.spec.aircraft?' · W accelera · Space sale · Shift scende · F paracadute':' · WASD drive, Space handbrake, Shift boost'),5);}camOrbit=0;followYaw=state.yaw;cameraRig.reset(state.yaw);}
+function toggleVehicle(){
+ if(!state.started||state.paused||waterRecovery.active||incidents?.recovery||state.parachuting||taxi?.phase==='loading')return;
+ if(waterGame.vehicle&&state.car){
+  const car=waterGame.leaveVehicle(state,terrain.waterHeight(state.x,state.z));
+  if(!respawnClear(state.x,state.z,terrain.waterHeight(state.x,state.z)-.3)){
+   state.x=car.x;state.z=car.z;
+  }
+  player.visible=true;player.position.set(state.x,state.y,state.z);
+  player.rotation.set(swimBodyPitch(false),state.yaw,0,'YXZ');
+  previousPose=null;followYaw=state.yaw;cameraRig.reset(state.yaw);
+  toast('Fuori dal veicolo: nuota verso riva.',2);
+  return;
+ }
+ if(waterGame.swimming){toast('Nuota fino alla riva oppure premi R.',3);return;}
+if(state.mode==='car'){if(Math.abs(state.speed)>7){toast('Slow down before getting out.');return;}const c=state.car;if(c.jump?.airborne){toast('Aspetta di atterrare prima di scendere.');return;}if(c.spec.aircraft&&state.y>terrain.height(state.x,state.z)+.4){toast('Land before leaving the helicopter.');return;}c.turboTime=0;let out=null;for(const a of [Math.PI/2,-Math.PI/2,Math.PI,0]){const p={x:state.x+Math.sin(state.yaw+a)*(Math.abs(Math.sin(a))>.5?c.spec.width/2+1:c.spec.length/2+1),z:state.z+Math.cos(state.yaw+a)*(Math.abs(Math.sin(a))>.5?c.spec.width/2+1:c.spec.length/2+1)};if(!collides(p.x,p.z,.4,world.collision,terrain.height(p.x,p.z,state.y))&&terrain.dry(p.x,p.z,.5)){out=p;break;}}if(!out){toast('No room to get out here.');return;}state.mode='foot';c.parked=true;c.speed=0;c.health=state.health;state.car=null;state.x=out.x;state.z=out.z;state.speed=0;state.y=terrain.height(state.x,state.z,state.y);state.vy=0;player.position.set(state.x,state.y,state.z);player.visible=true;if(c===taxi?.car){taxi.phase='ready';setTaxiHazards(true);placeTaxiDriver();}toast('On foot. E to get back in.');}else{let nearest=null,d=2.4;for(const c of cars){const dd=vehicleReach(state,c);if(c.mesh.visible&&!c.waterSinking&&c.health>0&&dd<d&&Math.abs(c.speed)<8&&Math.abs((c.y||0)-state.y)<4){nearest=c;d=dd;}}if(!nearest){toast('Walk closer to a parked or slow-moving car.');return;}state.mode='car';state.y=nearest.y??terrain.height(nearest.x,nearest.z);state.vy=0;state.car=nearest;resetGroundMotion(nearest);state.x=nearest.x;state.z=nearest.z;state.yaw=nearest.yaw;state.speed=0;state.health=nearest.health;nearest.parked=true;if(nearest===taxi?.car)taxiDriverNPC?.hide();gameplay?.claim(nearest);player.visible=false;toast(nearest.name+(nearest.spec.tracked?' · WASD guida · TAB spara':nearest.spec.aircraft?' · W accelera · Space sale · Shift scende · F paracadute':' · WASD drive, Space handbrake, Shift boost'),5);}camOrbit=0;followYaw=state.yaw;cameraRig.reset(state.yaw);}
 function hospitalRoofRespawnPoint(){
  const lifts=gameplay?.hospitalElevators,site=lifts?.site,car=state.car;
  if(state.mode!=='car'||!car||!(isBike(car.style)||car.spec?.bike)||state.wanted===5||!site?.polygon?.length||!Number.isFinite(site.roofY))return null;
@@ -163,7 +402,7 @@ function respawnAtHospitalRoof(){
  const p=state.respawnHospitalRoof,bike=state.car;
  state.respawnHospitalRoof=null;state.respawnHome=false;
  if(!p||!bike)return false;
- previousPose=null;keys.clear();waterRecovery.reset();document.body.classList.remove('water-fall');resetGroundMotion(bike);
+ previousPose=null;keys.clear();waterRecovery.reset();waterGame.reset();document.body.classList.remove('water-fall');resetGroundMotion(bike);
  Object.assign(state,{x:p.x,z:p.z,y:p.y,yaw:p.yaw,speed:0,vy:0,health:100,mode:'car',parachuting:false,spin:0,knockX:0,knockZ:0});
  Object.assign(bike,{x:p.x,z:p.z,y:p.y,yaw:p.yaw,speed:0,health:100,knockX:0,knockZ:0,spin:0,turboTime:0,parked:false,missionUnit:true,budgetSleeping:false,destroyedUntil:0});
  bike.mesh.visible=true;poseVehicle(bike);previousActors.delete(bike.mesh);player.visible=false;if(parachute)parachute.visible=false;
@@ -173,18 +412,57 @@ function respawnAtHospitalRoof(){
 }
 
 function recover(fromWater=false){
- if(incidents?.recovery)return false;state.parachuting=false;if(parachute)parachute.visible=false;fromWater=fromWater===true;state.knockX=state.knockZ=state.spin=0;
- const origin=fromWater?(waterRecovery.lastDry||state):state,p=dryRoad(origin,state.car?.spec)||dryRoad(PLACES[0],state.car?.spec);if(!p){toast('No clear dry road found. Use the map to travel.');return false;}
- previousPose=null;keys.clear();waterRecovery.reset();document.body.classList.remove('water-fall');state.x=p.x;state.z=p.z;state.yaw=p.yaw;state.speed=0;state.y=p.y??terrain.height(p.x,p.z);state.vy=0;state.health=100;
- if(state.car){resetGroundMotion(state.car);Object.assign(state.car,{x:p.x,z:p.z,yaw:p.yaw,speed:0,health:100,knockX:0,knockZ:0,spin:0,turboTime:0,y:state.y,vy:0});poseVehicle(state.car);previousActors.delete(state.car.mesh);}
- waterRecovery.remember(state,terrain);world.update(state.x,state.z,true);camera.position.set(state.x-10,state.y+9,state.z-12);followYaw=state.yaw;cameraRig.reset(state.yaw);routeTo(currentTarget());toast(fromWater?'Back on dry land. Water cannot be crossed.':'Back on the road. Vehicle repaired.');return true;
+ if(incidents?.recovery)return false;
+ fromWater=fromWater===true;state.knockX=state.knockZ=state.spin=0;
+ // Resolve relative to the actual death location; a stale Padova lastDry
+ // must not teleport someone drowning immediately after arriving in Venice.
+ const deathRegion=state.x>=32000?'lagoon':state.x>=7350?'riviera':'padova';
+ const p=localRespawn.choose(state,terrain,respawnClear,state.car?.spec,
+    {water:fromWater,nearRoad:respawnRoad});
+ if(p&&fromWater&&(p.x>=32000?'lagoon':p.x>=7350?'riviera':'padova')!==deathRegion&&
+    Math.hypot(p.x-state.x,p.z-state.z)>1400){
+  toast('Recupero fuori zona bloccato: premi R vicino alla riva.',4);return false;
+ }
+ if(!p){toast('Nessuna posizione sicura vicina. Apri M per scegliere una strada.');return false;}
+ state.parachuting=false;if(parachute)parachute.visible=false;
+ previousPose=null;keys.clear();waterRecovery.reset();waterGame.reset();document.body.classList.remove('water-fall');
+ Object.assign(state,{x:p.x,z:p.z,y:p.y,yaw:p.yaw,speed:0,vy:0,health:100,respawnHome:false,respawnHospitalRoof:null});
+ if(state.car){
+  resetGroundMotion(state.car);
+  Object.assign(state.car,{x:p.x,z:p.z,y:p.y,yaw:p.yaw,speed:0,health:100,
+   knockX:0,knockZ:0,spin:0,turboTime:0,vy:0,destroyedUntil:0,parked:false,waterSinking:false});
+  state.car.mesh.visible=true;poseVehicle(state.car);previousActors.delete(state.car.mesh);
+  player.visible=false;
+ }else{state.mode='foot';player.position.set(p.x,p.y,p.z);player.rotation.set(0,p.yaw,0,'YXZ');animateGait(player,state.elapsed,0,false);player.visible=true;}
+ waterRecovery.remember(state,terrain);localRespawn.remember(state,terrain,respawnClear,state.elapsed,true);
+ if(regionalWorld?.contains(p.x,p.z))regionalWorld.update(state,0);
+ else world.update(state.x,state.z,true);
+ camera.position.set(state.x-10,state.y+9,state.z-12);followYaw=state.yaw;
+ cameraRig.reset(state.yaw);routeTo(currentTarget());
+ if(gameplay)gameplay.graceUntil=Math.max(gameplay.graceUntil||0,state.elapsed+4);
+ toast(fromWater?'Riapparso sull’ultimo terreno sicuro.':'Riapparso vicino al punto precedente. Mezzo riparato.');return true;
+}
+function requestRecover(){
+ // Manual R on the Monoblocco bike circuit must retain the roof, rather
+ // than selecting an ordinary street hundreds of metres below the player.
+ const roof=waterRecovery.active||waterGame.active?null:hospitalRoofRespawnPoint();
+ if(roof){
+  if(incidents?.recovery)incidents.recovery=null;
+  state.respawnHospitalRoof=roof;return respawnAtHospitalRoof();
+ }
+ if(incidents?.recovery){
+  incidents.recovery=null;
+  if(state.respawnHospitalRoof)return respawnAtHospitalRoof();
+  state.respawnHome=false;
+ }
+ return recover(waterRecovery.active||waterGame.active);
 }
 function falling(dt){
  const done=waterRecovery.step(dt);state.y=waterRecovery.y;
  if(state.car){state.car.mesh.position.y=state.y;state.car.mesh.rotation.x+=dt*.5;}else player.position.set(state.x,state.y,state.z);
  if(done)recover(true);
 }
-function travel(p){if(incidents?.recovery)return;state.parachuting=false;if(parachute)parachute.visible=false;previousPose=null;cancelMission(false);clearPolice();const n=dryRoad(p,state.car?.spec);if(!n)return;waterRecovery.reset();document.body.classList.remove('water-fall');state.x=n.x;state.z=n.z;state.yaw=n.yaw;state.speed=0;state.y=n.y??terrain.height(state.x,state.z,state.y);state.vy=0;state.health=100;state.waypoint=null;state.route=[];if(state.car){resetGroundMotion(state.car);state.car.x=n.x;state.car.z=n.z;state.car.yaw=n.yaw;state.car.speed=0;state.car.health=100;state.car.y=state.y;state.car.turboTime=0;poseVehicle(state.car);previousActors.delete(state.car.mesh);}else{let c=cars.find(c=>c.parked&&!c.fixedSpawn&&!c.spec.aircraft&&!c.hostile);if(c){const parking=dryRoad({x:n.x+8*Math.sin(n.yaw),z:n.z+8*Math.cos(n.yaw)},c.spec);if(parking){c.x=parking.x;c.z=parking.z;c.yaw=parking.yaw;poseVehicle(c);previousActors.delete(c.mesh);}}}world.update(state.x,state.z,true);for(const c of cars)if(c!==state.car&&!c.parked)placeTraffic(c);people.forEach(placePerson);waterRecovery.remember(state,terrain);camera.position.set(state.x-12,state.y+12,state.z-16);followYaw=state.yaw;cameraRig.reset(state.yaw);toast('Welcome to '+p.name);closeDialogs();}
+function travel(p){if(incidents?.recovery)return;state.parachuting=false;if(parachute)parachute.visible=false;previousPose=null;cancelMission(false);clearPolice();const n=dryRoad(p,state.car?.spec);if(!n)return;waterRecovery.reset();waterGame.reset();document.body.classList.remove('water-fall');state.x=n.x;state.z=n.z;state.yaw=n.yaw;state.speed=0;state.y=n.y??terrain.height(state.x,state.z,state.y);state.vy=0;state.health=100;state.waypoint=null;state.route=[];if(state.car){resetGroundMotion(state.car);state.car.x=n.x;state.car.z=n.z;state.car.yaw=n.yaw;state.car.speed=0;state.car.health=100;state.car.y=state.y;state.car.turboTime=0;poseVehicle(state.car);previousActors.delete(state.car.mesh);}else{let c=cars.find(c=>c.parked&&!c.fixedSpawn&&!c.spec.aircraft&&!c.hostile);if(c){const parking=dryRoad({x:n.x+8*Math.sin(n.yaw),z:n.z+8*Math.cos(n.yaw)},c.spec);if(parking){c.x=parking.x;c.z=parking.z;c.yaw=parking.yaw;poseVehicle(c);previousActors.delete(c.mesh);}}}world.update(state.x,state.z,true);for(const c of cars)if(c!==state.car&&!c.parked)placeTraffic(c);people.forEach(placePerson);waterRecovery.remember(state,terrain);localRespawn.remember(state,terrain,respawnClear,state.elapsed,true);camera.position.set(state.x-12,state.y+12,state.z-16);followYaw=state.yaw;cameraRig.reset(state.yaw);toast('Welcome to '+p.name);closeDialogs();}
 function ensureCar(){if(state.mode==='car'&&!state.car.spec.aircraft)return true;toast('Get into a car first. A parked car is waiting nearby.');return false;}
 const missionTypes={portavalori:{title:'CATTURA PORTAVALORI',desc:'Insegui e blocca il furgone. Tienilo fermo vicino a te per 2,5 secondi. La polizia può intervenire.',reward:'Ricompensa: €1.000'},delivery:{title:'Special delivery',desc:'Pick up a parcel, then deliver it across the centre.',reward:'€350'},race:{title:'The Padova run',desc:'Six checkpoints. Five minutes. Your best line.',reward:'€600'},escape:{title:'Lose the tail',desc:'Get the police’s attention, then disappear.',reward:'€500'}};
 function safeTarget(p){const n=dryRoad(p);return n?{x:n.x,z:n.z,name:p.name}:p;}
@@ -349,14 +627,66 @@ function updatePolice(dt){if(!state.wanted)return;let nearest=Infinity,arrestDis
  if(nearest>120){state.escape+=dt;if(state.escape>=12){const reward=state.mission?.type==='escape';clearPolice();if(reward)finishMission(500,'You lost them.');else toast('Escaped. Back to free roam.',5);}}else state.escape=Math.max(0,state.escape-dt*2);
  if(arrestDistance<7&&(state.mode==='foot'||Math.abs(state.speed)<2))state.busted+=dt;else state.busted=Math.max(0,state.busted-dt);if(state.busted>5){if(state.wanted===5){explodePlayer('Neutralizzato durante l’inseguimento');return;}const fine=Math.min(150,state.money);state.money-=fine;save();cancelMission(false);clearPolice();recover();toast('Busted. '+(fine?'€'+fine+' fine. ':'')+'Back on the road.',5);}}
 
-function explodePlayer(reason){if(incidents?.recovery)return;state.respawnHospitalRoof=hospitalRoofRespawnPoint();state.respawnHome=!state.respawnHospitalRoof&&(state.wanted===5||state.mode==='foot');if(!incidents?.explode(state,state.elapsed,reason)){state.respawnHospitalRoof=null;return;}state.speed=0;state.health=0;state.spin=state.knockX=state.knockZ=0;keys.clear();if(state.car){state.car.health=0;state.car.mesh.visible=false;}if(state.respawnHome){cancelMission(false);clearPolice();}toast(reason+(state.respawnHospitalRoof?' · Respawn sul tetto…':state.respawnHome?' · Ritorno alla villa…':' · Recovering nearby…'),2);}
+function explodePlayer(reason){if(incidents?.recovery)return;state.respawnHospitalRoof=hospitalRoofRespawnPoint();const clearPursuit=state.wanted===5||state.mode==='foot';state.respawnHome=false;if(!incidents?.explode(state,state.elapsed,reason)){state.respawnHospitalRoof=null;return;}state.speed=0;state.health=0;state.spin=state.knockX=state.knockZ=0;keys.clear();if(state.car){state.car.health=0;state.car.mesh.visible=false;}if(clearPursuit){cancelMission(false);clearPolice();}toast(reason+(state.respawnHospitalRoof?' · Respawn sul tetto…':' · Respawn nella zona attuale…'),2);}
 function kickActor(actor,vx,vz){actor.knockX=clamp(vx,-40,40);actor.knockZ=clamp(vz,-40,40);actor.spin=Math.sign(vx||1)*1.4;if(actor===state){state.health=Math.max(0,state.health-25*(state.car?.spec.armor||1));toast('Tram impact! Keep clear of the rails.',2);}else if(actor.health!==undefined)actor.health=Math.max(0,actor.health-25*(actor.spec?.armor||1));}
 function applyKnock(actor,dt){const spec=actor===state?state.car?.spec:actor.spec;if(!actor.knockX&&!actor.knockZ&&!actor.spin)return;const p=slideMove(actor,(actor.knockX||0)*dt,(actor.knockZ||0)*dt,spec?.width/2||.36,world.collision,actor.y);actor.x=p.x;actor.z=p.z;const yaw=actor.yaw+(actor.spin||0)*dt;if(!spec||!vehicleBlocked(actor.x,actor.z,yaw,world.collision,spec,actor.y))actor.yaw=yaw;actor.knockX=(actor.knockX||0)*Math.exp(-3*dt);actor.knockZ=(actor.knockZ||0)*Math.exp(-3*dt);actor.spin=(actor.spin||0)*Math.exp(-2*dt);if(actor!==state&&actor.mesh&&actor.spec)poseVehicle(actor);}
-function movePlayer(dt){if(taxi?.phase==='transition'){state.speed=0;return;}if(incidents?.recovery){state.speed=0;if(state.elapsed>=incidents.recovery.until){incidents.recovery=null;if(state.respawnHospitalRoof){respawnAtHospitalRoof();return;}if(state.respawnHome){respawnAtVilla();return;}if(state.car)state.car.mesh.visible=true;recover();toast('Vehicle recovered nearby. Continue exploring.');}return;}if(waterRecovery.active){falling(dt);return;}if(state.mode==='foot'&&state.health<=0){explodePlayer('Personaggio neutralizzato');return;}const f=(keys.has('KeyW')||keys.has('ArrowUp')?1:0)-(keys.has('KeyS')||keys.has('ArrowDown')?1:0),turn=(keys.has('KeyA')||keys.has('ArrowLeft')?1:0)-(keys.has('KeyD')||keys.has('ArrowRight')?1:0),boost=keys.has('ShiftLeft')||keys.has('ShiftRight');
+function enterGameplayWater(waterY){
+ if(waterY===null||!Number.isFinite(waterY)||waterGame.active)return false;
+ if(state.car?.spec.aircraft||state.car?.spec.watercraft||state.car?.spec.boat||
+    state.car?.waterDock!==undefined)return false;
+ const threshold=state.mode==='car'?Math.max(.9,(state.car?.spec.height||1.4)*.55):.50;
+ if(state.y>waterY+threshold)return false;
+ if(state.mode==='car'&&state.car){
+  if(!waterGame.enterVehicle(state,waterY))return false;
+  waterGame.stepVehicle(state,0,waterY);
+  player.visible=false;previousPose=null;
+  toast('AUTO IN ACQUA · galleggia 4,5 s. E esci e nuota · R recupera.',5);
+  return true;
+ }
+ if(state.mode==='foot'&&waterGame.startSwimming(state,waterY)){
+  state.vy=0;player.visible=true;player.position.set(state.x,state.y+.08,state.z);
+  player.rotation.set(-1.04,state.yaw,0,'YXZ');
+  // The compact interaction HUD displays swimming controls without a toast.
+  return true;
+ }
+ return false;
+}
+function movePlayer(dt){if(taxi?.phase==='transition'){state.speed=0;return;}if(incidents?.recovery){state.speed=0;if(state.elapsed>=incidents.recovery.until){incidents.recovery=null;if(state.respawnHospitalRoof){respawnAtHospitalRoof();return;}if(state.respawnHome){state.respawnHome=false;}recover(waterGame.active||waterRecovery.active);}return;}if(waterRecovery.active){falling(dt);return;}if(state.mode==='foot'&&state.health<=0){explodePlayer('Personaggio neutralizzato');return;}const f=(keys.has('KeyW')||keys.has('ArrowUp')?1:0)-(keys.has('KeyS')||keys.has('ArrowDown')?1:0),turn=(keys.has('KeyA')||keys.has('ArrowLeft')?1:0)-(keys.has('KeyD')||keys.has('ArrowRight')?1:0),boost=keys.has('ShiftLeft')||keys.has('ShiftRight');
+ if(waterGame.vehicle&&state.car){
+  const waterY=terrain.waterHeight(state.x,state.z),result=waterGame.stepVehicle(state,dt,waterY);
+  if(result?.submerged&&!waterGame.vehicle.warning){waterGame.vehicle.warning=true;toast('L’auto affonda: premi E per uscire o R per recuperare.',5);}
+  if(state.health<=0)explodePlayer('Veicolo sommerso');return;
+ }
+ if(waterGame.swimming){
+  const {dx,dz}=footMotion(state,cameraRig,{forward:f,turn,run:boost},dt);
+  const result=waterGame.stepSwim(state,{dx,dz,dive:keys.has('Space'),boost},dt,terrain,(x,z,y)=>!collides(x,z,.36,world.collision,y));
+  player.position.set(state.x,state.y+.08,state.z);
+  player.rotation.set(swimBodyPitch(result?.landed),state.yaw,0,'YXZ');
+  if(result?.landed)animateGait(player,state.elapsed,0,false);
+  else animateSwim(player,state.elapsed,state.speed,result?.submerged);
+  if(result?.landed){toast('Riva raggiunta.',2);waterRecovery.remember(state,terrain);localRespawn.remember(state,terrain,respawnClear,state.elapsed,true);}
+  if(state.health<=0)explodePlayer('Esaurimento sott’acqua');
+  return;
+ }
+ // Catch immersion before the terrain solver can treat the riverbed as
+ // solid or award crash damage for contact with the sea.
+ if(!state.parachuting&&!waterGame.active){
+  if(enterGameplayWater(terrain.waterAt(state.x,state.z,0,state.y)))return;
+  if(state.mode==='car'&&state.car&&!state.car.jump?.airborne&&
+     !state.car.spec.aircraft&&!state.car.spec.watercraft&&!state.car.spec.boat){
+   const nx=state.x+Math.sin(state.yaw)*state.speed*dt,nz=state.z+Math.cos(state.yaw)*state.speed*dt;
+   const approaching=terrain.waterAt(nx,nz,0,state.y);
+   if(approaching!==null&&state.y<=approaching+.75){
+    state.x=nx;state.z=nz;
+    if(enterGameplayWater(approaching))return;
+   }
+  }
+ }
  if(state.parachuting){const landed=parachuteStep(state,{forward:f,turn},dt,terrain,world.collision);parachute.position.set(state.x,state.y,state.z);parachute.rotation.y=state.yaw;player.position.set(state.x,state.y,state.z);if(landed){state.parachuting=false;parachute.visible=false;state.vy=0;}else return;}
  if(state.mode==='car'&&state.car.spec.aircraft){const result=(state.car.spec.plane?planeStep:helicopterStep)(state,{forward:f,turn,up:keys.has('Space'),down:boost},dt,terrain,world.collision);if(result?.crashed){explodePlayer('Incidente aereo');return;}Object.assign(state.car,{x:state.x,z:state.z,y:state.y,yaw:state.yaw,speed:state.speed});poseVehicle(state.car);state.distance+=Math.abs(state.speed)*dt;return;}
  if(state.mode==='car'){const car=state.car,spec=car.spec,previousSpeed=state.speed,handbrake=keys.has('Space'),turbo=car.style==='cinquecento'&&keys.has('Tab'),condition=vehiclePerformanceFactor(state.health);if(state.health<=0){state.speed*=Math.exp(-dt*4);if(f)toast('Vehicle disabled. Press R to recover and repair.',1.5);}else if(!car.jump?.airborne){const acceleration=(f>0?turbo?spec.turboAccel:boost?spec.accel*1.3:spec.accel:f<0?(state.speed>1?-spec.brake:-spec.accel*.65):0)*(f>0?condition:1);state.speed+=(acceleration+Math.sin(terrain.slope(state.x,state.z,state.yaw,spec.wheelbase,state.y))*5)*dt;state.speed*=Math.exp(-dt*(handbrake?2.8:f?.045:.65));const speedLimit=(turbo?spec.turboMax:boost?spec.boost:spec.max)*condition;state.speed=clamp(state.speed,-spec.reverse,Math.max(speedLimit,previousSpeed-spec.brake*.5*dt));if(updateTurbo(car,state.speed,dt).explode){explodePlayer('Turbo overheated after 6 seconds');return;}}
  const motion=groundVehicleStep(state,car,{turn:state.health>0?turn:0,handbrake},dt,terrain,world.collision);
+  if(enterGameplayWater(terrain.waterAt(state.x,state.z,0,state.y)))return; // BEFORE impact damage
  if(motion.hitSpeed>4&&collisionCooldown<=0){const response=impactResponse(motion.hitSpeed);state.health=Math.max(0,state.health-response.damage*(spec.armor||1));state.spin=(Math.sin(state.yaw)>=0?1:-1)*response.spin/(spec.mass||1);if(response.destroy&&!spec.armor){explodePlayer('High-speed crash');return;}collisionCooldown=.7;playHit();}
  if(motion.landed&&motion.landingSpeed>12){state.health=Math.max(0,state.health-(motion.landingSpeed-12)*3*(spec.armor||1));playHit();}
 
@@ -375,10 +705,16 @@ function movePlayer(dt){if(taxi?.phase==='transition'){state.speed=0;return;}if(
    animateGait(player,state.elapsed,state.speed,boost,state.y<ground+.1);
  }
 
- const onRoof=state.mode==='foot'&&footSurface(state.x,state.z,state.y,terrain,world.collision)>terrain.height(state.x,state.z,state.y)+.2;
- const waterY=onRoof||(state.car?.jump?.airborne&&state.y>terrain.waterHeight?.(state.x,state.z)+.3)?null:terrain.waterAt(state.x,state.z,0,state.y);
- if(waterY!==null){if(waterRecovery.enter(Math.max(state.y,terrain.elevation(state.x,state.z)),waterY)){state.y=waterRecovery.y;state.speed=0;keys.clear();document.body.classList.add('water-fall');toast('Water! Returning to dry land…',2);}}else waterRecovery.remember(state,terrain);
- const oldX=state.x,oldZ=state.z;state.x=clamp(state.x,-5970,7250);state.z=clamp(state.z,-6480,6230);if(oldX!==state.x||oldZ!==state.z){state.speed=0;toast('Edge of this map. Turn back towards Padova.',2);}
+ // Allow swimming rather than invoking the legacy instant-drowning path.
+ if(!waterGame.active){
+  const onRoof=state.mode==='foot'&&footSurface(state.x,state.z,state.y,terrain,world.collision)>
+   terrain.height(state.x,state.z,state.y)+.2;
+  if(!onRoof){
+   const waterY=terrain.waterAt(state.x,state.z,0,state.y);
+   if(!enterGameplayWater(waterY))waterRecovery.remember(state,terrain);
+  }
+ }
+ const oldX=state.x,oldZ=state.z,bound=regionalWorld?unifiedBounds:{minX:-5970,maxX:7250,minZ:-6480,maxZ:6230};state.x=clamp(state.x,bound.minX,bound.maxX);state.z=clamp(state.z,bound.minZ,bound.maxZ);if(oldX!==state.x||oldZ!==state.z){state.speed=0;toast('Limite dell’attuale mondo percorribile.',2);}
 }
 function trafficChoices(c,node){const edges=node.edges.filter(e=>e.id!==c.prev&&e.road.k!=='pedestrian'&&!['no','private'].includes(e.road?.access)&&e.road.w>c.spec.width+1),fallback=node.edges.filter(e=>e.road.k!=='pedestrian'&&!['no','private'].includes(e.road?.access)&&e.road.w>c.spec.width+1),pool=edges.length?edges:fallback;return pool.map(e=>({e,score:Math.random()*1.2-Math.abs(angleDiff(Math.atan2(graph.nodes[e.id].x-node.x,graph.nodes[e.id].z-node.z),c.yaw))*.25-cars.filter(o=>o!==c&&o.mesh.visible&&o.target===e.id).length*.35})).sort((a,b)=>b.score-a.score).map(v=>v.e);}
 function updateTraffic(dt){for(const c of cars){
@@ -434,21 +770,66 @@ function updateCamera(dt){
  camera.fov=THREE.MathUtils.lerp(camera.fov,targetFov,1-Math.exp(-dt*2));camera.updateProjectionMatrix();
  sun.position.set(state.x-100,state.y+180,state.z+70);sun.target.position.set(state.x,state.y,state.z);sun.target.updateMatrixWorld();
 }
-function updateUI(){const turbo=state.car?.style==='cinquecento',remaining=turbo&&state.car.turboTime>0?Math.max(1,Math.ceil(6-state.car.turboTime)):null;$('turboStatus').hidden=!turbo;$('turboCountdown').textContent=remaining??'READY';$('turboStatus').dataset.critical=remaining?'true':'false';if($('touchTurbo')){$('touchTurbo').hidden=!turbo&&!state.car?.spec.tracked;$('touchTurbo').textContent=state.car?.spec.tracked?'TAB · SPARA':'TURBO';}$('cannonStatus').hidden=!state.car?.spec.tracked;$('cannonStatus').textContent='TAB · CANNONE '+(state.car?.fireAt>state.elapsed?(state.car.fireAt-state.elapsed).toFixed(1)+' s':'PRONTO');$('touchChute').hidden=!state.car?.spec.aircraft;$('touchDescend').hidden=!state.car?.spec.aircraft;const nearest=PLACES.reduce((a,b)=>dist(a,state)<dist(b,state)?a:b),road=nearestRoad(state,graph);$('location').textContent=dist(nearest,state)<220?nearest.name:road?.segment.road.n||'Padova';$('district').textContent=districts?DISTRICTS[districts.at(state.x,state.z,road?.segment.road)].label:'PADOVA';$('money').textContent=Math.floor(state.money).toLocaleString('en-GB');$('wanted').textContent='★'.repeat(state.wanted)+'☆'.repeat(5-state.wanted);$('wanted').style.opacity=state.escape>0?(Math.sin(state.elapsed*5)>0?.5:1):1;const kmh=Math.round(Math.abs(state.speed)*3.6),health=state.health,rpm=state.mode==='car'?clamp(.9+Math.abs(state.speed)*.14+((keys.has('ShiftLeft')||keys.has('ShiftRight'))?1.2:0),.8,7.4):0,compass=['S','SE','E','NE','N','NW','W','SW'];$('speed').textContent=String(kmh).padStart(2,'0');$('vehicleName').textContent=state.mode==='car'?state.car.name.toUpperCase():'ON FOOT';$('gear').textContent=state.mode==='car'?(state.speed<-.4?'R':kmh<2?'N':String(Math.min(6,Math.max(1,Math.ceil(kmh/28))))):'—';$('rpm').style.width=(rpm/7.4*100)+'%';$('rpmValue').textContent=rpm.toFixed(1);$('altitude').textContent=Math.round(state.car?.spec.aircraft?state.y:terrain.elevation(state.x,state.z))+' M';$('gradient').textContent=state.car?(-Math.tan(terrain.slope(state.x,state.z,state.yaw,state.car.spec.wheelbase))*100).toFixed(1)+'%':'—';$('odometer').textContent=(state.distance/1000).toFixed(1)+' KM';$('heading').textContent=compass[Math.round((((state.yaw%(Math.PI*2))+Math.PI*2)%(Math.PI*2))/(Math.PI/4))%8];const nearbyTraffic=cars.filter(c=>c!==state.car&&dist(c,state)<300).length;$('trafficLevel').textContent=nearbyTraffic>12?'HIGH':nearbyTraffic>6?'MED':'LOW';$('health').style.width=health+'%';$('healthValue').textContent=Math.round(health)+'%';$('healthLabel').textContent=state.mode==='car'?'VEHICLE CONDITION':'SHIFT TO SPRINT';let hint='';if(taxiCanBoard())hint='E · SALI SUL TAXI';else if(state.mode==='foot'){const c=cars.find(c=>c.mesh.visible&&Math.abs((c.y||0)-state.y)<4&&vehicleReach(state,c)<2.4&&Math.abs(c.speed)<8);if(c&&c.mesh.visible&&c.health>0)hint='E · Get in '+c.name;}else if(state.car?.spec.aircraft)hint=state.car.spec.plane?'W/S · Velocità / SPACE · Decolla sopra 72 km/h / SHIFT · Scendi / F · Paracadute':'SPACE · Sali / SHIFT · Scendi / F · Paracadute / E · Esci a terra';else if(state.car?.spec.tracked)hint='TAB · Spara / A-D · Ruota anche da fermo';else if(state.mission?.type==='delivery'&&dist(state,state.mission.target)<25)hint='Stop inside the gold marker';else if(state.health<=0)hint='R · Recover and repair';else if(state.busted>1)hint='MOVE! Police are about to catch you';$('interact').textContent=hint;$('interact').hidden=!hint;if(state.elapsed>toastUntil)$('toast').hidden=true;updateMissionUI();updateMarker();if(!currentTarget())$('targetDistance').hidden=true;drawMini();}
+function updateUI(){
+ const ws=$('waterStatus');
+ if(ws){
+  // Keep the compact existing interaction hint at the surface: the large
+  // blue water panel duplicated it. Reveal only the oxygen warning underwater.
+  ws.hidden=!waterGame.active||(waterGame.swimming&&waterGame.swimDepth<=.85);
+  if(waterGame.vehicle){
+   const phase=waterGame.vehicle,remaining=Math.max(0,4.5-phase.elapsed);
+   ws.textContent=remaining>0?'AUTO A GALLA · AFFONDAMENTO FRA '+remaining.toFixed(1)+' S · E ESCI':
+    'AUTO IN AFFONDAMENTO · E NUOTA · R RECUPERA';
+  }else if(waterGame.swimming){
+   ws.textContent=waterGame.swimDepth>.85?
+    'SOTT’ACQUA · OSSIGENO '+Math.max(0,4-waterGame.underwater).toFixed(1)+' S · R RECUPERA':
+    'NUOTO · W/A/S/D · SPAZIO IMMERGITI · R RECUPERA';
+  }
+ }
+ const diveButton=document.querySelector('#touchControls [data-key="Space"]');
+ if(diveButton)diveButton.textContent=waterGame.swimming?'IMMERSIONE':'BRAKE / UP';
+ if($('touchCar'))$('touchCar').textContent=waterGame.vehicle?'E · NUOTA':'E · VEHICLE';
+ const turbo=state.car?.style==='cinquecento',remaining=turbo&&state.car.turboTime>0?Math.max(1,Math.ceil(6-state.car.turboTime)):null;$('turboStatus').hidden=!turbo;$('turboCountdown').textContent=remaining??'READY';$('turboStatus').dataset.critical=remaining?'true':'false';if($('touchTurbo')){$('touchTurbo').hidden=!turbo&&!state.car?.spec.tracked;$('touchTurbo').textContent=state.car?.spec.tracked?'TAB · SPARA':'TURBO';}$('cannonStatus').hidden=!state.car?.spec.tracked;$('cannonStatus').textContent='TAB · CANNONE '+(state.car?.fireAt>state.elapsed?(state.car.fireAt-state.elapsed).toFixed(1)+' s':'PRONTO');$('touchChute').hidden=!state.car?.spec.aircraft;$('touchDescend').hidden=!state.car?.spec.aircraft;const nearest=PLACES.reduce((a,b)=>dist(a,state)<dist(b,state)?a:b),road=nearestRoad(state,graph);$('location').textContent=dist(nearest,state)<220?nearest.name:road?.segment.road.n||'Padova';$('district').textContent=districts?DISTRICTS[districts.at(state.x,state.z,road?.segment.road)].label:'PADOVA';if(regionalPlayer()){const p=regionalWorld.place(state.x,state.z);$('location').textContent=p?.name||'PADOVA → VENEZIA';$('district').textContent=p?.lod==='detailed'?'CENTRO DETTAGLIATO':'CORRIDOIO · PERFORMANCE';}$('money').textContent=Math.floor(state.money).toLocaleString('en-GB');$('wanted').textContent='★'.repeat(state.wanted)+'☆'.repeat(5-state.wanted);$('wanted').style.opacity=state.escape>0?(Math.sin(state.elapsed*5)>0?.5:1):1;const kmh=Math.round(Math.abs(state.speed)*3.6),health=state.health,rpm=state.mode==='car'?clamp(.9+Math.abs(state.speed)*.14+((keys.has('ShiftLeft')||keys.has('ShiftRight'))?1.2:0),.8,7.4):0,compass=['S','SE','E','NE','N','NW','W','SW'];$('speed').textContent=String(kmh).padStart(2,'0');$('vehicleName').textContent=state.mode==='car'?state.car.name.toUpperCase():'ON FOOT';$('gear').textContent=state.mode==='car'?(state.speed<-.4?'R':kmh<2?'N':String(Math.min(6,Math.max(1,Math.ceil(kmh/28))))):'—';$('rpm').style.width=(rpm/7.4*100)+'%';$('rpmValue').textContent=rpm.toFixed(1);$('altitude').textContent=Math.round(state.car?.spec.aircraft?state.y:terrain.elevation(state.x,state.z))+' M';$('gradient').textContent=state.car?(-Math.tan(terrain.slope(state.x,state.z,state.yaw,state.car.spec.wheelbase))*100).toFixed(1)+'%':'—';$('odometer').textContent=(state.distance/1000).toFixed(1)+' KM';$('heading').textContent=compass[Math.round((((state.yaw%(Math.PI*2))+Math.PI*2)%(Math.PI*2))/(Math.PI/4))%8];const nearbyTraffic=cars.filter(c=>c!==state.car&&dist(c,state)<300).length;$('trafficLevel').textContent=nearbyTraffic>12?'HIGH':nearbyTraffic>6?'MED':'LOW';$('health').style.width=health+'%';$('healthValue').textContent=Math.round(health)+'%';$('healthLabel').textContent=waterGame.swimming?'SALUTE NUOTATORE':waterGame.vehicle?'SALUTE / AUTO SOMMERSA':state.mode==='car'?'VEHICLE CONDITION':'SHIFT TO SPRINT';let hint='';if(waterGame.vehicle)hint='E · ESCI DAL VEICOLO E NUOTA';else if(waterGame.swimming)hint='W/A/S/D · NUOTA · SPAZIO IMMERGITI · R RECUPERA';else if(taxiCanBoard())hint='E · SALI SUL TAXI';else if(state.mode==='foot'){const c=cars.find(c=>c.mesh.visible&&Math.abs((c.y||0)-state.y)<4&&vehicleReach(state,c)<2.4&&Math.abs(c.speed)<8);if(c&&c.mesh.visible&&!c.waterSinking&&c.health>0)hint='E · Get in '+c.name;}else if(state.car?.spec.aircraft)hint=state.car.spec.plane?'W/S · Velocità / SPACE · Decolla sopra 72 km/h / SHIFT · Scendi / F · Paracadute':'SPACE · Sali / SHIFT · Scendi / F · Paracadute / E · Esci a terra';else if(state.car?.spec.tracked)hint='TAB · Spara / A-D · Ruota anche da fermo';else if(state.mission?.type==='delivery'&&dist(state,state.mission.target)<25)hint='Stop inside the gold marker';else if(state.health<=0)hint='R · Recover and repair';else if(state.busted>1)hint='MOVE! Police are about to catch you';$('interact').textContent=hint;$('interact').hidden=!hint;if(state.elapsed>toastUntil)$('toast').hidden=true;updateMissionUI();updateMarker();if(!currentTarget())$('targetDistance').hidden=true;drawMini();}
 
 function setPaused(v){state.paused=v;clock.reset();previousPose=null;renderAlpha=1;keys.clear();drag=null;cameraRig.end(state.elapsed);if(v&&engineAudio)engineAudio.gain.gain.setTargetAtTime(0,engineAudio.ctx.currentTime,.1);}
 function showMenu(title,content){setPaused(true);$('menuTitle').textContent=title;$('menuContent').innerHTML=content;if(!$('menu').open)$('menu').showModal();}
-function closeDialogs(){taxiMapPick=false;$('menu').close();$('mapDialog').close();setPaused(false);}
+function closeDialogs(){taxiMapPick=false;mapTouches.clear();mapPinchDistance=0;mapPointer=null;mapDragged=false;$('menu').close();$('mapDialog').close();setPaused(false);}
 function activities(){if(!state.ready)return;let html='<div class="activities">';for(const [type,m] of Object.entries(missionTypes))html+='<button class="activity" data-mission="'+type+'"><span class="icon">'+({delivery:'◇',race:'⚑',escape:'★',portavalori:'▣'}[type])+'</span><span><b>'+m.title+'</b><small>'+m.desc+'</small></span><span class="reward">'+m.reward+'</span></button>';html+='</div>';if(state.mode!=='car')html+='<p class="about-copy">Get in a car with <kbd>E</kbd> before accepting a job.</p>';if(state.mission)html+='<div class="menu-actions"><button id="cancelJob">Cancel current activity</button></div>';showMenu('A little extra on the side.',html);document.querySelectorAll('[data-mission]').forEach(b=>b.onclick=()=>{if(state.mode!=='car'){closeDialogs();toast('Get in the nearby car with E, then press J.');return;}beginMission(b.dataset.mission);});if($('cancelJob'))$('cancelJob').onclick=()=>{cancelMission();closeDialogs();};}
-function pauseMenu(){if(!state.ready)return;showMenu('Take a breather.','<div class="controls-grid"><span><kbd>W / S</kbd> accelerate / reverse</span><span><kbd>A / D</kbd> sterza / ruota</span><span><kbd>E</kbd> enter / leave vehicle</span><span><kbd>V</kbd> choose a vehicle</span><span><kbd>SPACE</kbd> brake / jump</span><span><kbd>SHIFT</kbd> boost / sprint</span><span><kbd>TAB</kbd> Turbo Cinquecento / cannone carro</span><span><kbd>F</kbd> paracadute in volo</span><span>Volo: W accelera · SPACE sale · SHIFT scende</span><span><kbd>C</kbd> cycle camera</span><span><kbd>M</kbd> city map</span><span><kbd>J</kbd> activities</span><span><kbd>R</kbd> recover & repair</span><span>A piedi: W/S cammina, A/D ruota. Trascina per guardarti intorno.</span></div><div class="settings"><label for="quality">Graphics</label><select id="quality">'+qualityOptions()+'</select><button id="soundBtn" class="textbutton">Sound: '+(state.sound?'on':'off')+'</button></div><p class="about-copy">'+state.jobs+' jobs completed · €'+Math.floor(state.money)+' earned<br>Progress is saved on this browser. Graphics and population update immediately. Iper Performance simplifies buildings, vehicles and people.<br>Scene: '+renderer.info.render.calls+' draw calls · '+Math.round(renderer.info.render.triangles/1000)+'k triangles.</p><div class="menu-actions"><button class="primary" id="resumeBtn">'+(state.started?'Back to the streets':'Close')+'</button><button id="recoverBtn">Recover vehicle</button><button id="fullscreenBtn" aria-pressed="false" aria-describedby="fullscreenMessage">Schermo intero</button><button id="vehiclesBtn">Choose a vehicle</button><button id="worldInfoBtn">About the world</button></div><div id="fullscreenHelp" class="fullscreen-help" role="status" hidden><p id="fullscreenMessage"></p><a id="fullscreenLink" target="_blank" rel="noopener">Apri il gioco nel browser ↗</a></div>');$('quality').value=state.quality;$('quality').onchange=e=>{state.quality=e.target.value;applyQuality();save();};$('resumeBtn').onclick=closeDialogs;$('recoverBtn').onclick=()=>{recover();closeDialogs();};fullscreenControls.bind($('fullscreenBtn'),$('fullscreenHelp'),$('fullscreenMessage'),$('fullscreenLink'));$('worldInfoBtn').onclick=about;$('vehiclesBtn').onclick=vehiclesMenu;$('soundBtn').onclick=()=>{state.sound=!state.sound;if(state.sound)initAudio();$('soundBtn').textContent='Sound: '+(state.sound?'on':'off');};}
+function pauseMenu(){if(!state.ready)return;showMenu('Take a breather.','<div class="controls-grid"><span><kbd>W / S</kbd> accelerate / reverse</span><span><kbd>A / D</kbd> sterza / ruota</span><span><kbd>E</kbd> enter / leave vehicle</span><span><kbd>V</kbd> choose a vehicle</span><span><kbd>SPACE</kbd> brake / jump</span><span><kbd>SHIFT</kbd> boost / sprint</span><span><kbd>TAB</kbd> Turbo Cinquecento / cannone carro</span><span><kbd>F</kbd> paracadute in volo</span><span>Volo: W accelera · SPACE sale · SHIFT scende</span><span><kbd>C</kbd> cycle camera</span><span><kbd>M</kbd> city map</span><span><kbd>J</kbd> activities</span><span><kbd>R</kbd> recupero locale anche in acqua</span><span>Nuoto: W/A/S/D · SPAZIO immersione · SHIFT sprint · E esci dall’auto a galla</span><span>A piedi: W/S cammina, A/D ruota. Trascina per guardarti intorno.</span></div><div class="settings"><label for="quality">Graphics</label><select id="quality">'+qualityOptions()+'</select><button id="soundBtn" class="textbutton">Sound: '+(state.sound?'on':'off')+'</button></div><p class="about-copy">'+state.jobs+' jobs completed · €'+Math.floor(state.money)+' earned<br>Progress is saved on this browser. Graphics and population update immediately. Iper Performance simplifies buildings, vehicles and people.<br>Scene: '+renderer.info.render.calls+' draw calls · '+Math.round(renderer.info.render.triangles/1000)+'k triangles.</p><div class="menu-actions"><button class="primary" id="resumeBtn">'+(state.started?'Back to the streets':'Close')+'</button><button id="recoverBtn">Recover vehicle</button><button id="fullscreenBtn" aria-pressed="false" aria-describedby="fullscreenMessage">Schermo intero</button><button id="vehiclesBtn">Choose a vehicle</button><button id="worldInfoBtn">About the world</button></div><div id="fullscreenHelp" class="fullscreen-help" role="status" hidden><p id="fullscreenMessage"></p><a id="fullscreenLink" target="_blank" rel="noopener">Apri il gioco nel browser ↗</a></div>');$('quality').value=state.quality;$('quality').onchange=e=>{state.quality=e.target.value;applyQuality();save();};$('resumeBtn').onclick=closeDialogs;$('recoverBtn').onclick=()=>{requestRecover();closeDialogs();};fullscreenControls.bind($('fullscreenBtn'),$('fullscreenHelp'),$('fullscreenMessage'),$('fullscreenLink'));$('worldInfoBtn').onclick=about;$('vehiclesBtn').onclick=vehiclesMenu;$('soundBtn').onclick=()=>{state.sound=!state.sound;if(state.sound)initAudio();$('soundBtn').textContent='Sound: '+(state.sound?'on':'off');};}
 function about(){const buildings=data?.buildings.length.toLocaleString('en-GB')||'88,000';showMenu('Padova, at street scale.','<div class="about-copy"><p><strong>A playable, stylised reconstruction of Padua.</strong> '+buildings+' mapped building footprints, real streets, waterways and parks across a roughly 13 × 13 km area. One metre in the map is one metre in the game.</p><p>Street geometry and building footprints come from <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap contributors</a> (ODbL). Building heights are estimated where the map has no height data. Facades and landmark details are interpretive. Terrain follows an offline, smoothed elevation grid without exaggeration. Bridge ramps and river levels are approximate. Water causes a fall and automatic recovery; bridges remain usable.</p><p>Elevation: <a href="https://github.com/tilezen/joerd/blob/master/docs/attribution.md" target="_blank" rel="noopener">Mapzen Terrain Tiles · Copernicus EU-DEM · USGS</a>. <a href="./data/terrain.json" download>Download the derived terrain data</a>.</p><p>Buildings with supplied GLB models replace their map extrusions automatically. The remaining city is still approximate; a complete photographic centre is not included.</p><p>This version has outdoor exploration, driving, traffic, courier jobs, checkpoint races and police pursuits. It does not contain photographic buildings, complex interiors, multiplayer or GTA’s full systems.</p><p>Best on a MacBook with a keyboard. Use <strong>Performance</strong> graphics if movement feels slow. Drag on the scene to look around; no mouse lock needed.</p><p>Built with <a href="https://threejs.org" target="_blank" rel="noopener">Three.js</a> · <a href="./data/padova.json" download>Download the derived map data</a> · <a href="./model-guide.html" target="_blank" rel="noopener">Add real buildings</a></p></div><div class="menu-actions"><button class="primary" id="aboutClose">Back</button></div>');$('aboutClose').onclick=closeDialogs;}
-function openMap(){if(!state.ready)return;taxiMapPick=false;setPaused(true);$('mapPlaces').innerHTML='<button class="primary" id="callTaxi">CHIAMA TAXI ABUSIVO</button><span class="eyebrow">IMPOSTA INDICATORE</span>'+PLACES.map((p,i)=>'<button data-place="'+i+'">'+p.name+'<small>'+p.tag+'</small></button>').join('')+'<button id="clearWaypoint">Clear waypoint</button>';$('callTaxi').onclick=()=>{closeDialogs();dispatchPhysicalTaxi();};$('mapPlaces').querySelectorAll('[data-place]').forEach(b=>b.onclick=()=>{state.waypoint=safeTarget(PLACES[Number(b.dataset.place)]);routeTo(state.waypoint);drawFullMap();closeDialogs();});$('clearWaypoint').onclick=()=>{state.waypoint=null;if(!state.mission)state.route=[];drawFullMap();};drawFullMap();$('mapDialog').showModal();}
+function openMap(){if(!state.ready)return;taxiMapPick=false;setPaused(true);$('mapPlaces').innerHTML='<button class="primary" id="callTaxi">CHIAMA TAXI ABUSIVO</button><span class="eyebrow">IMPOSTA INDICATORE</span>'+PLACES.map((p,i)=>'<button data-place="'+i+'">'+p.name+'<small>'+p.tag+'</small></button>').join('')+'<button id="clearWaypoint">Clear waypoint</button>';$('callTaxi').onclick=()=>{closeDialogs();dispatchPhysicalTaxi();};$('mapPlaces').querySelectorAll('[data-place]').forEach(b=>b.onclick=()=>{state.waypoint=safeTarget(PLACES[Number(b.dataset.place)]);routeTo(state.waypoint);drawFullMap();closeDialogs();});$('clearWaypoint').onclick=()=>{state.waypoint=null;if(!state.mission)state.route=[];drawFullMap();};installRegionalMapPlaces();if(unifiedMap)unifiedMap.centerOn(state.x,state.z,Math.max(11,unifiedMap.zoomLevel));$('mapDialog').showModal();resizeMapSurfaces();drawFullMap();}
 $('fullmap').onclick=e=>{
  try{
-  const r=$('fullmap').getBoundingClientRect(),size=Math.min(r.width,r.height);if(!Number.isFinite(size)||size<=0||!Number.isFinite(e?.clientX)||!Number.isFinite(e?.clientY))throw new Error('Invalid map pointer/geometry');
-  const offsetX=(r.width-size)/2,offsetY=(r.height-size)/2,px=e.clientX-r.left-offsetX,py=e.clientY-r.top-offsetY;if(!Number.isFinite(px)||!Number.isFinite(py))throw new Error('Map conversion returned NaN');if(px<0||py<0||px>size||py>size)return;
+  if(mapDragged){mapDragged=false;return;}
+  if(unifiedMap){
+   const rect=$('fullmap').getBoundingClientRect();
+   const point=unifiedMap.fromCanvas((e.clientX-rect.left)*$('fullmap').width/rect.width,(e.clientY-rect.top)*$('fullmap').height/rect.height);
+   const envelope=unifiedMap.bounds;
+   if(point.x<envelope.x||point.z<envelope.z||point.x>envelope.x+envelope.w||point.z>envelope.z+envelope.h)return;
+   if(taxiMapPick){
+    if(!validTaxiDestination(point)){toast('Il taxi è disponibile soltanto nella zona di Padova.');return;}
+    if(!taxiMenuController)throw new Error('Taxi map controller missing');
+    taxiMenuController.onSelectFromMap(point.x,point.z,e);return;
+   }
+   if(state.mission){toast('Termina la missione per scegliere una nuova destinazione.');return;}
+   if(regionalWorld&&regionalWorld.contains(point.x,point.z)){
+    const road=regionalWorld.nearestRoad(point.x,point.z,120);
+    state.waypoint={x:road?.x??point.x,z:road?.z??point.z,name:'Destinazione regionale'};
+    state.route=[];drawFullMap();closeDialogs();toast('Indicatore impostato. Segui le strade verso Venezia.',4);return;
+   }
+   if(!validTaxiDestination(point)){toast('Questa zona non è ancora percorribile.');return;}
+   const road=taxiFastRoad(point);
+   if(!road){toast('Seleziona una strada percorribile.');return;}
+   state.waypoint={x:road.x,z:road.z,name:'Indicatore'};routeTo(state.waypoint);drawFullMap();closeDialogs();return;
+  }
+
+  const rect=$('fullmap').getBoundingClientRect();
+  if(!(rect.width>0&&rect.height>0)||!Number.isFinite(e?.clientX)||!Number.isFinite(e?.clientY))throw new Error('Invalid map pointer/geometry');
+  const px=(e.clientX-rect.left)/rect.width,py=(e.clientY-rect.top)/rect.height;
+  if(!Number.isFinite(px)||!Number.isFinite(py))throw new Error('Map conversion returned NaN');
+  if(px<0||py<0||px>1||py>1)return;
   if(state.mission){toast('Finish or cancel your activity to set a waypoint.');return;}
-  const p={x:minBounds.x+px/size*minBounds.w,z:minBounds.z+py/size*minBounds.h,name:taxiMapPick?'Destinazione personalizzata':'Waypoint'};if(!validTaxiDestination(p))throw new Error('Map click outside valid world bounds');
+  const p={x:minBounds.x+px*minBounds.w,z:minBounds.z+py*minBounds.h,name:taxiMapPick?'Destinazione personalizzata':'Waypoint'};if(!validTaxiDestination(p))throw new Error('Map click outside valid world bounds');
   if(taxiMapPick){if(!taxiMenuController)throw new Error('TaxiMenuController not initialized');taxiMenuController.onSelectFromMap(p.x,p.z,e);return;}
   const road=taxiFastRoad(p);if(!road)throw new Error('Waypoint has no bounded road node');state.waypoint={x:road.x,z:road.z,name:p.name};routeTo(state.waypoint);drawFullMap();closeDialogs();
  }catch(error){taxiDestinationFailure(error,'map click');}
@@ -467,15 +848,15 @@ function initAudio(){if(engineAudio){engineAudio.ctx.resume().catch(()=>{});retu
 function playHit(){if(!state.sound)return;initAudio();if(!engineAudio)return;const {ctx}=engineAudio,o=ctx.createOscillator(),g=ctx.createGain();o.type='triangle';o.frequency.setValueAtTime(65,ctx.currentTime);o.frequency.exponentialRampToValueAtTime(20,ctx.currentTime+.2);g.gain.setValueAtTime(.17,ctx.currentTime);g.gain.exponentialRampToValueAtTime(.001,ctx.currentTime+.2);o.connect(g).connect(ctx.destination);o.start();o.stop(ctx.currentTime+.22);}
 
 function start(){if(!state.ready)return;characterPicker?.open(state.character);}
-function interact(){if(taxiCanBoard())boardTaxiAndChoose();else toggleVehicle();}
-function enterCity(id){selectCharacter(id);Object.assign(state,{x:HOME.x,z:HOME.z,yaw:HOME.yaw});state.y=terrain.height(state.x,state.z);player.position.set(state.x,state.y,state.z);save();state.started=true;state.paused=false;previousPose=null;clock.reset();$('intro').hidden=true;$('playingUI').hidden=false;state.elapsed=0;lastUi=-1;followYaw=state.yaw;cameraRig.reset(state.yaw);camera.position.set(state.x-8,state.y+7,state.z-9);toast('Villa di Parco Treves. E per l’auto. M → Aeroporto per aerei, elicotteri e carri. J per il Portavalori.',7);}
+function interact(){if(waterGame.active)toggleVehicle();else if(taxiCanBoard())boardTaxiAndChoose();else toggleVehicle();}
+function enterCity(id){selectCharacter(id);Object.assign(state,{x:HOME.x,z:HOME.z,yaw:HOME.yaw});state.y=terrain.height(state.x,state.z);localRespawn.remember(state,terrain,respawnClear,state.elapsed,true);player.position.set(state.x,state.y,state.z);save();state.started=true;state.paused=false;previousPose=null;clock.reset();$('intro').hidden=true;$('playingUI').hidden=false;resizeMapSurfaces();state.elapsed=0;lastUi=-1;followYaw=state.yaw;cameraRig.reset(state.yaw);camera.position.set(state.x-8,state.y+7,state.z-9);toast('Villa di Parco Treves. E per l’auto. M → Aeroporto per aerei, elicotteri e carri. J per il Portavalori.',7);}
 $('characterSelect').innerHTML=CHARACTERS.map(c=>'<option value="'+c.id+'">'+c.name+'</option>').join('');$('characterSelect').value=state.character;$('characterSelect').onchange=e=>{state.character=e.target.value;};$('touchChute').onclick=ejectParachute;
 $('playBtn').onclick=start;$('pauseBtn').onclick=pauseMenu;$('activityBtn').onclick=activities;$('mapBtn').onclick=openMap;$('closeMenu').onclick=closeDialogs;$('closeMap').onclick=closeDialogs;$('aboutBtn').onclick=about;$('touchCar').onclick=interact;$('vehicleMenuBtn').onclick=vehiclesMenu;$('taxiNext').onclick=nextTaxiFact;$('taxiMeme').onclick=e=>{if(e.target.id!=='taxiNext')nextTaxiFact();};
 for(const d of [$('menu'),$('mapDialog')])d.addEventListener('cancel',()=>{taxiMapPick=false;setPaused(false);});
-inputManager.start(e=>{if(e.code==='F3'){e.preventDefault();if(!e.repeat)performanceOverlay.toggle();return;}if(e.code==='Tab'&&state.started&&!state.paused&&(state.car?.style==='cinquecento'||state.car?.spec.tracked))e.preventDefault();if(['KeyW','KeyA','KeyS','KeyD','ArrowUp','ArrowDown','ArrowLeft','ArrowRight','Space'].includes(e.code)&&state.started&&!state.paused)e.preventDefault();if(e.repeat)return;if(state.paused){if(e.code==='KeyM'&&$('mapDialog')?.open&&!taxiMapPick){e.preventDefault();closeDialogs();return;}if(e.code==='Escape'||e.code==='KeyX'&&($('menu')?.open||$('mapDialog')?.open)){e.preventDefault();taxiMenuController?.cancel();closeDialogs();}return;}if(e.code==='Escape'){if(state.started)pauseMenu();return;}if(e.code==='Enter'&&!state.started){start();return;}if(!state.started)return;keys.add(e.code);if(e.code==='KeyM'){openMap();return;}if(e.code==='KeyE')interact();if(e.code==='KeyC'){state.camera=(state.camera+1)%3;toast(['Chase camera','Close camera','Aerial camera'][state.camera],1.5);}if(e.code==='KeyV')vehiclesMenu();if(e.code==='KeyJ')activities();if(e.code==='KeyR')recover();if(e.code==='KeyF')ejectParachute();});window.addEventListener('blur',()=>{keys.clear();if(state.started&&!state.paused)pauseMenu();});document.addEventListener('visibilitychange',()=>{if(document.hidden){keys.clear();if(state.started&&!state.paused)pauseMenu();}});
+inputManager.start(e=>{if(e.code==='F3'){e.preventDefault();if(!e.repeat)performanceOverlay.toggle();return;}if(e.code==='Tab'&&state.started&&!state.paused&&(state.car?.style==='cinquecento'||state.car?.spec.tracked))e.preventDefault();if(['KeyW','KeyA','KeyS','KeyD','ArrowUp','ArrowDown','ArrowLeft','ArrowRight','Space'].includes(e.code)&&state.started&&!state.paused)e.preventDefault();if(e.repeat)return;if(state.paused){if(e.code==='KeyM'&&$('mapDialog')?.open&&!taxiMapPick){e.preventDefault();closeDialogs();return;}if(e.code==='Escape'||e.code==='KeyX'&&($('menu')?.open||$('mapDialog')?.open)){e.preventDefault();taxiMenuController?.cancel();closeDialogs();}return;}if(e.code==='Escape'){if(state.started)pauseMenu();return;}if(e.code==='Enter'&&!state.started){start();return;}if(!state.started)return;keys.add(e.code);if(e.code==='KeyM'){openMap();return;}if(e.code==='KeyE')interact();if(e.code==='KeyC'){state.camera=(state.camera+1)%3;toast(['Chase camera','Close camera','Aerial camera'][state.camera],1.5);}if(e.code==='KeyV')vehiclesMenu();if(e.code==='KeyJ')activities();if(e.code==='KeyR')requestRecover();if(e.code==='KeyF')ejectParachute();});window.addEventListener('blur',()=>{keys.clear();if(state.started&&!state.paused)pauseMenu();});document.addEventListener('visibilitychange',()=>{if(document.hidden){keys.clear();if(state.started&&!state.paused)pauseMenu();}});
 canvas.addEventListener('pointerdown',e=>{if(!state.started||state.paused||drag)return;drag={id:e.pointerId,x:e.clientX,y:e.clientY};cameraRig.begin();canvas.setPointerCapture(e.pointerId);});canvas.addEventListener('pointermove',e=>{if(!drag||e.pointerId!==drag.id)return;cameraRig.drag(e.clientX-drag.x,e.clientY-drag.y);drag={id:e.pointerId,x:e.clientX,y:e.clientY};});for(const event of ['pointerup','pointercancel','lostpointercapture'])canvas.addEventListener(event,e=>{if(drag&&e.pointerId===drag.id){drag=null;cameraRig.end(state.elapsed);}});canvas.addEventListener('contextmenu',e=>e.preventDefault());
 document.querySelectorAll('[data-key]').forEach(b=>{b.addEventListener('pointerdown',e=>{e.preventDefault();keys.add(b.dataset.key);b.setPointerCapture(e.pointerId);});for(const ev of ['pointerup','pointercancel','lostpointercapture'])b.addEventListener(ev,()=>keys.delete(b.dataset.key));});
-function resizeViewport(){if(!renderer)return;camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();renderer.setSize(innerWidth,innerHeight);}
+function resizeViewport(){resizeMapSurfaces();if($('mapDialog')?.open)drawFullMap();if(!renderer)return;camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();renderer.setSize(innerWidth,innerHeight);}
 window.addEventListener('resize',resizeViewport);window.visualViewport?.addEventListener('resize',resizeViewport);
 
 function simulate(dt){
@@ -483,7 +864,7 @@ function simulate(dt){
  for(const a of [...cars,...people,...cops])if(a.mesh.visible&&(a===state.car||!a.parked))previousActors.set(a.mesh,{x:a.x,z:a.z,y:a.y,yaw:a.yaw});
  const flying=state.car;if(flying?.spec.aircraft&&flying.mesh.visible){const u=flying.mesh.userData;if(u.rotor)u.rotor.rotation.y+=dt*35;if(u.tailRotor)u.tailRotor.rotation.x+=dt*45;if(u.propeller){if(u.propeller.children.some(o=>o.name==='engine-prop')){for(const o of u.propeller.children)o.rotation.z+=dt*(25+Math.abs(state.speed));}else u.propeller.rotation.z+=dt*(25+Math.abs(state.speed));}}
  state.elapsed+=dt;collisionCooldown=Math.max(0,collisionCooldown-dt);
- if(state.started){applyKnock(state,dt);for(const a of [...cars,...people,...cops])if(a!==state.car)applyKnock(a,dt);movePlayer(dt);if(taxi?.phase==='transition'){taxiDriverNPC?.update(state.elapsed);}else{speedCameras?.update();updateTraffic(dt);updateTaxi(dt);updatePeople(dt);trams?.update(dt,state.elapsed,state,[state,...cars.filter(c=>c!==state.car),...people,...cops],kickActor);incidents?.update(state.elapsed);if(!waterRecovery.active&&!incidents?.recovery){updatePolice(dt);gameplay?.update(dt);updateMission(dt);}}
+ if(state.started){applyKnock(state,dt);for(const a of [...cars,...people,...cops])if(a!==state.car)applyKnock(a,dt);movePlayer(dt);waterGame.updateAbandoned(dt,terrain);if(!waterGame.active&&!waterRecovery.active&&!incidents?.recovery)localRespawn.remember(state,terrain,respawnClear,state.elapsed);if(taxi?.phase==='transition'){taxiDriverNPC?.update(state.elapsed);}else{if(!regionalPlayer()){speedCameras?.update();updateTraffic(dt);updateTaxi(dt);updatePeople(dt);trams?.update(dt,state.elapsed,state,[state,...cars.filter(c=>c!==state.car),...people,...cops],kickActor);}incidents?.update(state.elapsed);if(!waterGame.active&&!waterRecovery.active&&!incidents?.recovery){updatePolice(dt);gameplay?.update(dt);updateMission(dt);}}
    if(state.waypoint&&!state.mission&&dist(state,state.waypoint)<15){state.waypoint=null;state.route=[];toast('You’ve reached your waypoint.');}
  }
 }
@@ -493,13 +874,25 @@ function animate(time){
  if(!state.ready)return;frame++;
  if(characterPicker?.active){world.update(state.x,state.z);characterPicker.update(time,innerWidth,innerHeight);renderer.render(characterPicker.scene,characterPicker.camera);return;}
  if(!state.paused){
-   const streamFocus=state;world.update(streamFocus.x,streamFocus.z,false,{speed:state.speed,yaw:state.yaw,aircraft:!!state.car?.spec.aircraft,altitude:Math.max(0,state.y-terrain.elevation(state.x,state.z))});updateMicromobility(dt);
+   const streamFocus=state;
+    if(!regionalPlayer()){
+     world.update(streamFocus.x,streamFocus.z,false,{speed:state.speed,yaw:state.yaw,
+      aircraft:!!state.car?.spec.aircraft,altitude:Math.max(0,state.y-terrain.elevation(state.x,state.z))});
+     updateMicromobility(dt);
+    }
+    regionalWorld?.update(state,dt);
+    if(regionalWorld&&state.started&&!lagoonPreloadActive){
+     if(state.x<31500){lagoonPreloadDone=false;lagoonPreloadCooloff=false;}
+     if(state.x>=33500&&!lagoonPreloadDone&&!lagoonPreloadCooloff){
+      lagoonPreloadCooloff=true;void preloadLagoon();
+     }
+    }
    renderAlpha=clock.advance(dt,simulate);
    const pose=visualPose();if(state.mode==='foot')player.position.set(pose.x,pose.y+.08,pose.z);
-   for(const a of [...cars,...people,...cops]){if(!a.mesh.visible||a.parked&&a!==state.car)continue;const prev=a.lodFrom||previousActors.get(a.mesh);if(!prev||dist(prev,a)>10)continue;const blend=a.lodFrom?clamp((state.elapsed-a.lodAt+renderAlpha*clock.step)/a.lodSpan,0,1):renderAlpha;a.mesh.position.x=THREE.MathUtils.lerp(prev.x,a.x,blend);a.mesh.position.z=THREE.MathUtils.lerp(prev.z,a.z,blend);a.mesh.position.y=a===state.car&&waterRecovery.active?pose.y:THREE.MathUtils.lerp(prev.y,a.y,blend);a.mesh.rotation.y=prev.yaw+angleDiff(a.yaw,prev.yaw)*blend;}
+   for(const a of [...cars,...people,...cops]){if(!a.mesh.visible||a.waterSinking||a.parked&&a!==state.car)continue;const prev=a.lodFrom||previousActors.get(a.mesh);if(!prev||dist(prev,a)>10)continue;const blend=a.lodFrom?clamp((state.elapsed-a.lodAt+renderAlpha*clock.step)/a.lodSpan,0,1):renderAlpha;a.mesh.position.x=THREE.MathUtils.lerp(prev.x,a.x,blend);a.mesh.position.z=THREE.MathUtils.lerp(prev.z,a.z,blend);a.mesh.position.y=a===state.car&&waterRecovery.active?pose.y:THREE.MathUtils.lerp(prev.y,a.y,blend);a.mesh.rotation.y=prev.yaw+angleDiff(a.yaw,prev.yaw)*blend;}
    // Chunk creation is scheduled before the simulation catch-up loop.
    if(state.elapsed>=detailAt){refreshActorDetail();detailAt=state.elapsed+.3;}
-   if(!world.streaming?.metrics.pressure)modelLayer?.update(state.x,state.z,!qualityFor(state.quality).simple);
+   if(!regionalPlayer()&&!world.streaming?.metrics.pressure)modelLayer?.update(state.x,state.z,!qualityFor(state.quality).simple);
    updateCamera(dt);signals?.update(scene,terrain,state.x,state.z,state.elapsed);
    if(marker){marker.children[1].position.y=7+Math.sin(state.elapsed*2)*.7;marker.children[1].rotation.y=state.elapsed*.6;}
    if(state.elapsed-lastUi>.12){updateUI();lastUi=state.elapsed;}
@@ -517,9 +910,9 @@ async function init(){try{progress(5,'Loading the city map…');const [response,
  taxiLoadingOverlay=new TaxiLoadingOverlay({overlay:$('taxiLoading'),meme:$('taxiMeme'),status:$('taxiLoadingStatus'),assetTimeoutMs:1000});
  taxiDriverNPC=new TaxiDriverNPC({scene,createPerson,THREE,terrain,collision:world.collision,collides});
  taxiSystem=new TaxiSystem({inputManager,timeoutMs:3000,executeTeleport:({targetCoords,destination,price})=>applyTaxiDestination(destination,targetCoords,price),forcePlayerPosition:({targetCoords,destination,price})=>applyTaxiDestination(destination,targetCoords,price,{fallback:true}),onFinally:()=>{document.body.classList.remove('taxi-transit');if($('taxiLoading'))$('taxiLoading').hidden=true;setPaused(false);keys.clear();}});
- taxiMenuController=new TaxiMenuController({document,menu:$('menu'),mapDialog:$('mapDialog'),menuContent:$('menuContent'),mapPlaces:$('mapPlaces'),fullMap:$('fullmap'),overlay:$('taxiLoading'),status:$('taxiLoadingStatus'),inputManager,bounds:minBounds,setPaused,drawFullMap,getFare:coords=>taxiFare(taxi.car,coords),executeTransition:executeTaxiTransition,onError:(error,context)=>taxiDestinationFailure(error,context),onMapPickingChange:value=>{taxiMapPick=value;},delayMs:50});
+ taxiMenuController=new TaxiMenuController({document,menu:$('menu'),mapDialog:$('mapDialog'),menuContent:$('menuContent'),mapPlaces:$('mapPlaces'),fullMap:$('fullmap'),overlay:$('taxiLoading'),status:$('taxiLoadingStatus'),inputManager,bounds:minBounds,setPaused,drawFullMap,getFare:coords=>taxiFare(taxi.car,coords),executeTransition:executeTaxiTransition,onError:(error,context)=>taxiDestinationFailure(error,context),onMapPickingChange:value=>{taxiMapPick=value;if(unifiedMap){if(value)unifiedMap.centerOn(-100,-50,5);else unifiedMap.reset();}},delayMs:50});
  signals=new TrafficSignals(graph,data.signals);trams=new Trams(scene,data,terrain,state.quality);incidents=new Incidents(scene);player=createPerson('#d9bf8f');scene.add(player);createPopulation();world.update(state.x,state.z,true);progress(85,'Drawing your map…');await yieldFrame();makeMap();
- marker=new THREE.Group();const ring=new THREE.Mesh(new THREE.TorusGeometry(11,.27,8,48),new THREE.MeshBasicMaterial({color:'#ffcb72'}));ring.rotation.x=Math.PI/2;const arrow=new THREE.Mesh(new THREE.OctahedronGeometry(1.8),new THREE.MeshStandardMaterial({color:'#ffc56a',emissive:'#8b5d1f',emissiveIntensity:.3}));arrow.position.y=7;marker.add(ring,arrow);const beam=new THREE.Mesh(new THREE.CylinderGeometry(2,10,26,24,1,true),new THREE.MeshBasicMaterial({color:'#ffc56a',transparent:true,opacity:.045,depthWrite:false,side:THREE.DoubleSide}));beam.position.y=13;marker.add(beam);marker.visible=false;scene.add(marker);progress(100,'Ready. '+data.buildings.length.toLocaleString('en-GB')+' buildings · real-world scale');state.ready=true;$('playBtn').disabled=false;$('playBtn').textContent='Scegli il personaggio  →';$('playBtn').onclick=start;updateUI();characterPicker=new CharacterPicker(document,enterCity);characterPicker.open(state.character);requestAnimationFrame(animate);
+ marker=new THREE.Group();const ring=new THREE.Mesh(new THREE.TorusGeometry(11,.27,8,48),new THREE.MeshBasicMaterial({color:'#ffcb72'}));ring.rotation.x=Math.PI/2;const arrow=new THREE.Mesh(new THREE.OctahedronGeometry(1.8),new THREE.MeshStandardMaterial({color:'#ffc56a',emissive:'#8b5d1f',emissiveIntensity:.3}));arrow.position.y=7;marker.add(ring,arrow);const beam=new THREE.Mesh(new THREE.CylinderGeometry(2,10,26,24,1,true),new THREE.MeshBasicMaterial({color:'#ffc56a',transparent:true,opacity:.045,depthWrite:false,side:THREE.DoubleSide}));beam.position.y=13;marker.add(beam);marker.visible=false;scene.add(marker);progress(100,'Ready. '+data.buildings.length.toLocaleString('en-GB')+' buildings · real-world scale');state.ready=true;$('playBtn').disabled=false;$('playBtn').textContent='Scegli il personaggio  →';$('playBtn').onclick=start;updateUI();characterPicker=new CharacterPicker(document,enterCity);characterPicker.open(state.character);requestAnimationFrame(animate);void startUnifiedRegion();
  }catch(e){console.error(e);progress(100,'');$('loadingText').className='fatal';$('loadingText').textContent='The city could not start. '+(String(e).includes('WebGL')?'Enable WebGL / hardware acceleration in your browser and reload.':'Check your connection and reload to try again.');$('playBtn').textContent='Reload city';$('playBtn').disabled=false;$('playBtn').onclick=()=>location.reload();}}
 $('initialQuality').innerHTML=qualityOptions();$('initialQuality').value=state.quality;$('initialQuality').onchange=e=>{state.quality=e.target.value;save();};
 $('playBtn').disabled=false;$('playBtn').textContent='Carica la mappa  →';$('playBtn').onclick=()=>{$('playBtn').disabled=true;$('initialQuality').disabled=true;init();};

@@ -1,0 +1,40 @@
+/* Unified world first-pass interface; the original Padova HUD is unchanged. */
+#mapDialog{width:min(1660px,98vw)}
+#mapDialog .dialog-head{gap:14px}
+.unified-zoom{display:flex;align-items:center;gap:6px;margin-left:auto;flex-wrap:wrap}
+.unified-zoom button{font:700 13px system-ui;min-width:39px;border:1px solid #76919b;border-radius:6px;background:#304c58;padding:8px 10px;color:#f5efd9}
+.unified-zoom button:hover{background:#496e7a}
+.unified-zoom small{color:#bdcad0;font-size:10px}
+#mapDialog .map-layout{grid-template-columns:minmax(0,1fr) minmax(205px,240px);gap:12px}
+#fullmap{max-height:77vh;aspect-ratio:3/2;touch-action:none;image-rendering:auto}
+#mapPlaces button{border:1px solid #3d5964}
+@media(max-width:800px){
+ #mapDialog{width:98vw;max-height:95vh;padding:10px}
+ #mapDialog .dialog-head{align-items:center;flex-wrap:wrap}
+ .unified-zoom{width:100%;margin-left:0}
+ #mapDialog .map-layout{grid-template-columns:1fr;gap:8px}
+ #mapPlaces{max-height:18vh}
+ #fullmap{max-height:55vh}
+}
+.minimap-osm-credit{position:absolute;right:5px;bottom:44px;font:9px/1.2 system-ui,sans-serif;color:#f4f7f2;background:#214151d9;padding:2px 4px;border-radius:3px;text-decoration:none;z-index:2;pointer-events:auto}
+#mapDialog .map-legend a{color:#bddde8;text-decoration:underline}
+/* Both map canvases keep their independent high-DPI buffers regardless of
+   low/medium/performance quality chosen for the 3D scene. */
+#mapDialog .fullmap-wrap{background:#274e58;overflow:hidden}
+#mapDialog #fullmap{display:block;width:100%;image-rendering:auto}
+.hud.minimap{width:272px;box-shadow:0 10px 38px #0007}
+.hud.minimap #minimap{width:100%;height:200px;image-rendering:auto}
+@media(max-width:900px){
+ .hud.minimap{width:210px}
+ .hud.minimap #minimap{height:157px}
+}
+@media(max-width:450px){
+ .hud.minimap{left:10px;width:170px}
+ .hud.minimap #minimap{height:128px}
+}
+
+/* Show which build the user really loaded and whether map tiles arrived. */
+.map-diagnostics{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;padding:7px 10px;background:#193946;border-top:1px solid #638b98;color:#d8eef2;font:600 10px/1.4 system-ui}
+.map-diagnostics b{font:800 11px/1.4 system-ui;letter-spacing:.05em;color:#ffda83}
+#minimapStatus{color:#c1e5ed;font:700 8px/1.1 system-ui;letter-spacing:0;white-space:nowrap}
+@media(max-width:450px){#minimapStatus{font-size:7px}.map-diagnostics{font-size:9px}}

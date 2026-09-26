@@ -77,7 +77,8 @@ export function planeStep(actor,input,dt,terrain,collision){
  actor.vy=(actor.vy||0)+(lift-(actor.vy||0))*(1-Math.exp(-2.5*dt));
  let ny=clamp(actor.y+actor.vy*dt,ground,terrain.elevation(actor.x,actor.z)+300),crashed=false;
  const steps=Math.max(1,Math.ceil(actor.speed*dt/.5));
- for(let i=0;i<steps;i++){const x=clamp(actor.x+Math.sin(actor.yaw)*actor.speed*dt/steps,-5950,7230),z=clamp(actor.z+Math.cos(actor.yaw)*actor.speed*dt/steps,-6460,6210),base=terrain.height(x,z,ny);
+ const bounds=terrain.unifiedBounds||{minX:-5950,maxX:7230,minZ:-6460,maxZ:6210};
+ for(let i=0;i<steps;i++){const x=clamp(actor.x+Math.sin(actor.yaw)*actor.speed*dt/steps,bounds.minX,bounds.maxX),z=clamp(actor.z+Math.cos(actor.yaw)*actor.speed*dt/steps,bounds.minZ,bounds.maxZ),base=terrain.height(x,z,ny);
   if(vehicleBlocked(x,z,actor.yaw,collision,spec,Math.min(actor.y,ny))||ny<base-.25||!terrain.dry(x,z,2,ny)&&ny<terrain.waterHeight(x,z)+2){crashed=actor.speed>12||airborne;actor.speed=0;break;}actor.x=x;actor.z=z;
  }
  if(vehicleBlocked(actor.x,actor.z,actor.yaw,collision,spec,ny)){crashed=true;ny=actor.y;}
@@ -85,6 +86,7 @@ export function planeStep(actor,input,dt,terrain,collision){
 }
 export function parachuteStep(actor,input,dt,terrain,collision){
  actor.yaw+=input.turn*1.2*dt;actor.speed=input.forward<0?3:input.forward>0?12:7;
- const next=slideMove(actor,Math.sin(actor.yaw)*actor.speed*dt,Math.cos(actor.yaw)*actor.speed*dt,.4,collision,actor.y);actor.x=clamp(next.x,-5950,7230);actor.z=clamp(next.z,-6460,6210);
+ const next=slideMove(actor,Math.sin(actor.yaw)*actor.speed*dt,Math.cos(actor.yaw)*actor.speed*dt,.4,collision,actor.y);
+ const bounds=terrain.unifiedBounds||{minX:-5950,maxX:7230,minZ:-6460,maxZ:6210};actor.x=clamp(next.x,bounds.minX,bounds.maxX);actor.z=clamp(next.z,bounds.minZ,bounds.maxZ);
  actor.vy=-4;const ground=footSurface(actor.x,actor.z,actor.y,terrain,collision);actor.y=Math.max(ground,actor.y-4*dt);return actor.y<=ground+.01;
 }

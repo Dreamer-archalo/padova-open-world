@@ -1,0 +1,137 @@
+name: Rapid unified gameplay preview
+on:
+  push:
+    branches: [feat/unified-main-world-20260925]
+    paths:
+      - '.github/workflows/quick-water-preview.yml'
+      - 'dist/game.js'
+      - 'dist/local-respawn.js'
+      - 'dist/water-gameplay.js'
+      - 'dist/regional-world.js'
+      - 'verify-regional-town-detail.mjs'
+      - 'dist/foot-controller.js'
+      - 'dist/unified-map-detail.js'
+      - 'dist/unified-regions.js'
+      - 'verify-regional-r6.mjs'
+      - 'dist/index.html'
+      - 'dist/unified-water.css'
+      - 'dist/unified-map.js'
+      - 'verify-water-entry.mjs'
+      - 'verify-lagoon-r7.mjs'
+      - 'verify-unified-map-tiles.mjs'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: read
+  pages: write
+  id-token: write
+
+# This lightweight R5 publication does NOT cancel a slow hydrology build,
+# which can upgrade the same isolated preview when its full data pass.
+concurrency:
+  group: padova-unified-rapid-r5
+  cancel-in-progress: true
+
+jobs:
+  publish-playable-preview:
+    runs-on: ubuntu-latest
+    timeout-minutes: 18
+    steps:
+      - name: Checkout the actual fix branch (no production merge)
+        uses: actions/checkout@v4
+        with:
+          ref: feat/unified-main-world-20260925
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Check water entry, non-Padova drowning, and sharp maps
+        run: |
+          set -euo pipefail
+          node --check dist/game.js
+          node --check dist/local-respawn.js
+          node --check dist/water-gameplay.js
+          node --check dist/regional-world.js
+          node verify-regional-town-detail.mjs
+          node --check dist/foot-controller.js
+          node --check dist/unified-map-detail.js
+          node verify-regional-r6.mjs
+          node --check dist/unified-map.js
+          node verify-water-entry.mjs
+          node verify-lagoon-r7.mjs
+          node verify-unified-map-tiles.mjs
+
+      - name: Find the latest SUCCESSFUL unified preview artifact
+        id: snapshot
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          # The last successful terrain build may have had its Pages artifact
+          # removed by later deployments. Reuse the newest complete snapshot
+          # that actually still has a non-expired github-pages artifact.
+          RUN_ID=""
+          for candidate in $(gh api "repos/${GITHUB_REPOSITORY}/actions/runs?status=success&per_page=50" --jq '.workflow_runs[].id'); do
+            found="$(gh api "repos/${GITHUB_REPOSITORY}/actions/runs/${candidate}/artifacts" --jq '[.artifacts[] | select(.name == "github-pages" and (.expired | not))] | length')"
+            if [ "$found" -gt 0 ]; then RUN_ID="$candidate"; break; fi
+          done
+          if ! [[ "$RUN_ID" =~ ^[0-9]+$ ]]; then
+            echo "No previously completed regional world data found. Not publishing a broken preview."
+            exit 1
+          fi
+          echo "run_id=$RUN_ID" >> "$GITHUB_OUTPUT"
+          echo "Reusing already generated world geometry and terrain from successful run $RUN_ID."
+
+      - name: Download existing complete live Pages snapshot
+        uses: actions/download-artifact@v4
+        with:
+          name: github-pages
+          run-id: ${{ steps.snapshot.outputs.run_id }}
+          repository: ${{ github.repository }}
+          github-token: ${{ github.token }}
+          path: .old-pages
+
+      - name: Overlay the fixed game without removing any other preview
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p site
+          tar -xf .old-pages/artifact.tar -C site
+          test -s site/index.html
+          test -s site/preview/unified/data/region-padova-venice.json
+          test -s site/preview/unified/data/world-terrain.json
+          sha256sum site/index.html site/game.js > /tmp/production-unchanged.sha
+          mkdir -p site/preview/unified
+          cp -a dist/. site/preview/unified/
+          sha256sum -c /tmp/production-unchanged.sha
+          grep -q 'MAPPA-GTA-R8' site/preview/unified/index.html
+          test -s site/preview/unified/game.js
+          test -s site/preview/unified/water-gameplay.js
+          test -s site/preview/unified/map-live-tiles.js
+          test -s site/preview/unified/data/region-padova-venice.json
+          test -s site/preview/unified/data/world-terrain.json
+          python - <<'PY'
+          import json
+          path='site/preview/unified/data/region-padova-venice.json'
+          reg=json.load(open(path))
+          assert len(reg.get('buildings',[]))>2000
+          assert len(reg.get('water',[]))>10
+          print('READY R6:',len(reg['buildings']),'regional buildings,',len(reg['water']),'rivers/channels.')
+          PY
+
+      - uses: actions/configure-pages@v5
+
+      - name: Upload entire former site with fixed isolated R5 preview
+        uses: actions/upload-pages-artifact@v4
+        with:
+          path: site
+
+      - name: Deploy R7 playable game only to the preview URL
+        id: publish
+        uses: actions/deploy-pages@v4
+
+      - name: Show verified test address
+        run: |
+          echo "R7 Venetian entry and shoreline fixes: https://dreamer-archalo.github.io/padova-open-world/preview/unified/?v=R7"
