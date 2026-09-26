@@ -480,10 +480,17 @@ export class RegionalWorld{
     // no individual window mesh or texture loading per building.
     if(b.h>=4.8&&glassFaces.length<7600){
      const edges=Math.min(coast(b.cx,b.cz)?2:3,b.p.length);
+     // OSM multipolygon winding is not uniform. Point every window and
+     // doorway outward, otherwise half the region's facade details vanish
+     // behind their own opaque walls.
+     const twiceArea=b.p.reduce((sum,a,i)=>{
+      const d=b.p[(i+1)%b.p.length];
+      return sum+a[0]*d[1]-d[0]*a[1];
+     },0),outward=twiceArea>0?-1:1;
      for(let e=0;e<edges&&glassFaces.length<7600;e++){
       const a=b.p[e],d=b.p[(e+1)%b.p.length],len=distance(...a,...d);
       if(len<3.6||len>120)continue;
-      const ux=(d[0]-a[0])/len,uz=(d[1]-a[1])/len,nx=-uz*.095,nz=ux*.095;
+      const ux=(d[0]-a[0])/len,uz=(d[1]-a[1])/len,nx=-uz*.095*outward,nz=ux*.095*outward;
       const type=String(b.t||'');
       const palette=/industrial|warehouse|hangar|factory|commercial/.test(type)||
        b.cx>26700&&b.cx<32500?industrialFaces:
