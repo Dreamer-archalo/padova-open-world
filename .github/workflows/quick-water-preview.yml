@@ -124,4 +124,5 @@ jobs:
         uses: actions/deploy-pages@v4
 
       - name: Show verified test address
-        run: echo 'R7: Venice taxi-style loading and automatic bank exit at https://dreamer-archalo.github.io/padova-open-world/preview/unified/?v=R7'
+        run: |
+          echo "R7 Venetian entry and shoreline fixes: https://dreamer-archalo.github.io/padova-open-world/preview/unified/?v=R7"
