@@ -13,6 +13,7 @@ on:
       - 'dist/local-respawn.js'
       - 'dist/unified-regions.js'
       - 'dist/regional-world.js'
+      - 'verify-regional-town-detail.mjs'
       - 'dist/regional-hydro.js'
       - 'dist/unified-water.css'
       - 'dist/water-gameplay.js'
@@ -178,6 +179,7 @@ jobs:
           node --check dist/water-gameplay.js
           node --check dist/unified-regions.js
           node --check dist/regional-world.js
+          node verify-regional-town-detail.mjs
           node verify-unified-main.mjs
           node verify-unified-features.mjs
           node verify-unified-water.mjs
