@@ -29,6 +29,15 @@ assert(meshCount('746454')>=6,'Accessible-town buildings need visible door panel
 assert(meshCount('dec6a6')>=6,'Visited town residential facades need natural colors');
 assert(meshCount('a2afae')>=6,'Industrial buildings must be visually distinct');
 assert(meshCount('aeb4aa')>=6,'Street sidewalks must follow the real roadway');
+const roofMeshes=color('a57358');
+assert(roofMeshes.length,'Detailed roof geometry is required');
+const maxRoofY=Math.max(...roofMeshes.flatMap(o=>{
+ const p=o.geometry.getAttribute('position'),out=[];
+ for(let i=0;i<p.count;i++)out.push(p.getY(i));
+ return out;
+}));
+assert(maxRoofY>14.35,
+ 'Padova-like pitched homes must rise above flat roof height where feasible');
 assert((group.userData.ambient||[]).some(a=>a.person),
  'Arriving in an ordinary town must enable pedestrians');
 assert(world.totalBuilt===1,'Rendering must batch one chunk, not thousands of individual meshes');
