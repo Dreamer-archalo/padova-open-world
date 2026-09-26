@@ -351,6 +351,16 @@ export class RegionalWorld{
      b=[p.a[0]+(p.b[0]-p.a[0])*.52,p.a[1]+(p.b[1]-p.a[1])*.52];
     surface(roadStripes,a,b,.13,p.yA+.052,p.yA+(p.yB-p.yA)*.52+.052);
    }
+   // Motorway shoulders use the same 3-D road profile as the asphalt.
+   if(near&&/motorway|trunk/.test(p.k)&&roadStripes.length<1450){
+    const dx=p.b[0]-p.a[0],dz=p.b[1]-p.a[1],len=Math.hypot(dx,dz)||1,
+     nx=-dz/len,nz=dx/len,edge=p.w*.5-.36;
+    for(const side of [-1,1]){
+     const a=[p.a[0]+nx*edge*side,p.a[1]+nz*edge*side],
+      b=[p.b[0]+nx*edge*side,p.b[1]+nz*edge*side];
+     surface(roadStripes,a,b,.11,p.yA+.058,p.yB+.058);
+    }
+   }
    if(near&&!coast(...p.a)&&p.w>=5.3&&distance(...p.a,...p.b)>12&&roadSigns.length<250){
     const len=distance(...p.a,...p.b),nx=-(p.b[1]-p.a[1])/len,nz=(p.b[0]-p.a[0])/len,
      x=(p.a[0]+p.b[0])*.5+nx*(p.w*.5+1.2),
@@ -358,7 +368,7 @@ export class RegionalWorld{
     addQuad(roadSigns,[x,y,z],[x+.09,y,z],[x+.09,y+2,z],[x,y+2,z]);
     addQuad(roadSigns,[x-.4,y+1.75,z],[x+.4,y+1.75,z],[x+.4,y+2.34,z],[x-.4,y+2.34,z]);
    }
-   if(p.bri&&near&&regionalDetail((p.a[0]+p.b[0])/2,(p.a[1]+p.b[1])/2)==='detailed'){
+   if(p.bri&&near){
     const dx=p.b[0]-p.a[0],dz=p.b[1]-p.a[1],len=Math.hypot(dx,dz)||1,
      nx=-dz/len*(p.w*.5+.18),nz=dx/len*(p.w*.5+.18);
     // Real vertical rails, not thin horizontal strips floating above a deck.
