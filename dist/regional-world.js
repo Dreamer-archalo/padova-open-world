@@ -296,7 +296,34 @@ export class RegionalWorld{
   for(let i=0;i<p.length;i++){const a=p[i],d=p[(i+1)%p.length],ay=this.raw(...a),dy=this.raw(...d);
    addQuad(wall,[a[0],ay,a[1]],[d[0],dy,d[1]],[d[0],dy+h,d[1]],[a[0],ay+h,a[1]]);
   }
-  for(const [a,b,c] of tri){roof.push(poly[a].x,base+h,poly[a].y,poly[b].x,base+h,poly[b].y,poly[c].x,base+h,poly[c].y);}
+  // Padova-like pitched roof on well-formed four-corner home footprints.
+  // Keep flat roofs for industry, long irregular lots and complex polygons.
+  let pitched=false;
+  if(p.length===4&&h>=5.7&&h<21&&
+     !/industrial|warehouse|hangar|shed|roof|commercial/.test(String(b.t||''))){
+   const e0=distance(...p[0],...p[1]),e1=distance(...p[1],...p[2]),
+    e2=distance(...p[2],...p[3]),e3=distance(...p[3],...p[0]);
+   const dot=(p[1][0]-p[0][0])*(p[2][0]-p[1][0])+
+    (p[1][1]-p[0][1])*(p[2][1]-p[1][1]);
+   if(Math.abs(dot)/Math.max(.01,e0*e1)<.24&&
+      Math.abs(e0-e2)/Math.max(1,e0,e2)<.20&&
+      Math.abs(e1-e3)/Math.max(1,e1,e3)<.20){
+    let [a,q,c,d]=p;if(e0>e1)[a,q,c,d]=[q,c,d,a];
+    const rise=Math.min(2.7,Math.max(.65,Math.min(e0,e1)*.23)),
+     top=base+h,ridge=top+rise,
+     m=[(a[0]+q[0])*.5,ridge,(a[1]+q[1])*.5],
+     n=[(c[0]+d[0])*.5,ridge,(c[1]+d[1])*.5];
+    addQuad(roof,[a[0],top,a[1]],m,n,[d[0],top,d[1]]);
+    addQuad(roof,m,[q[0],top,q[1]],[c[0],top,c[1]],n);
+    wall.push(a[0],top,a[1],q[0],top,q[1],...m);
+    wall.push(c[0],top,c[1],d[0],top,d[1],...n);
+    pitched=true;
+   }
+  }
+  if(!pitched)for(const [a,b,c] of tri){
+   roof.push(poly[a].x,base+h,poly[a].y,poly[b].x,base+h,poly[b].y,
+    poly[c].x,base+h,poly[c].y);
+  }
  }
  ambient(group,chunk){
   const roads=chunk.roads.filter(r=>r.w>=3&&!/motorway|trunk|footway|path|steps|cycleway|pedestrian/.test(r.k));
