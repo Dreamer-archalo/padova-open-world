@@ -67,7 +67,14 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
-          RUN_ID="$(gh api "repos/${GITHUB_REPOSITORY}/actions/workflows/366783832/runs?status=success&per_page=6" --jq '.workflow_runs[0].id')"
+          # The last successful terrain build may have had its Pages artifact
+          # removed by later deployments. Reuse the newest complete snapshot
+          # that actually still has a non-expired github-pages artifact.
+          RUN_ID=""
+          for candidate in $(gh api "repos/${GITHUB_REPOSITORY}/actions/runs?status=success&per_page=50" --jq '.workflow_runs[].id'); do
+            found="$(gh api "repos/${GITHUB_REPOSITORY}/actions/runs/${candidate}/artifacts" --jq '[.artifacts[] | select(.name == "github-pages" and (.expired | not))] | length')"
+            if [ "$found" -gt 0 ]; then RUN_ID="$candidate"; break; fi
+          done
           if ! [[ "$RUN_ID" =~ ^[0-9]+$ ]]; then
             echo "No previously completed regional world data found. Not publishing a broken preview."
             exit 1
