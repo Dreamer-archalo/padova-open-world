@@ -70,15 +70,21 @@ export class WaterGameplay {
   const level=waterY??terrain.waterHeight(state.x,state.z);
   this.swimDepth=clamp(this.swimDepth+(dive?.75:-1.45)*dt,0,2.5);
   const scale=boost?1.32:.84,tx=state.x+dx*scale,tz=state.z+dz*scale;
-  const dry=terrain.waterAt(tx,tz,0,level-.35)===null&&terrain.dry(tx,tz,.3,level-.35);
-  const shore=terrain.height(tx,tz,level);
-  if(dry&&Number.isFinite(shore)&&shore>=level-.8&&shore<=level+1.7&&clear(tx,tz,shore)){
-   Object.assign(state,{x:tx,z:tz,y:shore,vy:0,speed:0});
-   this.swimming=false;this.swimDepth=0;this.underwater=0;
-   return {landed:true,submerged:false,waterY:level};
+  // A 1-m forward probe gets across the riverbank boundary instead of
+  // trapping the swimmer at the last wet pixel. High walls still block exits.
+  const heading=Math.hypot(dx,dz),ux=heading?dx/heading:0,uz=heading?dz/heading:0;
+  if(heading>1e-6&&this.swimDepth<1.45){
+   for(const metres of [0,.28,.65,1.1,1.65]){
+    const sx=tx+ux*metres,sz=tz+uz*metres,shore=terrain.height(sx,sz,level);
+    if(!Number.isFinite(shore)||shore<level-.8||shore>level+1.5)continue;
+    if(terrain.waterAt(sx,sz,0,shore+.1)!==null||!terrain.dry(sx,sz,.08,shore))continue;
+    if(!clear(sx,sz,shore))continue; // do not climb through solid buildings
+    Object.assign(state,{x:sx,z:sz,y:shore,vy:0,speed:0});
+    this.swimming=false;this.swimDepth=0;this.underwater=0;
+    return {landed:true,submerged:false,waterY:level};
+   }
   }
-  // A wall, cliff or too-high quay must not turn into a teleporting ladder.
-  if(!dry&&clear(tx,tz,level-.35)){state.x=tx;state.z=tz;}
+  if(clear(tx,tz,level-.35)){state.x=tx;state.z=tz;}
   state.speed=Math.hypot(dx,dz)/Math.max(dt,1e-5)*scale;
   state.y=level-.33-this.swimDepth+Math.sin((state.elapsed||0)*3.5)*.045;
   state.vy=0;
