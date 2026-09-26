@@ -16,7 +16,7 @@ const energy=new THREE.MeshBasicMaterial({color:'#6dd4d5',transparent:true,opaci
 const energySkin=new THREE.MeshBasicMaterial({color:'#4cb8c2',transparent:true,opacity:.19,side:THREE.DoubleSide,depthWrite:false});
 const energyOutline=new THREE.LineBasicMaterial({color:'#8ef7ec',transparent:true,opacity:.76,depthWrite:false});
 const ambientCar=material('#80919b'),ambientBus=material('#bc9f61'),ambientPedestrian=material('#577d78');
-const facadeFrame=material('#c6b7a0'),facadeDoor=material('#746454'),facadeBrick=material('#ad7861'),facadeStucco=material('#dec6a6');
+const facadeFrame=material('#c6b7a0'),facadeDoor=material('#746454'),facadeBrick=material('#ad7861'),facadeStucco=material('#dec6a6'),industrialWall=material('#a2afae'),sidewalkMat=material('#aeb4aa');
 const cube=new THREE.BoxGeometry(1,1,1);
 const min=(a,b)=>Math.min(a,b),max=(a,b)=>Math.max(a,b);
 const distance=(x,z,a,b)=>Math.hypot(x-a,z-b);
@@ -343,9 +343,35 @@ export class RegionalWorld{
    }
   }
   if(sea.length){const sheet=new THREE.Mesh(geometry(sea),lagoonMat);sheet.renderOrder=1;group.add(sheet);}
-  const normal=[],arterial=[],channels=[],balustrade=[],bridgeSupports=[],w=[],r=[],blocks=[],energyFaces=[],energyEdges=[],glassFaces=[],roadStripes=[],roadSigns=[],distantWalls=[],facadeFaces=[],frameFaces=[],doorFaces=[];
+  const normal=[],arterial=[],channels=[],balustrade=[],bridgeSupports=[],w=[],r=[],blocks=[],energyFaces=[],energyEdges=[],glassFaces=[],roadStripes=[],roadSigns=[],distantWalls=[],facadeFaces=[],brickFaces=[],industrialFaces=[],frameFaces=[],doorFaces=[],pavements=[],crosswalks=[];
   for(const p of src.roads){
    surface(/motorway|trunk|primary|secondary/.test(p.k)?arterial:normal,p.a,p.b,p.w,p.yA+.025,p.yB+.025);
+   // Grounded, level sidewalks only in town blocks; no floating decks.
+   if(near&&src.buildings.length>8&&!p.bri&&
+      /residential|tertiary|secondary|living_street/.test(p.k)&&pavements.length<5500){
+    const dx=p.b[0]-p.a[0],dz=p.b[1]-p.a[1],len=Math.hypot(dx,dz);
+    if(len>2){const nx=-dz/len,nz=dx/len;
+     for(const side of [-1,1]){
+      const offset=(p.w*.5+.65)*side,
+       a=[p.a[0]+nx*offset,p.a[1]+nz*offset],
+       b=[p.b[0]+nx*offset,p.b[1]+nz*offset];
+      surface(pavements,a,b,1.2,p.yA+.018,p.yB+.018);
+     }
+    }
+   }
+   if(near&&src.buildings.length>14&&!p.bri&&p.w>5&&
+      !/motorway|trunk|footway/.test(p.k)&&crosswalks.length<990&&
+      distance(...p.a,...p.b)>8&&
+      Math.abs(Math.floor(p.a[0]*.17+p.a[1]*.31))%11===0){
+    const dx=p.b[0]-p.a[0],dz=p.b[1]-p.a[1],len=Math.hypot(dx,dz),
+     ux=dx/len,uz=dz/len,nx=-uz,nz=ux;
+    for(let stripe=0;stripe<5;stripe++){
+     const t=1.1+stripe*.58,x=p.a[0]+ux*t,z=p.a[1]+uz*t,
+      width=p.w*.43,a=[x-nx*width,z-nz*width],b=[x+nx*width,z+nz*width],
+      y=p.yA+(p.yB-p.yA)*t/len+.06;
+     surface(crosswalks,a,b,.31,y,y);
+    }
+   }
    if(near&&p.w>=5&&roadStripes.length<900&&distance(...p.a,...p.b)>2){
     const a=[p.a[0]+(p.b[0]-p.a[0])*.15,p.a[1]+(p.b[1]-p.a[1])*.15],
      b=[p.a[0]+(p.b[0]-p.a[0])*.52,p.a[1]+(p.b[1]-p.a[1])*.52];
@@ -431,9 +457,13 @@ export class RegionalWorld{
       const a=b.p[e],d=b.p[(e+1)%b.p.length],len=distance(...a,...d);
       if(len<3.6||len>120)continue;
       const ux=(d[0]-a[0])/len,uz=(d[1]-a[1])/len,nx=-uz*.095,nz=ux*.095;
-      if(e===0&&facadeFaces.length<7200){
+      const type=String(b.t||'');
+      const palette=/industrial|warehouse|hangar|factory|commercial/.test(type)||
+       b.cx>26700&&b.cx<32500?industrialFaces:
+       coast(b.cx,b.cz)||b.c%5===0?brickFaces:facadeFaces;
+      if(e===0&&palette.length<7200){
        const y=b.minY+.15,top=b.minY+b.h-.18;
-       addQuad(facadeFaces,[a[0]+nx*.35,y,a[1]+nz*.35],
+       addQuad(palette,[a[0]+nx*.35,y,a[1]+nz*.35],
         [d[0]+nx*.35,y,d[1]+nz*.35],
         [d[0]+nx*.35,top,d[1]+nz*.35],[a[0]+nx*.35,top,a[1]+nz*.35]);
       }
@@ -485,6 +515,10 @@ export class RegionalWorld{
     energyFaces.push(poly[a].x,top,poly[a].y,poly[c].x,top,poly[c].y,poly[d].x,top,poly[d].y);
   }
   if(facadeFaces.length)group.add(new THREE.Mesh(geometry(facadeFaces),facadeStucco));
+  if(brickFaces.length)group.add(new THREE.Mesh(geometry(brickFaces),facadeBrick));
+  if(industrialFaces.length)group.add(new THREE.Mesh(geometry(industrialFaces),industrialWall));
+  if(pavements.length)group.add(new THREE.Mesh(geometry(pavements),sidewalkMat));
+  if(crosswalks.length)group.add(new THREE.Mesh(geometry(crosswalks),mark));
   if(frameFaces.length)group.add(new THREE.Mesh(geometry(frameFaces),facadeFrame));
   if(doorFaces.length)group.add(new THREE.Mesh(geometry(doorFaces),facadeDoor));
   if(normal.length)group.add(new THREE.Mesh(geometry(normal),roadMat));
@@ -534,6 +568,21 @@ export class RegionalWorld{
    for(const [k,g] of this.visible){const [x,z]=k.split(',').map(Number);if(Math.hypot(x-cx,z-cz)>4.7){
     this.scene.remove(g);g.traverse(o=>{if((o.isMesh||o.isLineSegments)&&o.geometry!==cube)o.geometry.dispose();});this.visible.delete(k);
    }}
+  }
+  // Upgrade neighboring transit blocks dynamically, one per free frame.
+  // Previously drawn low-poly villages now acquire windows and street detail
+  // as the camera comes within street-level visibility of their town blocks.
+  if(!this.queue.length){
+   for(const [k,g] of this.visible){
+    if(g.userData.detailed)continue;
+    const [ix,iz]=k.split(',').map(Number);
+    if(distance((ix+.5)*CHUNK,(iz+.5)*CHUNK,state.x,state.z)>=570)continue;
+    this.scene.remove(g);
+    g.traverse(o=>{if((o.isMesh||o.isLineSegments)&&o.geometry!==cube)o.geometry.dispose();});
+    this.visible.delete(k);
+    this.build(k);
+    break;
+   }
   }
   // Spread chunk builds over frames to avoid blocking existing city gameplay.
   for(let i=0;i<1&&this.queue.length;i++)this.build(this.queue.shift());
