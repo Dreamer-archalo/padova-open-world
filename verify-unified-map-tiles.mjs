@@ -15,7 +15,7 @@ assert(vector.includes('const tiles={ready:0,pending:0,vector:true}'),'Minimap m
 assert(detail.includes('const buildingDetail=!mini&&scale>=.45'),'Minimap building clutter not suppressed');
 assert(src.includes('unifiedMap.tiles=miniTiles'),'Full world and minimap are not using a shared tile cache');
 assert(src.includes('state.car?.spec.aircraft?Math.max(6000'),'Fast aircraft could hammer local high zoom');
-assert(html.includes('MAPPA-GTA-R7')&&html.includes('minimapStatus'),'Stale preview cannot be distinguished from current build');
+assert(html.includes('MAPPA-GTA-R8')&&html.includes('minimapStatus'),'Stale preview cannot be distinguished from current build');
 assert(layout.includes('minimap-osm-credit'),'OSM attribution must stay visible on the minimap');
 
 const coords={
