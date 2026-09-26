@@ -8,6 +8,7 @@ on:
       - 'dist/local-respawn.js'
       - 'dist/water-gameplay.js'
       - 'dist/regional-world.js'
+      - 'verify-regional-town-detail.mjs'
       - 'dist/foot-controller.js'
       - 'dist/unified-map-detail.js'
       - 'dist/unified-regions.js'
@@ -53,6 +54,7 @@ jobs:
           node --check dist/local-respawn.js
           node --check dist/water-gameplay.js
           node --check dist/regional-world.js
+          node verify-regional-town-detail.mjs
           node --check dist/foot-controller.js
           node --check dist/unified-map-detail.js
           node verify-regional-r6.mjs
