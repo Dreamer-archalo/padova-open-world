@@ -165,7 +165,7 @@ async function preloadLagoon(){
  if(lagoonPreloadActive||!regionalWorld||!state.ready||!state.started)return;
  lagoonPreloadActive=true;
  const overlay=$('veniceLoading'),status=$('veniceLoadingStatus');
- const previousPause=state.paused,focus={x:state.x,z:state.z};
+ const previousPause=state.paused,focus={x:Math.min(38900,state.x+420),z:state.z};
  if(overlay){overlay.hidden=false;overlay.setAttribute('aria-busy','true');}
  setPaused(true);
  try{
@@ -198,7 +198,7 @@ async function regionalFastTravel(p){
  player.position.set(state.x,state.y,state.z);player.rotation.y=state.yaw;
  state.waypoint=null;state.route=[];previousPose=null;clock.reset();waterRecovery.reset();waterRecovery.remember(state,terrain);
  regionalWorld.update(state,0);localRespawn.remember(state,terrain,respawnClear,state.elapsed,true);closeDialogs();
- if(state.x>=30000&&!lagoonPreloadDone)await preloadLagoon();
+ if(state.x>=33500&&!lagoonPreloadDone)await preloadLagoon();
  toast('Spostamento rapido · '+p.name,4);
 }
 function installRegionalMapPlaces(){
@@ -384,7 +384,7 @@ function toggleVehicle(){
   player.visible=true;player.position.set(state.x,state.y,state.z);
   player.rotation.set(swimBodyPitch(false),state.yaw,0,'YXZ');
   previousPose=null;followYaw=state.yaw;cameraRig.reset(state.yaw);
-  toast('Fuori dal veicolo: nuota verso riva. W/A/S/D · SPAZIO immergiti · R recupero.',5);
+  toast('Fuori dal veicolo: nuota verso riva.',2);
   return;
  }
  if(waterGame.swimming){toast('Nuota fino alla riva oppure premi R.',3);return;}
@@ -646,7 +646,7 @@ function enterGameplayWater(waterY){
  if(state.mode==='foot'&&waterGame.startSwimming(state,waterY)){
   state.vy=0;player.visible=true;player.position.set(state.x,state.y+.08,state.z);
   player.rotation.set(-1.04,state.yaw,0,'YXZ');
-  toast('NUOTO ATTIVO · W/A/S/D per nuotare · SPAZIO per immergerti · R recupera.',5);
+  // The compact interaction HUD displays swimming controls without a toast.
   return true;
  }
  return false;
@@ -773,7 +773,9 @@ function updateCamera(dt){
 function updateUI(){
  const ws=$('waterStatus');
  if(ws){
-  ws.hidden=!waterGame.active;
+  // Keep the compact existing interaction hint at the surface: the large
+  // blue water panel duplicated it. Reveal only the oxygen warning underwater.
+  ws.hidden=!waterGame.active||(waterGame.swimming&&waterGame.swimDepth<=.85);
   if(waterGame.vehicle){
    const phase=waterGame.vehicle,remaining=Math.max(0,4.5-phase.elapsed);
    ws.textContent=remaining>0?'AUTO A GALLA · AFFONDAMENTO FRA '+remaining.toFixed(1)+' S · E ESCI':
@@ -787,7 +789,7 @@ function updateUI(){
  const diveButton=document.querySelector('#touchControls [data-key="Space"]');
  if(diveButton)diveButton.textContent=waterGame.swimming?'IMMERSIONE':'BRAKE / UP';
  if($('touchCar'))$('touchCar').textContent=waterGame.vehicle?'E · NUOTA':'E · VEHICLE';
- const turbo=state.car?.style==='cinquecento',remaining=turbo&&state.car.turboTime>0?Math.max(1,Math.ceil(6-state.car.turboTime)):null;$('turboStatus').hidden=!turbo;$('turboCountdown').textContent=remaining??'READY';$('turboStatus').dataset.critical=remaining?'true':'false';if($('touchTurbo')){$('touchTurbo').hidden=!turbo&&!state.car?.spec.tracked;$('touchTurbo').textContent=state.car?.spec.tracked?'TAB · SPARA':'TURBO';}$('cannonStatus').hidden=!state.car?.spec.tracked;$('cannonStatus').textContent='TAB · CANNONE '+(state.car?.fireAt>state.elapsed?(state.car.fireAt-state.elapsed).toFixed(1)+' s':'PRONTO');$('touchChute').hidden=!state.car?.spec.aircraft;$('touchDescend').hidden=!state.car?.spec.aircraft;const nearest=PLACES.reduce((a,b)=>dist(a,state)<dist(b,state)?a:b),road=nearestRoad(state,graph);$('location').textContent=dist(nearest,state)<220?nearest.name:road?.segment.road.n||'Padova';$('district').textContent=districts?DISTRICTS[districts.at(state.x,state.z,road?.segment.road)].label:'PADOVA';if(regionalPlayer()){const p=regionalWorld.place(state.x,state.z);$('location').textContent=p?.name||'PADOVA → VENEZIA';$('district').textContent=p?.lod==='detailed'?'CENTRO DETTAGLIATO':'CORRIDOIO · PERFORMANCE';}$('money').textContent=Math.floor(state.money).toLocaleString('en-GB');$('wanted').textContent='★'.repeat(state.wanted)+'☆'.repeat(5-state.wanted);$('wanted').style.opacity=state.escape>0?(Math.sin(state.elapsed*5)>0?.5:1):1;const kmh=Math.round(Math.abs(state.speed)*3.6),health=state.health,rpm=state.mode==='car'?clamp(.9+Math.abs(state.speed)*.14+((keys.has('ShiftLeft')||keys.has('ShiftRight'))?1.2:0),.8,7.4):0,compass=['S','SE','E','NE','N','NW','W','SW'];$('speed').textContent=String(kmh).padStart(2,'0');$('vehicleName').textContent=state.mode==='car'?state.car.name.toUpperCase():'ON FOOT';$('gear').textContent=state.mode==='car'?(state.speed<-.4?'R':kmh<2?'N':String(Math.min(6,Math.max(1,Math.ceil(kmh/28))))):'—';$('rpm').style.width=(rpm/7.4*100)+'%';$('rpmValue').textContent=rpm.toFixed(1);$('altitude').textContent=Math.round(state.car?.spec.aircraft?state.y:terrain.elevation(state.x,state.z))+' M';$('gradient').textContent=state.car?(-Math.tan(terrain.slope(state.x,state.z,state.yaw,state.car.spec.wheelbase))*100).toFixed(1)+'%':'—';$('odometer').textContent=(state.distance/1000).toFixed(1)+' KM';$('heading').textContent=compass[Math.round((((state.yaw%(Math.PI*2))+Math.PI*2)%(Math.PI*2))/(Math.PI/4))%8];const nearbyTraffic=cars.filter(c=>c!==state.car&&dist(c,state)<300).length;$('trafficLevel').textContent=nearbyTraffic>12?'HIGH':nearbyTraffic>6?'MED':'LOW';$('health').style.width=health+'%';$('healthValue').textContent=Math.round(health)+'%';$('healthLabel').textContent=waterGame.swimming?'SALUTE NUOTATORE':waterGame.vehicle?'SALUTE / AUTO SOMMERSA':state.mode==='car'?'VEHICLE CONDITION':'SHIFT TO SPRINT';let hint='';if(waterGame.vehicle)hint='E · ESCI DAL VEICOLO E NUOTA';else if(waterGame.swimming)hint='';else if(taxiCanBoard())hint='E · SALI SUL TAXI';else if(state.mode==='foot'){const c=cars.find(c=>c.mesh.visible&&Math.abs((c.y||0)-state.y)<4&&vehicleReach(state,c)<2.4&&Math.abs(c.speed)<8);if(c&&c.mesh.visible&&!c.waterSinking&&c.health>0)hint='E · Get in '+c.name;}else if(state.car?.spec.aircraft)hint=state.car.spec.plane?'W/S · Velocità / SPACE · Decolla sopra 72 km/h / SHIFT · Scendi / F · Paracadute':'SPACE · Sali / SHIFT · Scendi / F · Paracadute / E · Esci a terra';else if(state.car?.spec.tracked)hint='TAB · Spara / A-D · Ruota anche da fermo';else if(state.mission?.type==='delivery'&&dist(state,state.mission.target)<25)hint='Stop inside the gold marker';else if(state.health<=0)hint='R · Recover and repair';else if(state.busted>1)hint='MOVE! Police are about to catch you';$('interact').textContent=hint;$('interact').hidden=!hint;if(state.elapsed>toastUntil)$('toast').hidden=true;updateMissionUI();updateMarker();if(!currentTarget())$('targetDistance').hidden=true;drawMini();}
+ const turbo=state.car?.style==='cinquecento',remaining=turbo&&state.car.turboTime>0?Math.max(1,Math.ceil(6-state.car.turboTime)):null;$('turboStatus').hidden=!turbo;$('turboCountdown').textContent=remaining??'READY';$('turboStatus').dataset.critical=remaining?'true':'false';if($('touchTurbo')){$('touchTurbo').hidden=!turbo&&!state.car?.spec.tracked;$('touchTurbo').textContent=state.car?.spec.tracked?'TAB · SPARA':'TURBO';}$('cannonStatus').hidden=!state.car?.spec.tracked;$('cannonStatus').textContent='TAB · CANNONE '+(state.car?.fireAt>state.elapsed?(state.car.fireAt-state.elapsed).toFixed(1)+' s':'PRONTO');$('touchChute').hidden=!state.car?.spec.aircraft;$('touchDescend').hidden=!state.car?.spec.aircraft;const nearest=PLACES.reduce((a,b)=>dist(a,state)<dist(b,state)?a:b),road=nearestRoad(state,graph);$('location').textContent=dist(nearest,state)<220?nearest.name:road?.segment.road.n||'Padova';$('district').textContent=districts?DISTRICTS[districts.at(state.x,state.z,road?.segment.road)].label:'PADOVA';if(regionalPlayer()){const p=regionalWorld.place(state.x,state.z);$('location').textContent=p?.name||'PADOVA → VENEZIA';$('district').textContent=p?.lod==='detailed'?'CENTRO DETTAGLIATO':'CORRIDOIO · PERFORMANCE';}$('money').textContent=Math.floor(state.money).toLocaleString('en-GB');$('wanted').textContent='★'.repeat(state.wanted)+'☆'.repeat(5-state.wanted);$('wanted').style.opacity=state.escape>0?(Math.sin(state.elapsed*5)>0?.5:1):1;const kmh=Math.round(Math.abs(state.speed)*3.6),health=state.health,rpm=state.mode==='car'?clamp(.9+Math.abs(state.speed)*.14+((keys.has('ShiftLeft')||keys.has('ShiftRight'))?1.2:0),.8,7.4):0,compass=['S','SE','E','NE','N','NW','W','SW'];$('speed').textContent=String(kmh).padStart(2,'0');$('vehicleName').textContent=state.mode==='car'?state.car.name.toUpperCase():'ON FOOT';$('gear').textContent=state.mode==='car'?(state.speed<-.4?'R':kmh<2?'N':String(Math.min(6,Math.max(1,Math.ceil(kmh/28))))):'—';$('rpm').style.width=(rpm/7.4*100)+'%';$('rpmValue').textContent=rpm.toFixed(1);$('altitude').textContent=Math.round(state.car?.spec.aircraft?state.y:terrain.elevation(state.x,state.z))+' M';$('gradient').textContent=state.car?(-Math.tan(terrain.slope(state.x,state.z,state.yaw,state.car.spec.wheelbase))*100).toFixed(1)+'%':'—';$('odometer').textContent=(state.distance/1000).toFixed(1)+' KM';$('heading').textContent=compass[Math.round((((state.yaw%(Math.PI*2))+Math.PI*2)%(Math.PI*2))/(Math.PI/4))%8];const nearbyTraffic=cars.filter(c=>c!==state.car&&dist(c,state)<300).length;$('trafficLevel').textContent=nearbyTraffic>12?'HIGH':nearbyTraffic>6?'MED':'LOW';$('health').style.width=health+'%';$('healthValue').textContent=Math.round(health)+'%';$('healthLabel').textContent=waterGame.swimming?'SALUTE NUOTATORE':waterGame.vehicle?'SALUTE / AUTO SOMMERSA':state.mode==='car'?'VEHICLE CONDITION':'SHIFT TO SPRINT';let hint='';if(waterGame.vehicle)hint='E · ESCI DAL VEICOLO E NUOTA';else if(waterGame.swimming)hint='W/A/S/D · NUOTA · SPAZIO IMMERGITI · R RECUPERA';else if(taxiCanBoard())hint='E · SALI SUL TAXI';else if(state.mode==='foot'){const c=cars.find(c=>c.mesh.visible&&Math.abs((c.y||0)-state.y)<4&&vehicleReach(state,c)<2.4&&Math.abs(c.speed)<8);if(c&&c.mesh.visible&&!c.waterSinking&&c.health>0)hint='E · Get in '+c.name;}else if(state.car?.spec.aircraft)hint=state.car.spec.plane?'W/S · Velocità / SPACE · Decolla sopra 72 km/h / SHIFT · Scendi / F · Paracadute':'SPACE · Sali / SHIFT · Scendi / F · Paracadute / E · Esci a terra';else if(state.car?.spec.tracked)hint='TAB · Spara / A-D · Ruota anche da fermo';else if(state.mission?.type==='delivery'&&dist(state,state.mission.target)<25)hint='Stop inside the gold marker';else if(state.health<=0)hint='R · Recover and repair';else if(state.busted>1)hint='MOVE! Police are about to catch you';$('interact').textContent=hint;$('interact').hidden=!hint;if(state.elapsed>toastUntil)$('toast').hidden=true;updateMissionUI();updateMarker();if(!currentTarget())$('targetDistance').hidden=true;drawMini();}
 
 function setPaused(v){state.paused=v;clock.reset();previousPose=null;renderAlpha=1;keys.clear();drag=null;cameraRig.end(state.elapsed);if(v&&engineAudio)engineAudio.gain.gain.setTargetAtTime(0,engineAudio.ctx.currentTime,.1);}
 function showMenu(title,content){setPaused(true);$('menuTitle').textContent=title;$('menuContent').innerHTML=content;if(!$('menu').open)$('menu').showModal();}
@@ -880,8 +882,8 @@ function animate(time){
     }
     regionalWorld?.update(state,dt);
     if(regionalWorld&&state.started&&!lagoonPreloadActive){
-     if(state.x<27500){lagoonPreloadDone=false;lagoonPreloadCooloff=false;}
-     if(state.x>=30000&&!lagoonPreloadDone&&!lagoonPreloadCooloff){
+     if(state.x<31500){lagoonPreloadDone=false;lagoonPreloadCooloff=false;}
+     if(state.x>=33500&&!lagoonPreloadDone&&!lagoonPreloadCooloff){
       lagoonPreloadCooloff=true;void preloadLagoon();
      }
     }
