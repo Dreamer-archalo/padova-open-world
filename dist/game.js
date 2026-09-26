@@ -71,6 +71,7 @@ const performanceOverlay=new PerformanceOverlay($('performanceOverlay'));
 const fullscreenControls=createFullscreenControls(document,window,{onEnter:closeDialogs,onResize:()=>requestAnimationFrame(resizeViewport)});
 const minBounds={x:-6050,z:-6550,w:13400,h:12900}; // Retain Padova-only taxi/navigation limits.
 let regionalWorld=null,unifiedMap=null,regionalLoading=false,regionalFailure=null;
+let lagoonPreloadActive=false,lagoonPreloadDone=false,lagoonPreloadCooloff=false;
 let mapPointer=null,mapDragged=false;const mapTouches=new Map();let mapPinchDistance=0;
 const unifiedBounds={minX:-5970,maxX:39200,minZ:-11900,maxZ:8800};
 function regionalPlayer(){return regionalWorld?.contains(state.x,state.z)||false;}
@@ -159,7 +160,36 @@ async function startUnifiedRegion(){
    toast('Estensione regionale non caricata: Padova rimane disponibile.',5);
  }finally{regionalLoading=false;}
 }
-function regionalFastTravel(p){
+// The taxi-style 2D intermission covers ACTUAL chunk construction, not a fake timer.
+async function preloadLagoon(){
+ if(lagoonPreloadActive||!regionalWorld||!state.ready||!state.started)return;
+ lagoonPreloadActive=true;
+ const overlay=$('veniceLoading'),status=$('veniceLoadingStatus');
+ const previousPause=state.paused,focus={x:state.x,z:state.z};
+ if(overlay){overlay.hidden=false;overlay.setAttribute('aria-busy','true');}
+ setPaused(true);
+ try{
+  await new Promise(resolve=>requestAnimationFrame(resolve)); // show 2D art first
+  const start=performance.now(),budget=9000;let count=0;
+  do{
+   regionalWorld.update(focus,0);count++;
+   const remaining=regionalWorld.queue?.length||0;
+   if(status)status.textContent=count+' settori caricati · '+remaining+' in attesa';
+   await new Promise(resolve=>requestAnimationFrame(resolve));
+   if(!remaining&&count>=8)break;
+  }while(performance.now()-start<budget);
+  lagoonPreloadDone=true;
+ }catch(error){
+  console.warn('[Venice streaming] Ordinary region loading will continue:',error);
+  lagoonPreloadDone=true;
+ }finally{
+  if(overlay){overlay.hidden=true;overlay.removeAttribute('aria-busy');}
+  lagoonPreloadActive=false;
+  if(!previousPause)setPaused(false);
+  clock.reset();
+ }
+}
+async function regionalFastTravel(p){
  if(!regionalWorld||!p||state.mission||waterRecovery.active||incidents?.recovery){toast('Termina la missione o attendi il caricamento della regione.');return;}
  const pos=regionalWorld.nearestRoad(p.x,p.z,130),safe=pos&&pos.road.w>=4&&!/footway|pedestrian|steps/.test(pos.road.k)?pos:p;
  state.x=safe.x;state.z=safe.z;state.yaw=pos?.yaw??state.yaw;state.speed=0;state.vy=0;waterGame.reset();
@@ -167,7 +197,9 @@ function regionalFastTravel(p){
  if(state.car){state.car.x=state.x;state.car.z=state.z;state.car.y=state.y;state.car.yaw=state.yaw;state.car.speed=0;resetGroundMotion(state.car);poseVehicle(state.car);}
  player.position.set(state.x,state.y,state.z);player.rotation.y=state.yaw;
  state.waypoint=null;state.route=[];previousPose=null;clock.reset();waterRecovery.reset();waterRecovery.remember(state,terrain);
- regionalWorld.update(state,0);localRespawn.remember(state,terrain,respawnClear,state.elapsed,true);closeDialogs();toast('Spostamento rapido · '+p.name,4);
+ regionalWorld.update(state,0);localRespawn.remember(state,terrain,respawnClear,state.elapsed,true);closeDialogs();
+ if(state.x>=30000&&!lagoonPreloadDone)await preloadLagoon();
+ toast('Spostamento rapido · '+p.name,4);
 }
 function installRegionalMapPlaces(){
  if(!$('mapPlaces'))return;
@@ -755,7 +787,7 @@ function updateUI(){
  const diveButton=document.querySelector('#touchControls [data-key="Space"]');
  if(diveButton)diveButton.textContent=waterGame.swimming?'IMMERSIONE':'BRAKE / UP';
  if($('touchCar'))$('touchCar').textContent=waterGame.vehicle?'E · NUOTA':'E · VEHICLE';
- const turbo=state.car?.style==='cinquecento',remaining=turbo&&state.car.turboTime>0?Math.max(1,Math.ceil(6-state.car.turboTime)):null;$('turboStatus').hidden=!turbo;$('turboCountdown').textContent=remaining??'READY';$('turboStatus').dataset.critical=remaining?'true':'false';if($('touchTurbo')){$('touchTurbo').hidden=!turbo&&!state.car?.spec.tracked;$('touchTurbo').textContent=state.car?.spec.tracked?'TAB · SPARA':'TURBO';}$('cannonStatus').hidden=!state.car?.spec.tracked;$('cannonStatus').textContent='TAB · CANNONE '+(state.car?.fireAt>state.elapsed?(state.car.fireAt-state.elapsed).toFixed(1)+' s':'PRONTO');$('touchChute').hidden=!state.car?.spec.aircraft;$('touchDescend').hidden=!state.car?.spec.aircraft;const nearest=PLACES.reduce((a,b)=>dist(a,state)<dist(b,state)?a:b),road=nearestRoad(state,graph);$('location').textContent=dist(nearest,state)<220?nearest.name:road?.segment.road.n||'Padova';$('district').textContent=districts?DISTRICTS[districts.at(state.x,state.z,road?.segment.road)].label:'PADOVA';if(regionalPlayer()){const p=regionalWorld.place(state.x,state.z);$('location').textContent=p?.name||'PADOVA → VENEZIA';$('district').textContent=p?.lod==='detailed'?'CENTRO DETTAGLIATO':'CORRIDOIO · PERFORMANCE';}$('money').textContent=Math.floor(state.money).toLocaleString('en-GB');$('wanted').textContent='★'.repeat(state.wanted)+'☆'.repeat(5-state.wanted);$('wanted').style.opacity=state.escape>0?(Math.sin(state.elapsed*5)>0?.5:1):1;const kmh=Math.round(Math.abs(state.speed)*3.6),health=state.health,rpm=state.mode==='car'?clamp(.9+Math.abs(state.speed)*.14+((keys.has('ShiftLeft')||keys.has('ShiftRight'))?1.2:0),.8,7.4):0,compass=['S','SE','E','NE','N','NW','W','SW'];$('speed').textContent=String(kmh).padStart(2,'0');$('vehicleName').textContent=state.mode==='car'?state.car.name.toUpperCase():'ON FOOT';$('gear').textContent=state.mode==='car'?(state.speed<-.4?'R':kmh<2?'N':String(Math.min(6,Math.max(1,Math.ceil(kmh/28))))):'—';$('rpm').style.width=(rpm/7.4*100)+'%';$('rpmValue').textContent=rpm.toFixed(1);$('altitude').textContent=Math.round(state.car?.spec.aircraft?state.y:terrain.elevation(state.x,state.z))+' M';$('gradient').textContent=state.car?(-Math.tan(terrain.slope(state.x,state.z,state.yaw,state.car.spec.wheelbase))*100).toFixed(1)+'%':'—';$('odometer').textContent=(state.distance/1000).toFixed(1)+' KM';$('heading').textContent=compass[Math.round((((state.yaw%(Math.PI*2))+Math.PI*2)%(Math.PI*2))/(Math.PI/4))%8];const nearbyTraffic=cars.filter(c=>c!==state.car&&dist(c,state)<300).length;$('trafficLevel').textContent=nearbyTraffic>12?'HIGH':nearbyTraffic>6?'MED':'LOW';$('health').style.width=health+'%';$('healthValue').textContent=Math.round(health)+'%';$('healthLabel').textContent=waterGame.swimming?'SALUTE NUOTATORE':waterGame.vehicle?'SALUTE / AUTO SOMMERSA':state.mode==='car'?'VEHICLE CONDITION':'SHIFT TO SPRINT';let hint='';if(waterGame.vehicle)hint='E · ESCI DAL VEICOLO E NUOTA';else if(waterGame.swimming)hint='W/A/S/D · NUOTA · SPAZIO IMMERGITI';else if(taxiCanBoard())hint='E · SALI SUL TAXI';else if(state.mode==='foot'){const c=cars.find(c=>c.mesh.visible&&Math.abs((c.y||0)-state.y)<4&&vehicleReach(state,c)<2.4&&Math.abs(c.speed)<8);if(c&&c.mesh.visible&&!c.waterSinking&&c.health>0)hint='E · Get in '+c.name;}else if(state.car?.spec.aircraft)hint=state.car.spec.plane?'W/S · Velocità / SPACE · Decolla sopra 72 km/h / SHIFT · Scendi / F · Paracadute':'SPACE · Sali / SHIFT · Scendi / F · Paracadute / E · Esci a terra';else if(state.car?.spec.tracked)hint='TAB · Spara / A-D · Ruota anche da fermo';else if(state.mission?.type==='delivery'&&dist(state,state.mission.target)<25)hint='Stop inside the gold marker';else if(state.health<=0)hint='R · Recover and repair';else if(state.busted>1)hint='MOVE! Police are about to catch you';$('interact').textContent=hint;$('interact').hidden=!hint;if(state.elapsed>toastUntil)$('toast').hidden=true;updateMissionUI();updateMarker();if(!currentTarget())$('targetDistance').hidden=true;drawMini();}
+ const turbo=state.car?.style==='cinquecento',remaining=turbo&&state.car.turboTime>0?Math.max(1,Math.ceil(6-state.car.turboTime)):null;$('turboStatus').hidden=!turbo;$('turboCountdown').textContent=remaining??'READY';$('turboStatus').dataset.critical=remaining?'true':'false';if($('touchTurbo')){$('touchTurbo').hidden=!turbo&&!state.car?.spec.tracked;$('touchTurbo').textContent=state.car?.spec.tracked?'TAB · SPARA':'TURBO';}$('cannonStatus').hidden=!state.car?.spec.tracked;$('cannonStatus').textContent='TAB · CANNONE '+(state.car?.fireAt>state.elapsed?(state.car.fireAt-state.elapsed).toFixed(1)+' s':'PRONTO');$('touchChute').hidden=!state.car?.spec.aircraft;$('touchDescend').hidden=!state.car?.spec.aircraft;const nearest=PLACES.reduce((a,b)=>dist(a,state)<dist(b,state)?a:b),road=nearestRoad(state,graph);$('location').textContent=dist(nearest,state)<220?nearest.name:road?.segment.road.n||'Padova';$('district').textContent=districts?DISTRICTS[districts.at(state.x,state.z,road?.segment.road)].label:'PADOVA';if(regionalPlayer()){const p=regionalWorld.place(state.x,state.z);$('location').textContent=p?.name||'PADOVA → VENEZIA';$('district').textContent=p?.lod==='detailed'?'CENTRO DETTAGLIATO':'CORRIDOIO · PERFORMANCE';}$('money').textContent=Math.floor(state.money).toLocaleString('en-GB');$('wanted').textContent='★'.repeat(state.wanted)+'☆'.repeat(5-state.wanted);$('wanted').style.opacity=state.escape>0?(Math.sin(state.elapsed*5)>0?.5:1):1;const kmh=Math.round(Math.abs(state.speed)*3.6),health=state.health,rpm=state.mode==='car'?clamp(.9+Math.abs(state.speed)*.14+((keys.has('ShiftLeft')||keys.has('ShiftRight'))?1.2:0),.8,7.4):0,compass=['S','SE','E','NE','N','NW','W','SW'];$('speed').textContent=String(kmh).padStart(2,'0');$('vehicleName').textContent=state.mode==='car'?state.car.name.toUpperCase():'ON FOOT';$('gear').textContent=state.mode==='car'?(state.speed<-.4?'R':kmh<2?'N':String(Math.min(6,Math.max(1,Math.ceil(kmh/28))))):'—';$('rpm').style.width=(rpm/7.4*100)+'%';$('rpmValue').textContent=rpm.toFixed(1);$('altitude').textContent=Math.round(state.car?.spec.aircraft?state.y:terrain.elevation(state.x,state.z))+' M';$('gradient').textContent=state.car?(-Math.tan(terrain.slope(state.x,state.z,state.yaw,state.car.spec.wheelbase))*100).toFixed(1)+'%':'—';$('odometer').textContent=(state.distance/1000).toFixed(1)+' KM';$('heading').textContent=compass[Math.round((((state.yaw%(Math.PI*2))+Math.PI*2)%(Math.PI*2))/(Math.PI/4))%8];const nearbyTraffic=cars.filter(c=>c!==state.car&&dist(c,state)<300).length;$('trafficLevel').textContent=nearbyTraffic>12?'HIGH':nearbyTraffic>6?'MED':'LOW';$('health').style.width=health+'%';$('healthValue').textContent=Math.round(health)+'%';$('healthLabel').textContent=waterGame.swimming?'SALUTE NUOTATORE':waterGame.vehicle?'SALUTE / AUTO SOMMERSA':state.mode==='car'?'VEHICLE CONDITION':'SHIFT TO SPRINT';let hint='';if(waterGame.vehicle)hint='E · ESCI DAL VEICOLO E NUOTA';else if(waterGame.swimming)hint='';else if(taxiCanBoard())hint='E · SALI SUL TAXI';else if(state.mode==='foot'){const c=cars.find(c=>c.mesh.visible&&Math.abs((c.y||0)-state.y)<4&&vehicleReach(state,c)<2.4&&Math.abs(c.speed)<8);if(c&&c.mesh.visible&&!c.waterSinking&&c.health>0)hint='E · Get in '+c.name;}else if(state.car?.spec.aircraft)hint=state.car.spec.plane?'W/S · Velocità / SPACE · Decolla sopra 72 km/h / SHIFT · Scendi / F · Paracadute':'SPACE · Sali / SHIFT · Scendi / F · Paracadute / E · Esci a terra';else if(state.car?.spec.tracked)hint='TAB · Spara / A-D · Ruota anche da fermo';else if(state.mission?.type==='delivery'&&dist(state,state.mission.target)<25)hint='Stop inside the gold marker';else if(state.health<=0)hint='R · Recover and repair';else if(state.busted>1)hint='MOVE! Police are about to catch you';$('interact').textContent=hint;$('interact').hidden=!hint;if(state.elapsed>toastUntil)$('toast').hidden=true;updateMissionUI();updateMarker();if(!currentTarget())$('targetDistance').hidden=true;drawMini();}
 
 function setPaused(v){state.paused=v;clock.reset();previousPose=null;renderAlpha=1;keys.clear();drag=null;cameraRig.end(state.elapsed);if(v&&engineAudio)engineAudio.gain.gain.setTargetAtTime(0,engineAudio.ctx.currentTime,.1);}
 function showMenu(title,content){setPaused(true);$('menuTitle').textContent=title;$('menuContent').innerHTML=content;if(!$('menu').open)$('menu').showModal();}
@@ -847,6 +879,12 @@ function animate(time){
      updateMicromobility(dt);
     }
     regionalWorld?.update(state,dt);
+    if(regionalWorld&&state.started&&!lagoonPreloadActive){
+     if(state.x<27500){lagoonPreloadDone=false;lagoonPreloadCooloff=false;}
+     if(state.x>=30000&&!lagoonPreloadDone&&!lagoonPreloadCooloff){
+      lagoonPreloadCooloff=true;void preloadLagoon();
+     }
+    }
    renderAlpha=clock.advance(dt,simulate);
    const pose=visualPose();if(state.mode==='foot')player.position.set(pose.x,pose.y+.08,pose.z);
    for(const a of [...cars,...people,...cops]){if(!a.mesh.visible||a.waterSinking||a.parked&&a!==state.car)continue;const prev=a.lodFrom||previousActors.get(a.mesh);if(!prev||dist(prev,a)>10)continue;const blend=a.lodFrom?clamp((state.elapsed-a.lodAt+renderAlpha*clock.step)/a.lodSpan,0,1):renderAlpha;a.mesh.position.x=THREE.MathUtils.lerp(prev.x,a.x,blend);a.mesh.position.z=THREE.MathUtils.lerp(prev.z,a.z,blend);a.mesh.position.y=a===state.car&&waterRecovery.active?pose.y:THREE.MathUtils.lerp(prev.y,a.y,blend);a.mesh.rotation.y=prev.yaw+angleDiff(a.yaw,prev.yaw)*blend;}
