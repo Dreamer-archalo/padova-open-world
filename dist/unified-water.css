@@ -11,3 +11,9 @@
 @media(max-width:750px){
  #waterStatus:not([hidden]){bottom:clamp(158px,27vh,290px);font-size:12px;padding:9px 12px;}
 }
+
+/* Reuse the very same taxi pixel-art atlas for Venice streaming. The 2D
+   illustration stays visible while real regional chunks are being built. */
+.venice-loading{position:fixed;inset:0;display:grid;place-items:center;z-index:100;padding:clamp(12px,3vw,40px);background:#050a12}
+.venice-loading[hidden]{display:none!important}
+.venice-loading .taxi-meme{box-shadow:0 14px 60px #000b}
