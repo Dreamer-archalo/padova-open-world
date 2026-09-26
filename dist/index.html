@@ -11,7 +11,7 @@
   <link rel="stylesheet" href="./phase2-ui.css">
   <link rel="stylesheet" href="./initial-loader.css">
   <link rel="stylesheet" href="./unified-main.css?v=gta-world-r6">
-  <link rel="stylesheet" href="./unified-water.css?v=1">
+  <link rel="stylesheet" href="./unified-water.css?v=shore-r7">
 </head>
 <body>
   <div id="initialLoader" role="status" aria-live="polite" aria-label="Caricamento iniziale città">
@@ -118,11 +118,17 @@
     <div id="touchControls"><div><button data-key="KeyA">←</button><button data-key="KeyW">↑</button><button data-key="KeyD">→</button><button data-key="KeyS">↓</button></div><div><button id="touchCar">E · VEHICLE</button><button data-key="Space">BRAKE / UP</button><button id="touchDescend" class="modern-only" data-key="ShiftLeft" hidden>DOWN</button><button id="touchChute" class="modern-only" hidden>F · PARACADUTE</button><button id="touchTurbo" data-key="Tab" hidden>TURBO</button></div></div>
   </div>
   <dialog id="menu"><div class="dialog-head"><div><span class="eyebrow">PADOVA / YOUR CITY</span><h2 id="menuTitle">Take a breather.</h2></div><button class="close" id="closeMenu" aria-label="Close menu">×</button></div><div id="menuContent"></div></dialog>
-  <dialog id="mapDialog"><div class="dialog-head"><div><span class="eyebrow">MONDO UNICO · PADOVA / VENEZIA</span><h2>Mappa regionale</h2></div><div class="unified-zoom"><button id="unifiedZoomOut" type="button" aria-label="Riduci mappa">−</button><button id="unifiedZoomIn" type="button" aria-label="Ingrandisci mappa">+</button><button id="unifiedMapHere" type="button">POSIZIONE</button><button id="unifiedMapAll" type="button">TUTTO</button></div><button class="close" id="closeMap" aria-label="Chiudi mappa">×</button></div><div class="map-layout"><div class="fullmap-wrap"><canvas id="fullmap" width="1920" height="1280" aria-label="Full map; click to set waypoint"></canvas></div><div id="mapPlaces"></div></div><div class="map-diagnostics"><b>MAPPA-GTA-R6</b><span id="mapQuality">Caricamento cartografia HD…</span><span id="waterQuality">Acque: verifica geometria…</span></div><div class="map-legend"><a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">© OpenStreetMap contributors</a><span>● You</span><span>◆ Destination</span><span>Rotellina / pizzica / +/−: zoom · Trascina: sposta · Clic: indicatore</span></div></dialog>
+  <dialog id="mapDialog"><div class="dialog-head"><div><span class="eyebrow">MONDO UNICO · PADOVA / VENEZIA</span><h2>Mappa regionale</h2></div><div class="unified-zoom"><button id="unifiedZoomOut" type="button" aria-label="Riduci mappa">−</button><button id="unifiedZoomIn" type="button" aria-label="Ingrandisci mappa">+</button><button id="unifiedMapHere" type="button">POSIZIONE</button><button id="unifiedMapAll" type="button">TUTTO</button></div><button class="close" id="closeMap" aria-label="Chiudi mappa">×</button></div><div class="map-layout"><div class="fullmap-wrap"><canvas id="fullmap" width="1920" height="1280" aria-label="Full map; click to set waypoint"></canvas></div><div id="mapPlaces"></div></div><div class="map-diagnostics"><b>MAPPA-GTA-R7</b><span id="mapQuality">Caricamento cartografia HD…</span><span id="waterQuality">Acque: verifica geometria…</span></div><div class="map-legend"><a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">© OpenStreetMap contributors</a><span>● You</span><span>◆ Destination</span><span>Rotellina / pizzica / +/−: zoom · Trascina: sposta · Clic: indicatore</span></div></dialog>
+  <div id="veniceLoading" class="taxi-loading venice-loading" hidden role="status" aria-live="polite">
+    <div class="taxi-meme"><div><span>PADOVA → VENEZIA</span>
+      <strong>Caricamento Venezia</strong><p>Un breve pit-stop per preparare la laguna, i ponti e i quartieri.</p>
+      <small id="veniceLoadingStatus">Preparazione scenario 3D…</small>
+    </div></div>
+  </div>
   <div id="taxiLoading" class="taxi-loading" hidden role="status" aria-live="polite"><div id="taxiMeme" class="taxi-meme"><div><span>TAXI ABUSIVO IN TRANSITO…</span><strong>Caricamento destinazione</strong><p id="taxiFact"></p><small id="taxiLoadingStatus">Preparazione di terreno e strade</small><button id="taxiNext" type="button">CLICCA / TOCCA · PROSSIMA CURIOSITÀ</button></div></div></div>
   <footer id="credits"><a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">© OpenStreetMap contributors</a><a href="https://github.com/tilezen/joerd/blob/master/docs/attribution.md" target="_blank" rel="noopener">Terrain: Copernicus EU-DEM / USGS via Mapzen</a><span id="modelCredits"></span><span id="scaleCredit">Real-world scale · stylised reconstruction</span></footer>
   <script type="module" src="./initial-loader.js"></script>
-  <script type="module" src="./game.js?v=gta-world-r6"></script>
+  <script type="module" src="./game.js?v=lagoon-entry-r7"></script>
   <script type="module" src="./taxi-facts-extra.js"></script>
   <script type="module" src="./taxi-affordability.js"></script>
   <script type="module" src="./zone-indicator.js"></script>
