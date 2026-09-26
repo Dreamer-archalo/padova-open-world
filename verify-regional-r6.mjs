@@ -6,7 +6,7 @@ import {VectorMapDetail} from './dist/unified-map-detail.js';
 const read=p=>fs.readFileSync(p,'utf8');
 const game=read('dist/game.js'),reg=read('dist/regional-world.js'),
  map=read('dist/unified-map.js'),html=read('dist/index.html');
-assert(html.includes('MAPPA-GTA-R7'),'Cannot tell new R6 build from outdated preview');
+assert(html.includes('MAPPA-GTA-R8'),'Cannot tell new R6 build from outdated preview');
 assert(swimBodyPitch()>.95&&swimBodyPitch()<1.57,
  'Upright human +Y head must pitch FORWARD toward +Z, not upside down');
 assert.equal(swimBodyPitch(true),0,'Landing must reset body pitch');

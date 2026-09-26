@@ -106,7 +106,7 @@ jobs:
           mkdir -p site/preview/unified
           cp -a dist/. site/preview/unified/
           sha256sum -c /tmp/production-unchanged.sha
-          grep -q 'MAPPA-GTA-R7' site/preview/unified/index.html
+          grep -q 'MAPPA-GTA-R8' site/preview/unified/index.html
           test -s site/preview/unified/game.js
           test -s site/preview/unified/water-gameplay.js
           test -s site/preview/unified/map-live-tiles.js
