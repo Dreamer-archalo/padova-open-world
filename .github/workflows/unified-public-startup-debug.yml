@@ -70,10 +70,50 @@ jobs:
           await page.screenshot({path:'unified-startup.png'}).catch(()=>{});
           await browser.close();
           JS
+      - name: Verify mobile browser startup at Pixel-sized Android viewport
+        run: |
+          node --input-type=module <<'JS'
+          import {chromium,devices} from 'playwright';
+          const browser=await chromium.launch({headless:true,args:['--enable-webgl','--use-gl=angle','--use-angle=swiftshader','--disable-dev-shm-usage']});
+          const context=await browser.newContext({...devices['Pixel 7']});
+          const page=await context.newPage();
+          const errors=[];
+          page.on('pageerror',e=>errors.push(e.stack||e.message));
+          page.on('requestfailed',r=>errors.push('REQUEST '+r.url()+' '+r.failure()?.errorText));
+          const root='https://dreamer-archalo.github.io/padova-open-world/preview/unified/?v=R13mobile';
+          try {
+            await page.goto(root,{waitUntil:'domcontentloaded',timeout:90000});
+            await page.locator('#playBtn').waitFor({timeout:30000});
+            await page.locator('#initialQuality').selectOption('hyper');
+            await page.locator('#playBtn').click();
+            await page.waitForFunction(()=>document.documentElement.dataset.initialWorldReady==='true'||
+              document.getElementById('initialLoaderError')?.hidden===false||
+              document.querySelector('#loadingText.fatal'),null,{timeout:160000});
+            const state=await page.evaluate(()=>({
+              ready:document.documentElement.dataset.initialWorldReady,
+              percent:document.getElementById('initialLoaderPercent')?.textContent,
+              status:document.getElementById('initialLoaderStatus')?.textContent,
+              error:document.getElementById('initialLoaderError')?.textContent,
+              fatal:document.querySelector('#loadingText.fatal')?.textContent,
+              width:innerWidth,height:innerHeight
+            }));
+            console.log('PIXEL_7_MOBILE_BOOT',JSON.stringify(state));
+            console.log('MOBILE_BROWSER_ERRORS',JSON.stringify(errors.slice(-20)));
+            if(state.ready!=='true')process.exitCode=1;
+          } catch(error) {
+            process.exitCode=1;
+            console.log('MOBILE_BOOT_ERROR',error.stack||error);
+            console.log('MOBILE_BROWSER_ERRORS',JSON.stringify(errors.slice(-30)));
+          }
+          await page.screenshot({path:'unified-mobile-startup.png'}).catch(()=>{});
+          await browser.close();
+          JS
       - name: Attach startup screenshot
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: unified-startup-debug
-          path: unified-startup.png
+          path: |
+            unified-startup.png
+            unified-mobile-startup.png
           if-no-files-found: ignore
