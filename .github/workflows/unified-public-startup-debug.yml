@@ -1,0 +1,119 @@
+name: Verify corrected public R13 startup in real Chromium
+on:
+  push:
+    branches: [feat/unified-main-world-20260925]
+    paths:
+      - '.github/workflows/unified-public-startup-debug.yml'
+      - 'dist/game.js'
+      - 'dist/initial-loader.js'
+      - 'dist/index.html'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  actual-site:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: feat/unified-main-world-20260925
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install Chromium real WebGL smoke dependencies
+        run: |
+          npm install --no-save playwright@1.55.1
+          npx playwright install --with-deps chromium
+      - name: Inspect actual published HTML, asset links and player loader in a browser
+        run: |
+          node --input-type=module <<'JS'
+          import {chromium} from 'playwright';
+          const root='https://dreamer-archalo.github.io/padova-open-world/preview/unified/';
+          const browser=await chromium.launch({headless:true,args:['--enable-webgl','--use-gl=angle','--use-angle=swiftshader','--disable-dev-shm-usage']});
+          const page=await browser.newPage({viewport:{width:1100,height:800}});
+          const reports=[];
+          page.on('pageerror',e=>reports.push('PAGEERROR '+(e.stack||e.message)));
+          page.on('console',m=>{if(m.type()==='error')reports.push('CONSOLE '+m.text().slice(0,800));});
+          page.on('requestfailed',r=>reports.push('REQUEST FAILED '+r.url()+' '+r.failure()?.errorText));
+          page.on('response',r=>{if(r.status()>=400)reports.push('HTTP '+r.status()+' '+r.url());});
+          try {
+            for(const path of ['','data/padova.json','data/terrain.json','data/city.json','regional-world.js','regional-road-profile.js','initial-loader.js','game.js','vendor/three.module.js']){
+              const result=await page.request.get(root+path,{timeout:90000});
+              console.log('ASSET',path||'index',result.status(),result.headers()['content-type'],result.headers()['content-length']||'unknown');
+              if(!result.ok())throw Error('Broken critical asset '+path+' HTTP '+result.status());
+            }
+            const resp=await page.goto(root+'?v=R13',{waitUntil:'domcontentloaded',timeout:90000});
+            console.log('PAGE',resp.status(),page.url());
+            await page.locator('#playBtn').waitFor({timeout:30000});
+            await page.locator('#initialQuality').selectOption('hyper');
+            await page.locator('#playBtn').click();
+            console.log('LOADER CLICKED');
+            const t=Date.now();
+            for(let i=0;i<150;i++){
+              await page.waitForTimeout(1000);
+              const state=await page.evaluate(()=>({
+                progress:document.getElementById('initialLoaderPercent')?.textContent,
+                status:document.getElementById('initialLoaderStatus')?.textContent,
+                error:document.getElementById('initialLoaderError')?.textContent,
+                legacy:document.getElementById('loadingText')?.textContent,
+                fatal:document.querySelector('#loadingText.fatal')?.textContent,
+                button:document.getElementById('playBtn')?.textContent,
+                ready:document.documentElement.dataset.initialWorldReady
+              }));
+              if(i%5===0||state.error||state.fatal||state.ready)console.log('LOADER',i,JSON.stringify(state));
+              if(state.error||state.fatal||state.ready){console.log('BROWSER_ERRORS',JSON.stringify(reports.slice(-45)));if(!state.ready)process.exitCode=1;break;}
+              if(i===149)throw Error('Initial game still loading after 150s');
+            }
+            console.log('TOTAL_SEC',(Date.now()-t)/1000);
+          }catch(e){process.exitCode=1;console.log('TEST_ERROR',e.stack||e);console.log('BROWSER_ERRORS',JSON.stringify(reports.slice(-40)));}
+          await page.screenshot({path:'unified-startup.png'}).catch(()=>{});
+          await browser.close();
+          JS
+      - name: Verify mobile browser startup at Pixel-sized Android viewport
+        run: |
+          node --input-type=module <<'JS'
+          import {chromium,devices} from 'playwright';
+          const browser=await chromium.launch({headless:true,args:['--enable-webgl','--use-gl=angle','--use-angle=swiftshader','--disable-dev-shm-usage']});
+          const context=await browser.newContext({...devices['Pixel 7']});
+          const page=await context.newPage();
+          const errors=[];
+          page.on('pageerror',e=>errors.push(e.stack||e.message));
+          page.on('requestfailed',r=>errors.push('REQUEST '+r.url()+' '+r.failure()?.errorText));
+          const root='https://dreamer-archalo.github.io/padova-open-world/preview/unified/?v=R13mobile';
+          try {
+            await page.goto(root,{waitUntil:'domcontentloaded',timeout:90000});
+            await page.locator('#playBtn').waitFor({timeout:30000});
+            await page.locator('#initialQuality').selectOption('hyper');
+            await page.locator('#playBtn').click();
+            await page.waitForFunction(()=>document.documentElement.dataset.initialWorldReady==='true'||
+              document.getElementById('initialLoaderError')?.hidden===false||
+              document.querySelector('#loadingText.fatal'),null,{timeout:160000});
+            const state=await page.evaluate(()=>({
+              ready:document.documentElement.dataset.initialWorldReady,
+              percent:document.getElementById('initialLoaderPercent')?.textContent,
+              status:document.getElementById('initialLoaderStatus')?.textContent,
+              error:document.getElementById('initialLoaderError')?.textContent,
+              fatal:document.querySelector('#loadingText.fatal')?.textContent,
+              width:innerWidth,height:innerHeight
+            }));
+            console.log('PIXEL_7_MOBILE_BOOT',JSON.stringify(state));
+            console.log('MOBILE_BROWSER_ERRORS',JSON.stringify(errors.slice(-20)));
+            if(state.ready!=='true')process.exitCode=1;
+          } catch(error) {
+            process.exitCode=1;
+            console.log('MOBILE_BOOT_ERROR',error.stack||error);
+            console.log('MOBILE_BROWSER_ERRORS',JSON.stringify(errors.slice(-30)));
+          }
+          await page.screenshot({path:'unified-mobile-startup.png'}).catch(()=>{});
+          await browser.close();
+          JS
+      - name: Attach startup screenshot
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: unified-startup-debug
+          path: |
+            unified-startup.png
+            unified-mobile-startup.png
+          if-no-files-found: ignore

@@ -1,0 +1,57 @@
+name: Unified regional traffic physics R14 fast tests
+
+on:
+  push:
+    branches: [feat/unified-main-world-20260925]
+    paths:
+      - 'dist/game.js'
+      - 'dist/index.html'
+      - 'dist/padova-boats.js'
+      - 'verify-startup-r13.mjs'
+      - 'dist/regional-world.js'
+      - 'dist/regional-traffic-physics.js'
+      - 'verify-regional-npc-r14.mjs'
+      - 'dist/regional-road-profile.js'
+      - 'verify-regional-roads-r12.mjs'
+      - 'dist/regional-air-traffic.js'
+      - 'dist/unified-michelangelo.js'
+      - 'dist/nautical-catalog.js'
+      - 'dist/padova-boats.js'
+      - 'dist/unified-vehicle-pickup.js'
+      - 'dist/villa-mandria-hangar.js'
+      - 'dist/villa-mandria-catalog-ui.js'
+      - 'dist/phase2-runtime.js'
+      - 'verify-unified-mobility-r11.mjs'
+      - '.github/workflows/unified-mobility-smoke.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  mobility-regression:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: feat/unified-main-world-20260925
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Syntax check gameplay and new subsystems
+        run: |
+          set -euo pipefail
+          for f in dist/game.js dist/regional-road-profile.js dist/regional-world.js dist/regional-air-traffic.js dist/unified-michelangelo.js dist/nautical-catalog.js dist/padova-boats.js dist/unified-vehicle-pickup.js dist/villa-mandria-hangar.js dist/villa-mandria-catalog-ui.js dist/phase2-runtime.js; do node --check "$f"; done
+      - name: Test cross-region vehicles and traffic
+        run: |
+          node verify-unified-mobility-r11.mjs
+          node verify-startup-r13.mjs
+          node verify-regional-roads-r12.mjs
+          node --check dist/regional-traffic-physics.js
+          node verify-regional-npc-r14.mjs
+      - name: Preserve previous municipality and cartography tests
+        run: |
+          node verify-regional-town-detail.mjs
+          node verify-regional-r6.mjs
+          node verify-map-cleanup-r10.mjs

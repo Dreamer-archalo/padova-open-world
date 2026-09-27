@@ -7,6 +7,7 @@ import {VILLA,AIRPORT,HOME,areaPoint,areaLocal} from './gameplay-areas.js';
 import {VILLA_GARAGE} from './villa-treves-layout.js';
 import {vehicleBlocked} from './movement.js';
 import {installVehicleDamage} from './vehicle-damage.js';
+import {createMichelangeloModel} from './unified-michelangelo.js';
 
 // Rideable versions of the bicycles and standing electric scooters already
 // found as NPC scenery in Padova. They use the standard ground driving physics.
@@ -20,7 +21,7 @@ const CAT=Object.freeze({aircraft:'Aerei',helicopter:'Elicotteri',bicycle:'Bici 
 const $=id=>document.getElementById(id);
 const escapeHTML=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 export function hangarCategory(id,s){
- if(s.plane)return 'aircraft';if(s.aircraft)return 'helicopter';if(id==='bicycle'||id==='kick-scooter')return 'bicycle';
+ if(s.watercraft)return 'watercraft';if(s.plane)return 'aircraft';if(s.aircraft)return 'helicopter';if(id==='bicycle'||id==='kick-scooter')return 'bicycle';
  if(s.tracked)return 'tracked';if(s.bike||['motorcycle','scooter'].includes(id)||s.family==='motorcycle')return 'motorcycle';
  if(['freight','work','van','pickup'].includes(s.family)||s.length>=7&&!s.aircraft)return 'freight';return 'car';
 }
@@ -107,7 +108,7 @@ function createInBay(g,id,color){
  if(!unobstructed(g,p,s,yaw))return null;
  const micro=id==='bicycle'||id==='kick-scooter',c=g.addCar(p.x,p.z,yaw,false,true,micro?'motorcycle':id);
  if(micro||id.startsWith('airport-')){
-  const old=c.mesh;g.scene.remove(old);c.mesh=micro?microModel(id,color):airportModel(id,s,color);
+  const old=c.mesh;g.scene.remove(old);c.mesh=micro?microModel(id,color):id==='airport-michelangelo'?createMichelangeloModel():airportModel(id,s,color);
   c.style=id;c.spec=s;c.name=s.name;c.rider=null;
   if(micro&&id==='bicycle'){c.rider=createRider();c.mesh.add(c.rider);}
   g.scene.add(c.mesh);installVehicleDamage(c);
@@ -162,6 +163,15 @@ function renderCatalogue(g){
 async function choose(g,id,color){
  if(g.mandriaHangar.busy)return;
  const s=VEHICLES[id],p=bay();if(!s||!g.state.started||!hangarCatalogue().some(e=>e.id===id))return;
+ if(s.watercraft){
+  // Watercraft are launched at real mapped docks, never on the villa lawn.
+  const eligible=g.nautical?.docks?.filter(d=>d.width>=s.minChannel+1&&
+   (d.region?s.places.includes('venice')||s.places.includes('padova'):s.places.includes('padova')))||[];
+  const d=eligible.sort((a,b)=>Math.hypot(a.x-g.state.x,a.z-g.state.z)-Math.hypot(b.x-g.state.x,b.z-g.state.z))[0];
+  closeDialog(g);
+  if(!d){g.toast?.('Nessuna darsena compatibile; prova il menu B.',4);return;}
+  g.nautical.launch(id,d.id,color);return;
+ }
  // Never erase an occupied/mission vehicle; the only replaceable object is our
  // own staged vehicle, and only while it is physically still inside the bay.
  const old=g.mandriaHangar.staged;

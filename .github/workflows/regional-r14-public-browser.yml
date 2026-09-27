@@ -1,0 +1,34 @@
+name: R14 real public regional NPC WebGL
+on:
+  push:
+    branches: [feat/unified-main-world-20260925]
+    paths:
+      - '.github/workflows/regional-r14-public-browser.yml'
+      - 'tools/test-regional-r14-public-chromium.mjs'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  live-regional-acceptance:
+    runs-on: ubuntu-latest
+    timeout-minutes: 18
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: feat/unified-main-world-20260925
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install browser and software WebGL
+        run: |
+          npm install --no-save playwright@1.55.1
+          npx playwright install --with-deps chromium
+      - name: Verify real public OSM and actual 3D gameplay vehicles in four communes
+        run: node tools/test-regional-r14-public-chromium.mjs
+      - name: Retain live full-model evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: regional-r14-actual-browser-webgl
+          path: regional-r14-real-npc-webgl.png
+          if-no-files-found: ignore
