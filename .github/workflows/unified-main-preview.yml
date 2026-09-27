@@ -15,6 +15,8 @@ on:
       - 'dist/local-respawn.js'
       - 'dist/unified-regions.js'
       - 'dist/regional-world.js'
+      - 'dist/regional-traffic-physics.js'
+      - 'verify-regional-npc-r14.mjs'
       - 'dist/regional-road-profile.js'
       - 'verify-regional-roads-r12.mjs'
       - 'dist/regional-air-traffic.js'
@@ -204,6 +206,8 @@ jobs:
           node verify-startup-r13.mjs
           node --check dist/regional-road-profile.js
           node verify-regional-roads-r12.mjs
+          node --check dist/regional-traffic-physics.js
+          node verify-regional-npc-r14.mjs
           node verify-unified-main.mjs
           node verify-unified-features.mjs
           node verify-unified-water.mjs
@@ -226,7 +230,7 @@ jobs:
           cp -a dist/. .production-source/dist/preview/unified/
           test -s .production-source/dist/preview/unified/data/region-padova-venice.json
           test -s .production-source/dist/preview/unified/game.js
-          grep -q 'game.js?v=startup-r13' .production-source/dist/preview/unified/index.html
+          grep -q 'game.js?v=regional-physics-r14' .production-source/dist/preview/unified/index.html
           sha256sum -c /tmp/production-root.sha
 
       - name: Checkout previous continuous prototype
