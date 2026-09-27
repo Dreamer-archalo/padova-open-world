@@ -7,7 +7,7 @@ import {NPC_VEHICLES,createNPCCar} from './modern-vehicles.js';
 import {VEHICLES} from './vehicles.js';
 import {installVehicleDamage} from './vehicle-damage.js';
 import {laneCount,laneOffset} from './traffic.js';
-import {regionalNpcStep,regionalRoadEligible,reviveRegionalCar} from './regional-traffic-physics.js';
+import {regionalNpcStep,regionalRoadEligible,regionalOneWay,reviveRegionalCar} from './regional-traffic-physics.js';
 import {createSpecialVehicle} from './special-vehicles.js';
 import {createPerson} from './world.js';
 import {PADOVA_EAST,regionalDetail,activeRegionalPlace} from './unified-regions.js';
@@ -485,7 +485,7 @@ export class RegionalWorld{
     actor.lane=Math.min(actor.lane||0,laneCount(next.r)-1);
     actor.laneOffset=laneOffset(next.r,actor.lane);
    }else{
-    if(r.oneway){actor.speed=0;actor.parked=true;return;}
+    if(regionalOneWay(r)){actor.speed=0;actor.parked=true;return;}
     actor.dir*=-1;actor.speed=Math.min(actor.speed,3);
    }
   }
@@ -496,7 +496,7 @@ export class RegionalWorld{
  ambient(group,chunk){
   // Padova vehicle and pedestrian models at EVERY quality; LOD controls how
   // many are spawned, never swaps them for grey rectangular proxies.
-  const roads=chunk.roads.filter(r=>r.w>=3.25&&!/footway|path|steps|cycleway|pedestrian|construction/.test(r.k)&&
+  const roads=chunk.roads.filter(r=>r.w>=2.75&&!/footway|path|steps|cycleway|pedestrian|construction/.test(r.k)&&
    (r.a[0]+r.b[0])*.5>PADOVA_EAST+60);
   const within=roads.filter(r=>this.focus&&distance((r.a[0]+r.b[0])*.5,(r.a[1]+r.b[1])*.5,this.focus.x,this.focus.z)<620);
   const available=within.length?within:roads,actors=[],
@@ -510,8 +510,9 @@ export class RegionalWorld{
     heavy=i===0&&r.w>=8&&chunk.roads.length%7===0,
     fleet=industrial?industryFleet:townFleet,
     requested=heavy?'autotreno':fleet[Math.abs(Math.floor(r.a[0]*.07+r.a[1]*.13)+i*11)%fleet.length],
-    style=VEHICLES[requested]?requested:'sedan',
-    spec=VEHICLES[style],mesh=regionalCar(style),dir=r.oneway===-1?-1:r.oneway===1?1:i%2?1:-1,
+    style=VEHICLES[requested]&&VEHICLES[requested].width+1.1<=r.w?requested:
+     'nido',
+    spec=VEHICLES[style],mesh=regionalCar(style),dir=regionalOneWay(r)|| (i%2?1:-1),
     t=.22+(i%3)*.19,dx=r.b[0]-r.a[0],dz=r.b[1]-r.a[1],
     yaw=Math.atan2(dx*dir,dz*dir),x=r.a[0]+dx*t,z=r.a[1]+dz*t,
     car={mesh,r,road:r,t,dir,style,spec,name:spec.name,x,z,
