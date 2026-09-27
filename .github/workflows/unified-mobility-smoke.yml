@@ -5,6 +5,9 @@ on:
     branches: [feat/unified-main-world-20260925]
     paths:
       - 'dist/game.js'
+      - 'dist/index.html'
+      - 'dist/padova-boats.js'
+      - 'verify-startup-r13.mjs'
       - 'dist/regional-world.js'
       - 'dist/regional-road-profile.js'
       - 'verify-regional-roads-r12.mjs'
@@ -41,6 +44,7 @@ jobs:
       - name: Test cross-region vehicles and traffic
         run: |
           node verify-unified-mobility-r11.mjs
+          node verify-startup-r13.mjs
           node verify-regional-roads-r12.mjs
       - name: Preserve previous municipality and cartography tests
         run: |
