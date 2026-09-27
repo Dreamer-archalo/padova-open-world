@@ -38,8 +38,8 @@ const draw=(mini,scale)=>{
  return color;
 };
 const mini=draw(true,.8),full=draw(false,.8);
-assert(mini.includes('#386a7d')&&mini.includes('#dee1db'),
- 'Minimap must have muted water and legible simple roads');
+assert(mini.includes('#386a7d')&&mini.includes('#97a9a7'),
+ 'Minimap must preserve muted water and zoom-dependent residential road palette');
 assert(!mini.includes('#535e60'),'Minimap must not be crowded with building details');
 assert(full.includes('#535e60'),'Full map may show local building silhouettes');
 assert(!mini.includes('#eed1a2')&&!mini.includes('#b2c7b3'),
