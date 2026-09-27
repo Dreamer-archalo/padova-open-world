@@ -494,54 +494,50 @@ export class RegionalWorld{
   if(actor.health<=0)this.regionalExplosion(actor,time);
  }
  ambient(group,chunk){
-  const roads=chunk.roads.filter(r=>r.w>=3&&!/motorway|trunk|footway|path|steps|cycleway|pedestrian/.test(r.k));
-  const isDetailed=r=>regionalDetail((r.a[0]+r.b[0])/2,(r.a[1]+r.b[1])/2)==='detailed';
-  const active=roads.filter(r=>isDetailed(r)||this.focus&&
-   distance((r.a[0]+r.b[0])*.5,(r.a[1]+r.b[1])*.5,this.focus.x,this.focus.z)<600);
-  const transit=roads.filter(r=>!isDetailed(r)&&/primary|secondary|tertiary/.test(r.k));
-  const candidates=active.length?active:transit;
-  const actors=[],nearTown=this.focus&&distance(
-   (chunk.roads[0]?.a[0]||this.focus.x),(chunk.roads[0]?.a[1]||this.focus.z),
-   this.focus.x,this.focus.z)<500;
-  const detailed=nearTown&&this.quality!=='hyper';
-  const industrial=chunk.roads.some(r=>r.a[0]>26500&&r.a[0]<33700);
-  const townFleet=['nido','rondine','botanica','argine','viaggio','selva',
-   'saetta','meridiana','doge','vortice','campo','comitiva'];
-  const industryFleet=['corriere','officina','cantiere','tir','campo',
-   'autotreno','selva','argine'];
-  const count=candidates.length?Math.min(active.length?4:2,
-   Math.max(1,Math.ceil(candidates.length/(active.length?16:28)))):0;
+  // Padova vehicle and pedestrian models at EVERY quality; LOD controls how
+  // many are spawned, never swaps them for grey rectangular proxies.
+  const roads=chunk.roads.filter(r=>r.w>=3.25&&!/footway|path|steps|cycleway|pedestrian|construction/.test(r.k)&&
+   (r.a[0]+r.b[0])*.5>PADOVA_EAST+60);
+  const within=roads.filter(r=>this.focus&&distance((r.a[0]+r.b[0])*.5,(r.a[1]+r.b[1])*.5,this.focus.x,this.focus.z)<620);
+  const available=within.length?within:roads,actors=[],
+   industrial=roads.some(r=>r.a[0]>26500&&r.a[0]<33700),
+   townFleet=['nido','rondine','botanica','argine','viaggio','selva','saetta','meridiana','doge','vortice','campo','comitiva'],
+   industryFleet=['corriere','officina','cantiere','tir','campo','autotreno','selva','argine'];
+  const count=available.length?Math.min(this.quality==='hyper'?2:4,
+   Math.max(1,Math.ceil(available.length/(this.quality==='hyper'?27:17)))):0;
   for(let i=0;i<count;i++){
-   const r=candidates[(i*97+chunk.roads.length*11)%candidates.length],
-    bus=i===0&&r.w>=5.5&&chunk.roads.length%7===0,
-    styles=industrial?industryFleet:townFleet,
-    style=styles[Math.abs(Math.floor(r.a[0]*.07+r.a[1]*.13)+i*11)%styles.length];
-   // Iper mode and distant blocks keep economical silhouettes; the visited
-   // streets acquire full Padova NPC cars, vans, supercars and industrials.
-   const model=detailed&&!bus&&i<2,
-    mesh=model?regionalCar(style):new THREE.Mesh(cube,bus?ambientBus:ambientCar);
-   if(!model)mesh.scale.set(bus?2.4:1.8,bus?2.25:1.25,bus?9:4);
-   group.add(mesh);
-   actors.push({mesh,r,t:(i*.29)%1,bus,dir:i%2?1:-1,
-    style:model?style:null,detail:!!model,priority:i});
+   const r=available[(i*97+chunk.roads.length*11)%available.length],
+    heavy=i===0&&r.w>=8&&chunk.roads.length%7===0,
+    fleet=industrial?industryFleet:townFleet,
+    requested=heavy?'autotreno':fleet[Math.abs(Math.floor(r.a[0]*.07+r.a[1]*.13)+i*11)%fleet.length],
+    style=VEHICLES[requested]?requested:'sedan',
+    spec=VEHICLES[style],mesh=regionalCar(style),dir=r.oneway===-1?-1:r.oneway===1?1:i%2?1:-1,
+    t=.22+(i%3)*.19,dx=r.b[0]-r.a[0],dz=r.b[1]-r.a[1],
+    yaw=Math.atan2(dx*dir,dz*dir),x=r.a[0]+dx*t,z=r.a[1]+dz*t,
+    car={mesh,r,road:r,t,dir,style,spec,name:spec.name,x,z,
+     y:this.height(x,z),yaw,speed:2.3,health:100,driver:.82+(i%5)*.05,
+     parked:false,regionManaged:true,regionalTraffic:true,chunkGroup:group,
+     lane:0,desiredLane:0,laneOffset:laneOffset(r,0),priority:i,
+     longAccel:0,lastCollision:0,nextYaw:null,registered:false,knockX:0,knockZ:0,spin:0};
+   installVehicleDamage(car);
+   mesh.traverse(o=>{if(o.isMesh||o.isLineSegments)o.userData.regionalAmbientShared=true;});
+   mesh.position.set(x,car.y,z);mesh.rotation.y=yaw;group.add(mesh);actors.push(car);
+   if(this.sim){this.sim.cars.push(car);car.registered=true;}
   }
-  const peopleRoads=chunk.roads.filter(r=>/footway|pedestrian|path|residential|living_street|service/.test(r.k));
-  const peopleCount=Math.min(active.length?6:3,Math.ceil(peopleRoads.length/7));
+  const walkways=chunk.roads.filter(r=>/footway|pedestrian|path|residential|living_street|service/.test(r.k)&&
+   !/motorway|trunk/.test(r.k));
+  const peopleCount=Math.min(this.quality==='hyper'?2:6,Math.ceil(walkways.length/8));
   for(let i=0;i<peopleCount;i++){
-   const r=peopleRoads[(i*13+peopleRoads.length*5)%peopleRoads.length];
-   if(!r)continue;
-   const model=detailed&&i<3,
-    mesh=model?regionalPerson(Math.abs(Math.floor(r.a[0]+r.a[1])+i)%6):
-     new THREE.Mesh(cube,ambientPedestrian);
-   if(!model)mesh.scale.set(.38,1.55,.35);
-   group.add(mesh);
-   actors.push({mesh,r,t:(i*.29)%1,dir:i%2?1:-1,person:true,
-    detail:!!model,priority:i,side:/residential|living_street|service/.test(r.k)?
-     (i%2?1:-1)*(r.w*.5+.4):0});
+   const r=walkways[(i*13+walkways.length*5)%walkways.length];if(!r)continue;
+   const t=(i*.29+.17)%1,side=/residential|living_street|service/.test(r.k)?(i%2?1:-1)*(r.w*.5+.4):0,
+    dx=r.b[0]-r.a[0],dz=r.b[1]-r.a[1],len=Math.hypot(dx,dz)||1,
+    x=r.a[0]+dx*t-dz/len*side,z=r.a[1]+dz*t+dx/len*side,
+    mesh=regionalPerson(Math.abs(Math.floor(r.a[0]+r.a[1])+i)%6),
+    person={mesh,r,t,dir:i%2?1:-1,person:true,detail:true,priority:i,side,x,z,y:this.height(x,z),speed:1.3,health:100};
+   mesh.position.set(x,person.y+.08,z);group.add(mesh);actors.push(person);
   }
   group.userData.ambient=actors;
  }
-
  build(k){
   if(this.visible.has(k))return;
   const [ix,iz]=k.split(',').map(Number),src=this.chunks.get(k)||{buildings:[],roads:[],water:[],areas:[]};
@@ -860,8 +856,7 @@ export class RegionalWorld{
     const b=blocks[i],bw=Math.max(1,b.maxX-b.minX),bd=Math.max(1,b.maxZ-b.minZ);dummy.position.set(b.cx,b.minY+b.h/2,b.cz);dummy.scale.set(bw,b.h,bd);dummy.updateMatrix();mesh.setMatrixAt(i,dummy.matrix);
    }mesh.instanceMatrix.needsUpdate=true;group.add(mesh);
   }
-  // Cues only for transitional traffic in this first integration phase.
-  // Full Padova vehicle/NPC simulation is unchanged and remains local to Padova.
+  // Stream real physics-driven cars and animated pedestrians, never cubes.
   if(near)this.ambient(group,src);
   group.userData.detailed=near;
   this.scene.add(group);this.visible.set(k,group);this.totalBuilt++;
