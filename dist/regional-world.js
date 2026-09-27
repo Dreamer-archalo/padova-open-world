@@ -16,7 +16,7 @@ const energy=new THREE.MeshBasicMaterial({color:'#6dd4d5',transparent:true,opaci
 const energySkin=new THREE.MeshBasicMaterial({color:'#4cb8c2',transparent:true,opacity:.19,side:THREE.DoubleSide,depthWrite:false});
 const energyOutline=new THREE.LineBasicMaterial({color:'#8ef7ec',transparent:true,opacity:.76,depthWrite:false});
 const ambientCar=material('#80919b'),ambientBus=material('#bc9f61'),ambientPedestrian=material('#577d78');
-const facadeFrame=material('#c6b7a0'),facadeDoor=material('#746454'),facadeBrick=material('#ad7861'),facadeStucco=material('#dec6a6'),industrialWall=material('#a2afae'),sidewalkMat=material('#aeb4aa');
+const facadeFrame=material('#c6b7a0'),facadeDoor=material('#746454'),facadeBrick=material('#ad7861'),facadeStucco=material('#dec6a6'),industrialWall=material('#a2afae'),sidewalkMat=material('#aeb4aa'),facadeShutter=material('#647368');
 const cube=new THREE.BoxGeometry(1,1,1);
 const min=(a,b)=>Math.min(a,b),max=(a,b)=>Math.max(a,b);
 const distance=(x,z,a,b)=>Math.hypot(x-a,z-b);
@@ -76,7 +76,7 @@ export class RegionalWorld{
   for(let i=0;i<steps;i++){
    const f=i/steps,g=(i+1)/steps,p=[a[0]+(b[0]-a[0])*f,a[1]+(b[1]-a[1])*f],q=[a[0]+(b[0]-a[0])*g,a[1]+(b[1]-a[1])*g];
    if(max(p[0],q[0])<PADOVA_EAST-180)continue;
-   const m=[(p[0]+q[0])/2,(p[1]+q[1])/2],item={a:p,b:q,w:source.w||4,k:source.k||'',bri:!!(source.b||source.bridge),yA:type==='roads'?this.roadY(source,...p,t0+(t1-t0)*f):this.raw(...p),yB:type==='roads'?this.roadY(source,...q,t0+(t1-t0)*g):this.raw(...q)};
+   const m=[(p[0]+q[0])/2,(p[1]+q[1])/2],item={a:p,b:q,w:source.w||4,k:source.k||'',bri:!!(source.b||source.bridge),tMid:t0+(t1-t0)*(f+g)*.5,yA:type==='roads'?this.roadY(source,...p,t0+(t1-t0)*f):this.raw(...p),yB:type==='roads'?this.roadY(source,...q,t0+(t1-t0)*g):this.raw(...q)};
    this.bucket(...m)[type].push(item);
    if(type==='roads'){
     this.insertSpatial(this.roads,item,p,q,item.w*.5+3);
@@ -327,16 +327,16 @@ export class RegionalWorld{
  }
  ambient(group,chunk){
   const roads=chunk.roads.filter(r=>r.w>=3&&!/motorway|trunk|footway|path|steps|cycleway|pedestrian/.test(r.k));
-  if(!roads.length)return;
+  // Foot-only Venetian calli still spawn pedestrians without nearby car lanes.
   const isDetailed=r=>regionalDetail((r.a[0]+r.b[0])/2,(r.a[1]+r.b[1])/2)==='detailed';
   const active=roads.filter(r=>isDetailed(r)||this.focus&&distance((r.a[0]+r.b[0])*.5,(r.a[1]+r.b[1])*.5,this.focus.x,this.focus.z)<600);
   // Transit towns remain inhabited, not empty: fewer low-poly cars/buses on
   // real mapped arteries even where the buildings use energy-mode LOD.
   const transit=roads.filter(r=>!isDetailed(r)&&/primary|secondary|tertiary/.test(r.k));
   const candidates=active.length?active:transit;
-  if(!candidates.length)return;
+  // Pedestrian generation also works in road-free chunks.
   const actors=[];const carMat=ambientCar,busMat=ambientBus,peopleMat=ambientPedestrian;
-  const count=Math.min(active.length?3:2,Math.ceil(candidates.length/(active.length?22:35)));
+  const count=candidates.length?Math.min(active.length?3:2,Math.ceil(candidates.length/(active.length?22:35))):0;
   for(let i=0;i<count;i++){
    const r=candidates[Math.abs((i*97+chunk.roads.length*11)%candidates.length)],bus=i===0&&r.w>=5.5;
    const mesh=new THREE.Mesh(new THREE.BoxGeometry(bus?2.4:1.8,bus?2.25:1.25,bus?9:4),bus?busMat:carMat);
@@ -370,7 +370,7 @@ export class RegionalWorld{
    }
   }
   if(sea.length){const sheet=new THREE.Mesh(geometry(sea),lagoonMat);sheet.renderOrder=1;group.add(sheet);}
-  const normal=[],arterial=[],channels=[],balustrade=[],bridgeSupports=[],w=[],r=[],blocks=[],energyFaces=[],energyEdges=[],glassFaces=[],roadStripes=[],roadSigns=[],distantWalls=[],facadeFaces=[],brickFaces=[],industrialFaces=[],frameFaces=[],doorFaces=[],pavements=[],crosswalks=[];
+  const normal=[],arterial=[],channels=[],balustrade=[],bridgeSupports=[],bridgeUndersides=[],w=[],r=[],blocks=[],energyFaces=[],energyEdges=[],glassFaces=[],shutterFaces=[],roadStripes=[],roadSigns=[],distantWalls=[],facadeFaces=[],brickFaces=[],industrialFaces=[],frameFaces=[],doorFaces=[],pavements=[],crosswalks=[];
   for(const p of src.roads){
    surface(/motorway|trunk|primary|secondary/.test(p.k)?arterial:normal,p.a,p.b,p.w,p.yA+.025,p.yB+.025);
    // Grounded, level sidewalks only in town blocks; no floating decks.
@@ -414,7 +414,9 @@ export class RegionalWorld{
      surface(roadStripes,a,b,.11,p.yA+.058,p.yB+.058);
     }
    }
-   if(near&&!coast(...p.a)&&p.w>=5.3&&distance(...p.a,...p.b)>12&&roadSigns.length<250){
+   if(near&&p.w>=5.3&&!/footway|steps|cycleway/.test(p.k)&&
+       distance(...p.a,...p.b)>12&&roadSigns.length<250&&
+       Math.abs(Math.floor(p.a[0]*.021+p.a[1]*.034))%19===0){
     const len=distance(...p.a,...p.b),nx=-(p.b[1]-p.a[1])/len,nz=(p.b[0]-p.a[0])/len,
      x=(p.a[0]+p.b[0])*.5+nx*(p.w*.5+1.2),
      z=(p.a[1]+p.b[1])*.5+nz*(p.w*.5+1.2),y=(p.yA+p.yB)*.5;
@@ -422,6 +424,8 @@ export class RegionalWorld{
     addQuad(roadSigns,[x-.4,y+1.75,z],[x+.4,y+1.75,z],[x+.4,y+2.34,z],[x-.4,y+2.34,z]);
    }
    if(p.bri&&near){
+     // Physical-looking batched underside, visible to future boat players.
+     surface(bridgeUndersides,p.a,p.b,Math.max(2,p.w-.2),p.yA-.23,p.yB-.23);
     const dx=p.b[0]-p.a[0],dz=p.b[1]-p.a[1],len=Math.hypot(dx,dz)||1,
      nx=-dz/len*(p.w*.5+.18),nz=dx/len*(p.w*.5+.18);
     // Real vertical rails, not thin horizontal strips floating above a deck.
@@ -434,7 +438,8 @@ export class RegionalWorld{
     // Major lagoon bridges get visible supporting pillars, so the Ponte
     // della Libertà is not perceived as a road suspended in empty space.
     const mid=[(p.a[0]+p.b[0])/2,(p.a[1]+p.b[1])/2],top=(p.yA+p.yB)/2-.1;
-    if(p.w>=7&&coast(...mid)){
+    if(coast(...mid)&&(p.w>=7||(p.tMid!==undefined&&
+       (p.tMid<.07||p.tMid>.93)))){
      const bottom=LAGOON_Y-1.5,half=.42;
      if(top-bottom>.8)for(const side of [-1,1]){
       const cx=mid[0]+nx*side*.54,cz=mid[1]+nz*side*.54;
@@ -509,6 +514,16 @@ export class RegionalWorld{
          x=a[0]+ux*(t-w)+nx,z=a[1]+uz*(t-w)+nz,
          x2=x+ux*2*w,z2=z+uz*2*w;
         addQuad(glassFaces,[x,y,z],[x2,y,z2],[x2,top,z2],[x,top,z]);
+        // Low-cost regional Venetian shutters, grouped per sector.
+        if(b.c%3===1&&level<2&&shutterFaces.length<2800){
+         const nx2=nx*1.13,nz2=nz*1.13,sw=.18;
+         const lx=x-ux*.26+nx2,lz=z-uz*.26+nz2;
+         const rx=x2+ux*.08+nx2,rz=z2+uz*.08+nz2;
+         addQuad(shutterFaces,[lx,y,lz],[lx+ux*sw,y,lz+uz*sw],
+          [lx+ux*sw,top,lz+uz*sw],[lx,top,lz]);
+         addQuad(shutterFaces,[rx,y,rz],[rx+ux*sw,y,rz+uz*sw],
+          [rx+ux*sw,top,rz+uz*sw],[rx,top,rz]);
+        }
         if(frameFaces.length<12000){
          addQuad(frameFaces,[x-.06*ux,y-.09,z-.06*uz],
           [x2+.06*ux,y-.09,z2+.06*uz],[x2+.06*ux,y,z2+.06*uz],[x-.06*ux,y,z-.06*uz]);
@@ -554,6 +569,7 @@ export class RegionalWorld{
   if(pavements.length)group.add(new THREE.Mesh(geometry(pavements),sidewalkMat));
   if(crosswalks.length)group.add(new THREE.Mesh(geometry(crosswalks),mark));
   if(frameFaces.length)group.add(new THREE.Mesh(geometry(frameFaces),facadeFrame));
+  if(shutterFaces.length)group.add(new THREE.Mesh(geometry(shutterFaces),facadeShutter));
   if(doorFaces.length)group.add(new THREE.Mesh(geometry(doorFaces),facadeDoor));
   if(normal.length)group.add(new THREE.Mesh(geometry(normal),roadMat));
   if(arterial.length)group.add(new THREE.Mesh(geometry(arterial),arterialMat));
@@ -564,6 +580,7 @@ export class RegionalWorld{
   if(channels.length){const waterMesh=new THREE.Mesh(geometry(channels),canalMat);waterMesh.renderOrder=2;group.add(waterMesh);}
   if(balustrade.length)group.add(new THREE.Mesh(geometry(balustrade),stone));
   if(bridgeSupports.length)group.add(new THREE.Mesh(geometry(bridgeSupports),stone));
+  if(bridgeUndersides.length)group.add(new THREE.Mesh(geometry(bridgeUndersides),stone));
   if(w.length)group.add(new THREE.Mesh(geometry(w),walls));
   if(r.length)group.add(new THREE.Mesh(geometry(r),roofs));
   if(energyFaces.length)group.add(new THREE.Mesh(geometry(energyFaces),energySkin));
