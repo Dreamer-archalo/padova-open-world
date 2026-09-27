@@ -86,6 +86,6 @@ for(const symbol of ['regionalVehiclePickup','extendRegionalDocks','new Regional
 assert(game.includes('if(e.code===\'KeyV\')vehiclesMenu()'));
 assert(hangar.includes("if(id==='airport-michelangelo')return createMichelangeloModel()"));
 assert(hangar.includes("enabled:true}"));
-assert(runtime.includes("import './padova-boats.js'"));
+assert(/import ['"]\.\/padova-boats\.js(?:\?[^'"]+)?['"]/.test(runtime),'Boat module must register in phase2 even after cache-bust');
 assert(region.includes('regionalAmbientShared')&&region.includes('q===actor.previous'));
 console.log('PASS: registered 1000 km/h Michelangelo, 10 navigable boats, regional V road-safety, detailed regional people/cars, world air traffic and quality budgets.');
