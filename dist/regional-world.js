@@ -8,6 +8,7 @@ import {createSpecialVehicle} from './special-vehicles.js';
 import {createPerson} from './world.js';
 import {PADOVA_EAST,regionalDetail,activeRegionalPlace} from './unified-regions.js';
 import {clipPolygon,coastalBand,harborBand} from './regional-hydro.js';
+import {smoothRegionalRoadProfile,regionalChunkCuts,regionalRoadClass} from './regional-road-profile.js';
 
 const CHUNK=320,CELL=160,LAGOON_Y=.1;
 const key=(x,z,size)=>Math.floor(x/size)+','+Math.floor(z/size);
@@ -55,7 +56,7 @@ function coast(x,z){return x>33000&&z>-7800&&z<3000;}
 export class RegionalWorld{
  constructor(scene,data,regionalTerrain,originalCollision){
   this.scene=scene;this.data=data;this.grid=regionalTerrain;this.collision=originalCollision;
-  this.chunks=new Map();this.visible=new Map();this.roads=new Map();this.waters=new Map();this.waterAreas=new Map();this.landAreas=new Map();this.buildingAreas=new Map();this.shorelines=new Map();this.key='';
+  this.chunks=new Map();this.visible=new Map();this.roadProfiles=new WeakMap();this.roads=new Map();this.waters=new Map();this.waterAreas=new Map();this.landAreas=new Map();this.buildingAreas=new Map();this.shorelines=new Map();this.key='';
   this.actors=[];this.queue=[];this.totalBuilt=0;this.lastUpdate=0;this.dataReady=false;
   this.index();
  }
@@ -68,7 +69,7 @@ export class RegionalWorld{
  }
  roadY(road,x,z,t){
   const base=coast(x,z)?Math.max(this.raw(x,z)+.14,LAGOON_Y+.24):this.raw(x,z)+.14;
-  if(!road.b&&!road.bridge)return base;
+  if(!road.b&&!road.bridge)return this.roadProfiles?.get(road)?.sample(t)??base;
   // Continuous deck profile. Both ends join the neighboring street height;
   // raised pedestrian bridges gain a mild arch without a vertical step.
   const rise=/motorway|trunk|primary/.test(road.k)?2.4:/footway|pedestrian|path|steps/.test(road.k)?1.05:1.35;
@@ -95,11 +96,14 @@ export class RegionalWorld{
   const len=distance(a[0],a[1],b[0],b[1]);if(len<.12)return;
   // Long OSM ways are split before chunking: no road disappears between
   // adjacent 320 m sectors when its original way spans several kilometres.
-  const steps=Math.max(1,Math.ceil(len/(source.b||source.bridge?28:110)));
-  for(let i=0;i<steps;i++){
-   const f=i/steps,g=(i+1)/steps,p=[a[0]+(b[0]-a[0])*f,a[1]+(b[1]-a[1])*f],q=[a[0]+(b[0]-a[0])*g,a[1]+(b[1]-a[1])*g];
+  const major=type==='roads'&&/motorway|trunk|primary|secondary/.test(source.k||'');
+  const cuts=type==='roads'?regionalChunkCuts(a,b,CHUNK,
+   major?42:/footway|path|cycleway/.test(source.k||'')?88:68):
+   regionalChunkCuts(a,b,CHUNK,108);
+  for(let i=1;i<cuts.length;i++){
+   const f=cuts[i-1],g=cuts[i],p=[a[0]+(b[0]-a[0])*f,a[1]+(b[1]-a[1])*f],q=[a[0]+(b[0]-a[0])*g,a[1]+(b[1]-a[1])*g];
    if(max(p[0],q[0])<PADOVA_EAST-180)continue;
-   const m=[(p[0]+q[0])/2,(p[1]+q[1])/2],item={a:p,b:q,w:source.w||4,k:source.k||'',bri:!!(source.b||source.bridge),tMid:t0+(t1-t0)*(f+g)*.5,yA:type==='roads'?this.roadY(source,...p,t0+(t1-t0)*f):this.raw(...p),yB:type==='roads'?this.roadY(source,...q,t0+(t1-t0)*g):this.raw(...q)};
+   const m=[(p[0]+q[0])/2,(p[1]+q[1])/2],item={a:p,b:q,w:source.w||4,k:source.k||'',oneway:source.oneway||source.one||false,lanes:Number(source.lanes)||0,bri:!!(source.b||source.bridge),tMid:t0+(t1-t0)*(f+g)*.5,yA:type==='roads'?this.roadY(source,...p,t0+(t1-t0)*f):this.raw(...p),yB:type==='roads'?this.roadY(source,...q,t0+(t1-t0)*g):this.raw(...q)};
    this.bucket(...m)[type].push(item);
    if(type==='roads'){
     this.insertSpatial(this.roads,item,p,q,item.w*.5+3);
@@ -125,6 +129,10 @@ export class RegionalWorld{
  index(){
   for(const r of this.data.roads||[]){
    if(r.p?.length<2)continue;
+   if(!r.b&&!r.bridge){
+    const roadBase=(x,z)=>coast(x,z)?Math.max(this.raw(x,z)+.14,LAGOON_Y+.24):this.raw(x,z)+.14;
+    this.roadProfiles.set(r,smoothRegionalRoadProfile(r.p,roadBase,r.k));
+   }
    const lengths=r.p.slice(1).map((p,i)=>distance(p[0],p[1],r.p[i][0],r.p[i][1])),total=lengths.reduce((a,b)=>a+b,0);let used=0;
    for(let i=1;i<r.p.length;i++){const len=lengths[i-1];this.segment('roads',r,r.p[i-1],r.p[i],total?used/total:0,total?(used+len)/total:1);used+=len;}
   }
