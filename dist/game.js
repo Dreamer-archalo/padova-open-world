@@ -242,7 +242,7 @@ function yieldFrame(){return new Promise(r=>requestAnimationFrame(r));}
 function setupGameplay(){
  if(gameplay)return;
  speedCameras=new SpeedCameras({state,data,terrain,scene,save,toast});
- gameplay=new ModernGameplay({state,cars,people,cops,scene,terrain,graph:patrolGraph||graph,collision:world.collision,addCar,pose:poseVehicle,safeRoad:dryRoad,raiseWanted,defeat:explodePlayer,toast,
+ gameplay=new ModernGameplay({state,data,cars,people,cops,scene,terrain,graph:patrolGraph||graph,collision:world.collision,addCar,pose:poseVehicle,safeRoad:dryRoad,raiseWanted,defeat:explodePlayer,toast,
   forget:c=>previousActors.delete(c.mesh),remove:c=>{scene.remove(c.mesh);previousActors.delete(c.mesh);for(const pool of [cars,cops]){const i=pool.indexOf(c);if(i>=0)pool.splice(i,1);}if(c.police)c.mesh.traverse(o=>{if(o.isMesh){o.geometry.dispose();o.material.dispose();}});}});
  parachute=createParachute();scene.add(parachute);
  PLACES[10]={...AIRPORT_GATE};if(!PLACES.some(p=>p.name===HOME.name))PLACES.push({...HOME});
@@ -1018,6 +1018,22 @@ async function init(){try{progress(5,'Loading the city map…');const [response,
  taxiMenuController=new TaxiMenuController({document,menu:$('menu'),mapDialog:$('mapDialog'),menuContent:$('menuContent'),mapPlaces:$('mapPlaces'),fullMap:$('fullmap'),overlay:$('taxiLoading'),status:$('taxiLoadingStatus'),inputManager,bounds:minBounds,setPaused,drawFullMap,getFare:coords=>taxiFare(taxi.car,coords),executeTransition:executeTaxiTransition,onError:(error,context)=>taxiDestinationFailure(error,context),onMapPickingChange:value=>{taxiMapPick=value;if(unifiedMap){if(value)unifiedMap.centerOn(-100,-50,5);else unifiedMap.reset();}},delayMs:50});
  signals=new TrafficSignals(graph,data.signals);trams=new Trams(scene,data,terrain,state.quality);incidents=new Incidents(scene);player=createPerson('#d9bf8f');scene.add(player);createPopulation();world.update(state.x,state.z,true);progress(85,'Drawing your map…');await yieldFrame();makeMap();
  marker=new THREE.Group();const ring=new THREE.Mesh(new THREE.TorusGeometry(11,.27,8,48),new THREE.MeshBasicMaterial({color:'#ffcb72'}));ring.rotation.x=Math.PI/2;const arrow=new THREE.Mesh(new THREE.OctahedronGeometry(1.8),new THREE.MeshStandardMaterial({color:'#ffc56a',emissive:'#8b5d1f',emissiveIntensity:.3}));arrow.position.y=7;marker.add(ring,arrow);const beam=new THREE.Mesh(new THREE.CylinderGeometry(2,10,26,24,1,true),new THREE.MeshBasicMaterial({color:'#ffc56a',transparent:true,opacity:.045,depthWrite:false,side:THREE.DoubleSide}));beam.position.y=13;marker.add(beam);marker.visible=false;scene.add(marker);progress(100,'Ready. '+data.buildings.length.toLocaleString('en-GB')+' buildings · real-world scale');state.ready=true;$('playBtn').disabled=false;$('playBtn').textContent='Scegli il personaggio  →';$('playBtn').onclick=start;updateUI();characterPicker=new CharacterPicker(document,enterCity);characterPicker.open(state.character);requestAnimationFrame(animate);void startUnifiedRegion();
- }catch(e){console.error(e);progress(100,'');$('loadingText').className='fatal';$('loadingText').textContent='The city could not start. '+(String(e).includes('WebGL')?'Enable WebGL / hardware acceleration in your browser and reload.':'Check your connection and reload to try again.');$('playBtn').textContent='Reload city';$('playBtn').disabled=false;$('playBtn').onclick=()=>location.reload();}}
+ }catch(e){
+    // A game-logic exception at 100% formerly appeared as a 30% connection
+    // error because the new overlay mirrors the old bootstrap at a 30% cap.
+    // Tell the player what actually failed, not to troubleshoot their Wi-Fi.
+    const detail=e?.stack||e?.message||String(e);
+    console.error('[GAME BOOTSTRAP]',e);
+    globalThis.__padovaLoaderDebug?.fail?.('GAME STARTUP',detail);
+    $('loadingText').className='fatal';
+    const network=/Failed to fetch|NetworkError|HTTP [45]\\d\\d|download failed/i.test(String(e));
+    $('loadingText').textContent=(network?
+      'Non riesco a scaricare un file della mappa: ':
+      'Il gioco ha riscontrato un errore di avvio: ')+(e?.message||String(e));
+    $('playBtn').textContent='Ricarica il gioco';
+    $('playBtn').disabled=false;
+    $('initialQuality').disabled=false;
+    $('playBtn').onclick=()=>location.reload();
+  }}
 $('initialQuality').innerHTML=qualityOptions();$('initialQuality').value=state.quality;$('initialQuality').onchange=e=>{state.quality=e.target.value;save();};
 $('playBtn').disabled=false;$('playBtn').textContent='Carica la mappa  →';$('playBtn').onclick=()=>{$('playBtn').disabled=true;$('initialQuality').disabled=true;init();};
