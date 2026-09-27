@@ -23,7 +23,7 @@ import {CameraRig} from './camera-rig.js';
 import {TrafficSignals,lanePoint,laneCount,laneOffset,trafficLane,trafficSpeed,advanceTrafficSpeed} from './traffic.js';
 import {applyCityData,Districts,DISTRICTS} from './districts.js';
 import * as THREE from './vendor/three.module.js';
-import {RegionalWorld} from './regional-world.js?v=regional-roads-r13';
+import {RegionalWorld} from './regional-world.js?v=physical-npcs-r14';
 import {RegionalAirTraffic} from './regional-air-traffic.js';
 import {UnifiedMap} from './unified-map.js?v=carto-r10';
 import {VisibleMapTiles} from './map-live-tiles.js?v=hd-water-r4';
