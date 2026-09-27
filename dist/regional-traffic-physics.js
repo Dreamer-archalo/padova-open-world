@@ -17,9 +17,12 @@ export function regionalTarget(actor){
   offset=actor.laneOffset??laneOffset(r,actor.lane||0);
  return {x:to[0]+Math.cos(yaw)*offset,z:to[1]-Math.sin(yaw)*offset,yaw};
 }
+export const regionalOneWay=r=>r?.oneway===true||r?.oneway===1||r?.oneway==='yes'?1:
+  r?.oneway===-1||r?.oneway==='-1'?-1:0;
 export function regionalRoadEligible(r,car){
  if(r.w<Math.max(3.25,car.spec.width+1.1)||/footway|path|steps|cycleway|pedestrian|construction/.test(r.k||''))return false;
- if(r.oneway===1&&car._candidateDir===-1||r.oneway===-1&&car._candidateDir===1)return false;
+ const direction=regionalOneWay(r);
+ if(direction===1&&car._candidateDir===-1||direction===-1&&car._candidateDir===1)return false;
  if(/motorway|trunk/.test(r.k||'')&&car.spec.family==='city'&&r.w<5)return false;
  return true;
 }
