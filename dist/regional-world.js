@@ -100,7 +100,7 @@ export class RegionalWorld{
   // adjacent 320 m sectors when its original way spans several kilometres.
   const major=type==='roads'&&/motorway|trunk|primary|secondary/.test(source.k||'');
   const cuts=type==='roads'?regionalChunkCuts(a,b,CHUNK,
-   major?42:/footway|path|cycleway/.test(source.k||'')?88:68):
+   major?(/motorway|trunk/.test(source.k||'')?24:35):/footway|path|cycleway/.test(source.k||'')?88:68):
    regionalChunkCuts(a,b,CHUNK,108);
   for(let i=1;i<cuts.length;i++){
    const f=cuts[i-1],g=cuts[i],p=[a[0]+(b[0]-a[0])*f,a[1]+(b[1]-a[1])*f],q=[a[0]+(b[0]-a[0])*g,a[1]+(b[1]-a[1])*g];
