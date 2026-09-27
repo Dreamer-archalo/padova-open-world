@@ -4,11 +4,29 @@
 const KINDS=['areas','water','buildings','roads'];
 const GRID=240;
 const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
-export const roadTier=k=>/motorway|trunk/.test(k||'')?3:/primary|secondary/.test(k||'')?2:/tertiary/.test(k||'')?1:/residential|unclassified|living_street|service/.test(k||'')?0:-1;
-export function roadVisibleAtZoom(kind,scale,{mini=false}={}){
- const tier=roadTier(kind);
- return tier>=2||(tier===1&&scale>=(mini?.18:.085))||
-  (tier===0&&scale>=(mini?.42:.20))||scale>=(mini?2.1:.52);
+// Identical road hierarchy for Padova and every municipality.
+export const roadTier=k=>{
+ const name=String(k||'').replace(/_link$/,'');
+ return /^(motorway|trunk)$/.test(name)?4:/^primary$/.test(name)?3:
+  /^secondary$/.test(name)?2:/^tertiary$/.test(name)?1:
+  /^(residential|unclassified|living_street|service|track)$/.test(name)?0:-1;
+};
+// Physical on-screen CSS pixel scale, independent of display density.
+export function roadVisibleAtZoom(kind,scale,{mini=false,pixelRatio=1}={}){
+ const cssScale=scale/clamp(pixelRatio,1,4),tier=roadTier(kind);
+ return tier>=3||(tier===2&&cssScale>=.052)||(tier===1&&cssScale>=.105)||
+  (tier===0&&cssScale>=(mini?.20:.18))||cssScale>=(mini?.75:.40);
+}
+// Approximate backdrop ONLY beyond navigable Venice: real OSM polygons,
+// canals, waterfronts and islands remain authoritative above this layer.
+const SEA_EDGE=[[-24000,38100],[-18000,35700],[-13500,33700],
+ [-10200,32300],[-7500,32350],[-5200,33900],[-3300,34250],
+ [-800,34900],[2400,34000],[5600,33100],[10500,32500],
+ [15500,34700],[23500,39000]];
+export function lagoonBackdropEdge(z){
+ let i=0;while(i<SEA_EDGE.length-2&&z>SEA_EDGE[i+1][0])i++;
+ const a=SEA_EDGE[i],b=SEA_EDGE[i+1],t=clamp((z-a[0])/(b[0]-a[0]),0,1);
+ return a[1]+(b[1]-a[1])*t*t*(3-2*t)+115*Math.sin(z/880)*Math.sin(Math.PI*t);
 }
 export class VectorMapDetail {
  constructor(regional,padova,extras=null){
@@ -51,15 +69,15 @@ export class VectorMapDetail {
   ctx.save();ctx.setTransform(1,0,0,1,0,0);ctx.fillStyle='#414b4d';ctx.fillRect(0,0,width,height);
   // Stylized irregular open-water background extends beyond navigable Venice;
   // actual OSM polygons and land outlines below remain authoritative where mapped.
-  const coastEdge=z=>32200+650*Math.sin(z/1750)+225*Math.sin(z/690);
-  if(frame.x1>=29800&&frame.z1>=-14500&&frame.z0<=14500){
-   const step=Math.max(100,Math.min(450,35/scale)),top=Math.min(z0,-14500),
-    bottom=Math.max(frame.z1,14500),east=(Math.max(frame.x1,55000)-x0)*scale;
+  // Extend to viewport edges instead of revealing a rectangular sea box.
+  if(frame.x1>=30000){
+   const step=Math.max(110,Math.min(500,55/scale)),
+    top=z0-1100,bottom=frame.z1+1100,east=width+12;
    ctx.beginPath();ctx.moveTo(east,(top-z0)*scale);
-   ctx.lineTo((coastEdge(top)-x0)*scale,(top-z0)*scale);
+   ctx.lineTo((lagoonBackdropEdge(top)-x0)*scale,(top-z0)*scale);
    for(let z=top+step;z<bottom;z+=step)
-    ctx.lineTo((coastEdge(z)-x0)*scale,(z-z0)*scale);
-   ctx.lineTo((coastEdge(bottom)-x0)*scale,(bottom-z0)*scale);
+    ctx.lineTo((lagoonBackdropEdge(z)-x0)*scale,(z-z0)*scale);
+   ctx.lineTo((lagoonBackdropEdge(bottom)-x0)*scale,(bottom-z0)*scale);
    ctx.lineTo(east,(bottom-z0)*scale);ctx.closePath();
    ctx.fillStyle='#386a7d';ctx.fill();
   }
@@ -97,18 +115,19 @@ export class VectorMapDetail {
   const named=[];
   // Draw roads in order: major arteries first and local footpaths on top,
   // using a dark casing at street-level zoom rather than thin grey hairlines.
-  const sorted=layers.roads.filter(r=>roadVisibleAtZoom(r.k,scale,{mini})).sort((a,b)=>roadTier(a.k)-roadTier(b.k));
+  const sorted=layers.roads.filter(r=>roadVisibleAtZoom(r.k,scale,{mini,pixelRatio:px})).sort((a,b)=>roadTier(a.k)-roadTier(b.k));
   for(const r of sorted){
    path(r);
    const tier=roadTier(r.k),walk=/footway|path|steps|cycleway|pedestrian/.test(r.k||''),
     roadWidth=Math.max(minimum,(r.w||2)*scale);
-   if(scale>.24&&!walk){ctx.lineWidth=roadWidth+Math.max(px*.7,scale*.75);ctx.strokeStyle='#2e373c';ctx.stroke();}
+   if(scale/px>.17&&!walk){ctx.lineWidth=roadWidth+Math.max(px*.7,scale*.75);ctx.strokeStyle='#2e373c';ctx.stroke();}
    ctx.lineWidth=roadWidth;
-   ctx.strokeStyle=walk?'#a7b5b3':tier>=2?'#f3f1e8':tier===1?'#cbd5d2':'#97a9a7';
+   ctx.strokeStyle=walk?'#a7b5b3':tier>=3?'#f3f1e8':tier===2?'#dbe3e0':tier===1?'#b7c6c2':'#97a9a7';
    ctx.stroke();
-   if(labels&&r.n&&scale>(mini?.75:.23)&&(tier>=1||scale>(mini?1.3:.70))&&named.length<(mini?45:100))named.push(r);
+   if(labels&&r.n&&scale/px>(mini?.45:.16)&&
+     (tier>=2||scale/px>(tier>=1?.28:.55))&&named.length<(mini?18:65))named.push(r);
   }
-  if(labels&&scale>(mini?.8:.4))this.drawRoadLabels(ctx,named,x0,z0,width,height,scale,px,mini);
+  if(labels&&scale/px>(mini?.44:.18))this.drawRoadLabels(ctx,named,x0,z0,width,height,scale,px,mini);
   ctx.restore();
   return {visible:Object.fromEntries(KINDS.map(k=>[k,layers[k].length])),vector:true};
  }
@@ -120,7 +139,7 @@ export class VectorMapDetail {
   const x0=center.x-width/(2*scale),z0=center.z-height/(2*scale),
    frame={x0,z0,x1:x0+width/scale,z1:z0+height/scale},
    roads=this.visible('roads',frame).filter(r=>r.n&&
-    roadVisibleAtZoom(r.k,scale,{mini}));
+    roadVisibleAtZoom(r.k,scale,{mini,pixelRatio}));
   ctx.save();ctx.beginPath();ctx.rect(0,0,width,height);ctx.clip();
   this.drawRoadLabels(ctx,roads,x0,z0,width,height,scale,clamp(pixelRatio,1,4),mini);
   ctx.restore();
