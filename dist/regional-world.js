@@ -58,7 +58,7 @@ function coast(x,z){return x>33000&&z>-7800&&z<3000;}
 export class RegionalWorld{
  constructor(scene,data,regionalTerrain,originalCollision){
   this.scene=scene;this.data=data;this.grid=regionalTerrain;this.collision=originalCollision;
-  this.chunks=new Map();this.visible=new Map();this.roadProfiles=new WeakMap();this.roadLengths=new WeakMap();this.roads=new Map();this.waters=new Map();this.waterAreas=new Map();this.landAreas=new Map();this.buildingAreas=new Map();this.shorelines=new Map();this.key='';
+  this.chunks=new Map();this.visible=new Map();this.roadProfiles=new WeakMap();this.roadLengths=new WeakMap();this.junctions=new Map();this.roads=new Map();this.waters=new Map();this.waterAreas=new Map();this.landAreas=new Map();this.buildingAreas=new Map();this.shorelines=new Map();this.key='';
   this.actors=[];this.queue=[];this.totalBuilt=0;this.lastUpdate=0;this.dataReady=false;
   this.index();
  }
@@ -129,6 +129,18 @@ export class RegionalWorld{
   }
  }
  index(){
+  // Shared actual OSM vertices only: roads merely crossing under a bridge
+  // must not be asphalt-filled as an at-grade intersection.
+  for(const r of this.data.roads||[]){
+   if(r.p?.length<2||/footway|path|steps|cycleway/.test(r.k||''))continue;
+   const layer=(r.b||r.bridge)?1:Number(r.layer)||0;
+   for(const [i,p] of r.p.entries()){
+    if(!Number.isFinite(p[0])||!Number.isFinite(p[1]))continue;
+    const code=p[0].toFixed(1)+','+p[1].toFixed(1)+':'+layer;
+    if(!this.junctions.has(code))this.junctions.set(code,{p,ways:new Set(),w:0});
+    const j=this.junctions.get(code);j.w=Math.max(j.w,r.w||3);j.ways.add(r);
+   }
+  }
   for(const r of this.data.roads||[]){
    if(r.p?.length<2)continue;
    if(!r.b&&!r.bridge){
@@ -442,6 +454,7 @@ export class RegionalWorld{
   }
   if(sea.length){const sheet=new THREE.Mesh(geometry(sea),lagoonMat);sheet.renderOrder=1;group.add(sheet);}
   const normal=[],arterial=[],channels=[],balustrade=[],bridgeSupports=[],bridgeUndersides=[],w=[],r=[],blocks=[],energyFaces=[],energyEdges=[],glassFaces=[],shutterFaces=[],roadStripes=[],roadShoulders=[],roadBanks=[],guardRails=[],junctionCaps=[],roadSigns=[],distantWalls=[],facadeFaces=[],brickFaces=[],industrialFaces=[],frameFaces=[],doorFaces=[],pavements=[],crosswalks=[];
+  const cappedJunctions=new Set();
   for(const p of src.roads){
    const roadClass=regionalRoadClass(p.k),major=roadClass==='express',
     arterialRoad=major||roadClass==='arterial',len=distance(...p.a,...p.b);
@@ -480,6 +493,30 @@ export class RegionalWorld{
        x=ax+(bx-ax)*t,z=az+(bz-az)*t,y=p.yA+(p.yB-p.yA)*t;
       addQuad(guardRails,[x,y+.08,z],[x+.075,y+.08,z+.075],
        [x+.075,y+.63,z+.075],[x,y+.63,z]);
+     }
+    }
+   }
+   if(near&&!major&&!p.bri&&junctionCaps.length<4200){
+    // Padova-style junction fans close ONLY actual intersecting OSM ways.
+    // Grade-clamp edge heights to avoid triangular spikes at junctions.
+    for(const [v,y] of [[p.a,p.yA],[p.b,p.yB]]){
+     const jkey=v[0].toFixed(1)+','+v[1].toFixed(1)+':0',
+      junction=this.junctions.get(jkey);
+     if(!junction||junction.ways.size<2||cappedJunctions.has(jkey)||
+       v[0]<ix*CHUNK||v[0]>= (ix+1)*CHUNK||
+       v[1]<iz*CHUNK||v[1]>= (iz+1)*CHUNK)continue;
+     cappedJunctions.add(jkey);
+     const radius=Math.min(8,Math.max(2.8,junction.w*.55)),n=12;
+     for(let i=0;i<n;i++){
+      const angle=i*2*Math.PI/n,next=(i+1)*2*Math.PI/n,
+       ax=v[0]+Math.cos(angle)*radius,az=v[1]+Math.sin(angle)*radius,
+       bx=v[0]+Math.cos(next)*radius,bz=v[1]+Math.sin(next)*radius,
+       grade=radius*.064,
+       ay=Math.max(y-grade,Math.min(y+grade,
+        this.nearestRoad(ax,az,radius+1,y)?.y??y))+.042,
+       by=Math.max(y-grade,Math.min(y+grade,
+        this.nearestRoad(bx,bz,radius+1,y)?.y??y))+.042;
+      junctionCaps.push(v[0],y+.042,v[1],ax,ay,az,bx,by,bz);
      }
     }
    }
