@@ -1,4 +1,4 @@
-name: Diagnose unified public R12 startup in real Chromium
+name: Verify corrected public R13 startup in real Chromium
 on:
   push:
     branches: [feat/unified-main-world-20260925]
@@ -43,7 +43,7 @@ jobs:
               console.log('ASSET',path||'index',result.status(),result.headers()['content-type'],result.headers()['content-length']||'unknown');
               if(!result.ok())throw Error('Broken critical asset '+path+' HTTP '+result.status());
             }
-            const resp=await page.goto(root+'?v=R12',{waitUntil:'domcontentloaded',timeout:90000});
+            const resp=await page.goto(root+'?v=R13',{waitUntil:'domcontentloaded',timeout:90000});
             console.log('PAGE',resp.status(),page.url());
             await page.locator('#playBtn').waitFor({timeout:30000});
             await page.locator('#initialQuality').selectOption('hyper');
