@@ -23,7 +23,8 @@ import {CameraRig} from './camera-rig.js';
 import {TrafficSignals,lanePoint,laneCount,laneOffset,trafficLane,trafficSpeed,advanceTrafficSpeed} from './traffic.js';
 import {applyCityData,Districts,DISTRICTS} from './districts.js';
 import * as THREE from './vendor/three.module.js';
-import {RegionalWorld} from './regional-world.js?v=municipal-detail-r10';
+import {RegionalWorld} from './regional-world.js?v=regional-npc-r11';
+import {RegionalAirTraffic} from './regional-air-traffic.js';
 import {UnifiedMap} from './unified-map.js?v=carto-r10';
 import {VisibleMapTiles} from './map-live-tiles.js?v=hd-water-r4';
 import {LocalRespawn} from './local-respawn.js';
@@ -74,7 +75,7 @@ function resizeMapSurfaces(){
 const performanceOverlay=new PerformanceOverlay($('performanceOverlay'));
 const fullscreenControls=createFullscreenControls(document,window,{onEnter:closeDialogs,onResize:()=>requestAnimationFrame(resizeViewport)});
 const minBounds={x:-6050,z:-6550,w:13400,h:12900}; // Retain Padova-only taxi/navigation limits.
-let regionalWorld=null,unifiedMap=null,regionalLoading=false,regionalFailure=null;
+let regionalWorld=null,regionalAir=null,unifiedMap=null,regionalLoading=false,regionalFailure=null;
 let lagoonPreloadActive=false,lagoonPreloadDone=false,lagoonPreloadCooloff=false;
 let mapPointer=null,mapDragged=false;const mapTouches=new Map();let mapPinchDistance=0;
 const unifiedBounds={minX:-5970,maxX:39200,minZ:-11900,maxZ:8800};
@@ -90,7 +91,9 @@ async function startUnifiedRegion(){
   await yieldFrame();
   const extension=new RegionalWorld(scene,map,grid,world.collision);
   extension.installTerrainHooks(terrain);terrain.unifiedBounds=unifiedBounds;
+  extension.quality=state.quality;
   regionalWorld=extension;
+  regionalAir=new RegionalAirTraffic(scene,terrain,world.collision);
   // Darsene from the region dataset become available after OSM loading.
   // Padova docks registered during populate remain intact.
   if(gameplay?.nautical)extendRegionalDocks(gameplay,map);
@@ -937,7 +940,7 @@ $('fullmap').onclick=e=>{
  }catch(error){taxiDestinationFailure(error,'map click');}
 };
 function refreshActorDetail(){const q=qualityFor(state.quality);for(const a of [...cars,...people,...cops])actorDetail(a,q.simple||a!==state.car&&dist(a,state)>(state.quality==='low'?110:260),!a.budgetSleeping&&(a===state.car||a.hostile||a.missionUnit||dist(a,state)<q.radius*.85));}
-function applyQuality(){const q=qualityFor(state.quality);world?.setQuality(state.quality);trams?.setQuality(state.quality);resolution.reset();if(renderer){renderer.setPixelRatio(Math.min(devicePixelRatio,q.pixelRatio));renderer.shadowMap.enabled=q.shadows;renderer.setSize(innerWidth,innerHeight);scene.fog.far=q.fog;camera.far=q.fog+150;camera.updateProjectionMatrix();}
+function applyQuality(){const q=qualityFor(state.quality);if(regionalWorld)regionalWorld.quality=state.quality;world?.setQuality(state.quality);trams?.setQuality(state.quality);resolution.reset();if(renderer){renderer.setPixelRatio(Math.min(devicePixelRatio,q.pixelRatio));renderer.shadowMap.enabled=q.shadows;renderer.setSize(innerWidth,innerHeight);scene.fog.far=q.fog;camera.far=q.fog+150;camera.updateProjectionMatrix();}
  if(!state.ready)return;
  let active=0;for(const c of cars){if(c===state.car||c.fixedSpawn||c.hostile||c.missionUnit||c.militarySurplus||c.parked)continue;c.budgetSleeping=active++>=q.traffic;if(c.budgetSleeping){c.mesh.visible=false;c.speed=0;}}
  for(let i=0;i<people.length;i++){const p=people[i];p.budgetSleeping=i>=q.people;p.simulatedAt=state.elapsed;p.nextThink=state.elapsed+(p.seed%Math.round(60/q.peopleHz))/60;if(p.budgetSleeping)p.mesh.visible=false;}while(micromobility.length<micromobilityCount(state.quality)){const a=createMicromobilityActor(micromobility.length,terrain);scene.add(a.mesh);micromobility.push(a);}
@@ -965,7 +968,7 @@ function simulate(dt){
  previousPose={x:state.x,y:state.y,z:state.z,mode:state.mode};
  for(const a of [...cars,...people,...cops])if(a.mesh.visible&&(a===state.car||!a.parked))previousActors.set(a.mesh,{x:a.x,z:a.z,y:a.y,yaw:a.yaw});
  const flying=state.car;if(flying?.spec.aircraft&&flying.mesh.visible){const u=flying.mesh.userData;if(u.rotor)u.rotor.rotation.y+=dt*35;if(u.tailRotor)u.tailRotor.rotation.x+=dt*45;if(u.propeller){if(u.propeller.children.some(o=>o.name==='engine-prop')){for(const o of u.propeller.children)o.rotation.z+=dt*(25+Math.abs(state.speed));}else u.propeller.rotation.z+=dt*(25+Math.abs(state.speed));}}
- state.elapsed+=dt;collisionCooldown=Math.max(0,collisionCooldown-dt);
+ state.elapsed+=dt;collisionCooldown=Math.max(0,collisionCooldown-dt);if(regionalAir&&state.started)regionalAir.update(state,state.quality);
  if(state.started){applyKnock(state,dt);for(const a of [...cars,...people,...cops])if(a!==state.car)applyKnock(a,dt);movePlayer(dt);waterGame.updateAbandoned(dt,terrain);if(!waterGame.active&&!waterRecovery.active&&!incidents?.recovery)localRespawn.remember(state,terrain,respawnClear,state.elapsed);if(taxi?.phase==='transition'){taxiDriverNPC?.update(state.elapsed);}else{if(!regionalPlayer()){speedCameras?.update();updateTraffic(dt);updateTaxi(dt);updatePeople(dt);trams?.update(dt,state.elapsed,state,[state,...cars.filter(c=>c!==state.car),...people,...cops],kickActor);}incidents?.update(state.elapsed);if(!waterGame.active&&!waterRecovery.active&&!incidents?.recovery){updatePolice(dt);gameplay?.update(dt);updateMission(dt);}}
    if(state.waypoint&&!state.mission&&dist(state,state.waypoint)<15){state.waypoint=null;state.route=[];toast('You’ve reached your waypoint.');}
  }
