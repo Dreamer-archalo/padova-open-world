@@ -110,6 +110,19 @@ function show(g){
  menu.querySelector('#nauticalDock').innerHTML=ds.map(d=>'<option value="'+d.id+'">'+d.name+' · '+Math.round(d.width)+' m</option>').join('');
  menu.querySelector('#nauticalCraft').innerHTML=boats.map(([id,b])=>'<option value="'+id+'">'+b.name+' · '+b.maxKmh+' km/h · larghezza '+b.width+' m</option>').join('');
  const closest=nearDock(g,Infinity);if(closest)menu.querySelector('#nauticalDock').value=String(closest.id);
+ const refresh=()=>{
+  const dock=ds.find(d=>d.id===Number(menu.querySelector('#nauticalDock').value));
+  const list=menu.querySelector('#nauticalCraft');
+  for(const option of list.options){
+   const spec=BOAT_SPECS[option.value];
+   option.disabled=!dock||dock.width<spec.minChannel+1||
+    !(dock.region?spec.places.includes('venice')||spec.places.includes('padova'):spec.places.includes('padova'));
+  }
+  if(list.selectedOptions[0]?.disabled)list.value=[...list.options].find(o=>!o.disabled)?.value||'';
+  menu.querySelector('#nauticalLaunch').disabled=!list.value;
+ };
+ menu.querySelector('#nauticalDock').onchange=refresh;
+ refresh();
  menu.showModal();g.state.paused=true;
 }
 function setup(){
@@ -117,7 +130,7 @@ function setup(){
  const style=document.createElement('style');style.textContent='#nauticalButton{position:fixed;bottom:158px;left:16px;z-index:54;background:#154c59;color:white;border:1px solid #b1d9d9;padding:11px;border-radius:11px;font:700 13px system-ui}#nauticalMenu{color:white;background:#153442;border:1px solid #d6b977;border-radius:15px;width:min(560px,92vw);padding:24px}#nauticalMenu::backdrop{background:#00121bd9}#nauticalMenu select,#nauticalMenu button{display:block;width:100%;padding:12px;margin:12px 0;background:#2b4a56;color:white;border:1px solid #a9c1c9;border-radius:9px;font:600 15px system-ui}#nauticalMenu button{cursor:pointer}';document.head.appendChild(style);
  button=document.createElement('button');button.id='nauticalButton';button.hidden=true;button.textContent='B · DARSENE / BARCHE';document.body.appendChild(button);button.onclick=()=>show(live);
  menu=document.createElement('dialog');menu.id='nauticalMenu';menu.innerHTML='<h2>NAVIGAZIONE · PADOVA</h2><p>Darsene posizionate sui veri corsi d’acqua. Le imbarcazioni più grandi richiedono canali larghi.</p><label>Darsena<select id="nauticalDock"></select></label><label>Imbarcazione<select id="nauticalCraft"></select></label><label>Colore<input id="nauticalColor" type="color" value="#e0c7a5"></label><button id="nauticalLaunch">PREPARA E SALI A BORDO</button><button id="nauticalClose">CHIUDI</button>';document.body.appendChild(menu);
- menu.querySelector('#nauticalLaunch').onclick=()=>{const id=menu.querySelector('#nauticalCraft').value,d=+menu.querySelector('#nauticalDock').value,color=menu.querySelector('#nauticalColor').value;close();launchPadovaBoat(live,id,d,color);};
+ menu.querySelector('#nauticalLaunch').onclick=()=>{const id=menu.querySelector('#nauticalCraft').value,d=+menu.querySelector('#nauticalDock').value,color=menu.querySelector('#nauticalColor').value;close();if(!launchPadovaBoat(live,id,d,color))live?.toast?.('Imbarcazione non compatibile con questa darsena.',4);};
  menu.querySelector('#nauticalClose').onclick=close;menu.addEventListener('close',()=>{if(live)live.state.paused=false;});
  document.addEventListener('keydown',event=>{
   if(event.code==='KeyB'&&!event.repeat&&live?.state.started&&!document.querySelector('dialog[open]')){event.preventDefault();event.stopImmediatePropagation();show(live);}
