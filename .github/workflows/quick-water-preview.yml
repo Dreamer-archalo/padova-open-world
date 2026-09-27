@@ -1,4 +1,4 @@
-name: Rapid unified gameplay preview R11
+name: Rapid unified gameplay preview R12
 on:
   push:
     branches: [feat/unified-main-world-20260925]
@@ -8,6 +8,8 @@ on:
       - 'dist/local-respawn.js'
       - 'dist/water-gameplay.js'
       - 'dist/regional-world.js'
+      - 'dist/regional-road-profile.js'
+      - 'verify-regional-roads-r12.mjs'
       - 'verify-regional-town-detail.mjs'
       - 'verify-gta-cartography-r9.mjs'
       - 'dist/villa-mandria-v11-estate-polish.js'
@@ -73,6 +75,8 @@ jobs:
           node verify-lagoon-r7.mjs
           node verify-unified-map-tiles.mjs
           node verify-unified-mobility-r11.mjs
+          node --check dist/regional-road-profile.js
+          node verify-regional-roads-r12.mjs
 
       - name: Find the latest SUCCESSFUL unified preview artifact
         id: snapshot
@@ -121,6 +125,7 @@ jobs:
           ! grep -Eq 'MAPPA-GTA-R8|testa ville F8|map-diagnostics' site/preview/unified/index.html
           test -s site/preview/unified/unified-michelangelo.js
           test -s site/preview/unified/regional-air-traffic.js
+          test -s site/preview/unified/regional-road-profile.js
           test -s site/preview/unified/nautical-catalog.js
           test -s site/preview/unified/unified-vehicle-pickup.js
           test -s site/preview/unified/game.js
@@ -150,4 +155,4 @@ jobs:
 
       - name: Show verified test address
         run: |
-          echo "R11 unified air, road and water mobility: https://dreamer-archalo.github.io/padova-open-world/preview/unified/?v=R11"
+          echo "R12 full regional motorway/road upgrade: https://dreamer-archalo.github.io/padova-open-world/preview/unified/?v=R12"
