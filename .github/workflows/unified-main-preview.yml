@@ -13,6 +13,8 @@ on:
       - 'dist/local-respawn.js'
       - 'dist/unified-regions.js'
       - 'dist/regional-world.js'
+      - 'dist/regional-road-profile.js'
+      - 'verify-regional-roads-r12.mjs'
       - 'dist/regional-air-traffic.js'
       - 'dist/unified-michelangelo.js'
       - 'dist/nautical-catalog.js'
@@ -197,6 +199,8 @@ jobs:
           node --check dist/padova-boats.js
           node --check dist/unified-vehicle-pickup.js
           node verify-unified-mobility-r11.mjs
+          node --check dist/regional-road-profile.js
+          node verify-regional-roads-r12.mjs
           node verify-unified-main.mjs
           node verify-unified-features.mjs
           node verify-unified-water.mjs
