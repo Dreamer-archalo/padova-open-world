@@ -7,6 +7,7 @@ on:
       - 'dist/game.js'
       - 'dist/index.html'
       - 'verify-startup-r13.mjs'
+      - '.github/workflows/unified-main-preview.yml'
       - 'dist/local-respawn.js'
       - 'dist/water-gameplay.js'
       - 'dist/regional-world.js'
