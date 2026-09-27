@@ -51,9 +51,9 @@ for(const feature of ['glassFaces','roadStripes','roadSigns','distantWalls']){
 assert(reg.includes('const steps=near?14:7')&&
  reg.includes('for(let i=0;i<1&&this.queue.length;i++)'),
  'Venice chunks still use expensive laguna meshing or double rebuilds');
-assert(reg.includes('const peopleRoads=chunk.roads.filter(r=>/') &&
- !reg.includes('const peopleRoads=chunk.roads.filter(r=>isDetailed(r)'),
- 'Simple NPCs are still restricted to just a few detailed hubs');
+assert(reg.includes('const walkways=chunk.roads.filter(r=>') &&
+ reg.includes('mesh=regionalPerson(') && reg.includes('mesh=regionalCar(style)'),
+ 'Every visited commune must render real Padova NPC models, not location-locked proxies');
 // Evaluate the real road-height method in isolation: the curvature must
 // leave navigable clearance while maintaining flat, driveable approach ends.
 const methodStart=reg.indexOf(' roadY(road,x,z,t){');
