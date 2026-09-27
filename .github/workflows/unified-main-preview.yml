@@ -5,6 +5,8 @@ on:
     branches: [feat/unified-main-world-20260925]
     paths:
       - 'dist/game.js'
+      - 'dist/initial-loader.js'
+      - 'verify-startup-r13.mjs'
       - 'dist/index.html'
       - 'dist/unified-main.css'
       - 'dist/unified-map.js'
@@ -67,7 +69,7 @@ permissions:
 
 concurrency:
   group: padova-venice-unified-main-preview
-  cancel-in-progress: false
+  cancel-in-progress: true
 
 jobs:
   build-test-deploy:
@@ -199,6 +201,7 @@ jobs:
           node --check dist/padova-boats.js
           node --check dist/unified-vehicle-pickup.js
           node verify-unified-mobility-r11.mjs
+          node verify-startup-r13.mjs
           node --check dist/regional-road-profile.js
           node verify-regional-roads-r12.mjs
           node verify-unified-main.mjs
@@ -223,6 +226,7 @@ jobs:
           cp -a dist/. .production-source/dist/preview/unified/
           test -s .production-source/dist/preview/unified/data/region-padova-venice.json
           test -s .production-source/dist/preview/unified/game.js
+          grep -q 'game.js?v=startup-r13' .production-source/dist/preview/unified/index.html
           sha256sum -c /tmp/production-root.sha
 
       - name: Checkout previous continuous prototype
