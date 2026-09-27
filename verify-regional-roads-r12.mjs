@@ -90,7 +90,7 @@ const bridge=fixture.roads.at(-1);
 const begin=world.roadY(bridge,8650,220,0),
  crest=world.roadY(bridge,8805,220,.5),
  end=world.roadY(bridge,8960,220,1);
-assert(crest>Math.max(begin,end)+2.1,'Elevated bridges retain real height and boat clearance');
+assert(crest>world.raw(8805,220)+.14+2.35,'Elevated bridges retain their designed 2.4m rise above local ground');
 near(begin,world.raw(8650,220)+.14);near(end,world.raw(8960,220)+.14);
 
 world.focus={x:8090,z:95};world.quality='medium';
