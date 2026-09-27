@@ -3,6 +3,9 @@
 // gains access to the OSM corridor and high-detail destination zones.
 import * as THREE from './vendor/three.module.js';
 import {pointInside} from './core.js';
+import {NPC_VEHICLES,createNPCCar} from './modern-vehicles.js';
+import {createSpecialVehicle} from './special-vehicles.js';
+import {createPerson} from './world.js';
 import {PADOVA_EAST,regionalDetail,activeRegionalPlace} from './unified-regions.js';
 import {clipPolygon,coastalBand,harborBand} from './regional-hydro.js';
 
@@ -18,6 +21,26 @@ const energyOutline=new THREE.LineBasicMaterial({color:'#8ef7ec',transparent:tru
 const ambientCar=material('#80919b'),ambientBus=material('#bc9f61'),ambientPedestrian=material('#577d78');
 const facadeFrame=material('#c6b7a0'),facadeDoor=material('#746454'),facadeBrick=material('#ad7861'),facadeStucco=material('#dec6a6'),industrialWall=material('#a2afae'),sidewalkMat=material('#aeb4aa'),facadeShutter=material('#647368');
 const cube=new THREE.BoxGeometry(1,1,1);
+// Nearby regions use the SAME car and human model families as Padova. Caches
+// share geometry: streamed sectors must not dispose their reusable templates.
+const regionCarTemplates=new Map(),regionPeopleTemplates=new Map();
+function regionalCar(style){
+ if(!regionCarTemplates.has(style))regionCarTemplates.set(style,
+  NPC_VEHICLES[style]?createNPCCar(style,
+   ['#a92731','#71858c','#e5ddc4','#566e5c'][regionCarTemplates.size%4]):
+   createSpecialVehicle(style));
+ const mesh=regionCarTemplates.get(style).clone(true);
+ mesh.traverse(o=>{if(o.isMesh)o.userData.regionalAmbientShared=true;});
+ return mesh;
+}
+function regionalPerson(variant){
+ const i=variant%6;
+ if(!regionPeopleTemplates.has(i))regionPeopleTemplates.set(i,
+  createPerson(['#719085','#b89575','#71859c','#a37a6c','#aaa57e','#7c8e77'][i],i));
+ const mesh=regionPeopleTemplates.get(i).clone(true);
+ mesh.traverse(o=>{if(o.isMesh)o.userData.regionalAmbientShared=true;});
+ mesh.userData.hips=mesh.children[0];return mesh;
+}
 const min=(a,b)=>Math.min(a,b),max=(a,b)=>Math.max(a,b);
 const distance=(x,z,a,b)=>Math.hypot(x-a,z-b);
 function geometry(vertices){const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.Float32BufferAttribute(vertices,3));g.computeVertexNormals();g.computeBoundingSphere();return g;}
@@ -327,30 +350,53 @@ export class RegionalWorld{
  }
  ambient(group,chunk){
   const roads=chunk.roads.filter(r=>r.w>=3&&!/motorway|trunk|footway|path|steps|cycleway|pedestrian/.test(r.k));
-  // Foot-only Venetian calli still spawn pedestrians without nearby car lanes.
   const isDetailed=r=>regionalDetail((r.a[0]+r.b[0])/2,(r.a[1]+r.b[1])/2)==='detailed';
-  const active=roads.filter(r=>isDetailed(r)||this.focus&&distance((r.a[0]+r.b[0])*.5,(r.a[1]+r.b[1])*.5,this.focus.x,this.focus.z)<600);
-  // Transit towns remain inhabited, not empty: fewer low-poly cars/buses on
-  // real mapped arteries even where the buildings use energy-mode LOD.
+  const active=roads.filter(r=>isDetailed(r)||this.focus&&
+   distance((r.a[0]+r.b[0])*.5,(r.a[1]+r.b[1])*.5,this.focus.x,this.focus.z)<600);
   const transit=roads.filter(r=>!isDetailed(r)&&/primary|secondary|tertiary/.test(r.k));
   const candidates=active.length?active:transit;
-  // Pedestrian generation also works in road-free chunks.
-  const actors=[];const carMat=ambientCar,busMat=ambientBus,peopleMat=ambientPedestrian;
-  const count=candidates.length?Math.min(active.length?3:2,Math.ceil(candidates.length/(active.length?22:35))):0;
+  const actors=[],nearTown=this.focus&&distance(
+   (chunk.roads[0]?.a[0]||this.focus.x),(chunk.roads[0]?.a[1]||this.focus.z),
+   this.focus.x,this.focus.z)<500;
+  const detailed=nearTown&&this.quality!=='hyper';
+  const industrial=chunk.roads.some(r=>r.a[0]>26500&&r.a[0]<33700);
+  const townFleet=['nido','rondine','botanica','argine','viaggio','selva',
+   'saetta','meridiana','doge','vortice','campo','comitiva'];
+  const industryFleet=['corriere','officina','cantiere','tir','campo',
+   'autotreno','selva','argine'];
+  const count=candidates.length?Math.min(active.length?4:2,
+   Math.max(1,Math.ceil(candidates.length/(active.length?16:28)))):0;
   for(let i=0;i<count;i++){
-   const r=candidates[Math.abs((i*97+chunk.roads.length*11)%candidates.length)],bus=i===0&&r.w>=5.5;
-   const mesh=new THREE.Mesh(new THREE.BoxGeometry(bus?2.4:1.8,bus?2.25:1.25,bus?9:4),bus?busMat:carMat);
-   group.add(mesh);actors.push({mesh,r,t:(i*.33)%1,bus,dir:i%2?1:-1});
+   const r=candidates[(i*97+chunk.roads.length*11)%candidates.length],
+    bus=i===0&&r.w>=5.5&&chunk.roads.length%7===0,
+    styles=industrial?industryFleet:townFleet,
+    style=styles[Math.abs(Math.floor(r.a[0]*.07+r.a[1]*.13)+i*11)%styles.length];
+   // Iper mode and distant blocks keep economical silhouettes; the visited
+   // streets acquire full Padova NPC cars, vans, supercars and industrials.
+   const model=detailed&&!bus&&i<2,
+    mesh=model?regionalCar(style):new THREE.Mesh(cube,bus?ambientBus:ambientCar);
+   if(!model)mesh.scale.set(bus?2.4:1.8,bus?2.25:1.25,bus?9:4);
+   group.add(mesh);
+   actors.push({mesh,r,t:(i*.29)%1,bus,dir:i%2?1:-1,
+    style:model?style:null,detail:!!model,priority:i});
   }
-  // People only appear on actual town streets/paths; remote transit zones
-  // retain their simplified low-poly vehicle traffic.
-  const peopleRoads=chunk.roads.filter(r=>/footway|pedestrian|path|residential|living_street/.test(r.k));
-  for(let i=0;i<Math.min(active.length?6:2,Math.ceil(peopleRoads.length/14));i++){
+  const peopleRoads=chunk.roads.filter(r=>/footway|pedestrian|path|residential|living_street|service/.test(r.k));
+  const peopleCount=Math.min(active.length?6:3,Math.ceil(peopleRoads.length/7));
+  for(let i=0;i<peopleCount;i++){
    const r=peopleRoads[(i*13+peopleRoads.length*5)%peopleRoads.length];
-   if(!r)continue;const mesh=new THREE.Mesh(new THREE.BoxGeometry(.38,1.55,.35),peopleMat);group.add(mesh);actors.push({mesh,r,t:(i*.29)%1,dir:i%2?1:-1,person:true});
+   if(!r)continue;
+   const model=detailed&&i<3,
+    mesh=model?regionalPerson(Math.abs(Math.floor(r.a[0]+r.a[1])+i)%6):
+     new THREE.Mesh(cube,ambientPedestrian);
+   if(!model)mesh.scale.set(.38,1.55,.35);
+   group.add(mesh);
+   actors.push({mesh,r,t:(i*.29)%1,dir:i%2?1:-1,person:true,
+    detail:!!model,priority:i,side:/residential|living_street|service/.test(r.k)?
+     (i%2?1:-1)*(r.w*.5+.4):0});
   }
   group.userData.ambient=actors;
  }
+
  build(k){
   if(this.visible.has(k))return;
   const [ix,iz]=k.split(',').map(Number),src=this.chunks.get(k)||{buildings:[],roads:[],water:[],areas:[]};
@@ -599,7 +645,7 @@ export class RegionalWorld{
  }
  update(state,dt=0){
   if(!this.contains(state.x+550,state.z))return;
-  this.focus={x:state.x,z:state.z};
+  this.focus={x:state.x,z:state.z};this.lastUpdate=(this.lastUpdate||0)+Math.max(0,dt);
   const cx=Math.floor(state.x/CHUNK),cz=Math.floor(state.z/CHUNK),signature=cx+','+cz;
   if(this.key!==signature){
    this.key=signature;const desired=[];
@@ -608,7 +654,7 @@ export class RegionalWorld{
    const centreKey=key(state.x,state.z,CHUNK),centre=this.visible.get(centreKey);
    if(centre&&!centre.userData.detailed){
     this.scene.remove(centre);
-    centre.traverse(o=>{if((o.isMesh||o.isLineSegments)&&o.geometry!==cube)o.geometry.dispose();});
+    centre.traverse(o=>{if((o.isMesh||o.isLineSegments)&&o.geometry!==cube&&!o.userData?.regionalAmbientShared)o.geometry.dispose();});
     this.visible.delete(centreKey);
    }
    for(let dx=-3;dx<=3;dx++)for(let dz=-3;dz<=3;dz++){
@@ -617,7 +663,7 @@ export class RegionalWorld{
    }
    desired.sort((a,b)=>a.d-b.d);this.queue=desired.map(v=>v.k);
    for(const [k,g] of this.visible){const [x,z]=k.split(',').map(Number);if(Math.hypot(x-cx,z-cz)>4.7){
-    this.scene.remove(g);g.traverse(o=>{if((o.isMesh||o.isLineSegments)&&o.geometry!==cube)o.geometry.dispose();});this.visible.delete(k);
+    this.scene.remove(g);g.traverse(o=>{if((o.isMesh||o.isLineSegments)&&o.geometry!==cube&&!o.userData?.regionalAmbientShared)o.geometry.dispose();});this.visible.delete(k);
    }}
   }
   // Upgrade neighboring transit blocks dynamically, one per free frame.
@@ -629,7 +675,7 @@ export class RegionalWorld{
     const [ix,iz]=k.split(',').map(Number);
     if(distance((ix+.5)*CHUNK,(iz+.5)*CHUNK,state.x,state.z)>=570)continue;
     this.scene.remove(g);
-    g.traverse(o=>{if((o.isMesh||o.isLineSegments)&&o.geometry!==cube)o.geometry.dispose();});
+    g.traverse(o=>{if((o.isMesh||o.isLineSegments)&&o.geometry!==cube&&!o.userData?.regionalAmbientShared)o.geometry.dispose();});
     this.visible.delete(k);
     this.build(k);
     break;
@@ -642,10 +688,40 @@ export class RegionalWorld{
    actor.t+=actor.dir*Math.min(.05,dt)*(actor.person?1.3:actor.bus?5.5:8.3)/roadLength;
    // Reverse at a segment endpoint rather than visibly teleporting back to
    // its start. Real multi-town A-to-B navigation remains a later phase.
-   if(actor.t>1){actor.t=2-actor.t;actor.dir=-1;}
-   if(actor.t<0){actor.t=-actor.t;actor.dir=1;}
-   const t=actor.t;actor.mesh.position.set(r.a[0]+(r.b[0]-r.a[0])*t,r.yA+(r.yB-r.yA)*t+(actor.person?.85:actor.bus?1.14:.66),r.a[1]+(r.b[1]-r.a[1])*t);
-   actor.mesh.rotation.y=Math.atan2((r.b[0]-r.a[0])*actor.dir,(r.b[1]-r.a[1])*actor.dir);
+   // Follow adjoining OSM road segments rather than turn around every
+   // 20–100 metres. Fall back to a U-turn only at a genuine dead end.
+   if(actor.t>1||actor.t<0){
+    const atEnd=actor.t>1,p=atEnd?r.b:r.a,
+     dx=(r.b[0]-r.a[0])*(atEnd?1:-1),
+     dz=(r.b[1]-r.a[1])*(atEnd?1:-1),len=Math.hypot(dx,dz)||1;
+    const eligible=actor.person?
+     q=>/footway|pedestrian|path|residential|living_street|service/.test(q.k):
+     q=>q.w>=3&&!/footway|path|steps|cycleway|pedestrian/.test(q.k);
+    let next=null,best=-Infinity;
+    for(const q of new Set(this.near(this.roads,p[0],p[1]))){
+     if(q===r||!eligible(q))continue;
+     for(const [at,dir] of [[q.a,1],[q.b,-1]]){
+      if(distance(...at,...p)>2.0)continue;
+      const tx=(q.b[0]-q.a[0])*dir,tz=(q.b[1]-q.a[1])*dir,mag=Math.hypot(tx,tz)||1;
+      const score=(dx*tx+dz*tz)/(len*mag)-
+       (q===actor.previous?.r?.r?.road?1:0);
+      if(score>best&&score>-.45){best=score;next={r:q,dir};}
+     }
+    }
+    if(next){actor.previous=r;actor.r=next.r;actor.dir=next.dir;actor.t=next.dir===1?0:1;}
+    else{actor.t=atEnd?1:0;actor.dir*=-1;}
+   }
+   const current=actor.r,t=actor.t,dx=current.b[0]-current.a[0],
+    dz=current.b[1]-current.a[1],len=Math.hypot(dx,dz)||1;
+   actor.mesh.position.set(current.a[0]+dx*t-dz/len*(actor.side||0),
+    current.yA+(current.yB-current.yA)*t+(actor.detail?.07:actor.person?.85:actor.bus?1.14:.66),
+    current.a[1]+dz*t+dx/len*(actor.side||0));
+   actor.mesh.rotation.y=Math.atan2(dx*actor.dir,dz*actor.dir);
+   if(actor.detail&&actor.person&&actor.mesh.userData.hips){
+    const legs=actor.mesh.userData.hips.children;
+    if(legs.length>1){const walk=Math.sin(this.lastUpdate*5+t*5)*.30;
+     legs[0].rotation.x=walk;legs[1].rotation.x=-walk;}
+   }
   }
  }
  place(x,z){return activeRegionalPlace(x,z);}
