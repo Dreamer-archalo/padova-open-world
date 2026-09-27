@@ -1,4 +1,4 @@
-name: Rapid unified gameplay preview
+name: Rapid unified gameplay preview R11
 on:
   push:
     branches: [feat/unified-main-world-20260925]
@@ -21,6 +21,11 @@ on:
       - 'dist/unified-map.js'
       - 'verify-water-entry.mjs'
       - 'verify-lagoon-r7.mjs'
+      - 'verify-unified-mobility-r11.mjs'
+      - 'dist/regional-air-traffic.js'
+      - 'dist/padova-boats.js'
+      - 'dist/unified-michelangelo.js'
+      - 'dist/nautical-catalog.js'
       - 'verify-unified-map-tiles.mjs'
   workflow_dispatch:
 
@@ -67,6 +72,7 @@ jobs:
           node verify-water-entry.mjs
           node verify-lagoon-r7.mjs
           node verify-unified-map-tiles.mjs
+          node verify-unified-mobility-r11.mjs
 
       - name: Find the latest SUCCESSFUL unified preview artifact
         id: snapshot
@@ -111,7 +117,11 @@ jobs:
           mkdir -p site/preview/unified
           cp -a dist/. site/preview/unified/
           sha256sum -c /tmp/production-unchanged.sha
-          grep -q 'MAPPA-GTA-R8' site/preview/unified/index.html
+          ! grep -Eq 'MAPPA-GTA-R8|testa ville F8|map-diagnostics' site/preview/unified/index.html
+          test -s site/preview/unified/unified-michelangelo.js
+          test -s site/preview/unified/regional-air-traffic.js
+          test -s site/preview/unified/nautical-catalog.js
+          test -s site/preview/unified/unified-vehicle-pickup.js
           test -s site/preview/unified/game.js
           test -s site/preview/unified/water-gameplay.js
           test -s site/preview/unified/map-live-tiles.js
@@ -139,4 +149,4 @@ jobs:
 
       - name: Show verified test address
         run: |
-          echo "R7 Venetian entry and shoreline fixes: https://dreamer-archalo.github.io/padova-open-world/preview/unified/?v=R7"
+          echo "R11 unified air, road and water mobility: https://dreamer-archalo.github.io/padova-open-world/preview/unified/?v=R11"
