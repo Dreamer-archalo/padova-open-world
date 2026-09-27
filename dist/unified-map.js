@@ -1,7 +1,7 @@
 // High-resolution unified geographical map. The same spatially indexed
 // vectors drive detailed Padova, the Brenta towns, Mestre and Venice.
 import {REGIONAL_ZONES} from './unified-regions.js';
-import {VectorMapDetail} from './unified-map-detail.js?v=carto-r9';
+import {VectorMapDetail} from './unified-map-detail.js?v=carto-r10';
 import {VisibleMapTiles} from './map-live-tiles.js?v=hd-water-r4';
 
 export class UnifiedMap {
