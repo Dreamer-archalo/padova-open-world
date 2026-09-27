@@ -24,7 +24,7 @@ import {TrafficSignals,lanePoint,laneCount,laneOffset,trafficLane,trafficSpeed,a
 import {applyCityData,Districts,DISTRICTS} from './districts.js';
 import * as THREE from './vendor/three.module.js';
 import {RegionalWorld} from './regional-world.js?v=municipal-detail-r8';
-import {UnifiedMap} from './unified-map.js?v=gta-vector-r6';
+import {UnifiedMap} from './unified-map.js?v=carto-r9';
 import {VisibleMapTiles} from './map-live-tiles.js?v=hd-water-r4';
 import {LocalRespawn} from './local-respawn.js';
 import {WaterGameplay} from './water-gameplay.js?v=hd-water-r4';
