@@ -4,6 +4,10 @@
 import * as THREE from './vendor/three.module.js';
 import {pointInside} from './core.js';
 import {NPC_VEHICLES,createNPCCar} from './modern-vehicles.js';
+import {VEHICLES} from './vehicles.js';
+import {installVehicleDamage} from './vehicle-damage.js';
+import {laneCount,laneOffset} from './traffic.js';
+import {regionalNpcStep,regionalRoadEligible,reviveRegionalCar} from './regional-traffic-physics.js';
 import {createSpecialVehicle} from './special-vehicles.js';
 import {createPerson} from './world.js';
 import {PADOVA_EAST,regionalDetail,activeRegionalPlace} from './unified-regions.js';
@@ -59,7 +63,7 @@ export class RegionalWorld{
  constructor(scene,data,regionalTerrain,originalCollision){
   this.scene=scene;this.data=data;this.grid=regionalTerrain;this.collision=originalCollision;
   this.chunks=new Map();this.visible=new Map();this.roadProfiles=new WeakMap();this.roadLengths=new WeakMap();this.junctions=new Map();this.roads=new Map();this.waters=new Map();this.waterAreas=new Map();this.landAreas=new Map();this.buildingAreas=new Map();this.shorelines=new Map();this.key='';
-  this.actors=[];this.queue=[];this.totalBuilt=0;this.lastUpdate=0;this.dataReady=false;
+  this.actors=[];this.queue=[];this.totalBuilt=0;this.lastUpdate=0;this.dataReady=false;this.sim=null;this.explosions=[];
   this.index();
  }
  contains(x,z){return x>PADOVA_EAST&&x<40500&&z>-13500&&z<10000;}
@@ -384,6 +388,110 @@ export class RegionalWorld{
    roof.push(poly[a].x,base+h,poly[a].y,poly[b].x,base+h,poly[b].y,
     poly[c].x,base+h,poly[c].y);
   }
+ }
+ // Regional cars are shared Padova vehicle entities, never scenic-only props.
+ attachTraffic({cars,terrain,player,collision}){
+  this.sim={cars,terrain,player,collision};
+  for(const group of this.visible.values())for(const actor of group.userData.ambient||[])
+   if(actor.regionalTraffic&&!actor.registered){cars.push(actor);actor.registered=true;}
+ }
+ claimCar(car){
+  if(!car?.regionalTraffic)return;
+  const group=car.chunkGroup;
+  if(group){group.userData.ambient=group.userData.ambient.filter(a=>a!==car);
+   group.remove(car.mesh);this.scene.add(car.mesh);}
+  // The player retains their real car when the original town chunk unloads.
+  car.chunkGroup=null;car.regionalTraffic=false;car.regionClaimed=true;
+  car.parked=true;car.speed=0;
+ }
+ removeGroup(group){
+  if(!group)return;
+  for(const a of group.userData.ambient||[]){
+   if(!a.regionalTraffic||!a.registered||!this.sim)continue;
+   if(this.sim.player.car===a){this.claimCar(a);continue;}
+   const i=this.sim.cars.indexOf(a);if(i!==-1)this.sim.cars.splice(i,1);
+   a.registered=false;
+  }
+ }
+ regionalExplosion(actor,time){
+  if(actor.exploded)return;
+  actor.exploded=true;actor.parked=true;actor.speed=0;
+  actor.destroyedUntil=time+17;
+  actor.mesh.visible=false;
+  const mesh=new THREE.InstancedMesh(
+   new THREE.SphereGeometry(1,6,4),
+   new THREE.MeshBasicMaterial({color:'#ff893c',transparent:true,opacity:.85,depthWrite:false}),12);
+  this.scene.add(mesh);
+  this.explosions.push({mesh,x:actor.x,y:actor.y,z:actor.z,born:time});
+ }
+ updateExplosions(time){
+  for(let i=this.explosions.length-1;i>=0;i--){
+   const e=this.explosions[i],age=time-e.born;
+   if(age>1.5){this.scene.remove(e.mesh);e.mesh.geometry.dispose();
+    e.mesh.material.dispose();this.explosions.splice(i,1);continue;}
+   const o=new THREE.Object3D();
+   for(let n=0;n<12;n++){const a=n*2.39996;
+    o.position.set(e.x+Math.cos(a)*age*(2+n%3),e.y+1+age*(3+n%4),e.z+Math.sin(a)*age*(2+n%3));
+    o.scale.setScalar(Math.max(.02,(1-age/1.5)*(1+n%3*.5)));o.updateMatrix();e.mesh.setMatrixAt(n,o.matrix);}
+   e.mesh.instanceMatrix.needsUpdate=true;e.mesh.material.opacity=Math.max(0,1-age/1.5);
+  }
+ }
+ nextTrafficRoad(actor){
+  const r=actor.r,forward=actor.dir===1,p=forward?r.b:r.a,
+   dx=(r.b[0]-r.a[0])*actor.dir,dz=(r.b[1]-r.a[1])*actor.dir,len=Math.hypot(dx,dz)||1;
+  let winner=null,best=-Infinity;
+  for(const q of new Set(this.near(this.roads,p[0],p[1]))){
+   if(q===r)continue;
+   for(const [at,dir] of [[q.a,1],[q.b,-1]]){
+    actor._candidateDir=dir;
+    if(!regionalRoadEligible(q,actor)||distance(...at,...p)>1.8||
+       Math.abs((dir===1?q.yA:q.yB)-(forward?r.yB:r.yA))>2.5)continue;
+    const vx=(q.b[0]-q.a[0])*dir,vz=(q.b[1]-q.a[1])*dir,m=Math.hypot(vx,vz)||1,
+     score=(dx*vx+dz*vz)/(len*m)-(q===actor.previous?1.1:0);
+    if(score>best&&score>-.5){winner={r:q,dir,yaw:Math.atan2(vx,vz)};best=score;}
+   }
+  }
+  delete actor._candidateDir;
+  return winner;
+ }
+ updateRegionalCar(actor,dt,time){
+  if(!this.sim)return;
+  const {terrain,player,cars,collision}=this.sim;
+  if(player.car===actor)return;
+  if(actor.destroyedUntil){
+   if(time<actor.destroyedUntil||distance(actor.x,actor.z,player.x,player.z)<65)return;
+   const r=actor.r,t=actor.dir===1?.23:.77,
+    x=r.a[0]+(r.b[0]-r.a[0])*t,z=r.a[1]+(r.b[1]-r.a[1])*t;
+   reviveRegionalCar(actor,x,z,Math.atan2((r.b[0]-r.a[0])*actor.dir,(r.b[1]-r.a[1])*actor.dir),terrain);
+   actor.destroyedUntil=0;actor.exploded=false;
+  }
+  if(actor.health<=0){this.regionalExplosion(actor,time);return;}
+  if(actor.parked)return;
+  const r=actor.r,vx=r.b[0]-r.a[0],vz=r.b[1]-r.a[1],
+   len2=Math.max(.01,vx*vx+vz*vz),
+   progress=Math.max(0,Math.min(1,((actor.x-r.a[0])*vx+(actor.z-r.a[1])*vz)/len2)),
+   endpoint=actor.dir===1?r.b:r.a,
+   terminalDistance=distance(actor.x,actor.z,...endpoint);
+  actor.t=progress;
+  // Curves and interchanges follow actual connected OSM nodes at the same
+  // elevation, not an overlay or a route teleported between chunk borders.
+  let next=null;
+  if(terminalDistance<Math.max(13,actor.speed*1.1)){
+   next=this.nextTrafficRoad(actor);actor.nextYaw=next?.yaw??null;
+  }else actor.nextYaw=null;
+  if(terminalDistance<Math.max(1.7,actor.speed*dt*1.15)||
+     actor.dir===1&&progress>.995||actor.dir===-1&&progress<.005){
+   if(next){actor.previous=r;actor.r=next.r;actor.dir=next.dir;actor.road=next.r;
+    actor.lane=Math.min(actor.lane||0,laneCount(next.r)-1);
+    actor.laneOffset=laneOffset(next.r,actor.lane);
+   }else{
+    if(r.oneway){actor.speed=0;actor.parked=true;return;}
+    actor.dir*=-1;actor.speed=Math.min(actor.speed,3);
+   }
+  }
+  const nearby=cars.filter(c=>c!==actor&&c.mesh?.visible&&distance(c.x,c.z,actor.x,actor.z)<90);
+  regionalNpcStep(actor,nearby,player,Math.max(.001,Math.min(.075,dt)),terrain,collision,time);
+  if(actor.health<=0)this.regionalExplosion(actor,time);
  }
  ambient(group,chunk){
   const roads=chunk.roads.filter(r=>r.w>=3&&!/motorway|trunk|footway|path|steps|cycleway|pedestrian/.test(r.k));
