@@ -9,6 +9,9 @@ on:
       - 'dist/water-gameplay.js'
       - 'dist/regional-world.js'
       - 'verify-regional-town-detail.mjs'
+      - 'verify-gta-cartography-r9.mjs'
+      - 'dist/villa-mandria-v11-estate-polish.js'
+      - 'dist/unified-main.css'
       - 'dist/foot-controller.js'
       - 'dist/unified-map-detail.js'
       - 'dist/unified-regions.js'
@@ -58,6 +61,8 @@ jobs:
           node --check dist/foot-controller.js
           node --check dist/unified-map-detail.js
           node verify-regional-r6.mjs
+          node verify-gta-cartography-r9.mjs
+          node --check dist/villa-mandria-v11-estate-polish.js
           node --check dist/unified-map.js
           node verify-water-entry.mjs
           node verify-lagoon-r7.mjs
