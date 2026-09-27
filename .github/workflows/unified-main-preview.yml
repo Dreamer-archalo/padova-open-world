@@ -71,7 +71,7 @@ permissions:
 
 concurrency:
   group: padova-venice-unified-main-preview
-  cancel-in-progress: true
+  cancel-in-progress: false
 
 jobs:
   build-test-deploy:
