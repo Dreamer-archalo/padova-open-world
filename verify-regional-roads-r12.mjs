@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import {smoothRegionalRoadProfile,regionalChunkCuts,regionalGrade} from './dist/regional-road-profile.js';
 import {RegionalWorld} from './dist/regional-world.js';
+import {groundVehicleStep} from './dist/vehicle-dynamics.js';
 const near=(a,b,tol=1e-5)=>assert(Math.abs(a-b)<=tol, a+' != '+b);
 const sampleTerrain=(x,z)=>2.5+Math.sin(x/41)*1.25+Math.cos(x/115)*1.3+
   .0027*x+Math.sin(z/80)*.3;
@@ -86,6 +87,39 @@ const edge=world.height(8100,95+onRoad.road.w/2+.9,onRoad.y),
 assert(Number.isFinite(edge)&&Number.isFinite(outside));
 assert(Math.abs(edge-outside)<.7,
  'Motorway shoulder must gently join the ground rather than form an invisible step');
+// Drive the actual game physics continuously across this whole road, not
+// merely inspect polygons. 110 km/h must not generate phantom walls, a
+// floating tile seam, a vehicle elevator or an unexplained destructive jump.
+const straight={x:7660,z:95,y:world.height(7660,95),yaw:Math.PI/2,
+ speed:110/3.6};
+const physicsCar={spec:{width:2,length:4.3,wheelbase:2.7,steer:1.05},
+ jump:null,pitch:0,steerInput:0};
+const runtimeTerrain={
+ height:(x,z,ref)=>world.height(x,z,ref),
+ slope:(x,z,yaw,wheelbase,ref)=>{
+  const dx=Math.sin(yaw)*wheelbase*.5,dz=Math.cos(yaw)*wheelbase*.5;
+  const a=world.height(x+dx,z+dz,ref),b=world.height(x-dx,z-dz,ref);
+  return -Math.atan2(a-b,wheelbase);
+ },
+ waterAt:()=>null,arcadeRamps:[]
+};
+const emptyCollision={near:()=>[]};
+let crashes=0,airborneTicks=0,maxHeightError=0,acrossBoundaries=new Set();
+for(let ticks=0;ticks<3000&&straight.x<8870;ticks++){
+ const result=groundVehicleStep(straight,physicsCar,
+  {turn:0,handbrake:false},1/60,runtimeTerrain,emptyCollision);
+ if(result.hitSpeed>4)crashes++;
+ if(result.airborne)airborneTicks++;
+ const contact=world.height(straight.x,straight.z,straight.y);
+ if(!result.airborne)maxHeightError=Math.max(maxHeightError,
+  Math.abs(straight.y-contact));
+ acrossBoundaries.add(Math.floor(straight.x/320));
+}
+assert(straight.x>8850,'110 km/h vehicle could not cross the complete motorway fixture');
+assert(crashes===0,'The regional motorway creates dangerous invisible contact walls');
+assert(maxHeightError<.22,'Chassis falls through or floats above the visible roadway');
+assert(airborneTicks<35,'Coarse regional DEM creates unexplained motorway launches');
+assert(acrossBoundaries.size>=4,'Driving test did not actually cross streamed chunk seams');
 const bridge=fixture.roads.at(-1);
 const begin=world.roadY(bridge,8650,220,0),
  crest=world.roadY(bridge,8805,220,.5),
