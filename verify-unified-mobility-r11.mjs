@@ -70,7 +70,7 @@ regional.ambient(regionGroup,regional.chunks.get('46,0')||{roads:[]});
 const arrivals=regionGroup.userData.ambient||[];
 assert(arrivals.some(a=>a.person&&a.detail),
  'Near regional foot NPCs must reuse detailed Padova character models');
-assert(arrivals.some(a=>!a.person&&a.detail),
+assert(arrivals.some(a=>a.regionalTraffic&&a.mesh.isGroup&&a.spec),
  'Near regional traffic must reuse detailed Padova car models');
 assert(arrivals.some(a=>a.person&&a.mesh.userData.hips?.children),
  'Regional character models must retain animated limbs');
