@@ -45,7 +45,7 @@ permissions:
 # which can upgrade the same isolated preview when its full data pass.
 concurrency:
   group: padova-unified-rapid-r5
-  cancel-in-progress: true
+  cancel-in-progress: false
 
 jobs:
   publish-playable-preview:
