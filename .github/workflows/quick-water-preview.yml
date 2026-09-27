@@ -1,4 +1,4 @@
-name: Rapid unified playable startup preview R13
+name: Rapid unified physical regional NPC preview R14
 on:
   push:
     branches: [feat/unified-main-world-20260925]
@@ -10,6 +10,8 @@ on:
       - 'dist/local-respawn.js'
       - 'dist/water-gameplay.js'
       - 'dist/regional-world.js'
+      - 'dist/regional-traffic-physics.js'
+      - 'verify-regional-npc-r14.mjs'
       - 'dist/regional-road-profile.js'
       - 'verify-regional-roads-r12.mjs'
       - 'verify-regional-town-detail.mjs'
@@ -80,6 +82,8 @@ jobs:
           node verify-startup-r13.mjs
           node --check dist/regional-road-profile.js
           node verify-regional-roads-r12.mjs
+          node --check dist/regional-traffic-physics.js
+          node verify-regional-npc-r14.mjs
 
       - name: Find the latest SUCCESSFUL unified preview artifact
         id: snapshot
@@ -128,6 +132,7 @@ jobs:
           ! grep -Eq 'MAPPA-GTA-R8|testa ville F8|map-diagnostics' site/preview/unified/index.html
           test -s site/preview/unified/unified-michelangelo.js
           test -s site/preview/unified/regional-air-traffic.js
+          test -s site/preview/unified/regional-traffic-physics.js
           test -s site/preview/unified/regional-road-profile.js
           test -s site/preview/unified/nautical-catalog.js
           test -s site/preview/unified/unified-vehicle-pickup.js
@@ -158,4 +163,4 @@ jobs:
 
       - name: Show verified test address
         run: |
-          echo "R13 fixed public startup plus R12 regional road upgrade: https://dreamer-archalo.github.io/padova-open-world/preview/unified/?v=R13"
+          echo "R14 true NPC cars and Padova physics in all regional communes: https://dreamer-archalo.github.io/padova-open-world/preview/unified/?v=R14"
