@@ -13,6 +13,15 @@ on:
       - 'dist/local-respawn.js'
       - 'dist/unified-regions.js'
       - 'dist/regional-world.js'
+      - 'dist/regional-air-traffic.js'
+      - 'dist/unified-michelangelo.js'
+      - 'dist/nautical-catalog.js'
+      - 'dist/padova-boats.js'
+      - 'dist/unified-vehicle-pickup.js'
+      - 'dist/villa-mandria-hangar.js'
+      - 'dist/villa-mandria-catalog-ui.js'
+      - 'dist/phase2-runtime.js'
+      - 'verify-unified-mobility-r11.mjs'
       - 'verify-regional-town-detail.mjs'
       - 'verify-map-cleanup-r10.mjs'
       - 'dist/regional-hydro.js'
@@ -182,6 +191,12 @@ jobs:
           node --check dist/regional-world.js
           node verify-regional-town-detail.mjs
           node verify-map-cleanup-r10.mjs
+          node --check dist/regional-air-traffic.js
+          node --check dist/unified-michelangelo.js
+          node --check dist/nautical-catalog.js
+          node --check dist/padova-boats.js
+          node --check dist/unified-vehicle-pickup.js
+          node verify-unified-mobility-r11.mjs
           node verify-unified-main.mjs
           node verify-unified-features.mjs
           node verify-unified-water.mjs
