@@ -6,7 +6,7 @@ export const MICHELANGELO='airport-michelangelo',MAX_KMH=1000,MAX_SPEED=MAX_KMH/
 export const MICHELANGELO_SPEC=Object.freeze({
  ...VEHICLES['airport-interceptor'],name:'MICHELANGELO · Venezia 1000',
  family:'aircraft',width:17,length:25.8,height:5.7,wheelbase:10.5,
- aircraft:true,plane:true,accel:23,brake:27,steer:.38,max:MAX_SPEED,boost:MAX_SPEED,
+ aircraft:true,plane:true,accel:23,brake:27,steer:.38,max:MAX_SPEED,boost:MAX_SPEED,reverse:3,mass:4,
  civilian:true,veniceLink:true
 });
 VEHICLES[MICHELANGELO]=MICHELANGELO_SPEC;
