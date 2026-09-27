@@ -862,6 +862,7 @@ export class RegionalWorld{
   this.scene.add(group);this.visible.set(k,group);this.totalBuilt++;
  }
  update(state,dt=0){
+  this.updateExplosions(state.elapsed||0);
   if(!this.contains(state.x+550,state.z))return;
   this.focus={x:state.x,z:state.z};this.lastUpdate=(this.lastUpdate||0)+Math.max(0,dt);
   const cx=Math.floor(state.x/CHUNK),cz=Math.floor(state.z/CHUNK),signature=cx+','+cz;
@@ -871,7 +872,7 @@ export class RegionalWorld{
    // Never keep energy-box LOD when the camera reaches an actual commune.
    const centreKey=key(state.x,state.z,CHUNK),centre=this.visible.get(centreKey);
    if(centre&&!centre.userData.detailed){
-    this.scene.remove(centre);
+    this.removeGroup(centre);this.scene.remove(centre);
     centre.traverse(o=>{if((o.isMesh||o.isLineSegments)&&o.geometry!==cube&&!o.userData?.regionalAmbientShared)o.geometry.dispose();});
     this.visible.delete(centreKey);
    }
@@ -881,7 +882,7 @@ export class RegionalWorld{
    }
    desired.sort((a,b)=>a.d-b.d);this.queue=desired.map(v=>v.k);
    for(const [k,g] of this.visible){const [x,z]=k.split(',').map(Number);if(Math.hypot(x-cx,z-cz)>4.7){
-    this.scene.remove(g);g.traverse(o=>{if((o.isMesh||o.isLineSegments)&&o.geometry!==cube&&!o.userData?.regionalAmbientShared)o.geometry.dispose();});this.visible.delete(k);
+    this.removeGroup(g);this.scene.remove(g);g.traverse(o=>{if((o.isMesh||o.isLineSegments)&&o.geometry!==cube&&!o.userData?.regionalAmbientShared)o.geometry.dispose();});this.visible.delete(k);
    }}
   }
   // Upgrade neighboring transit blocks dynamically, one per free frame.
@@ -892,7 +893,7 @@ export class RegionalWorld{
     if(g.userData.detailed)continue;
     const [ix,iz]=k.split(',').map(Number);
     if(distance((ix+.5)*CHUNK,(iz+.5)*CHUNK,state.x,state.z)>=570)continue;
-    this.scene.remove(g);
+    this.removeGroup(g);this.scene.remove(g);
     g.traverse(o=>{if((o.isMesh||o.isLineSegments)&&o.geometry!==cube&&!o.userData?.regionalAmbientShared)o.geometry.dispose();});
     this.visible.delete(k);
     this.build(k);
@@ -902,6 +903,7 @@ export class RegionalWorld{
   // Spread chunk builds over frames to avoid blocking existing city gameplay.
   for(let i=0;i<1&&this.queue.length;i++)this.build(this.queue.shift());
   for(const group of this.visible.values())for(const actor of group.userData.ambient||[]){
+   if(actor.regionalTraffic){this.updateRegionalCar(actor,dt,state.elapsed||0);continue;}
    const r=actor.r,roadLength=Math.max(1,distance(...r.a,...r.b));
    actor.t+=actor.dir*Math.min(.05,dt)*(actor.person?1.3:actor.bus?5.5:8.3)/roadLength;
    // Reverse at a segment endpoint rather than visibly teleporting back to
