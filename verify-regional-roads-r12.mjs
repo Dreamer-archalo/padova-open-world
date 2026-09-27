@@ -76,7 +76,8 @@ for(let i=0;i<segments.length;i++){
  near((p.yA+p.yB)/2,prof.sample(t),.11);
  near(world.nearestRoad(middle,95,3)?.y,(p.yA+p.yB)/2,1e-6);
  near(world.nearestRoad(middle,95,3)?.y,prof.sample(t),.11);
- near(world.height(middle,95,prof.sample(t)),prof.sample(t)+.065,.027);
+ near(world.height(middle,95,(p.yA+p.yB)/2),
+  (p.yA+p.yB)/2+.065,1e-6);
 }
 const onRoad=world.nearestRoad(8100,95,7);
 assert(onRoad?.road.k==='motorway','mainline selection must find drivable artery');
