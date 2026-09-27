@@ -56,7 +56,7 @@ function coast(x,z){return x>33000&&z>-7800&&z<3000;}
 export class RegionalWorld{
  constructor(scene,data,regionalTerrain,originalCollision){
   this.scene=scene;this.data=data;this.grid=regionalTerrain;this.collision=originalCollision;
-  this.chunks=new Map();this.visible=new Map();this.roadProfiles=new WeakMap();this.roads=new Map();this.waters=new Map();this.waterAreas=new Map();this.landAreas=new Map();this.buildingAreas=new Map();this.shorelines=new Map();this.key='';
+  this.chunks=new Map();this.visible=new Map();this.roadProfiles=new WeakMap();this.roadLengths=new WeakMap();this.roads=new Map();this.waters=new Map();this.waterAreas=new Map();this.landAreas=new Map();this.buildingAreas=new Map();this.shorelines=new Map();this.key='';
   this.actors=[];this.queue=[];this.totalBuilt=0;this.lastUpdate=0;this.dataReady=false;
   this.index();
  }
@@ -103,7 +103,7 @@ export class RegionalWorld{
   for(let i=1;i<cuts.length;i++){
    const f=cuts[i-1],g=cuts[i],p=[a[0]+(b[0]-a[0])*f,a[1]+(b[1]-a[1])*f],q=[a[0]+(b[0]-a[0])*g,a[1]+(b[1]-a[1])*g];
    if(max(p[0],q[0])<PADOVA_EAST-180)continue;
-   const m=[(p[0]+q[0])/2,(p[1]+q[1])/2],item={a:p,b:q,w:source.w||4,k:source.k||'',oneway:source.oneway||source.one||false,lanes:Number(source.lanes)||0,bri:!!(source.b||source.bridge),tMid:t0+(t1-t0)*(f+g)*.5,yA:type==='roads'?this.roadY(source,...p,t0+(t1-t0)*f):this.raw(...p),yB:type==='roads'?this.roadY(source,...q,t0+(t1-t0)*g):this.raw(...q)};
+   const m=[(p[0]+q[0])/2,(p[1]+q[1])/2],item={a:p,b:q,w:source.w||4,k:source.k||'',oneway:source.oneway||source.one||false,lanes:Number(source.lanes)||0,chain:(this.roadLengths.get(source)||0)*(t0+(t1-t0)*(f+g)*.5),bri:!!(source.b||source.bridge),tMid:t0+(t1-t0)*(f+g)*.5,yA:type==='roads'?this.roadY(source,...p,t0+(t1-t0)*f):this.raw(...p),yB:type==='roads'?this.roadY(source,...q,t0+(t1-t0)*g):this.raw(...q)};
    this.bucket(...m)[type].push(item);
    if(type==='roads'){
     this.insertSpatial(this.roads,item,p,q,item.w*.5+3);
@@ -133,7 +133,7 @@ export class RegionalWorld{
     const roadBase=(x,z)=>coast(x,z)?Math.max(this.raw(x,z)+.14,LAGOON_Y+.24):this.raw(x,z)+.14;
     this.roadProfiles.set(r,smoothRegionalRoadProfile(r.p,roadBase,r.k));
    }
-   const lengths=r.p.slice(1).map((p,i)=>distance(p[0],p[1],r.p[i][0],r.p[i][1])),total=lengths.reduce((a,b)=>a+b,0);let used=0;
+   const lengths=r.p.slice(1).map((p,i)=>distance(p[0],p[1],r.p[i][0],r.p[i][1])),total=lengths.reduce((a,b)=>a+b,0);this.roadLengths.set(r,total);let used=0;
    for(let i=1;i<r.p.length;i++){const len=lengths[i-1];this.segment('roads',r,r.p[i-1],r.p[i],total?used/total:0,total?(used+len)/total:1);used+=len;}
   }
   for(const w of this.data.water||[])if(w.p?.length>=2)for(let i=1;i<w.p.length;i++)this.segment('water',w,w.p[i-1],w.p[i]);
@@ -194,13 +194,19 @@ export class RegionalWorld{
   }
   this.dataReady=true;
  }
- nearestRoad(x,z,maxDist=24){
-  let best=null,limit=maxDist;
-  for(const r of this.near(this.roads,x,z)){
+ nearestRoad(x,z,maxDist=24,referenceY=null){
+  let best=null,score=Infinity;
+  for(const r of new Set(this.near(this.roads,x,z))){
    const vx=r.b[0]-r.a[0],vz=r.b[1]-r.a[1],den=vx*vx+vz*vz;
    const t=den?Math.max(0,Math.min(1,((x-r.a[0])*vx+(z-r.a[1])*vz)/den)):0;
    const px=r.a[0]+vx*t,pz=r.a[1]+vz*t,d=distance(x,z,px,pz);
-   if(d<limit){limit=d;best={road:r,d,x:px,z:pz,y:r.yA+(r.yB-r.yA)*t,yaw:Math.atan2(vx,vz)};}
+   if(d>=maxDist)continue;
+   const y=r.yA+(r.yB-r.yA)*t,delta=referenceY===null?0:Math.abs(y-referenceY),
+    // On parallel overpasses, prefer the deck at the player's actual Y.
+    // Minor footways must not steal the contact of a car on the adjacent highway.
+    penalty=delta>1?Math.min(14,(delta-1)*3):0,
+    weight=d+penalty+(/footway|steps|cycleway/.test(r.k)?Math.min(.5,r.w*.07):0);
+   if(weight<score){score=weight;best={road:r,d,x:px,z:pz,y,yaw:Math.atan2(vx,vz)};}
   }
   return best;
  }
@@ -281,8 +287,17 @@ export class RegionalWorld{
   return coastalBand(x,z)?Math.max(this.raw(x,z),LAGOON_Y+.23)+.05:this.raw(x,z)+.05;
  }
  height(x,z,referenceY=null){
-  const support=this.nearestRoad(x,z,25);
-  if(support&&support.d<support.road.w*.5+.85&&(referenceY===null||Math.abs(support.y-referenceY)<3.7))return support.y+.065;
+  const support=this.nearestRoad(x,z,25,referenceY);
+  if(support&&(referenceY===null||Math.abs(support.y-referenceY)<3.7)){
+   const edge=support.road.w*.5+.85;
+   if(support.d<edge)return support.y+.065;
+   if(!support.road.bri&&support.d<edge+2.3){
+    // The broad physical shoulder is the same sloped embankment drawn below.
+    // Cars can run across the asphalt edge without hitting an invisible step.
+    const ground=this.ground(x,z),t=1-(support.d-edge)/2.3;
+    return ground+(support.y+.065-ground)*t;
+   }
+  }
   return this.ground(x,z);
  }
  waterAt(x,z,margin=0,referenceY=null){
