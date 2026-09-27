@@ -33,7 +33,10 @@ export function smoothRegionalRoadProfile(points,heightAt,kind='',spacing=14){
    if(d>window)continue;
    const w=(1-d/window)**2;weight+=w;sum+=raw[j]*w;
   }
-  return weight?sum/weight:y;
+  // Roads should not be geometrically buried under the old coarse DEM.
+  // Smooth noise only by a few centimetres when the raw slope is legal;
+  // the hard grade projection below resolves truly unsafe steep stretches.
+  return weight?clamp(sum/weight,y-.055,y+.09):y;
  });
  const grade=Math.max(regionalGrade(kind),
   Math.abs(raw.at(-1)-raw[0])/total+.00001);
