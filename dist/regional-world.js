@@ -704,7 +704,7 @@ export class RegionalWorld{
       if(distance(...at,...p)>2.0)continue;
       const tx=(q.b[0]-q.a[0])*dir,tz=(q.b[1]-q.a[1])*dir,mag=Math.hypot(tx,tz)||1;
       const score=(dx*tx+dz*tz)/(len*mag)-
-       (q===actor.previous?.r?.r?.road?1:0);
+       (q===actor.previous?1:0);
       if(score>best&&score>-.45){best=score;next={r:q,dir};}
      }
     }
