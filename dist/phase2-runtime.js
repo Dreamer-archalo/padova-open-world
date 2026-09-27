@@ -52,7 +52,7 @@ import './villa-mandria-security-placement.js';
 import './villa-mandria-respawn-label.js';
 // All models registered before the hangar catalogue is first opened.
 // Register dockable Padova and regional boats before showing any catalog.
-import './padova-boats.js';
+import './padova-boats.js?v=startup-r13';
 import './villa-mandria-hangar.js';
 // Final populate/addCar wrapper creates distinct military models both at the
 // airport and when selecting one from the Mandria hangar.
