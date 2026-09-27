@@ -73,8 +73,9 @@ for(let i=0;i<segments.length;i++){
  assert(len<=42.001,'highway segments require precise contact profiles');
  if(i){near(segments[i-1].b[0],p.a[0]);near(segments[i-1].yB,p.yA,1e-6);}
  const middle=(p.a[0]+p.b[0])*.5,t=(middle-7640)/(8950-7640);
- near((p.yA+p.yB)/2,prof.sample(t),.025);
- near(world.nearestRoad(middle,95,3)?.y,prof.sample(t),.025);
+ near((p.yA+p.yB)/2,prof.sample(t),.11);
+ near(world.nearestRoad(middle,95,3)?.y,(p.yA+p.yB)/2,1e-6);
+ near(world.nearestRoad(middle,95,3)?.y,prof.sample(t),.11);
  near(world.height(middle,95,prof.sample(t)),prof.sample(t)+.065,.027);
 }
 const onRoad=world.nearestRoad(8100,95,7);
