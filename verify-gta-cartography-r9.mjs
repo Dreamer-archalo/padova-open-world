@@ -2,8 +2,9 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import {roadTier,roadVisibleAtZoom,VectorMapDetail} from './dist/unified-map-detail.js';
 const source=p=>fs.readFileSync(p,'utf8');
-assert.equal(roadTier('motorway'),3);
-assert.equal(roadTier('primary'),2);
+assert.equal(roadTier('motorway'),4);
+assert.equal(roadTier('primary'),3);
+assert.equal(roadTier('secondary'),2);
 assert.equal(roadTier('tertiary'),1);
 assert.equal(roadTier('residential'),0);
 assert.equal(roadTier('footway'),-1);
@@ -47,10 +48,10 @@ assert(sea.fills>=1&&sea.lines>=2,'Open lagoon backdrop must be a vector polygon
 assert.equal(sea.rectFills,1,'Never draw a hard-edged rectangle of lagoon water');
 const html=source('dist/index.html'),css=source('dist/unified-main.css'),mapSrc=source('dist/unified-map.js');
 const villa=source('dist/villa-mandria-v11-estate-polish.js');
-assert(html.includes('MAPPA-GTA-R8')&&html.includes('map-diagnostics" hidden'),
- 'Hide tester diagnostic UI but retain current version compatibility');
-assert(css.includes('.map-diagnostics, #minimapStatus{display:none!important}'));
+assert(!/MAPPA-GTA-R8|map-diagnostics|testa ville F8/i.test(html),
+ 'R10 user-facing map must remove tester labels, not merely hide them');
+assert(!css.includes('.map-diagnostics')&&css.includes('#minimapStatus{display:none!important}'));
 assert(!villa.includes('COLLAUDO VILLA')&&!villa.includes("e.code==='F8'"),
  'Outdated Villa F8 QA control still injected into gameplay');
 assert(mapSrc.includes('w:x1-x+8700'),'Map must show non-playable offshore water east of Venice');
-console.log('PASS R9: zoom-revealed GTA arteries, local streets + alleys, vector sea outside playable region, hidden tester labels and removed villa F8 overlay');
+console.log('PASS R9 adapted to R10: zoom-revealed GTA arteries, local streets + alleys, vector sea outside playable region, hidden tester labels and removed villa F8 overlay');
