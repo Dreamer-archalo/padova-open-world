@@ -20,6 +20,8 @@ const energy=new THREE.MeshBasicMaterial({color:'#6dd4d5',transparent:true,opaci
 const energySkin=new THREE.MeshBasicMaterial({color:'#4cb8c2',transparent:true,opacity:.19,side:THREE.DoubleSide,depthWrite:false});
 const energyOutline=new THREE.LineBasicMaterial({color:'#8ef7ec',transparent:true,opacity:.76,depthWrite:false});
 const ambientCar=material('#80919b'),ambientBus=material('#bc9f61'),ambientPedestrian=material('#577d78');
+const roadShoulderMat=material('#9b9d94'),roadBankMat=material('#7e8b79'),
+ guardRailMat=material('#b8c0bd',{metalness:.35,roughness:.62}),junctionMat=material('#566165');
 const facadeFrame=material('#c6b7a0'),facadeDoor=material('#746454'),facadeBrick=material('#ad7861'),facadeStucco=material('#dec6a6'),industrialWall=material('#a2afae'),sidewalkMat=material('#aeb4aa'),facadeShutter=material('#647368');
 const cube=new THREE.BoxGeometry(1,1,1);
 // Nearby regions use the SAME car and human model families as Padova. Caches
@@ -439,9 +441,48 @@ export class RegionalWorld{
    }
   }
   if(sea.length){const sheet=new THREE.Mesh(geometry(sea),lagoonMat);sheet.renderOrder=1;group.add(sheet);}
-  const normal=[],arterial=[],channels=[],balustrade=[],bridgeSupports=[],bridgeUndersides=[],w=[],r=[],blocks=[],energyFaces=[],energyEdges=[],glassFaces=[],shutterFaces=[],roadStripes=[],roadSigns=[],distantWalls=[],facadeFaces=[],brickFaces=[],industrialFaces=[],frameFaces=[],doorFaces=[],pavements=[],crosswalks=[];
+  const normal=[],arterial=[],channels=[],balustrade=[],bridgeSupports=[],bridgeUndersides=[],w=[],r=[],blocks=[],energyFaces=[],energyEdges=[],glassFaces=[],shutterFaces=[],roadStripes=[],roadShoulders=[],roadBanks=[],guardRails=[],junctionCaps=[],roadSigns=[],distantWalls=[],facadeFaces=[],brickFaces=[],industrialFaces=[],frameFaces=[],doorFaces=[],pavements=[],crosswalks=[];
   for(const p of src.roads){
-   surface(/motorway|trunk|primary|secondary/.test(p.k)?arterial:normal,p.a,p.b,p.w,p.yA+.025,p.yB+.025);
+   const roadClass=regionalRoadClass(p.k),major=roadClass==='express',
+    arterialRoad=major||roadClass==='arterial',len=distance(...p.a,...p.b);
+   // Asphalt, painted markings, painted verge and collision surface use
+   // exactly the same pre-solved longitudinal Y, even at chunk boundaries.
+   if(arterialRoad){
+    surface(roadShoulders,p.a,p.b,p.w+(major?1.5:.65),p.yA+.008,p.yB+.008);
+   }
+   surface(arterialRoad?arterial:normal,p.a,p.b,p.w,p.yA+.025,p.yB+.025);
+   if(near&&arterialRoad&&!p.bri&&len>1.5){
+    // Filled slope down to the rendered local DEM: no floating motorways.
+    const dx=p.b[0]-p.a[0],dz=p.b[1]-p.a[1],
+     nx=-dz/len,nz=dx/len,inner=p.w*.5+(major?.75:.325),outer=inner+2.3;
+    for(const side of [-1,1]){
+     const a=[p.a[0]+nx*inner*side,p.a[1]+nz*inner*side],
+      b=[p.b[0]+nx*inner*side,p.b[1]+nz*inner*side],
+      c=[p.b[0]+nx*outer*side,p.b[1]+nz*outer*side],
+      d=[p.a[0]+nx*outer*side,p.a[1]+nz*outer*side];
+     addQuad(roadBanks,[a[0],p.yA+.009,a[1]],
+      [b[0],p.yB+.009,b[1]],[c[0],this.ground(...c)+.01,c[1]],
+      [d[0],this.ground(...d)+.01,d[1]]);
+    }
+   }
+   if(near&&major&&len>5&&guardRails.length<5300){
+    const nx=-(p.b[1]-p.a[1])/len,nz=(p.b[0]-p.a[0])/len;
+    for(const side of [-1,1]){
+     const edge=(p.w*.5+1.18)*side,
+      ax=p.a[0]+nx*edge,az=p.a[1]+nz*edge,
+      bx=p.b[0]+nx*edge,bz=p.b[1]+nz*edge;
+     // Continuous visible metal guardrails, separated from the asphalt.
+     addQuad(guardRails,[ax,p.yA+.37,az],[bx,p.yB+.37,bz],
+      [bx,p.yB+.63,bz],[ax,p.yA+.63,az]);
+     const cadence=17,start=p.chain-len*.5;
+     for(let mark=Math.ceil(start/cadence)*cadence;mark<start+len;mark+=cadence){
+      const t=Math.max(0,Math.min(1,(mark-start)/len)),
+       x=ax+(bx-ax)*t,z=az+(bz-az)*t,y=p.yA+(p.yB-p.yA)*t;
+      addQuad(guardRails,[x,y+.08,z],[x+.075,y+.08,z+.075],
+       [x+.075,y+.63,z+.075],[x,y+.63,z]);
+     }
+    }
+   }
    // Grounded, level sidewalks only in town blocks; no floating decks.
    if(near&&src.buildings.length>8&&!p.bri&&
       /residential|tertiary|secondary|living_street/.test(p.k)&&pavements.length<5500){
@@ -468,19 +509,29 @@ export class RegionalWorld{
      surface(crosswalks,a,b,.31,y,y);
     }
    }
-   if(near&&p.w>=5&&roadStripes.length<900&&distance(...p.a,...p.b)>2){
-    const a=[p.a[0]+(p.b[0]-p.a[0])*.15,p.a[1]+(p.b[1]-p.a[1])*.15],
-     b=[p.a[0]+(p.b[0]-p.a[0])*.52,p.a[1]+(p.b[1]-p.a[1])*.52];
-    surface(roadStripes,a,b,.13,p.yA+.052,p.yA+(p.yB-p.yA)*.52+.052);
-   }
-   // Motorway shoulders use the same 3-D road profile as the asphalt.
-   if(near&&/motorway|trunk/.test(p.k)&&roadStripes.length<1450){
-    const dx=p.b[0]-p.a[0],dz=p.b[1]-p.a[1],len=Math.hypot(dx,dz)||1,
-     nx=-dz/len,nz=dx/len,edge=p.w*.5-.36;
-    for(const side of [-1,1]){
-     const a=[p.a[0]+nx*edge*side,p.a[1]+nz*edge*side],
-      b=[p.b[0]+nx*edge*side,p.b[1]+nz*edge*side];
-     surface(roadStripes,a,b,.11,p.yA+.058,p.yB+.058);
+   if(near&&p.w>=5&&roadStripes.length<4200&&len>1){
+    const dx=p.b[0]-p.a[0],dz=p.b[1]-p.a[1],
+     nx=-dz/len,nz=dx/len,first=p.chain-len*.5,last=first+len;
+    // Stable absolute way-chain metre marks; painted dashes do not randomly
+    // restart every time a road enters another 320-m streamed sector.
+    const offsets=major&&p.w>=10?[-p.w*.23,p.w*.23]:[0],cadence=7;
+    for(const offset of offsets)
+     for(let mark=Math.ceil(first/cadence)*cadence;mark<last;mark+=cadence){
+      const start=Math.max(0,(mark-first)/len),
+       end=Math.min(1,(mark+3.5-first)/len);
+      if(end-start<.003)continue;
+      const a=[p.a[0]+dx*start+nx*offset,p.a[1]+dz*start+nz*offset],
+       b=[p.a[0]+dx*end+nx*offset,p.a[1]+dz*end+nz*offset];
+      surface(roadStripes,a,b,major?.14:.11,
+       p.yA+(p.yB-p.yA)*start+.055,p.yA+(p.yB-p.yA)*end+.055);
+     }
+    if(arterialRoad){
+     const edge=p.w*.5-(major?.30:.23);
+     for(const side of [-1,1]){
+      const a=[p.a[0]+nx*edge*side,p.a[1]+nz*edge*side],
+       b=[p.b[0]+nx*edge*side,p.b[1]+nz*edge*side];
+      surface(roadStripes,a,b,.11,p.yA+.06,p.yB+.06);
+     }
     }
    }
    if(near&&p.w>=5.3&&!/footway|steps|cycleway/.test(p.k)&&
@@ -643,6 +694,10 @@ export class RegionalWorld{
   if(normal.length)group.add(new THREE.Mesh(geometry(normal),roadMat));
   if(arterial.length)group.add(new THREE.Mesh(geometry(arterial),arterialMat));
   if(glassFaces.length)group.add(new THREE.Mesh(geometry(glassFaces),glass));
+  if(roadShoulders.length)group.add(new THREE.Mesh(geometry(roadShoulders),roadShoulderMat));
+  if(roadBanks.length)group.add(new THREE.Mesh(geometry(roadBanks),roadBankMat));
+  if(guardRails.length)group.add(new THREE.Mesh(geometry(guardRails),guardRailMat));
+  if(junctionCaps.length)group.add(new THREE.Mesh(geometry(junctionCaps),junctionMat));
   if(roadStripes.length)group.add(new THREE.Mesh(geometry(roadStripes),mark));
   if(roadSigns.length)group.add(new THREE.Mesh(geometry(roadSigns),sign));
   if(distantWalls.length)group.add(new THREE.Mesh(geometry(distantWalls),townWalls));
