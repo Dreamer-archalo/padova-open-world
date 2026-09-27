@@ -1,4 +1,4 @@
-name: Unified regional mobility R11 fast tests
+name: Unified regional mobility and roads R12 fast tests
 
 on:
   push:
@@ -6,6 +6,8 @@ on:
     paths:
       - 'dist/game.js'
       - 'dist/regional-world.js'
+      - 'dist/regional-road-profile.js'
+      - 'verify-regional-roads-r12.mjs'
       - 'dist/regional-air-traffic.js'
       - 'dist/unified-michelangelo.js'
       - 'dist/nautical-catalog.js'
@@ -35,9 +37,11 @@ jobs:
       - name: Syntax check gameplay and new subsystems
         run: |
           set -euo pipefail
-          for f in dist/game.js dist/regional-world.js dist/regional-air-traffic.js dist/unified-michelangelo.js dist/nautical-catalog.js dist/padova-boats.js dist/unified-vehicle-pickup.js dist/villa-mandria-hangar.js dist/villa-mandria-catalog-ui.js dist/phase2-runtime.js; do node --check "$f"; done
+          for f in dist/game.js dist/regional-road-profile.js dist/regional-world.js dist/regional-air-traffic.js dist/unified-michelangelo.js dist/nautical-catalog.js dist/padova-boats.js dist/unified-vehicle-pickup.js dist/villa-mandria-hangar.js dist/villa-mandria-catalog-ui.js dist/phase2-runtime.js; do node --check "$f"; done
       - name: Test cross-region vehicles and traffic
-        run: node verify-unified-mobility-r11.mjs
+        run: |
+          node verify-unified-mobility-r11.mjs
+          node verify-regional-roads-r12.mjs
       - name: Preserve previous municipality and cartography tests
         run: |
           node verify-regional-town-detail.mjs
