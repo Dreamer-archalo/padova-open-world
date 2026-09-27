@@ -84,7 +84,8 @@ jobs:
           # removed by later deployments. Reuse the newest complete snapshot
           # that actually still has a non-expired github-pages artifact.
           RUN_ID=""
-          for candidate in $(gh api "repos/${GITHUB_REPOSITORY}/actions/runs?status=success&per_page=50" --jq '.workflow_runs[].id'); do
+          for candidate in $(gh api "repos/${GITHUB_REPOSITORY}/actions/runs?status=success&per_page=100" \
+            --jq '[.workflow_runs[] | select(.name | test("Rapid .*unified|Padova Venice unified")) | .id] | .[]'); do
             found="$(gh api "repos/${GITHUB_REPOSITORY}/actions/runs/${candidate}/artifacts" --jq '[.artifacts[] | select(.name == "github-pages" and (.expired | not))] | length')"
             if [ "$found" -gt 0 ]; then RUN_ID="$candidate"; break; fi
           done
