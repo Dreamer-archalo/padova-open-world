@@ -1,4 +1,4 @@
-name: Unified regional mobility and roads R12 fast tests
+name: Unified regional traffic physics R14 fast tests
 
 on:
   push:
@@ -9,6 +9,8 @@ on:
       - 'dist/padova-boats.js'
       - 'verify-startup-r13.mjs'
       - 'dist/regional-world.js'
+      - 'dist/regional-traffic-physics.js'
+      - 'verify-regional-npc-r14.mjs'
       - 'dist/regional-road-profile.js'
       - 'verify-regional-roads-r12.mjs'
       - 'dist/regional-air-traffic.js'
@@ -46,6 +48,8 @@ jobs:
           node verify-unified-mobility-r11.mjs
           node verify-startup-r13.mjs
           node verify-regional-roads-r12.mjs
+          node --check dist/regional-traffic-physics.js
+          node verify-regional-npc-r14.mjs
       - name: Preserve previous municipality and cartography tests
         run: |
           node verify-regional-town-detail.mjs
