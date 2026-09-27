@@ -67,10 +67,10 @@ assert(prof&&prof.length>1300);
 const segments=[...world.chunks.values()].flatMap(c=>c.roads)
  .filter(p=>p.k==='motorway'&&!p.bri&&p.a[1]===95)
  .sort((a,b)=>a.a[0]-b.a[0]);
-assert(segments.length>=31,'A 1.31 km motorway must be divided into continuous short spans');
+assert(segments.length>=50,'A 1.31 km motorway must use smooth <=24m continuous spans');
 for(let i=0;i<segments.length;i++){
  const p=segments[i],len=Math.hypot(p.b[0]-p.a[0],p.b[1]-p.a[1]);
- assert(len<=42.001,'highway segments require precise contact profiles');
+ assert(len<=24.001,'highway segments require <=24m visual and physical profile fidelity');
  if(i){near(segments[i-1].b[0],p.a[0]);near(segments[i-1].yB,p.yA,1e-6);}
  const middle=(p.a[0]+p.b[0])*.5,t=(middle-7640)/(8950-7640);
  near((p.yA+p.yB)/2,prof.sample(t),.11);
