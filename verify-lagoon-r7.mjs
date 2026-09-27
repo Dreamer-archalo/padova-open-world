@@ -3,7 +3,8 @@ import fs from 'node:fs';
 import {WaterGameplay} from './dist/water-gameplay.js';
 const game=fs.readFileSync('dist/game.js','utf8'),html=fs.readFileSync('dist/index.html','utf8');
 const css=fs.readFileSync('dist/unified-water.css','utf8');
-assert(html.includes('MAPPA-GTA-R8')&&html.includes('veniceLoadingStatus'));
+assert(!/MAPPA-GTA-R8|map-diagnostics|testa ville F8/i.test(html)&&html.includes('veniceLoadingStatus'),
+ 'Venice loading overlay remains while deprecated map debug labels stay removed');
 assert(css.includes('.venice-loading[hidden]{display:none!important}'));
 assert(game.includes("ws.hidden=!waterGame.active||(waterGame.swimming&&waterGame.swimDepth<=.85)"));
 assert(game.includes("hint='W/A/S/D · NUOTA · SPAZIO IMMERGITI · R RECUPERA'"));
