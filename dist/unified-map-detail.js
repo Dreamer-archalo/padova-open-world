@@ -125,7 +125,7 @@ export class VectorMapDetail {
    ctx.strokeStyle=walk?'#a7b5b3':tier>=3?'#f3f1e8':tier===2?'#dbe3e0':tier===1?'#b7c6c2':'#97a9a7';
    ctx.stroke();
    if(labels&&r.n&&scale/px>(mini?.45:.16)&&
-     (tier>=2||scale/px>(tier>=1?.28:.55))&&named.length<(mini?18:65))named.push(r);
+     (tier>=2||scale/px>(tier>=1?.28:.40))&&named.length<(mini?18:65))named.push(r);
   }
   if(labels&&scale/px>(mini?.44:.18))this.drawRoadLabels(ctx,named,x0,z0,width,height,scale,px,mini);
   ctx.restore();
