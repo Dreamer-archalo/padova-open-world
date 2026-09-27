@@ -16,7 +16,7 @@ assert(dockSource.includes('g.data?.water||[]'),
  'Optional boat data must never crash the whole city on first load');
 assert(game.includes('__padovaLoaderDebug?.fail?.'),
  'Unexpected JS exceptions must show their real cause, not a false network warning');
-assert(html.includes('game.js?v=startup-r13'));
+assert(/game\\.js\\?v=(?:startup-r13|regional-physics-r14)/.test(html),'Game cache version must force fresh JS startup');
 assert(/padova-boats\.js\?v=startup-r13/.test(game));
 assert(/padova-boats\.js\?v=startup-r13/.test(runtime));
 
