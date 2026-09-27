@@ -39,7 +39,7 @@ function makeDocks(g){
  if(piers.has(g))return piers.get(g);
  const docks=[];
  for(const place of DOCK_CANDIDATES){
-  const p=project(place.lat,place.lon),q=nearestWaterSegment(g.data.water,p,7,420);
+  const p=project(place.lat,place.lon),q=nearestWaterSegment(g.data?.water||[],p,7,420);
   if(!q)continue;
   const sample=g.terrain.waterSample(q.x,q.z);
   if(sample.distance>-.9)continue;
