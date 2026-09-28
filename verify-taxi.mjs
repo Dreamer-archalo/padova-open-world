@@ -7,7 +7,8 @@ import {TaxiPathfinder} from './dist/Pathfinder.js';
 import {VEHICLES} from './dist/vehicles.js';
 
 assert.equal(taxiFare({x:0,z:0},{x:1,z:1}),10,'minimum fare');
-assert.equal(taxiFare({x:0,z:0},{x:20000,z:20000}),100,'absolute maximum fare');
+assert.equal(taxiFare({x:0,z:0},{x:20000,z:20000}),70,'intercity fare follows distance');
+assert.equal(taxiFare({x:0,z:0},{x:100000,z:100000}),180,'absolute maximum fare');
 const places=[
  {name:'Prato della Valle',tag:'Piazza',x:10,z:20},
  {name:'Piazza dei Signori',tag:'Piazza',x:30,z:40},

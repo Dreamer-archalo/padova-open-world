@@ -40,7 +40,7 @@ import {FixedClock,slideMove,vehicleBlocked,cameraBoomContinuous as cameraBoom} 
 import {Terrain, WaterRecovery, safeDryRoad} from './terrain.js';
 import {VEHICLES,isBike,createVehicle,createRider,vehiclesOverlap} from './vehicles.js';
 import {BuildingModels} from './building-models.js';
-import {taxiFare,taxiDestinations,advanceTaxi,findTaxiRoad} from './taxi-service.js';
+import {taxiFare,taxiDestinations,advanceTaxi,findTaxiRoad} from './taxi-service.js?v=regional-taxi-r16';
 import {createMicromobilityActor,micromobilityCount,stepMicromobility,PORTELLO_GATE} from './portello.js';
 import {spawnWeight,socialProfile,attachDog,animateUrbanActor,PORTELLO_SEATS} from './urban-life.js';
 import {installVehicleDamage,updateVehicleDamage,vehiclePerformanceFactor} from './vehicle-damage.js';
@@ -75,11 +75,12 @@ function resizeMapSurfaces(){
 
 const performanceOverlay=new PerformanceOverlay($('performanceOverlay'));
 const fullscreenControls=createFullscreenControls(document,window,{onEnter:closeDialogs,onResize:()=>requestAnimationFrame(resizeViewport)});
-const minBounds={x:-6050,z:-6550,w:13400,h:12900}; // Retain Padova-only taxi/navigation limits.
+const minBounds={x:-6050,z:-6550,w:13400,h:12900};
 let regionalWorld=null,regionalAir=null,unifiedMap=null,regionalLoading=false,regionalFailure=null;
 let lagoonPreloadActive=false,lagoonPreloadDone=false,lagoonPreloadCooloff=false;
 let mapPointer=null,mapDragged=false;const mapTouches=new Map();let mapPinchDistance=0;
 const unifiedBounds={minX:-5970,maxX:39200,minZ:-11900,maxZ:8800};
+const taxiBounds={x:Math.min(minBounds.x,unifiedBounds.minX),z:Math.min(minBounds.z,unifiedBounds.minZ),w:unifiedBounds.maxX-Math.min(minBounds.x,unifiedBounds.minX),h:unifiedBounds.maxZ-Math.min(minBounds.z,unifiedBounds.minZ)};
 function regionalPlayer(){return regionalWorld?.contains(state.x,state.z)||false;}
 async function startUnifiedRegion(){
  if(regionalLoading||regionalWorld)return;
@@ -163,7 +164,7 @@ async function startUnifiedRegion(){
    };
    full.addEventListener('pointerup',release);
    full.addEventListener('pointercancel',release);
-  const control=(id,fn)=>{const button=$(id);if(button)button.onclick=()=>{if(taxiMapPick){toast('La mappa taxi copre solo Padova.');return;}fn();drawFullMap();};};
+  const control=(id,fn)=>{const button=$(id);if(button)button.onclick=()=>{fn();drawFullMap();};};
   control('unifiedZoomIn',()=>unifiedMap.zoom(1));control('unifiedZoomOut',()=>unifiedMap.zoom(-1));
   control('unifiedMapAll',()=>unifiedMap.reset());
   control('unifiedMapHere',()=>unifiedMap.centerOn(state.x,state.z,Math.max(11,unifiedMap.zoomLevel)));
@@ -226,7 +227,7 @@ function installRegionalMapPlaces(){
  for(const p of targets){
   const button=document.createElement('button');button.textContent=p.name;
   const tag=document.createElement('small');tag.textContent=p.tag+(p.lod==='detailed'?' · Zona dettagliata':'');button.append(tag);
-  button.onclick=()=>{if(taxiMapPick){toast('Il taxi copre solo Padova.');return;}state.waypoint={x:p.x,z:p.z,name:p.name};state.route=[];
+  button.onclick=()=>{if(taxiMapPick){taxiMenuController?.onSelectFromMap(p.x,p.z);return;}state.waypoint={x:p.x,z:p.z,name:p.name};state.route=[];
    unifiedMap.centerOn(p.x,p.z,5);drawFullMap();closeDialogs();toast('Indicatore impostato: '+p.name,3);};
   places.insertBefore(button,heading.nextSibling);
  }
@@ -300,7 +301,11 @@ function respawnRoad(pos,spec){
  const p=dryRoad(pos,spec);
  return p?{...p,y:p.y??terrain.height(p.x,p.z)}:null;
 }
-function taxiFastRoad(pos){return validTaxiDestination(pos)?findTaxiRoad(pos,graph,terrain,{maxRadius:520,maxCandidates:2500,maxMs:18}):null;}
+function taxiFastRoad(pos){
+ if(!validTaxiDestination(pos))return null;
+ if(regionalWorld?.contains(pos.x,pos.z))return regionalWorld.nearestRoad(pos.x,pos.z,760);
+ return findTaxiRoad(pos,graph,terrain,{maxRadius:520,maxCandidates:2500,maxMs:18});
+}
 // V is the same menu in Padova, all mainland towns and Venice. Cars can only
 // be delivered to real drivable roads; planes use the safe Padova runway and
 // boats use an OSM-snapped dock (not an invented road or flooded square).
@@ -580,7 +585,7 @@ function placeTaxiDriver(){
  if(!taxi?.car||!taxiDriverNPC)return;const driver=taxiDriverNPC.showBeside(taxi.car,state.elapsed);if(driver)taxi.driver=driver;
 }
 function taxiCanBoard(){return state.mode==='foot'&&taxi?.phase==='ready'&&!!taxiDriverNPC?.canInteract(state,3.3);}
-function validTaxiDestination(pos){return !!pos&&Number.isFinite(pos.x)&&Number.isFinite(pos.z)&&pos.x>=minBounds.x&&pos.x<=minBounds.x+minBounds.w&&pos.z>=minBounds.z&&pos.z<=minBounds.z+minBounds.h;}
+function validTaxiDestination(pos){return !!pos&&Number.isFinite(pos.x)&&Number.isFinite(pos.z)&&pos.x>=taxiBounds.x&&pos.x<=taxiBounds.x+taxiBounds.w&&pos.z>=taxiBounds.z&&pos.z<=taxiBounds.z+taxiBounds.h;}
 function unlockTaxiUI(){
  taxiMapPick=false;try{if($('mapDialog')?.open)$('mapDialog').close();}catch{}try{if($('menu')?.open)$('menu').close();}catch{}try{setPaused(false);}catch{}inputManager.enable();keys.clear();document.body.classList.remove('taxi-transit');try{taxiLoadingOverlay?.hide();}catch{}if($('taxiLoading'))$('taxiLoading').hidden=true;
 }
@@ -600,6 +605,19 @@ function dispatchPhysicalTaxi(){
  try{
   if(!state.started)return;
   if(state.mode!=='foot'){toast('Scendi dal veicolo prima di chiamare il taxi.',4);return;}
+  if(regionalPlayer()){
+   const pickup=regionalWorld.nearestRoad(state.x,state.z,220,state.y);
+   if(!pickup)throw new Error('No regional taxi road near player');
+   let spawn=pickup;
+   for(const metres of [16,-16,26,-26,38,-38]){
+    const probe=regionalWorld.nearestRoad(pickup.x+Math.sin(pickup.yaw)*metres,pickup.z+Math.cos(pickup.yaw)*metres,32,pickup.y);
+    if(probe&&dist(probe,state)>9){spawn=probe;break;}
+   }
+   if(!taxi){const car=addCar(spawn.x,spawn.z,spawn.yaw,false,false,'taxi');car.missionUnit=true;car.name='Taxi abusivo';taxi={car,driver:createTaxiDriver(),phase:'ready',path:[],index:0,blocked:0,repathAt:0,hazards:true};}
+   else{taxiDriverNPC?.hide();Object.assign(taxi.car,{x:spawn.x,z:spawn.z,y:spawn.y,yaw:spawn.yaw,speed:0,health:100,parked:true});taxi.car.mesh.visible=true;taxi.phase='ready';}
+   poseVehicle(taxi.car);previousActors.delete(taxi.car.mesh);setTaxiHazards(true);placeTaxiDriver();state.waypoint={x:spawn.x,z:spawn.z,name:'Taxi abusivo'};state.route=[];
+   taxiArrivalChime();toast('Il Taxi è arrivato. Avvicinati al guidatore e premi E.',6);return;
+  }
   if(!taxiDispatcher)throw new Error('TaxiDispatcher not initialized');
   // A previous taxi can be kilometres away after fast travel or on foot.
   // Reuse it only while its pickup is actually within walking distance.
@@ -662,6 +680,7 @@ function applyTaxiDestination(destination,road,price,{fallback=false}={}){
  Object.assign(c,{x:road.x,z:road.z,y,yaw,speed:0,health:Math.max(1,c.health),parked:true});resetGroundMotion(c);poseVehicle(c);
  taxi.destination={...road,name:destination?.name||'Destinazione'};previousPose=null;previousActors.delete(c.mesh);waterRecovery.reset();
  const out=taxiDropoffPoint(c);Object.assign(state,{mode:'foot',car:null,x:out.x,z:out.z,y:out.y,yaw:c.yaw,speed:0,vy:0,waypoint:null,route:[]});player.position.set(state.x,state.y,state.z);player.visible=true;waterRecovery.remember(state,terrain);followYaw=state.yaw;cameraRig.reset(state.yaw);camera.position.set(state.x-7,state.y+5,state.z-9);taxiDriverNPC?.hide();
+ if(regionalWorld?.contains(state.x,state.z))regionalWorld.update(state,0);
  const departure=planTaxiDeparture(c);if(departure){taxi.phase='departing';taxi.target=departure.target;taxi.path=departure.path;taxi.index=Math.min(1,departure.path.length-1);taxi.blocked=0;taxi.departAt=state.elapsed+.9;taxi.departUntil=state.elapsed+14;setTaxiHazards(true);}else{taxi.phase='gone';c.mesh.visible=false;c.parked=true;setTaxiHazards(false);}
  toast(fallback?'Arrivo completato su strada. Il taxi riparte.':'Sei arrivato. Il taxi ti ha lasciato a bordo strada e riparte.',5);
 }
@@ -669,8 +688,8 @@ async function executeTaxiTransition({targetCoords,meta={}}){
  if(!taxi?.car||state.car!==taxi.car||!validTaxiDestination(targetCoords))throw new Error('Invalid static taxi destination or player is not aboard');
  const destination={x:targetCoords.x,y:Number.isFinite(targetCoords.y)?targetCoords.y:0,z:targetCoords.z,yaw:Number.isFinite(targetCoords.yaw)?targetCoords.yaw:state.yaw,name:meta.name||targetCoords.name||'Destinazione personalizzata',tag:meta.tag||''};
  await new Promise(resolve=>setTimeout(resolve,0));
- const road=taxiPathfinder?.nearestRoad(destination,{maxRadius:320,maxCandidates:2500,maxMs:18});if(!road)throw new Error('Nessuna strada carrabile vicina alla destinazione selezionata');
- const arrival={...road,name:destination.name},price=taxiFare(taxi.car,arrival);
+ const road=regionalWorld?.contains(destination.x,destination.z)?regionalWorld.nearestRoad(destination.x,destination.z,760):taxiPathfinder?.nearestRoad(destination,{maxRadius:520,maxCandidates:6000,maxMs:65});if(!road)throw new Error('Nessuna strada carrabile vicina alla destinazione selezionata');
+ const arrival={...road,name:destination.name},price=Number.isFinite(meta.quotedFare)?meta.quotedFare:taxiFare(taxi.car,arrival);
  taxi.phase='transition';taxi.destination={...destination};taxi.tripCharged=false;taxiDriverNPC?.hide();setTaxiHazards(false);keys.clear();document.body.classList.add('taxi-transit');taxiFactIndex=Math.floor((state.elapsed+price)%TAXI_FACTS.length);if($('taxiFact'))$('taxiFact').textContent=TAXI_FACTS[taxiFactIndex];
  if(!taxiSystem)throw new Error('TaxiSystem not initialized');
  await taxiSystem.travel({targetCoords:arrival,destination,price,yaw:arrival.yaw??state.yaw});
@@ -689,7 +708,7 @@ function openTaxiMenu(force=false){
  try{
   if(!taxi?.car||state.car!==taxi.car||state.mode!=='car'||(!force&&taxi.phase!=='boarded'&&taxi.phase!=='at-destination'))throw new Error('Enter the taxi before choosing a destination');
   if(!taxiMenuController)throw new Error('TaxiMenuController not initialized');
-  const destinations=taxiDestinations(PLACES,HOME,AIRPORT_GATE).filter(validTaxiDestination);taxi.phase='boarded';$('menuTitle').textContent='Dove vuoi andare?';taxiMenuController.openList(destinations);
+  const destinations=taxiDestinations(PLACES,HOME,AIRPORT_GATE,regionalWorld?REGIONAL_ZONES:[]).filter(validTaxiDestination);taxi.phase='boarded';$('menuTitle').textContent='Dove vuoi andare?';taxiMenuController.openList(destinations);
  }catch(error){taxiDestinationFailure(error,'open taxi menu');}
 }
 function beginMission(type){if(!ensureCar())return;cancelMission(false);clearPolice();state.waypoint=null;const now=state.elapsed;if(type==='portavalori'){const van=gameplay?.startArmored();if(!van){toast('Portavalori non disponibile: raggiungi una strada principale e riprova.',5);return;}state.mission={type,van,target:{x:van.x,z:van.z,name:'Portavalori'},deadline:now+360,title:'CATTURA PORTAVALORI',desc:'Ricompensa: €1.000 · Blocca il furgone e resta vicino per 2,5 secondi. Incendi e incidenti attirano la polizia.'};}
@@ -919,7 +938,7 @@ $('fullmap').onclick=e=>{
    const envelope=unifiedMap.bounds;
    if(point.x<envelope.x||point.z<envelope.z||point.x>envelope.x+envelope.w||point.z>envelope.z+envelope.h)return;
    if(taxiMapPick){
-    if(!validTaxiDestination(point)){toast('Il taxi è disponibile soltanto nella zona di Padova.');return;}
+    if(!validTaxiDestination(point)){toast('Scegli un punto all’interno della mappa percorribile.');return;}
     if(!taxiMenuController)throw new Error('Taxi map controller missing');
     taxiMenuController.onSelectFromMap(point.x,point.z,e);return;
    }
@@ -979,7 +998,7 @@ function simulate(dt){
  for(const a of [...cars,...people,...cops])if(a.mesh.visible&&(a===state.car||!a.parked))previousActors.set(a.mesh,{x:a.x,z:a.z,y:a.y,yaw:a.yaw});
  const flying=state.car;if(flying?.spec.aircraft&&flying.mesh.visible){const u=flying.mesh.userData;if(u.rotor)u.rotor.rotation.y+=dt*35;if(u.tailRotor)u.tailRotor.rotation.x+=dt*45;if(u.propeller){if(u.propeller.children.some(o=>o.name==='engine-prop')){for(const o of u.propeller.children)o.rotation.z+=dt*(25+Math.abs(state.speed));}else u.propeller.rotation.z+=dt*(25+Math.abs(state.speed));}}
  state.elapsed+=dt;collisionCooldown=Math.max(0,collisionCooldown-dt);if(regionalAir&&state.started)regionalAir.update(state,state.quality);
- if(state.started){applyKnock(state,dt);for(const a of [...cars,...people,...cops])if(a!==state.car)applyKnock(a,dt);movePlayer(dt);waterGame.updateAbandoned(dt,terrain);if(!waterGame.active&&!waterRecovery.active&&!incidents?.recovery)localRespawn.remember(state,terrain,respawnClear,state.elapsed);if(taxi?.phase==='transition'){taxiDriverNPC?.update(state.elapsed);}else{if(!regionalPlayer()){speedCameras?.update();updateTraffic(dt);updateTaxi(dt);updatePeople(dt);trams?.update(dt,state.elapsed,state,[state,...cars.filter(c=>c!==state.car),...people,...cops],kickActor);}incidents?.update(state.elapsed);if(!waterGame.active&&!waterRecovery.active&&!incidents?.recovery){updatePolice(dt);gameplay?.update(dt);updateMission(dt);}}
+ if(state.started){applyKnock(state,dt);for(const a of [...cars,...people,...cops])if(a!==state.car)applyKnock(a,dt);movePlayer(dt);waterGame.updateAbandoned(dt,terrain);if(!waterGame.active&&!waterRecovery.active&&!incidents?.recovery)localRespawn.remember(state,terrain,respawnClear,state.elapsed);if(taxi?.phase==='transition'){taxiDriverNPC?.update(state.elapsed);}else{updateTaxi(dt);if(!regionalPlayer()){speedCameras?.update();updateTraffic(dt);updatePeople(dt);trams?.update(dt,state.elapsed,state,[state,...cars.filter(c=>c!==state.car),...people,...cops],kickActor);}incidents?.update(state.elapsed);if(!waterGame.active&&!waterRecovery.active&&!incidents?.recovery){updatePolice(dt);gameplay?.update(dt);updateMission(dt);}}
    if(state.waypoint&&!state.mission&&dist(state,state.waypoint)<15){state.waypoint=null;state.route=[];toast('You’ve reached your waypoint.');}
  }
 }
@@ -1034,7 +1053,7 @@ async function init(){try{
  taxiLoadingOverlay=new TaxiLoadingOverlay({overlay:$('taxiLoading'),meme:$('taxiMeme'),status:$('taxiLoadingStatus'),assetTimeoutMs:1000});
  taxiDriverNPC=new TaxiDriverNPC({scene,createPerson,THREE,terrain,collision:world.collision,collides});
  taxiSystem=new TaxiSystem({inputManager,timeoutMs:3000,executeTeleport:({targetCoords,destination,price})=>applyTaxiDestination(destination,targetCoords,price),forcePlayerPosition:({targetCoords,destination,price})=>applyTaxiDestination(destination,targetCoords,price,{fallback:true}),onFinally:()=>{document.body.classList.remove('taxi-transit');if($('taxiLoading'))$('taxiLoading').hidden=true;setPaused(false);keys.clear();}});
- taxiMenuController=new TaxiMenuController({document,menu:$('menu'),mapDialog:$('mapDialog'),menuContent:$('menuContent'),mapPlaces:$('mapPlaces'),fullMap:$('fullmap'),overlay:$('taxiLoading'),status:$('taxiLoadingStatus'),inputManager,bounds:minBounds,setPaused,drawFullMap,getFare:coords=>taxiFare(taxi.car,coords),executeTransition:executeTaxiTransition,onError:(error,context)=>taxiDestinationFailure(error,context),onMapPickingChange:value=>{taxiMapPick=value;if(unifiedMap){if(value)unifiedMap.centerOn(-100,-50,5);else unifiedMap.reset();}},delayMs:50});
+ taxiMenuController=new TaxiMenuController({document,menu:$('menu'),mapDialog:$('mapDialog'),menuContent:$('menuContent'),mapPlaces:$('mapPlaces'),fullMap:$('fullmap'),overlay:$('taxiLoading'),status:$('taxiLoadingStatus'),inputManager,bounds:taxiBounds,setPaused,drawFullMap,getFare:coords=>taxiFare(taxi.car,coords),executeTransition:executeTaxiTransition,onError:(error,context)=>taxiDestinationFailure(error,context),onMapPickingChange:value=>{taxiMapPick=value;if(unifiedMap)unifiedMap.reset();},delayMs:50});
  signals=new TrafficSignals(graph,data.signals);trams=new Trams(scene,data,terrain,state.quality);incidents=new Incidents(scene);player=createPerson('#d9bf8f');scene.add(player);createPopulation();world.update(state.x,state.z,true);progress(85,'Drawing your map…');await yieldFrame();makeMap();
  marker=new THREE.Group();const ring=new THREE.Mesh(new THREE.TorusGeometry(11,.27,8,48),new THREE.MeshBasicMaterial({color:'#ffcb72'}));ring.rotation.x=Math.PI/2;const arrow=new THREE.Mesh(new THREE.OctahedronGeometry(1.8),new THREE.MeshStandardMaterial({color:'#ffc56a',emissive:'#8b5d1f',emissiveIntensity:.3}));arrow.position.y=7;marker.add(ring,arrow);const beam=new THREE.Mesh(new THREE.CylinderGeometry(2,10,26,24,1,true),new THREE.MeshBasicMaterial({color:'#ffc56a',transparent:true,opacity:.045,depthWrite:false,side:THREE.DoubleSide}));beam.position.y=13;marker.add(beam);marker.visible=false;scene.add(marker);progress(100,'Ready. '+data.buildings.length.toLocaleString('en-GB')+' buildings · real-world scale');state.ready=true;$('playBtn').disabled=false;$('playBtn').textContent='Scegli il personaggio  →';$('playBtn').onclick=start;updateUI();characterPicker=new CharacterPicker(document,enterCity);characterPicker.open(state.character);requestAnimationFrame(animate);void startUnifiedRegion();
  }catch(e){
