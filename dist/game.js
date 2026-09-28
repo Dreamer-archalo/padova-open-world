@@ -23,7 +23,7 @@ import {CameraRig} from './camera-rig.js';
 import {TrafficSignals,lanePoint,laneCount,laneOffset,trafficLane,trafficSpeed,advanceTrafficSpeed} from './traffic.js';
 import {applyCityData,Districts,DISTRICTS} from './districts.js';
 import * as THREE from './vendor/three.module.js';
-import {RegionalWorld} from './regional-world.js?v=physical-npcs-r14';
+import {RegionalWorld} from './regional-world.js?v=venice-perf-r15';
 import {RegionalAirTraffic} from './regional-air-traffic.js';
 import {UnifiedMap} from './unified-map.js?v=carto-r10';
 import {VisibleMapTiles} from './map-live-tiles.js?v=hd-water-r4';
@@ -34,6 +34,7 @@ import {MICHELANGELO,MAX_KMH,createMichelangeloModel} from './unified-michelange
 import {regionalVehiclePickup,vehicleFamily} from './unified-vehicle-pickup.js';
 import {extendRegionalDocks} from './padova-boats.js?v=startup-r13';
 import {REGIONAL_ZONES,PADOVA_EAST} from './unified-regions.js';
+import {fetchJsonResilient} from './loading-resilience.js?v=venice-perf-r15';
 import {CityWorld,PLACES,createCar,createPerson} from './world.js';
 import {FixedClock,slideMove,vehicleBlocked,cameraBoomContinuous as cameraBoom} from './movement.js';
 import {Terrain, WaterRecovery, safeDryRoad} from './terrain.js';
@@ -84,9 +85,12 @@ async function startUnifiedRegion(){
  if(regionalLoading||regionalWorld)return;
  regionalLoading=true;
  try{
-  const [r,t]=await Promise.all([fetch('./data/region-padova-venice.json?v=hd-water-r4'),fetch('./data/world-terrain.json')]);
-  if(!r.ok||!t.ok)throw new Error('Regional data unavailable ('+r.status+'/'+t.status+')');
-  const [map,grid]=await Promise.all([r.json(),t.json()]);
+  const regionalStatus=$('regionalLoadStatus');
+  const retry=({nextAttempt,attempts})=>{if(regionalStatus)regionalStatus.textContent=`REGIONE: NUOVO TENTATIVO ${nextAttempt}/${attempts}`;};
+  const [map,grid]=await Promise.all([
+   fetchJsonResilient('./data/region-padova-venice.json?v=venice-perf-r15',{label:'dati Padova–Venezia',attempts:3,onRetry:retry}),
+   fetchJsonResilient('./data/world-terrain.json?v=venice-perf-r15',{label:'terreno regionale',attempts:3,onRetry:retry})
+  ]);
   if((map.buildings?.length||0)<2000||!grid.heights?.length)throw new Error('Regional extract incomplete');
   await yieldFrame();
   const extension=new RegionalWorld(scene,map,grid,world.collision);
@@ -103,7 +107,7 @@ async function startUnifiedRegion(){
    unifiedMap.tiles=miniTiles;miniTiles.onLoad=()=>{if($('mapDialog').open)drawFullMap();};
    // Optional 2D-only detail is streamed after the playable region loads.
    // No extra map buildings are inserted into the 3D scene, preserving Iper Performance.
-   fetch('./data/map-hd-extras.json?v=hd-water-r4').then(res=>res.ok?res.json():null).then(extras=>{
+   fetchJsonResilient('./data/map-hd-extras.json?v=venice-perf-r15',{label:'dettaglio mappa HD',attempts:2,timeoutMs:90000}).then(extras=>{
     if(!extras)return;
     if(extras.origin?.join(',')!=='45.4064,11.8768')throw new Error('HD map origin mismatch');
     if(unifiedMap){unifiedMap.addMapDetail(extras);if($('mapDialog').open)drawFullMap();}
@@ -181,13 +185,14 @@ async function preloadLagoon(){
  setPaused(true);
  try{
   await new Promise(resolve=>requestAnimationFrame(resolve)); // show 2D art first
-  const start=performance.now(),budget=9000;let count=0;
+  const start=performance.now(),budget=9000,initialBuilt=regionalWorld.metrics?.totalBuilt||0;let frames=0;
   do{
-   regionalWorld.update(focus,0);count++;
-   const remaining=regionalWorld.queue?.length||0;
-   if(status)status.textContent=count+' settori caricati · '+remaining+' in attesa';
+   regionalWorld.update(focus,0);frames++;
+   const remaining=regionalWorld.metrics?.queued??regionalWorld.queue?.length??0;
+   const built=Math.max(0,(regionalWorld.metrics?.totalBuilt||0)-initialBuilt);
+   if(status)status.textContent=built+' settori preparati · '+remaining+' in attesa';
    await new Promise(resolve=>requestAnimationFrame(resolve));
-   if(!remaining&&count>=8)break;
+   if(!remaining&&frames>=2)break;
   }while(performance.now()-start<budget);
   lagoonPreloadDone=true;
  }catch(error){
@@ -1009,13 +1014,22 @@ function animate(time){
    if(engineAudio){const t=engineAudio.ctx.currentTime;engineAudio.osc.frequency.setTargetAtTime(35+Math.abs(state.speed)*3,t,.1);engineAudio.gain.gain.setTargetAtTime(state.sound&&state.mode==='car'&&!waterRecovery.active?.028:0,t,.15);}
  }
  if(state.started&&!state.paused){const ratio=resolution.sample(dt,qualityFor(state.quality));if(ratio!==null)renderer.setPixelRatio(Math.min(devicePixelRatio,ratio));}
- performanceOverlay.update(rawDt,world,state,{people:people.filter(p=>p.mesh.visible).length,cars:cars.filter(c=>c.mesh.visible).length+cops.filter(c=>c.mesh.visible).length,trams:qualityFor(state.quality).trams});
+ performanceOverlay.update(rawDt,world,state,{people:people.filter(p=>p.mesh.visible).length,cars:cars.filter(c=>c.mesh.visible).length+cops.filter(c=>c.mesh.visible).length,trams:qualityFor(state.quality).trams,regional:regionalWorld?.metrics||null});
  renderer.render(scene,camera);
 }
 
-async function init(){try{progress(5,'Loading the city map…');const [response,terrainResponse]=await Promise.all([fetch('./data/padova.json'),fetch('./data/terrain.json')]);if(!terrainResponse.ok)throw new Error('Terrain download failed');const terrainData=await terrainResponse.json();if(!response.ok)throw new Error('Map download failed ('+response.status+')');const total=Number(response.headers.get('Content-Length'))||18330287;if(response.body){const reader=response.body.getReader(),chunks=[];let size=0;while(true){const {done,value}=await reader.read();if(done)break;chunks.push(value);size+=value.length;progress(Math.min(50,5+size/total*45),'Loading the city map · '+Math.round(size/1024/1024)+' MB');}const all=new Uint8Array(size);let off=0;for(const chunk of chunks){all.set(chunk,off);off+=chunk.length;}data=JSON.parse(new TextDecoder().decode(all));}else data=await response.json();progress(55,'Laying out '+data.buildings.length.toLocaleString('en-GB')+' buildings…');await yieldFrame();
+async function init(){try{
+ const expectedMapBytes=18330287;let furthestMapByte=0;
+ progress(5,'Scaricamento mappa di Padova…');
+ const retryMap=({nextAttempt,attempts})=>progress(5+furthestMapByte/expectedMapBytes*45,`Download interrotto · nuovo tentativo ${nextAttempt}/${attempts}…`);
+ const [mapData,terrainData]=await Promise.all([
+  fetchJsonResilient('./data/padova.json?v=venice-perf-r15',{label:'mappa di Padova',attempts:3,timeoutMs:240000,stallMs:60000,
+   onRetry:retryMap,onProgress:({loaded,total})=>{furthestMapByte=Math.max(furthestMapByte,loaded);const expected=total||expectedMapBytes;progress(Math.min(50,5+furthestMapByte/expected*45),`Scaricamento mappa · ${Math.round(furthestMapByte/1024/1024)} MB`);}}),
+  fetchJsonResilient('./data/terrain.json?v=venice-perf-r15',{label:'terreno di Padova',attempts:3,onRetry:retryMap})
+ ]);
+ data=mapData;progress(55,'Preparazione di '+data.buildings.length.toLocaleString('en-GB')+' edifici…');await yieldFrame();
  scene=new THREE.Scene();scene.background=new THREE.Color('#b7c9c6');scene.fog=new THREE.Fog('#b7c9c6',250,1400);camera=new THREE.PerspectiveCamera(60,innerWidth/innerHeight,.12,1600);renderer=new THREE.WebGLRenderer({canvas,antialias:qualityFor(state.quality).antialias,powerPreference:'high-performance'});renderer.setSize(innerWidth,innerHeight);renderer.setPixelRatio(Math.min(devicePixelRatio,1.25));renderer.shadowMap.enabled=true;renderer.shadowMap.type=THREE.PCFSoftShadowMap;renderer.outputColorSpace=THREE.SRGBColorSpace;renderer.toneMapping=THREE.ACESFilmicToneMapping;renderer.toneMappingExposure=1.2;
- scene.add(new THREE.HemisphereLight('#d9e6e6','#766047',2.5));sun=new THREE.DirectionalLight('#ffe0aa',3);sun.position.set(-100,180,800);sun.castShadow=true;sun.shadow.mapSize.set(1024,1024);sun.shadow.camera.left=-85;sun.shadow.camera.right=85;sun.shadow.camera.top=85;sun.shadow.camera.bottom=-85;sun.shadow.camera.near=1;sun.shadow.camera.far=450;sun.shadow.bias=-.001;sun.shadow.normalBias=.3;scene.add(sun,sun.target);const cityResponse=await fetch('./data/city.json');if(!cityResponse.ok)throw new Error('City transport data unavailable');applyCityData(data,await cityResponse.json());prepareGameplayMap(data);districts=new Districts(data);terrain=new Terrain(terrainData,data,{modern:true});terrain.districts=districts;world=new CityWorld(scene,data,terrain,state.quality);modelLayer=new BuildingModels(scene,world);await modelLayer.init();applyQuality();progress(70,'Connecting streets and traffic…');await yieldFrame();graph=makeRoadGraph(data.roads,{separateLevels:true});patrolGraph=makeRoadGraph(data.roads.filter(r=>r.w>=4&&r.k!=='pedestrian'&&(r.gameplay||!['no','private'].includes(r.access))),{separateLevels:true});taxiPathfinder=new TaxiPathfinder({graph,terrain,bounds:minBounds});
+ scene.add(new THREE.HemisphereLight('#d9e6e6','#766047',2.5));sun=new THREE.DirectionalLight('#ffe0aa',3);sun.position.set(-100,180,800);sun.castShadow=true;sun.shadow.mapSize.set(1024,1024);sun.shadow.camera.left=-85;sun.shadow.camera.right=85;sun.shadow.camera.top=85;sun.shadow.camera.bottom=-85;sun.shadow.camera.near=1;sun.shadow.camera.far=450;sun.shadow.bias=-.001;sun.shadow.normalBias=.3;scene.add(sun,sun.target);const cityData=await fetchJsonResilient('./data/city.json?v=venice-perf-r15',{label:'traffico e trasporti di Padova',attempts:3,onRetry:retryMap});applyCityData(data,cityData);prepareGameplayMap(data);districts=new Districts(data);terrain=new Terrain(terrainData,data,{modern:true});terrain.districts=districts;world=new CityWorld(scene,data,terrain,state.quality);modelLayer=new BuildingModels(scene,world);await modelLayer.init();applyQuality();progress(70,'Collegamento di strade e traffico…');await yieldFrame();graph=makeRoadGraph(data.roads,{separateLevels:true});patrolGraph=makeRoadGraph(data.roads.filter(r=>r.w>=4&&r.k!=='pedestrian'&&(r.gameplay||!['no','private'].includes(r.access))),{separateLevels:true});taxiPathfinder=new TaxiPathfinder({graph,terrain,bounds:minBounds});
  taxiDispatcher=new TaxiDispatcher({graph,terrain,collision:world.collision,taxiSpec:VEHICLES.taxi,vehicleBlocked,pathfinder:taxiPathfinder});
  taxiLoadingOverlay=new TaxiLoadingOverlay({overlay:$('taxiLoading'),meme:$('taxiMeme'),status:$('taxiLoadingStatus'),assetTimeoutMs:1000});
  taxiDriverNPC=new TaxiDriverNPC({scene,createPerson,THREE,terrain,collision:world.collision,collides});
@@ -1031,7 +1045,7 @@ async function init(){try{progress(5,'Loading the city map…');const [response,
     console.error('[GAME BOOTSTRAP]',e);
     globalThis.__padovaLoaderDebug?.fail?.('GAME STARTUP',detail);
     $('loadingText').className='fatal';
-    const network=/Failed to fetch|NetworkError|HTTP [45]\\d\\d|download failed/i.test(String(e));
+    const network=/Failed to fetch|NetworkError|HTTP [45]\d\d|download fallito|nessun dato ricevuto/i.test(String(e));
     $('loadingText').textContent=(network?
       'Non riesco a scaricare un file della mappa: ':
       'Il gioco ha riscontrato un errore di avvio: ')+(e?.message||String(e));

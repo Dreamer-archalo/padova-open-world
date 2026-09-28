@@ -43,22 +43,22 @@ const BOOTSTRAP_SHARE=30;
 const nextFrame=()=>new Promise(resolve=>requestAnimationFrame(()=>resolve()));
 
 function createOverlayUI(){
- const overlay=document.getElementById('initialLoader'),bar=document.getElementById('initialLoaderBar'),percent=document.getElementById('initialLoaderPercent'),status=document.getElementById('initialLoaderStatus'),legacyBar=document.getElementById('loadingBar'),legacyText=document.getElementById('loadingText');
+ const overlay=document.getElementById('initialLoader'),bar=document.getElementById('initialLoaderBar'),percent=document.getElementById('initialLoaderPercent'),status=document.getElementById('initialLoaderStatus'),retry=document.getElementById('initialLoaderRetry'),legacyBar=document.getElementById('loadingBar'),legacyText=document.getElementById('loadingText');
  // The map is loaded only after the user presses #playBtn. Keeping this overlay
  // visible before that click while cancelling the same click caused a permanent
  // 0% deadlock. Hide it until the user really starts init().
  if(overlay)overlay.hidden=true;
  let gateActive=false,lastPercent=0;
- const show=(text='Avvio caricamento città…')=>{if(overlay){overlay.hidden=false;overlay.classList.remove('initial-loader-done','initial-loader-error');}if(status&&text)status.textContent=text;};
+ const show=(text='Avvio caricamento città…')=>{if(overlay){overlay.hidden=false;overlay.classList.remove('initial-loader-done');}if(status&&text)status.textContent=text;};
  const paint=(value,text)=>{const p=Math.max(lastPercent,Math.min(100,Math.max(0,value)));lastPercent=p;if(bar)bar.style.width=p.toFixed(2)+'%';if(percent)percent.textContent=Math.round(p)+'%';if(status&&text)status.textContent=text;};
  const mirrorBootstrap=()=>{if(gateActive)return;const raw=parseFloat(legacyBar?.style.width)||0,text=legacyText?.textContent?.trim()||'Preparazione dati città…';paint(raw/100*BOOTSTRAP_SHARE,text);};
  if(legacyBar||legacyText){const observer=new MutationObserver(mirrorBootstrap);if(legacyBar)observer.observe(legacyBar,{attributes:true,attributeFilter:['style']});if(legacyText)observer.observe(legacyText,{childList:true,subtree:true,characterData:true});mirrorBootstrap();}
  return {
   show,
   begin(){show('Generazione area iniziale · 9 chunk · 18 stadi');gateActive=true;paint(Math.max(lastPercent,BOOTSTRAP_SHARE),'Generazione area iniziale · 9 chunk · 18 stadi');},
-  update({completed,totalStages,current,stage}){show();const p=BOOTSTRAP_SHARE+(completed/Math.max(1,totalStages))*(100-BOOTSTRAP_SHARE),label=stage==='detail'?'DETTAGLIO':stage==='core'?'BASE':'COMPLETO';paint(p,`Chunk ${current}/9 · ${label} · stadi ${completed}/${totalStages}`);},
-  ready(){paint(100,'Città pronta');document.documentElement.dataset.initialWorldReady='true';if(overlay){overlay.classList.add('initial-loader-done');setTimeout(()=>overlay.hidden=true,260);}},
-  fail(error){show('ERRORE NEL LOADER');debug.fail('INITIAL LOADER',error?.stack||error?.message||error);if(status)status.textContent='ERRORE NEL LOADER';if(overlay)overlay.classList.add('initial-loader-error');console.error('[Padova initial loader]',error);}
+  update({completed,totalStages,current,stage,slices=0,elapsed=0}){show();const p=BOOTSTRAP_SHARE+(completed/Math.max(1,totalStages))*(100-BOOTSTRAP_SHARE),label=stage==='detail'?'DETTAGLIO':stage==='core'?'BASE':'COMPLETO',activity=slices?` · operazioni ${slices} · ${(elapsed/1000).toFixed(1)} s`:'';paint(p,`Chunk ${current}/9 · ${label} · stadi ${completed}/${totalStages}${activity}`);},
+  ready(){if(retry)retry.hidden=true;paint(100,'Città pronta');document.documentElement.dataset.initialWorldReady='true';if(overlay){overlay.classList.add('initial-loader-done');setTimeout(()=>overlay.hidden=true,260);}},
+  fail(error){show('ERRORE NEL LOADER');debug.fail('INITIAL LOADER',error?.stack||error?.message||error);if(status)status.textContent='ERRORE NEL LOADER';if(retry)retry.hidden=false;if(overlay)overlay.classList.add('initial-loader-error');console.error('[Padova initial loader]',error);}
  };
 }
 const sharedUI=createOverlayUI();
@@ -76,12 +76,12 @@ export class GameLoaderManager{
  async buildStage(key,stage,startedAt){
   const before=this.chunkState(key);if(stage==='core'&&before.core||stage==='detail'&&before.detail)return;
   debug.mark(`Generazione ${stage==='core'?'BASE':'DETTAGLIO'} chunk ${key}…`);
-  const steps=this.world.buildStageSteps(key,stage);let done=false;
+  const steps=this.world.buildStageSteps(key,stage);let done=false,slices=0;
   while(!done){
    const deadline=performance.now()+this.sliceMs;let loops=0;
    do{const next=steps.next();done=!!next.done;loops++;}while(!done&&loops<96&&performance.now()<deadline);
    if(performance.now()-startedAt>this.timeout){steps.return?.();throw new Error('Initial 3x3 build timed out during '+stage+' '+key);}
-   if(!done)await nextFrame();
+   if(!done){slices++;this.onProgress({completed:this.completed||0,totalStages:this.totalStages||18,current:this.current||1,stage,slices,elapsed:performance.now()-startedAt});await nextFrame();}
   }
   const after=this.chunkState(key);if(stage==='core'&&!after.core)throw new Error('Core chunk not installed: '+key);if(stage==='detail'&&!after.detail)throw new Error('Detail chunk not installed: '+key);
  }
@@ -95,11 +95,11 @@ export class GameLoaderManager{
    const keys=ringKeys(this.world,x,z);if(keys.length!==9)throw new Error('Initial ring incomplete: expected 9 chunks, found '+keys.length);
    debug.mark('Anello 3×3 trovato · preparo generazione cooperativa…');
    this.world.streaming?.dispose?.();this.world.streaming=null;this.world.queue=[];this.world.pendingBuild=null;
-   sharedUI.begin();const totalStages=keys.length*2,startedAt=performance.now();let completed=0;
+   sharedUI.begin();const totalStages=keys.length*2,startedAt=performance.now();let completed=0;this.totalStages=totalStages;
    for(let index=0;index<keys.length;index++){
-    const key=keys[index],current=index+1;
-    this.onProgress({completed,totalStages,current,stage:'core'});await this.buildStage(key,'core',startedAt);completed++;this.onProgress({completed,totalStages,current,stage:'core'});await nextFrame();
-    this.onProgress({completed,totalStages,current,stage:'detail'});await this.buildStage(key,'detail',startedAt);completed++;this.onProgress({completed,totalStages,current,stage:'detail'});await nextFrame();
+    const key=keys[index],current=index+1;this.completed=completed;this.current=current;
+    this.onProgress({completed,totalStages,current,stage:'core'});await this.buildStage(key,'core',startedAt);completed++;this.completed=completed;this.onProgress({completed,totalStages,current,stage:'core'});await nextFrame();
+    this.onProgress({completed,totalStages,current,stage:'detail'});await this.buildStage(key,'detail',startedAt);completed++;this.completed=completed;this.onProgress({completed,totalStages,current,stage:'detail'});await nextFrame();
    }
    const invalid=keys.filter(key=>!this.chunkState(key).detail);if(invalid.length)throw new Error('Initial chunks missing from scene: '+invalid.join(', '));
    this.done=true;return {keys,completed,totalStages,percent:100};

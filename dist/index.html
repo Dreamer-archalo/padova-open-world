@@ -22,6 +22,7 @@
       <div class="initial-loader-row"><strong id="initialLoaderPercent" class="initial-loader-percent">0%</strong><span id="initialLoaderStatus" class="initial-loader-status">Inizializzazione script…</span></div>
       <div class="initial-loader-track"><i id="initialLoaderBar"></i></div>
       <pre id="initialLoaderError" hidden style="margin:.75rem 0 0;max-width:100%;white-space:pre-wrap;overflow-wrap:anywhere;font:600 .72rem/1.35 ui-monospace,SFMono-Regular,Menlo,monospace;color:#ffb3a7;"></pre>
+      <button id="initialLoaderRetry" class="initial-loader-retry" type="button" hidden>Riprova il caricamento</button>
       <div class="initial-loader-note">La percentuale rappresenta chunk realmente generati e inseriti nella scena WebGL.</div>
     </div>
   </div>
@@ -32,6 +33,7 @@
     const percent=document.getElementById('initialLoaderPercent');
     const bar=document.getElementById('initialLoaderBar');
     const overlay=document.getElementById('initialLoader');
+    const retry=document.getElementById('initialLoaderRetry');
     const text=value=>{try{return typeof value==='string'?value:value?.stack||value?.message||JSON.stringify(value);}catch{return String(value);}};
     const mark=message=>{if(status)status.textContent=message;};
     const fail=(kind,detail)=>{
@@ -41,9 +43,11 @@
       if(percent)percent.textContent='ERR';
       if(bar)bar.style.width='100%';
       if(overlay)overlay.classList.add('initial-loader-error');
+      if(retry)retry.hidden=false;
       console.error('[Padova startup]',message);
     };
     globalThis.__padovaLoaderDebug={mark,fail};
+    if(retry)retry.onclick=()=>location.reload();
     mark('Inizializzazione script…');
     window.addEventListener('error',event=>{
       if(event.target&&event.target!==window){
@@ -127,8 +131,8 @@
   </div>
   <div id="taxiLoading" class="taxi-loading" hidden role="status" aria-live="polite"><div id="taxiMeme" class="taxi-meme"><div><span>TAXI ABUSIVO IN TRANSITO…</span><strong>Caricamento destinazione</strong><p id="taxiFact"></p><small id="taxiLoadingStatus">Preparazione di terreno e strade</small><button id="taxiNext" type="button">CLICCA / TOCCA · PROSSIMA CURIOSITÀ</button></div></div></div>
   <footer id="credits"><a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">© OpenStreetMap contributors</a><a href="https://github.com/tilezen/joerd/blob/master/docs/attribution.md" target="_blank" rel="noopener">Terrain: Copernicus EU-DEM / USGS via Mapzen</a><span id="modelCredits"></span><span id="scaleCredit">Real-world scale · stylised reconstruction</span></footer>
-  <script type="module" src="./initial-loader.js"></script>
-  <script type="module" src="./game.js?v=regional-physics-r14"></script>
+  <script type="module" src="./initial-loader.js?v=venice-perf-r15"></script>
+  <script type="module" src="./game.js?v=venice-perf-r15"></script>
   <script type="module" src="./taxi-facts-extra.js"></script>
   <script type="module" src="./taxi-affordability.js"></script>
   <script type="module" src="./zone-indicator.js"></script>
