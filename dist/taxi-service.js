@@ -1,10 +1,12 @@
 import {project,dist,angleDiff,clamp,nearestOnSegment} from './core.js';
 import {vehicleBlocked} from './movement.js';
 
-export function taxiFare(from,to){return Math.min(100,Math.max(10,Math.ceil((8+dist(from,to)/65)/5)*5));}
-export function taxiDestinations(places,home,airport){
+// A short urban ride stays affordable while intercity fares keep growing with
+// the real-world distance instead of hitting the old €100 ceiling immediately.
+export function taxiFare(from,to){return Math.min(180,Math.max(10,Math.ceil((7+dist(from,to)/450)/5)*5));}
+export function taxiDestinations(places,home,airport,regional=[]){
  const named=name=>places.find(p=>p.name===name),renamed=(name,newName,tag)=>{const p=named(name);return p?{...p,name:newName,tag:tag||p.tag}:null;};
- return [
+ const local=[
   named('Prato della Valle'),
   named('Piazza dei Signori'),
   named('Portello'),
@@ -15,7 +17,13 @@ export function taxiDestinations(places,home,airport){
   {name:'Ponte San Nicolò',tag:'Settore sud-est',...project(45.366,11.923)},
   {name:'Vigonza',tag:'Settore nord-est',...project(45.434,11.965)},
   {name:'Zona Industriale',tag:'Padova est',...project(45.4105,11.945)}
- ].filter(p=>p&&Number.isFinite(p.x)&&Number.isFinite(p.z));
+ ];
+ const regionalStops=regional.filter(p=>p?.name!=='Venezia - San Marco').map(p=>({
+  ...p,
+  name:p.name==='Piazzale Roma'?'Venezia · Piazzale Roma':p.name,
+  tag:`${p.tag||'Destinazione regionale'} · corsa extraurbana`
+ }));
+ return [...local,...regionalStops].filter(p=>p&&Number.isFinite(p.x)&&Number.isFinite(p.z));
 }
 
 // Bounded nearest-road lookup used by taxi destination selection. It never

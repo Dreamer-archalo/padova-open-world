@@ -2,7 +2,7 @@ name: Padova Venice unified main-game preview
 
 on:
   push:
-    branches: [feat/unified-main-world-20260925, fix/venice-performance-loading-20260928]
+    branches: [feat/unified-main-world-20260925, fix/venice-performance-loading-20260928, fix/regional-taxi-20260928]
     paths:
       - 'dist/game.js'
       - 'dist/initial-loader.js'
@@ -11,6 +11,7 @@ on:
       - 'verify-loading-resilience-r15.mjs'
       - 'verify-venice-performance-r15.mjs'
       - 'verify-venice-real-data-performance-r15.mjs'
+      - 'verify-regional-taxi-r16.mjs'
       - 'verify-startup-r13.mjs'
       - 'dist/index.html'
       - 'dist/unified-main.css'
@@ -216,6 +217,7 @@ jobs:
           node verify-loading-resilience-r15.mjs
           node verify-venice-performance-r15.mjs
           node verify-venice-real-data-performance-r15.mjs
+          npm run test:taxi
           node verify-unified-main.mjs
           node verify-unified-features.mjs
           node verify-unified-water.mjs
@@ -238,7 +240,7 @@ jobs:
           cp -a dist/. .production-source/dist/preview/unified/
           test -s .production-source/dist/preview/unified/data/region-padova-venice.json
           test -s .production-source/dist/preview/unified/game.js
-          grep -q 'game.js?v=venice-perf-r15' .production-source/dist/preview/unified/index.html
+          grep -q 'game.js?v=regional-taxi-r16' .production-source/dist/preview/unified/index.html
           sha256sum -c /tmp/production-root.sha
 
       - name: Checkout previous continuous prototype
