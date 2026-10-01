@@ -222,6 +222,7 @@ jobs:
           node verify-taxi-wallet.mjs
           node verify-hangar-air.mjs
           node tools/verify-mandria-hangar.mjs
+          node tools/verify-taxi-hotfix.mjs
           node verify-unified-main.mjs
           node verify-unified-features.mjs
           node verify-unified-water.mjs
