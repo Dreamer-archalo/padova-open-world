@@ -56,8 +56,13 @@ jobs:
         run: |
           set -euo pipefail
           for name in region-padova-venice world-padova-venice world-terrain venice map-hd-extras; do
+            echo "Recover geographic data: $name"
+            source=unified
+            # The dealership deployment retained the four regional files in
+            # unified; its generated HD extras live in the dealership preview.
+            if [ "$name" = map-hd-extras ]; then source=dealerships; fi
             curl --fail --show-error --silent --location --retry 3 --max-time 120 \
-              "https://dreamer-archalo.github.io/padova-open-world/preview/unified/data/$name.json" -o "dist/data/$name.json"
+              "https://dreamer-archalo.github.io/padova-open-world/preview/$source/data/$name.json" -o "dist/data/$name.json"
             node -e "JSON.parse(require('fs').readFileSync('dist/data/$name.json','utf8'))"
           done
           node verify-regional-npc-r14.mjs
