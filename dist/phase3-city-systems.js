@@ -80,7 +80,7 @@ function makeWater(game){const root=new THREE.Group(),waves=[];for(const [i,p] o
  game.scene.add(root);return {root,waves};}
 function buildWorldLayer(game){if(worldLayer)return;worldLayer={bars:HOTSPOTS.map(h=>makeBar(game,h)).filter(Boolean),gateways:GATEWAYS.map(g=>makeGateway(game,g)),events:EVENTS.map(e=>makeEvent(game,e)),bridges:BRIDGES.map(b=>makeBridge(game,b)),water:makeWater(game)};worldLayer.benches=makeBenches(game,worldLayer.bars);game.intelligentNPC?.setSites([...worldLayer.bars,...worldLayer.benches]);game.urbanSitesR17={bars:worldLayer.bars,benches:worldLayer.benches};}
 function updateWorldLayer(game){if(!worldLayer)return;const s=game.state,hyper=s.quality==='hyper',range=hyper?340:s.quality==='low'?520:760;
- for(const b of worldLayer.bars)b.root.visible=!hyper&&dist(s,b.p)<range;
+ for(const b of worldLayer.bars)b.root.visible=dist(s,b.p)<(hyper?160:range);
  for(const b of worldLayer.benches||[])b.root.visible=dist(s,b)<range;
  for(const g of worldLayer.gateways)g.root.visible=dist(s,g.p)<range;
  for(const e of worldLayer.events)e.root.visible=!hyper&&Math.hypot(s.x-e.x,s.z-e.z)<range*.82;

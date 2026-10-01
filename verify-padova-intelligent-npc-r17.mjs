@@ -31,6 +31,8 @@ const bar={kind:'bar',x:6,z:20,door:{x:6,z:20},seats:[{x:7,z:22,yaw:Math.PI,owne
 // A crossing waits for green and approaching vehicles, then completes and
 // restores the destination state. Existing car traffic yields to these actors.
 ai.release(p);Object.assign(p,{x:-5,z:40});p.aiR17.path=[{x:5,z:40,crossing:{junction:0,yaw:0}}];p.aiR17.pathIndex=0;ai.transition(p,'walking');let allowed=false;game.signals.allowed=()=>allowed;tick(p,.1);assert.equal(p.aiR17.state,'waiting-crossing');assert(p.x<0);allowed=true;tick(p,10);assert(p.x>4.5);assert.notEqual(p.aiR17.state,'waiting-crossing');
+// A permanently blocked crossing releases its route instead of looping forever.
+Object.assign(p,{x:-5,z:40});p.aiR17.path=[{x:5,z:40,crossing:{junction:0,yaw:0}}];p.aiR17.pathIndex=0;p.aiR17.goalSince=state.elapsed;ai.transition(p,'walking');p.aiR17.nextPlan=Infinity;game.signals.allowed=()=>false;tick(p,36);assert.notEqual(p.aiR17.state,'waiting-crossing','crossing watchdog recovers');game.signals.allowed=()=>true;
 const car={x:-1.9,z:8,y:0,yaw:0,speed:5,health:100,spec:VEHICLES.compact,road,prev:0,target:1,driver:1,laneOffset:-1.9,mesh:new THREE.Group()};
 const free=trafficSpeed(car,{x:-1.9,z:80},[],game.signals,state.elapsed);car.npcParkingSpeed=2;assert(trafficSpeed(car,{x:-1.9,z:80},[],game.signals,state.elapsed)<=2);delete car.npcParkingSpeed;assert(free>2);
 // Drive -> search -> slow -> park -> leave -> walk -> return -> board -> drive.
