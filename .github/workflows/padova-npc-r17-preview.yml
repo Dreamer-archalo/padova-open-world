@@ -11,7 +11,7 @@ permissions:
   pages: write
   id-token: write
 concurrency:
-  group: padova-npc-r17-preview
+  group: padova-npc-r17-preview-${{ github.event_name }}
   cancel-in-progress: false
 jobs:
   verify:
@@ -47,9 +47,6 @@ jobs:
     needs: verify
     runs-on: ubuntu-latest
     timeout-minutes: 20
-    environment:
-      name: github-pages
-      url: https://dreamer-archalo.github.io/padova-open-world/preview/npc-r17/
     steps:
       - uses: actions/checkout@v6
       - uses: actions/setup-node@v4
