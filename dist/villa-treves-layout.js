@@ -1,5 +1,5 @@
-// Mandria's hangar fits the widest playable cargo aircraft (33 m span),
-// the 31 m Blackbird and long trucks. Its south edge begins beyond the
+// Mandria's enclosed bay accommodates long ground vehicles; aircraft launch
+// from above its roof. Its south edge begins beyond the
 // mansion's pre-existing right wing, and its north edge clears the fence.
 // The west portal is permanently collision-free; its shutter is cosmetic.
 import {VILLA,areaPoint} from './gameplay-areas-implementation.js';

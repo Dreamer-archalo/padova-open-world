@@ -66,22 +66,18 @@ try{
  await page.waitForFunction(()=>globalThis.__hangarTest?.mandriaHangar?.staged?.style==='kick-scooter'&&!globalThis.__hangarTest.mandriaHangar.busy,null,{timeout:30000});
  const retained=await state();console.log('RETAINED_BICYCLE '+JSON.stringify(retained));
  assert(retained.styles.includes('bicycle')&&retained.styles.includes('kick-scooter'),'departed bicycle got deleted or scooter failed');
- phase='stage and deliver aircraft';await page.locator('#mandriaHangarButton').click();
+ phase='launch aircraft above hangar';await page.locator('#mandriaHangarButton').click();
  await enterSection('air');
  await page.locator('#hangarSearch').fill('libellula');await page.locator('[data-hangar-id="libellula"]').click();
- await page.waitForFunction(()=>globalThis.__hangarTest?.mandriaHangar?.staged?.style==='libellula'&&!globalThis.__hangarTest.mandriaHangar.busy,null,{timeout:30000});
+ await page.waitForFunction(()=>globalThis.__hangarTest?.state.car?.style==='libellula'&&!globalThis.__hangarTest.mandriaHangar.busy,null,{timeout:30000});
  await page.screenshot({path:'test-artifacts/mandria-hangar-aircraft.png',timeout:25000});
- await page.locator('#mandriaHangarButton').click();await enterSection('air');await page.locator('#hangarDeliver').click();
- const flight=await page.evaluate(async()=>{const g=globalThis.__hangarTest,{VILLA,AIRPORT}=await import('./gameplay-areas.js');return {
+ const flight=await page.evaluate(async()=>{const g=globalThis.__hangarTest,{VILLA}=await import('./gameplay-areas.js'),{VILLA_GARAGE}=await import('./villa-treves-layout.js');return {
  mode:g.state.mode,style:g.state.car?.style,staged:g.mandriaHangar.staged,
- fromVilla:Math.hypot(g.state.x-VILLA.x,g.state.z-VILLA.z),
- fromAirport:Math.hypot(g.state.x-AIRPORT.x,g.state.z-AIRPORT.z),
+ fromVilla:Math.hypot(g.state.x-VILLA.x,g.state.z-VILLA.z),heightOverRoof:g.state.y-g.terrain.height(g.state.x,g.state.z)-VILLA_GARAGE.roofHeight,
  retainedBike:g.cars.some(c=>c.style==='bicycle'),paused:g.state.paused};});
  console.log('AIRCRAFT_DELIVERED '+JSON.stringify(flight));
- // Mandria and airport are about 2 km apart; the suitable runway pad is
- // 420 m from airport centre and 1,980 m from the villa, not >2,000 m.
- assert(flight.style==='libellula'&&flight.staged===null&&flight.fromAirport<650&&flight.fromVilla>1500&&flight.retainedBike&&!flight.paused,'aircraft must go to runway without deleting ridden-out vehicles');
+ assert(flight.style==='libellula'&&flight.staged===null&&flight.fromVilla<160&&flight.heightOverRoof>5&&flight.retainedBike&&!flight.paused,'aircraft must launch above the hangar without deleting departed vehicles');
  assert.equal(errors.length,0,'Browser page errors: '+errors.join(' | '));
- console.log('PASS Chromium: illustrated catalogue, category-first navigation, color control, in-hangar replacement, bicycle and scooter, departed vehicle retained, aircraft delivered to runway');
+ console.log('PASS Chromium: illustrated catalogue, category-first navigation, color control, in-hangar replacement, bicycle and scooter, departed vehicle retained, aircraft above hangar');
 }catch(e){console.error('HANGAR_WEBGL_FAIL '+phase+' '+(e.stack||e));console.error('JS_ERRORS '+JSON.stringify(errors.slice(-15)));try{await page.screenshot({path:'test-artifacts/mandria-hangar-failure.png',timeout:15000});}catch{}process.exitCode=1;}
 finally{await browser.close();}

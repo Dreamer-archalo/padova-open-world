@@ -2,7 +2,7 @@ name: Padova Venice unified main-game preview
 
 on:
   push:
-    branches: [feat/unified-main-world-20260925, fix/venice-performance-loading-20260928, fix/regional-taxi-20260928]
+    branches: [feat/unified-main-world-20260925, fix/venice-performance-loading-20260928, fix/regional-taxi-20260928, feat/dealerships-urban-showrooms]
     paths:
       - 'dist/game.js'
       - 'dist/initial-loader.js'
@@ -218,6 +218,10 @@ jobs:
           node verify-venice-performance-r15.mjs
           node verify-venice-real-data-performance-r15.mjs
           npm run test:taxi
+          node verify-dealerships.mjs
+          node verify-taxi-wallet.mjs
+          node verify-hangar-air.mjs
+          node tools/verify-mandria-hangar.mjs
           node verify-unified-main.mjs
           node verify-unified-features.mjs
           node verify-unified-water.mjs
@@ -230,17 +234,34 @@ jobs:
           path: .production-source
           persist-credentials: false
 
-      - name: Install isolated unified preview without modifying production
+      - name: Install isolated dealership preview without modifying production
         shell: bash
         run: |
           set -euo pipefail
           test -f .production-source/dist/index.html
           sha256sum .production-source/dist/index.html .production-source/dist/game.js > /tmp/production-root.sha
+          mkdir -p .production-source/dist/preview/dealerships
+          cp -a dist/. .production-source/dist/preview/dealerships/
+          test -s .production-source/dist/preview/dealerships/data/region-padova-venice.json
+          test -s .production-source/dist/preview/dealerships/game.js
+          grep -q 'game.js?v=regional-taxi-r16-dealers-r18' .production-source/dist/preview/dealerships/index.html
+          sha256sum -c /tmp/production-root.sha
+
+      - name: Checkout prior unified preview
+        uses: actions/checkout@v6
+        with:
+          ref: fix/regional-taxi-20260928
+          path: .prior-unified
+          persist-credentials: false
+
+      - name: Preserve unified taxi preview
+        shell: bash
+        run: |
+          set -euo pipefail
           mkdir -p .production-source/dist/preview/unified
-          cp -a dist/. .production-source/dist/preview/unified/
+          cp -a .prior-unified/dist/. .production-source/dist/preview/unified/
+          cp dist/data/region-padova-venice.json dist/data/world-padova-venice.json dist/data/world-terrain.json dist/data/venice.json .production-source/dist/preview/unified/data/
           test -s .production-source/dist/preview/unified/data/region-padova-venice.json
-          test -s .production-source/dist/preview/unified/game.js
-          grep -q 'game.js?v=regional-taxi-r16' .production-source/dist/preview/unified/index.html
           sha256sum -c /tmp/production-root.sha
 
       - name: Checkout previous continuous prototype
@@ -323,11 +344,12 @@ jobs:
         uses: actions/upload-pages-artifact@v4
         with:
           path: .production-source/dist
-      - name: Publish main-game unified preview without merging
+      - name: Publish dealership test preview without merging
         id: deployment
         uses: actions/deploy-pages@v4
       - name: Display playtest URL
         run: |
-          echo 'Unified main game: https://dreamer-archalo.github.io/padova-open-world/preview/unified/'
+          echo 'Dealerships, taxi wallet, hangar: https://dreamer-archalo.github.io/padova-open-world/preview/dealerships/'
+          echo 'Earlier unified main game: https://dreamer-archalo.github.io/padova-open-world/preview/unified/'
           echo 'Earlier continuous prototype: https://dreamer-archalo.github.io/padova-open-world/preview/continuous/continuous-world.html'
           echo 'Standalone Venice: https://dreamer-archalo.github.io/padova-open-world/preview/venice/venice.html'
