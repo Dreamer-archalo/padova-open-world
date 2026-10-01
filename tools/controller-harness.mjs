@@ -42,11 +42,18 @@ import {GLTFLoader} from '../dist/vendor/GLTFLoader.js';
 const html=fs.readFileSync(new URL('../dist/index.html',import.meta.url),'utf8');
 const ids=[...html.matchAll(/\bid="([^"]+)"/g)].map(m=>m[1]);assert.equal(ids.length,new Set(ids).size);
 const els=new Map();const context2d=new Proxy({}, {get:(obj,key)=>obj[key]||(()=>{}),set:(obj,key,val)=>(obj[key]=val,true)});
-const element=()=>({style:{},dataset:{},hidden:false,open:false,textContent:'',width:440,height:340,getContext:()=>context2d,addEventListener(){},showModal(){this.open=true;},close(){this.open=false;},querySelectorAll:()=>[],appendChild(){}});
+const element=()=>({style:{},dataset:{},hidden:false,open:false,textContent:'',width:440,height:340,getContext:()=>context2d,addEventListener(){},showModal(){this.open=true;},close(){this.open=false;},querySelectorAll:()=>[],appendChild(child){if(child.id)els.set(child.id,child);},querySelector(selector){const id=selector.replace(/^#/, '');if(!els.has(id))els.set(id,element());return els.get(id);},after(child){if(child.id)els.set(child.id,child);},prepend(){},setAttribute(){},focus(){},getBoundingClientRect(){return {width:1440,height:900};}});
 ids.forEach(id=>els.set(id,element()));
-const document={body:{classList:{add(){},remove(){}}},getElementById(id){assert(els.has(id),'missing DOM id '+id);return els.get(id);},querySelectorAll:()=>[],addEventListener(){},createElement:element};
+const document={head:element(),documentElement:{dataset:{}},body:{appendChild(child){if(child.id)els.set(child.id,child);},classList:{add(){},remove(){}}},getElementById(id){return els.get(id)||null;},querySelector:()=>null,querySelectorAll:()=>[],addEventListener(){},createElement:element};
 globalThis.document=document;
 const ctx=vm.createContext({THREE,SpeedCameras,...perfOverlay,...inputModule,...taxiDispatcherModule,...taxiLoadingOverlayModule,...taxiDriverModule,...taxiPathfinderModule,...taxiSystemModule,...taxiMenuControllerModule,...groundDynamics,...footController,...characterModule,...qualityModule,...fullscreenModule,...gameplayAreas,...specialVehicles,...modernGameplay,...modernVehicles,...modernDriving,...cameraModule,...districtModule,...trafficModule,...tramModule,...incidentModule,...core,...worldModule,...movement,cameraBoom:movement.cameraBoomContinuous,...terrainModule,...vehicles,...taxiModule,...portelloModule,...urbanLifeModule,...vehicleDamageModule,BuildingModels,document,window:{addEventListener(){}},localStorage:{getItem:()=>null,setItem(){}},console,Math,JSON,Set,Map,Number,Array,Float32Array,Uint8Array,devicePixelRatio:1,innerWidth:1440,innerHeight:900,requestAnimationFrame(){},location:{reload(){}}});
+// Load the controller's actual named imports, including regional/respawn
+// modules added after this harness. Keep VM tests aligned with production.
+const controllerSource=fs.readFileSync(new URL('../dist/game.js',import.meta.url),'utf8');
+for(const match of controllerSource.matchAll(/^import \{([^}]+)\} from ['"]([^'"]+)['"];$/gm)){
+ const module=await import(new URL('../dist/'+match[2].replace(/^\.\//,''),import.meta.url));
+ for(const field of match[1].split(',')){const [name,alias]=field.trim().split(/\s+as\s+/);ctx[alias||name]=module[name];}
+}
 let code=fs.readFileSync(new URL('../dist/game.js',import.meta.url),'utf8').replace(/^import .*;\n/gm,'').replace(/init\(\);\s*$/,'');vm.runInContext(code,ctx);
 ctx.testData=JSON.parse(fs.readFileSync(new URL('../dist/data/padova.json',import.meta.url)));
 ctx.cityData=JSON.parse(fs.readFileSync(new URL('../dist/data/city.json',import.meta.url)));
@@ -55,5 +62,5 @@ vm.runInContext(`data=testData;applyCityData(data,cityData);prepareGameplayMap(d
 // Taxi was modularized after this harness was written. Do not require removed
 // legacy globals just to inspect unrelated systems such as Portello. Existing
 // callers receive undefined for obsolete optional functions instead of a VM crash.
-const t=vm.runInContext('({terrain,waterRecovery,recover,dryRoad,addCar,poseVehicle,travel,falling,state,keys,cars,people,world,scene,player,camera,clock,movePlayer,updateTraffic,updateCamera,updateUI,toggleVehicle,beginMission,cancelMission,updateMission,clearPolice,simulate,graph,callTaxi:typeof callTaxi==="function"?callTaxi:undefined,updateTaxi,beginTaxiTrip:typeof beginTaxiTrip==="function"?beginTaxiTrip:undefined,taxiCanTalk:typeof taxiCanTalk==="function"?taxiCanTalk:undefined})',ctx);
+const t=vm.runInContext('({terrain,waterRecovery,waterGame,recover,dryRoad,addCar,poseVehicle,travel,falling,state,keys,cars,people,world,scene,player,camera,clock,movePlayer,updateTraffic,updateCamera,updateUI,toggleVehicle,beginMission,cancelMission,updateMission,clearPolice,simulate,graph,callTaxi:typeof callTaxi==="function"?callTaxi:undefined,updateTaxi,beginTaxiTrip:typeof beginTaxiTrip==="function"?beginTaxiTrip:undefined,taxiCanTalk:typeof taxiCanTalk==="function"?taxiCanTalk:undefined})',ctx);
 export {t,ctx,els};

@@ -1,0 +1,141 @@
+name: Padova intelligent NPC R17 preview
+on:
+  push:
+    branches: [feat/padova-intelligent-npc-r17-20261001]
+  pull_request:
+    branches: [fix/regional-taxi-20260928]
+    paths: ['dist/urban-life.js', 'verify-padova-intelligent-npc-r17.mjs']
+  workflow_dispatch:
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+concurrency:
+  group: padova-npc-r17-preview
+  cancel-in-progress: false
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Verify NPC R17 and all requested regression suites
+        run: |
+          set -euo pipefail
+          npm run test:padova-npc
+          npm run test
+          npm run test:city-life
+          npm run test:urban-life
+          npm run test:street-life
+          npm run test:performance
+          npm run test:taxi
+          npm run test:venice-performance
+          npm run test:initial-world
+          node verify-phase3-city-systems.mjs
+          node tools/verify-taxi-hotfix.mjs
+          node tools/verify-mandria-hangar.mjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: npc-r17-verification
+          path: docs/*results.json
+  preview:
+    if: github.event_name != 'pull_request'
+    needs: verify
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    environment:
+      name: github-pages
+      url: https://dreamer-archalo.github.io/padova-open-world/preview/npc-r17/
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Reuse published R16 geographic data without rebuilding the world
+        run: |
+          set -euo pipefail
+          for name in region-padova-venice world-padova-venice world-terrain venice map-hd-extras; do
+            curl --fail --show-error --silent --location --retry 3 --max-time 120 \
+              "https://dreamer-archalo.github.io/padova-open-world/preview/unified/data/$name.json" -o "dist/data/$name.json"
+            node -e "JSON.parse(require('fs').readFileSync('dist/data/$name.json','utf8'))"
+          done
+          node verify-regional-npc-r14.mjs
+          node verify-venice-real-data-performance-r15.mjs
+          node verify-unified-main.mjs
+          node verify-unified-features.mjs
+          node -e "require('fs').writeFileSync('dist/build-r17.json',JSON.stringify({version:'padova-intelligent-npc-r17',commit:process.env.GITHUB_SHA,branch:process.env.GITHUB_REF_NAME}))"
+      - name: Install software WebGL browser
+        run: |
+          npm install --no-save --package-lock=false playwright@1.55.1
+          npx playwright install --with-deps chromium
+      - name: Boot real game and exercise NPC sites
+        run: |
+          node tools/serve.mjs --host 127.0.0.1 --port 4173 &
+          node tools/test-padova-npc-r17-chromium.mjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: npc-r17-browser
+          path: test-artifacts/r17-browser/*
+      - name: Checkout production and previous preview source branches separately
+        uses: actions/checkout@v6
+        with:
+          ref: main
+          path: .production-source
+          persist-credentials: false
+      - uses: actions/checkout@v6
+        with:
+          ref: fix/regional-taxi-20260928
+          path: .prior-unified
+          persist-credentials: false
+      - uses: actions/checkout@v6
+        with:
+          ref: feat/dealerships-urban-showrooms
+          path: .prior-dealerships
+          persist-credentials: false
+      - uses: actions/checkout@v6
+        with:
+          ref: feat/padova-venice-continuous-20260925
+          path: .prior-continuous
+          persist-credentials: false
+      - uses: actions/checkout@v6
+        with:
+          ref: feat/venice-world-20260924
+          path: .prior-venice
+          persist-credentials: false
+      - name: Install isolated R17 preview and retain earlier previews
+        run: |
+          set -euo pipefail
+          sha256sum .production-source/dist/index.html .production-source/dist/game.js > /tmp/production-r17.sha
+          mkdir -p .production-source/dist/preview/npc-r17
+          cp -a dist/. .production-source/dist/preview/npc-r17/
+          for item in 'unified .prior-unified' 'dealerships .prior-dealerships' 'continuous .prior-continuous' 'venice .prior-venice'; do
+            read -r name folder <<< "$item"
+            mkdir -p ".production-source/dist/preview/$name"
+            cp -a "$folder/dist/." ".production-source/dist/preview/$name/"
+            cp dist/data/region-padova-venice.json dist/data/world-padova-venice.json dist/data/world-terrain.json dist/data/venice.json dist/data/map-hd-extras.json ".production-source/dist/preview/$name/data/"
+          done
+          # Preserve the other published previews by rebuilding their source;
+          # production root files are checked byte-for-byte before deployment.
+          for item in 'pr-57 feat/monoblocco-elevators-20260924' 'pr-56 fix/shared-street-surface-20260922' 'pr-51 feat/villa-treves-phase1-20260919' 'pr-52 20c6411c215ad57bdc1a57df0f0ae69554d241c2' 'mandria-v11 cb6d5fb1f3afedfda68f8f07651916d3a8e12f28'; do
+            read -r name ref <<< "$item"
+            git fetch origin "$ref" --depth=1
+            mkdir -p ".production-source/dist/preview/$name"
+            git archive FETCH_HEAD dist | tar -x --strip-components=1 -C ".production-source/dist/preview/$name"
+          done
+          grep -q 'game.js?v=regional-taxi-r16-padova-intelligent-npc-r17' .production-source/dist/preview/npc-r17/index.html
+          sha256sum -c /tmp/production-r17.sha
+          touch .production-source/dist/.nojekyll
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v4
+        with:
+          path: .production-source/dist
+      - uses: actions/deploy-pages@v4
+      - name: Verify public preview serves this commit
+        run: |
+          set -euo pipefail
+          node tools/verify-padova-npc-r17-public.mjs

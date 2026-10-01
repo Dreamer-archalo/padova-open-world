@@ -43,7 +43,7 @@ import {VEHICLES,isBike,createVehicle,createRider,vehiclesOverlap} from './vehic
 import {BuildingModels} from './building-models.js';
 import {taxiFare,taxiDestinations,advanceTaxi,findTaxiRoad} from './taxi-service.js?v=regional-taxi-r16';
 import {createMicromobilityActor,micromobilityCount,stepMicromobility,PORTELLO_GATE} from './portello.js';
-import {spawnWeight,socialProfile,attachDog,animateUrbanActor,PORTELLO_SEATS} from './urban-life.js';
+import {spawnWeight,socialProfile,attachDog,animateUrbanActor,PORTELLO_SEATS,PadovaIntelligentNPC} from './urban-life.js';
 import {installVehicleDamage,updateVehicleDamage,vehiclePerformanceFactor} from './vehicle-damage.js';
 import {clamp,dist,angleDiff,collides,makeRoadGraph,nearestRoad,nearestOnSegment,roadRoute,pointInside} from './core.js';
 
@@ -252,6 +252,8 @@ function setupGameplay(){
  speedCameras=new SpeedCameras({state,data,terrain,scene,save,toast});
  gameplay=new ModernGameplay({state,data,cars,people,cops,scene,terrain,graph:patrolGraph||graph,collision:world.collision,addCar,pose:poseVehicle,safeRoad:dryRoad,raiseWanted,defeat:explodePlayer,toast,
   forget:c=>previousActors.delete(c.mesh),remove:c=>{scene.remove(c.mesh);previousActors.delete(c.mesh);for(const pool of [cars,cops]){const i=pool.indexOf(c);if(i>=0)pool.splice(i,1);}if(c.police)c.mesh.traverse(o=>{if(o.isMesh){o.geometry.dispose();o.material.dispose();}});}});
+ document.documentElement.dataset.padovaNpcVersion='r17';
+ gameplay.intelligentNPC=new PadovaIntelligentNPC({...gameplay,graph,signals,enabled:()=>!regionalPlayer(),walkRoad:(x,z)=>districts?.nearRoad(x,z,.1)});
  dealerships=new Dealerships({scene,terrain,collision:world.collision,addCar,cars,state,regionalWorld:()=>regionalWorld,roadAt:p=>regionalWorld?.contains(p.x,p.z)?regionalWorld.nearestRoad(p.x,p.z,90):nearestRoad(p,graph,false,{maxRadius:90,fallback:false,maxMs:2}),pose:poseVehicle});
  parachute=createParachute();scene.add(parachute);
  PLACES[10]={...AIRPORT_GATE};if(!PLACES.some(p=>p.name===HOME.name))PLACES.push({...HOME});
@@ -428,7 +430,7 @@ function createPopulation(){
  gameplay?.populate();
  for(let i=0;i<micromobilityCount(state.quality);i++){const actor=createMicromobilityActor(i,terrain);scene.add(actor.mesh);micromobility.push(actor);}
 }
-function placePerson(p){if(p.budgetSleeping||p.koUntil>state.elapsed)return;p.retryAt=state.elapsed+2+(p.seed%5)*.3;p.lodFrom=null;p.simulatedAt=state.elapsed;p.nextThink=state.elapsed+(p.seed%Math.round(60/qualityFor(state.quality).peopleHz))/60;p.health=100;p.koUntil=0;p.at=state.elapsed+4+Math.random()*8;p.mesh.visible=false;
+function placePerson(p){gameplay?.intelligentNPC?.reset(p);if(p.seed<3&&gameplay?.intelligentNPC){p.driverPoolR17=true;p.mesh.visible=false;p.health=100;p.retryAt=Infinity;return;}if(p.budgetSleeping||p.koUntil>state.elapsed)return;p.retryAt=state.elapsed+2+(p.seed%5)*.3;p.lodFrom=null;p.simulatedAt=state.elapsed;p.nextThink=state.elapsed+(p.seed%Math.round(60/qualityFor(state.quality).peopleHz))/60;p.health=100;p.koUntil=0;p.at=state.elapsed+4+Math.random()*8;p.mesh.visible=false;
  for(let attempt=0;attempt<16;attempt++){const id=goodNearbyNode(state,25,240);if(id===null)return;const n=graph.nodes[id],e=n.edges.find(e=>!/motorway|trunk/.test(e.road.k));if(!e)continue;
   const t=graph.nodes[e.id],yaw=Math.atan2(t.x-n.x,t.z-n.z),side=p.seed%2?1:-1,offset=e.road.k==='pedestrian'?1:e.road.w/2+1.25,u=.15+Math.random()*.7;
   const x=n.x+(t.x-n.x)*u+Math.cos(yaw)*offset*side,z=n.z+(t.z-n.z)*u-Math.sin(yaw)*offset*side;
@@ -763,7 +765,7 @@ function updatePolice(dt){if(!state.wanted)return;let nearest=gameplay?.policeAi
  if(nearest>120){state.escape+=dt;if(state.escape>=12){const reward=state.mission?.type==='escape';clearPolice();if(reward)finishMission(500,'You lost them.');else toast('Escaped. Back to free roam.',5);}}else state.escape=Math.max(0,state.escape-dt*2);
  if(arrestDistance<7&&(state.mode==='foot'||Math.abs(state.speed)<2))state.busted+=dt;else state.busted=Math.max(0,state.busted-dt);if(state.busted>5){if(state.wanted===5){explodePlayer('Neutralizzato durante l’inseguimento');return;}const fine=Math.min(150,state.money);state.money-=fine;save();cancelMission(false);clearPolice();recover();toast('Busted. '+(fine?'€'+fine+' fine. ':'')+'Back on the road.',5);}}
 
-function explodePlayer(reason){if(incidents?.recovery)return;state.respawnHospitalRoof=hospitalRoofRespawnPoint();const clearPursuit=state.wanted===5||state.mode==='foot';state.respawnHome=false;if(!incidents?.explode(state,state.elapsed,reason)){state.respawnHospitalRoof=null;return;}state.speed=0;state.health=0;state.spin=state.knockX=state.knockZ=0;keys.clear();if(state.car){state.car.health=0;state.car.mesh.visible=false;}if(clearPursuit){cancelMission(false);clearPolice();}toast(reason+(state.respawnHospitalRoof?' · Respawn sul tetto…':' · Respawn nella zona attuale…'),2);}
+function explodePlayer(reason){if(incidents?.recovery)return;gameplay?.intelligentNPC?.emit('explosion',state,65);state.respawnHospitalRoof=hospitalRoofRespawnPoint();const clearPursuit=state.wanted===5||state.mode==='foot';state.respawnHome=false;if(!incidents?.explode(state,state.elapsed,reason)){state.respawnHospitalRoof=null;return;}state.speed=0;state.health=0;state.spin=state.knockX=state.knockZ=0;keys.clear();if(state.car){state.car.health=0;state.car.mesh.visible=false;}if(clearPursuit){cancelMission(false);clearPolice();}toast(reason+(state.respawnHospitalRoof?' · Respawn sul tetto…':' · Respawn nella zona attuale…'),2);}
 function kickActor(actor,vx,vz){actor.knockX=clamp(vx,-40,40);actor.knockZ=clamp(vz,-40,40);actor.spin=Math.sign(vx||1)*1.4;if(actor===state){state.health=Math.max(0,state.health-25*(state.car?.spec.armor||1));toast('Tram impact! Keep clear of the rails.',2);}else if(actor.health!==undefined)actor.health=Math.max(0,actor.health-25*(actor.spec?.armor||1));}
 function applyKnock(actor,dt){const spec=actor===state?state.car?.spec:actor.spec;if(!actor.knockX&&!actor.knockZ&&!actor.spin)return;const p=slideMove(actor,(actor.knockX||0)*dt,(actor.knockZ||0)*dt,spec?.width/2||.36,world.collision,actor.y);actor.x=p.x;actor.z=p.z;const yaw=actor.yaw+(actor.spin||0)*dt;if(!spec||!vehicleBlocked(actor.x,actor.z,yaw,world.collision,spec,actor.y))actor.yaw=yaw;actor.knockX=(actor.knockX||0)*Math.exp(-3*dt);actor.knockZ=(actor.knockZ||0)*Math.exp(-3*dt);actor.spin=(actor.spin||0)*Math.exp(-2*dt);if(actor!==state&&actor.mesh&&actor.spec)poseVehicle(actor);}
 function enterGameplayWater(waterY){
@@ -867,13 +869,14 @@ function movePlayer(dt){if(taxi?.phase==='transition'){state.speed=0;return;}if(
  const oldX=state.x,oldZ=state.z,bound=regionalWorld?unifiedBounds:{minX:-5970,maxX:7250,minZ:-6480,maxZ:6230};state.x=clamp(state.x,bound.minX,bound.maxX);state.z=clamp(state.z,bound.minZ,bound.maxZ);if(oldX!==state.x||oldZ!==state.z){state.speed=0;toast('Limite dell’attuale mondo percorribile.',2);}
 }
 function trafficChoices(c,node){const edges=node.edges.filter(e=>e.id!==c.prev&&e.road.k!=='pedestrian'&&!['no','private'].includes(e.road?.access)&&e.road.w>c.spec.width+1),fallback=node.edges.filter(e=>e.road.k!=='pedestrian'&&!['no','private'].includes(e.road?.access)&&e.road.w>c.spec.width+1),pool=edges.length?edges:fallback;return pool.map(e=>({e,score:Math.random()*1.2-Math.abs(angleDiff(Math.atan2(graph.nodes[e.id].x-node.x,graph.nodes[e.id].z-node.z),c.yaw))*.25-cars.filter(o=>o!==c&&o.mesh.visible&&o.target===e.id).length*.35})).sort((a,b)=>b.score-a.score).map(v=>v.e);}
-function updateTraffic(dt){for(const c of cars){
+function updateTraffic(dt){gameplay?.intelligentNPC?.update();for(const c of cars){
   if(c.regionalTraffic)continue;
  if(c===state.car||c.budgetSleeping||c.hostile||c.missionUnit||c.fixedSpawn||c.militarySurplus)continue;if(c.destroyedUntil){if(state.elapsed<c.destroyedUntil||dist(c,state)<70)continue;c.destroyedUntil=0;c.health=100;c.parked=false;}if(!c.mesh.visible){if(state.elapsed>(c.retryAt||0)){placeTraffic(c);c.retryAt=state.elapsed+2;}continue;}
+ if(gameplay?.intelligentNPC?.vehicleStep(c,dt))continue;
  if(c.parked)continue;const interval=(world.streaming?.metrics.pressure?1.6:1)/qualityFor(state.quality).trafficHz;if(state.elapsed<(c.nextThink||0))continue;const step=Math.min(.12,state.elapsed-(c.simulatedAt??state.elapsed-interval));c.simulatedAt=state.elapsed;c.nextThink=state.elapsed+interval;c.lodFrom={x:c.x,z:c.z,y:c.y,yaw:c.yaw};c.lodAt=state.elapsed;c.lodSpan=interval;if(dist(c,state)>800){placeTraffic(c);continue;}
  if(c.speed<.2&&signals.allowed(c.target,state.elapsed,c.yaw)){c.jamTime=(c.jamTime||0)+dt;if(c.jamTime>18){placeTraffic(c,180,500);c.jamTime=0;continue;}}else c.jamTime=0;
  const node=graph.nodes[c.target],from=graph.nodes[c.prev];if(!node||!from){placeTraffic(c);continue;}
- c.road=from.edges.find(e=>e.id===c.target)?.road||c.road;const actors=[...cars,...cops,...(state.mode==='foot'?[{...state,mesh:player}]:[])],distanceToNode=dist(c,node);if(distanceToNode<110&&!c.plannedEdge)c.plannedEdge=trafficChoices(c,node)[0]||null;const nextNode=c.plannedEdge&&graph.nodes[c.plannedEdge.id],nextYaw=nextNode?Math.atan2(nextNode.x-node.x,nextNode.z-node.z):null;trafficLane(c,node,actors,state.car,state.elapsed,nextYaw);const wantedOffset=laneOffset(c.road,c.desiredLane),laneRate=(c.spec.width<1.15?2.2:1.4)*step;c.laneOffset=(c.laneOffset??wantedOffset)+clamp(wantedOffset-(c.laneOffset??wantedOffset),-laneRate,laneRate);const target=lanePoint(node,from,c.road,{offset:c.laneOffset});
+ c.road=from.edges.find(e=>e.id===c.target)?.road||c.road;const actors=[...(gameplay?.intelligentNPC?[...gameplay.intelligentNPC.actors.near(c.x,c.z,65)]:[...cars,...cops,...people]),...(state.mode==='foot'?[{...state,mesh:player}]:[])],distanceToNode=dist(c,node);if(distanceToNode<110&&!c.plannedEdge)c.plannedEdge=trafficChoices(c,node)[0]||null;const nextNode=c.plannedEdge&&graph.nodes[c.plannedEdge.id],nextYaw=nextNode?Math.atan2(nextNode.x-node.x,nextNode.z-node.z):null;trafficLane(c,node,actors,state.car,state.elapsed,nextYaw);const wantedOffset=laneOffset(c.road,c.desiredLane),laneRate=(c.spec.width<1.15?2.2:1.4)*step;c.laneOffset=(c.laneOffset??wantedOffset)+clamp(wantedOffset-(c.laneOffset??wantedOffset),-laneRate,laneRate);const target=lanePoint(node,from,c.road,{offset:c.laneOffset});
  if(dist(c,target)<Math.max(2.5,Math.min(5,c.speed*.35))){const edge=c.plannedEdge||trafficChoices(c,node)[0];if(edge){c.prev=c.target;c.target=edge.id;c.road=edge.road;c.lane=clamp(c.desiredLane||0,0,laneCount(c.road)-1);c.desiredLane=c.lane;c.plannedEdge=null;}else{c.speed=0;c.longAccel=0;c.stuck+=step;}continue;}
  const yaw=Math.atan2(target.x-c.x,target.z-c.z),desired=trafficSpeed(c,target,actors,signals||{allowed:()=>true},state.elapsed,{nextYaw});
  advanceTrafficSpeed(c,desired,step);const turnRate=Math.max(.65,Math.min(1.9,c.spec.steer*1.7)),newYaw=c.yaw+clamp(angleDiff(yaw,c.yaw),-turnRate*step,turnRate*step);
@@ -882,12 +885,14 @@ function updateTraffic(dt){for(const c of cars){
  if((insideLane||roadCorridor(nx,nz,c,graph,terrain))&&!vehicleBlocked(nx,nz,newYaw,world.collision,c.spec,terrain.height(nx,nz,c.y))&&terrain.dry(nx,nz,c.spec.width/2,c.y)){c.x=nx;c.z=nz;c.yaw=newYaw;c.stuck=desired>.5&&c.speed<.2?c.stuck+dt:0;}else{c.speed=0;c.stuck+=step;if(c.stuck>5){c.yaw=newYaw;if(c.stuck>8)placeTraffic(c,180,500);}}poseVehicle(c);
 }}
 function updatePeople(dt){const interval=(world.streaming?.metrics.pressure?3:1)/qualityFor(state.quality).peopleHz,vehicles=[...cars,...cops];for(const p of people){
+ if(p.aiR17&&gameplay?.intelligentNPC){const intervalR17=1/qualityFor(state.quality).peopleHz;if(state.elapsed>=(p.nextThink||0)){const stepR17=Math.min(.15,state.elapsed-(p.simulatedAt??state.elapsed-intervalR17));p.simulatedAt=state.elapsed;p.nextThink=state.elapsed+intervalR17;gameplay.intelligentNPC.personStep(p,stepR17);}continue;}
  if(p.budgetSleeping||p.koUntil>state.elapsed)continue;
  if((!p.mesh.visible||dist(p,state)>350||p.at<state.elapsed)&&state.elapsed>=(p.retryAt||0))placePerson(p);
  if(!p.mesh.visible)continue;
  const age=state.elapsed-(p.simulatedAt??state.elapsed-interval);if(state.elapsed+1e-8<(p.nextThink||0))continue;
  const step=Math.min(.15,age);p.simulatedAt=state.elapsed;p.nextThink=state.elapsed+interval;p.lodFrom={x:p.x,z:p.z,y:p.y,yaw:p.yaw};p.lodSpan=interval;p.lodAt=state.elapsed;
  if(state.mode==='car'&&!state.car.spec.aircraft&&dist(p,state)<1.7&&Math.abs(state.speed)>4&&collisionCooldown<=0){raiseWanted(Math.min(5,state.wanted+1));collisionCooldown=1;toast('Dangerous driving. Police alerted.');}
+ if(gameplay?.intelligentNPC?.personStep(p,step))continue;
  const intent=pedestrianIntent(p,state.elapsed,vehicles,state,signals,graph);if(p.behavior==='group'){const leader=people.find(q=>q!==p&&q.behavior==='group'&&q.seed<p.seed&&q.mesh.visible&&dist(q,p)<30);if(leader){intent.yaw=Math.atan2(leader.x-p.x,leader.z-p.z);intent.speed=dist(p,leader)>2?1.4:0;}}p.yaw+=angleDiff(intent.yaw,p.yaw)*(1-Math.exp(-7*step));
  const nx=p.x+Math.sin(p.yaw)*intent.speed*step,nz=p.z+Math.cos(p.yaw)*intent.speed*step,road=districts?.nearRoad(nx,nz,.1);
  const allowed=!collides(nx,nz,.4,world.collision,p.y)&&terrain.dry(nx,nz,.5,p.y)&&(!road||road.road.k==='pedestrian'||intent.crossing)&&dist({x:nx,z:nz},p.anchor||p)<45;

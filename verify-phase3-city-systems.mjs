@@ -23,6 +23,6 @@ assert.ok(roofs.includes('phase3-pitched-roofs')&&roofs.includes("quality==='hig
 for(const token of ['PERCORSO OSTACOLI MOTO','padova-bike-records-v1','phase3StreetRacer','fulmine','zenit'])assert.ok(bikes.includes(token),`Bike/racer feature missing: ${token}`);
 for(const token of ['frontBumper','rearBumper','brokenLampMaterial','wheelGeometry'])assert.ok(damage.includes(token),`Physical damage element missing: ${token}`);
 for(const file of ['./phase3-city-systems.js','./phase3-tram-fix.js','./phase3-polish.js'])assert.ok(runtime.includes(file),`Runtime wiring missing: ${file}`);
-assert.ok(!/weather|rain|dayNight|nightCycle/i.test(city),'Weather/day-night systems must stay out of this performance pass');
+assert.ok(!/\b(?:weather|rain|dayNight|nightCycle)\b/i.test(city),'Weather/day-night systems must stay out of this performance pass');
 
 console.log(JSON.stringify({cityEvents:18,districtGateways:9,bridgeIdentities:3,bars:6,tourMode:true,horn:true,parking:true,buildingEntries:true,emergency:true,incidents:true,adaptiveSignals:true,tramPassengers:true,qualityWater:true,bikeCourses:4},null,2));

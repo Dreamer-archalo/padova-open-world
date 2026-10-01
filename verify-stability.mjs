@@ -1,3 +1,4 @@
+import {qualityFor} from './dist/quality.js';
 import {t,ctx,els} from './tools/controller-harness.mjs';
 import * as gameplayAreas from './dist/gameplay-areas.js';
 import * as specialVehicles from './dist/special-vehicles.js';
@@ -42,7 +43,7 @@ for(const hz of [30,60,120,144]){
 const clock=new movement.FixedClock();let ticks=0;clock.advance(60,()=>ticks++);assert.equal(ticks,8,'tab resume must not trigger an unbounded catch-up');
 
 
-assert.equal(t.cars.filter(c=>!c.spec.aircraft&&!c.fixedSpawn).length,37);assert(t.cars.filter(c=>c.spec.aircraft).length>=2);assert.equal(t.people.length,40);
+assert.equal(t.cars.filter(c=>!c.spec.aircraft&&!c.spec.watercraft&&!c.fixedSpawn).length,qualityFor(t.state.quality).traffic+1,'ambient fleet plus initial player car');assert(t.cars.filter(c=>c.spec.aircraft).length>=2);assert.equal(t.people.length,40);
 assert(t.player.userData.hips.children[0].position.y>.7,'leg pivots must be at the hips');
 assert(!core.collides(t.state.x,t.state.z,.36,t.world.collision),'centre spawn must be clear');
 t.toggleVehicle();assert.equal(t.state.mode,'car');assert.equal(t.state.y,t.terrain.height(t.state.x,t.state.z));
@@ -64,18 +65,19 @@ t.keys.clear();t.keys.add('Space');t.movePlayer(1/60);assert(t.state.y>t.terrain
 for(let i=0;i<180;i++){t.simulate(1/60);t.updateCamera(1/60);assert([t.camera.position.x,t.camera.position.y,t.camera.position.z].every(Number.isFinite));}
 t.updateUI();
 
-// Exercise the real controller falling into mapped water in every supported mode.
+// The unified controller now swims/floats instead of locking every actor in
+// the old falling animation. Exercise the current water entry and recovery.
 const river=t.world.data.water.flatMap(r=>r.p.map(([x,z])=>({x,z}))).filter(p=>t.terrain.waterAt(p.x,p.z)!==null&&core.dist(p,{x:0,z:0})<1500).sort((a,b)=>core.dist(a,t.state)-core.dist(b,t.state))[0];
 assert(river,'a real river is available for the controller test');
 const restart=t.dryRoad({x:-150,z:-49},vehicles.VEHICLES.truck);assert(restart);
 for(const type of ['foot','mito','motorcycle','scooter','truck']){
- t.keys.clear();t.waterRecovery.reset();Object.assign(t.state,restart,{mode:type==='foot'?'foot':'car',y:t.terrain.height(restart.x,restart.z),speed:0,vy:0});
+ t.keys.clear();t.waterRecovery.reset();t.waterGame.reset();Object.assign(t.state,restart,{mode:type==='foot'?'foot':'car',y:t.terrain.height(restart.x,restart.z),speed:0,vy:0});
  t.state.car=type==='foot'?null:t.addCar(restart.x,restart.z,restart.yaw,false,true,type);
- t.waterRecovery.remember(t.state,t.terrain);Object.assign(t.state,river,{y:t.terrain.elevation(river.x,river.z)});t.movePlayer(1/60);assert(t.waterRecovery.active,'fall must start '+type);
- const mode=t.state.mode;t.toggleVehicle();assert.equal(t.state.mode,mode,'cannot exit a falling vehicle');
- const at={x:t.state.x,z:t.state.z};t.keys.add('KeyW');for(let i=0;i<30;i++)t.movePlayer(1/60);assert.equal(t.state.x,at.x);assert.equal(t.state.z,at.z);assert(t.state.y<t.terrain.elevation(river.x,river.z));
- for(let i=0;i<53;i++)t.movePlayer(1/60);assert(!t.waterRecovery.active,'automatic respawn '+type);assert(t.terrain.dry(t.state.x,t.state.z,1));assert.equal(t.state.mode,mode);assert.equal(t.state.health,100);
- t.keys.clear();
+ t.waterRecovery.remember(t.state,t.terrain);Object.assign(t.state,river,{y:t.terrain.waterAt(river.x,river.z)});if(t.state.car)Object.assign(t.state.car,{x:river.x,z:river.z,y:t.state.y});
+ t.movePlayer(1/60);assert(t.waterGame.active||t.waterRecovery.active,'mapped water entry '+type);
+ if(type==='foot')assert(t.waterGame.swimming,'pedestrian enters swimming state');else assert(t.waterGame.vehicle||t.waterRecovery.active,'vehicle floats or enters depth recovery');
+ t.keys.add('KeyW');for(let i=0;i<30;i++)t.movePlayer(1/60);assert([t.state.x,t.state.y,t.state.z].every(Number.isFinite));
+ t.keys.clear();assert(t.recover(true),'manual recovery '+type);assert(!t.waterGame.active&&!t.waterRecovery.active);assert(t.terrain.dry(t.state.x,t.state.z,1));assert.equal(t.state.health,100);
 }
 t.state.speed=0;t.travel(worldModule.PLACES[8]);assert(t.terrain.dry(t.state.x,t.state.z,1));assert.equal(t.state.car.mesh.position.y,t.terrain.height(t.state.x,t.state.z));
 
