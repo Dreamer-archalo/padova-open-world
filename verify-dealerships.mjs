@@ -35,6 +35,7 @@ for(const site of localSites){
  const entry=shops.active.get(site.id);assert(entry);assert.equal(entry.units.length,p.dealerSlots.length);
  state.money=50000;
  const car=entry.units[0],money=state.money;assert(shops.buy(car));assert.equal(state.money,money-car.dealerPrice);assert(shops.owned.has(car.style));
+ assert(!shops.buy(car),'An already purchased display car cannot be charged twice');assert.equal(state.money,money-car.dealerPrice);
  assert(!shops.steal(car),'Purchased car cannot be stolen from dealer stock');
  const stolen=entry.units[1],ownedBefore=shops.owned.size;assert(shops.steal(stolen));assert.equal(shops.owned.size,ownedBefore);
  state.x=site.x+900;state.z=site.z+900;shops.update();assert(!shops.active.has(site.id));
