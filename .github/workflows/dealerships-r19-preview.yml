@@ -5,6 +5,7 @@ on:
     branches: [feat/dealerships-building-r19]
 
 permissions:
+  actions: read
   contents: read
   pages: write
   id-token: write
@@ -36,12 +37,34 @@ jobs:
           npm run test:venice-performance
           npm run test:initial-world
           npm run test:phase3-city
-      - name: Reuse published regional map data
+      - name: Try published regional map data
+        id: regional
         run: |
           set -euo pipefail
           for name in venice.json region-padova-venice.json world-padova-venice.json world-terrain.json map-hd-extras.json; do
-            curl --fail --show-error --silent --location --retry 3 --retry-delay 3 --max-time 120 \
-              "https://dreamer-archalo.github.io/padova-open-world/preview/unified/data/$name" -o "dist/data/$name"
+            if ! curl --fail --silent --location --max-time 45 \
+              "https://dreamer-archalo.github.io/padova-open-world/preview/unified/data/$name" -o "dist/data/$name"; then
+              echo 'fallback=true' >> "$GITHUB_OUTPUT"
+              break
+            fi
+          done
+      - uses: actions/download-artifact@v4
+        if: steps.regional.outputs.fallback == 'true'
+        with:
+          name: github-pages
+          run-id: 36983088702
+          github-token: ${{ github.token }}
+          path: .previous-pages
+      - name: Recover regional data and check mapped showrooms
+        run: |
+          set -euo pipefail
+          if test -f .previous-pages/artifact.tar; then
+            tar -xf .previous-pages/artifact.tar -C .previous-pages
+            for name in venice.json region-padova-venice.json world-padova-venice.json world-terrain.json map-hd-extras.json; do
+              cp ".previous-pages/preview/unified/data/$name" "dist/data/$name"
+            done
+          fi
+          for name in venice.json region-padova-venice.json world-padova-venice.json world-terrain.json map-hd-extras.json; do
             test -s "dist/data/$name"
           done
           node -e "for(const n of ['region-padova-venice','world-padova-venice','world-terrain','venice']){const d=require('./dist/data/'+n+'.json'); if(!d||typeof d!=='object')process.exit(1)}"
