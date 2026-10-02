@@ -19,24 +19,6 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
-      - name: Verify changed features
-        run: |
-          set -euo pipefail
-          npm run test:taxi
-          node verify-dealerships.mjs
-          node verify-taxi-wallet.mjs
-          node verify-hangar-air.mjs
-          node tools/verify-mandria-hangar.mjs
-          node tools/verify-taxi-hotfix.mjs
-          node verify-padova-intelligent-npc-r17.mjs
-          npm run test
-          npm run test:city-life
-          npm run test:urban-life
-          npm run test:street-life
-          npm run test:performance
-          npm run test:venice-performance
-          npm run test:initial-world
-          npm run test:phase3-city
       - name: Try published regional map data
         id: regional
         run: |
@@ -73,6 +55,24 @@ jobs:
           done
           node -e "for(const n of ['region-padova-venice','world-padova-venice','world-terrain','venice']){const d=require('./dist/data/'+n+'.json'); if(!d||typeof d!=='object')process.exit(1)}"
           node verify-dealerships-regional.mjs
+      - name: Verify changed features
+        run: |
+          set -euo pipefail
+          npm run test:taxi
+          node verify-dealerships.mjs
+          node verify-taxi-wallet.mjs
+          node verify-hangar-air.mjs
+          node tools/verify-mandria-hangar.mjs
+          node tools/verify-taxi-hotfix.mjs
+          node verify-padova-intelligent-npc-r17.mjs
+          npm run test
+          npm run test:city-life
+          npm run test:urban-life
+          npm run test:street-life
+          npm run test:performance
+          npm run test:venice-performance
+          npm run test:initial-world
+          npm run test:phase3-city
       - uses: actions/checkout@v6
         with:
           ref: feat/padova-intelligent-npc-r17
