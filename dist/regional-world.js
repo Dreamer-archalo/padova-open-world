@@ -1,3 +1,4 @@
+import {DEALER_SITES,reserveDealerBuildings,dealerWallParts} from './dealerships.js';
 // Region streaming runs alongside (not instead of) Padova's original CityWorld.
 // Padova keeps its existing meshes/physics/traffic; only its eastern border
 // gains access to the OSM corridor and high-detail destination zones.
@@ -62,6 +63,7 @@ function coast(x,z){return x>33000&&z>-7800&&z<3000;}
 export class RegionalWorld{
  constructor(scene,data,regionalTerrain,originalCollision){
   this.scene=scene;this.data=data;this.grid=regionalTerrain;this.collision=originalCollision;
+  reserveDealerBuildings(data.buildings||[],DEALER_SITES.filter(s=>!s.city.startsWith('Padova')));
   this.chunks=new Map();this.visible=new Map();this.roadProfiles=new WeakMap();this.roadLengths=new WeakMap();this.junctions=new Map();this.roads=new Map();this.waters=new Map();this.waterAreas=new Map();this.landAreas=new Map();this.buildingAreas=new Map();this.shorelines=new Map();this.key='';
   this.actors=[];this.queue=[];this.pendingBuild=null;this.totalBuilt=0;this.lastUpdate=0;this.dataReady=false;this.sim=null;this.explosions=[];
   this.trafficCells=new Map();this.metrics={loaded:0,queued:0,totalBuilt:0,lastBuildMs:0,maxBuildMs:0,actors:0,cars:0,profile:'low'};
@@ -194,8 +196,10 @@ export class RegionalWorld{
    const xs=b.p.map(p=>p[0]),zs=b.p.map(p=>p[1]),x0=Math.min(...xs),z0=Math.min(...zs),x1=Math.max(...xs),z1=Math.max(...zs),x=(x0+x1)/2,z=(z0+z1)/2;
    if(x<PADOVA_EAST-180)continue;
    const obj={...b,minX:x0,maxX:x1,minZ:z0,maxZ:z1,cx:x,cz:z,minY:this.raw(x,z),h:Math.max(2.6,Math.min(75,b.h||7))};
+   if(b.dealerSite)Object.assign(b,{minX:x0,maxX:x1,minZ:z0,maxZ:z1,cx:x,cz:z,minY:obj.minY,h:obj.h});
    obj.lod=regionalDetail(x,z);this.bucket(x,z).buildings.push(obj);
-   this.collision.add(obj,x0,z0,x1,z1);
+   if(obj.dealerSite)for(const wall of dealerWallParts(obj))this.collision.add(wall,wall.minX,wall.minZ,wall.maxX,wall.maxZ);
+   else this.collision.add(obj,x0,z0,x1,z1);
    // The lagoon's island mask must retain full-size quay buildings.
    if(coastalBand(x,z))this.insertSpatial(this.buildingAreas,obj,[x0,z0],[x1,z1],5);
   }
@@ -796,6 +800,7 @@ export class RegionalWorld{
   }):src.buildings;
   let buildingWork=0;
   for(const b of buildings){
+   if(b.dealerSite)continue;
    if(near&&detailedCount<detailCap&&b.p.length<=60){
     detailedCount++;
     this.detailedBuilding(b,w,r);
