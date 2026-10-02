@@ -13,6 +13,8 @@ export class TaxiMenuController {
     setPaused,
     drawFullMap,
     getFare,
+    getBalance,
+    onInsufficientFunds,
     executeTransition,
     onError,
     onMapPickingChange,
@@ -31,6 +33,8 @@ export class TaxiMenuController {
     this.setPaused = setPaused ?? (() => {});
     this.drawFullMap = drawFullMap ?? (() => {});
     this.getFare = getFare ?? (() => 0);
+    this.getBalance = getBalance ?? (() => Infinity);
+    this.onInsufficientFunds = onInsufficientFunds ?? (() => {});
     this.executeTransition = executeTransition ?? (async () => {});
     this.onError = onError ?? ((error) => console.error('[Taxi Error]', error));
     this.onMapPickingChange = onMapPickingChange ?? (() => {});
@@ -236,7 +240,8 @@ export class TaxiMenuController {
     if (!this.menu || !this.menuContent) throw new Error('Taxi confirmation DOM unavailable');
     const name = this.escapeHtml(meta.name || target.name || 'Destinazione');
     const tag = this.escapeHtml(meta.tag || '');
-    this.menuContent.innerHTML = `<p class="about-copy"><strong>${name}</strong>${tag ? `<br>${tag}` : ''}<br><br>Tariffa calcolata: <strong>€${fare}</strong>.<br>Confermi lo spostamento?</p><div class="menu-actions"><button class="primary" id="confirmTaxi">CONFERMA · €${fare}</button><button id="cancelTaxiConfirm">INDIETRO</button></div>`;
+    const balance = Number(this.getBalance()), affordable = Number.isFinite(balance) ? balance >= fare : true;
+    this.menuContent.innerHTML = `<p class="about-copy"><strong>${name}</strong>${tag ? `<br>${tag}` : ''}<br><br>Tariffa calcolata: <strong>€${fare}</strong>.<br>Saldo: €${Number.isFinite(balance) ? Math.floor(balance).toLocaleString('it-IT') : '—'}.<br>Confermi lo spostamento?</p><div class="menu-actions"><button class="primary" id="confirmTaxi" ${affordable ? '' : 'disabled'}>${affordable ? `CONFERMA · €${fare}` : 'Fondi insufficienti'}</button><button id="cancelTaxiConfirm">INDIETRO</button></div>`;
     if (!this.menu.open) this.menu.showModal();
 
     this.menuContent.querySelector('#confirmTaxi')?.addEventListener('click', event => {
@@ -262,6 +267,8 @@ export class TaxiMenuController {
   executeConfirmedTransition() {
     if (this.busy || !this.pending) return false;
     const {targetCoords, meta, fare} = this.pending;
+    const balance=Number(this.getBalance());
+    if(Number.isFinite(balance)&&balance<fare){this.onInsufficientFunds(fare,balance);return false;}
     this.pending = null;
     if (!this.validCoords(targetCoords)) {
       this.onError(new Error('Invalid confirmed taxi target'), 'confirmed destination');

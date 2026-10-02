@@ -1,6 +1,7 @@
 <!doctype html>
 <html lang="en">
 <head>
+  <meta name="game-version" content="padova-intelligent-npc-r17">
   <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#101b22"><meta name="description" content="Explore Padua at real-world scale in a playable 3D browser sandbox. Drive, walk, deliver, race and escape the police.">
   <title>PADOVA ↔ VENEZIA — Open World</title>
@@ -116,6 +117,7 @@
     </div>
     <div class="hud keybar"><span><kbd>W A S D</kbd> move</span><span><kbd>E</kbd> vehicle</span><span><kbd>V</kbd> vehicles</span><span><kbd>SPACE</kbd> brake / jump</span><span><kbd>SHIFT</kbd> boost / sprint</span><span><kbd>C</kbd> camera</span><span><kbd>ESC</kbd> pause</span></div>
     <div id="interact" class="interaction" hidden></div>
+    <button id="dealerBtn" class="dealer-action" type="button" hidden>G · ACQUISTA AUTO</button>
     <div id="toast" class="toast" role="status" hidden></div>
     <div id="waterStatus" role="status" aria-live="polite" hidden></div>
     <div id="targetDistance" class="target-distance" hidden></div>
@@ -132,12 +134,11 @@
   <div id="taxiLoading" class="taxi-loading" hidden role="status" aria-live="polite"><div id="taxiMeme" class="taxi-meme"><div><span>TAXI ABUSIVO IN TRANSITO…</span><strong>Caricamento destinazione</strong><p id="taxiFact"></p><small id="taxiLoadingStatus">Preparazione di terreno e strade</small><button id="taxiNext" type="button">CLICCA / TOCCA · PROSSIMA CURIOSITÀ</button></div></div></div>
   <footer id="credits"><a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">© OpenStreetMap contributors</a><a href="https://github.com/tilezen/joerd/blob/master/docs/attribution.md" target="_blank" rel="noopener">Terrain: Copernicus EU-DEM / USGS via Mapzen</a><span id="modelCredits"></span><span id="scaleCredit">Real-world scale · stylised reconstruction</span></footer>
   <script type="module" src="./initial-loader.js?v=venice-perf-r15"></script>
-  <script type="module" src="./game.js?v=regional-taxi-r16"></script>
+  <script type="module" src="./game.js?v=regional-taxi-r16-padova-intelligent-npc-r17"></script>
   <script type="module" src="./taxi-facts-extra.js"></script>
-  <script type="module" src="./taxi-affordability.js"></script>
   <script type="module" src="./zone-indicator.js"></script>
   <script type="module" src="./ambient-audio.js"></script>
-  <script type="module" src="./phase2-runtime.js?v=startup-r13"></script>
+  <script type="module" src="./phase2-runtime.js?v=startup-r14"></script>
   <script type="module" src="./cruise-control.js"></script>
 <pre id="performanceOverlay" hidden aria-hidden="true"></pre></body>
 </html>

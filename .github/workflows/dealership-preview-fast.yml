@@ -1,0 +1,109 @@
+name: Dealerships isolated playtest
+
+on:
+  push:
+    branches: [feat/dealerships-urban-showrooms]
+    paths: [.github/workflows/dealership-preview-fast.yml]
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+jobs:
+  playtest:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Verify changed features
+        run: |
+          set -euo pipefail
+          npm run test:taxi
+          node verify-dealerships.mjs
+          node verify-taxi-wallet.mjs
+          node verify-hangar-air.mjs
+          node tools/verify-mandria-hangar.mjs
+          node tools/verify-taxi-hotfix.mjs
+      - name: Reuse published regional map data
+        run: |
+          set -euo pipefail
+          for name in venice.json region-padova-venice.json world-padova-venice.json world-terrain.json map-hd-extras.json; do
+            curl --fail --show-error --silent --location --retry 3 --retry-delay 3 --max-time 120 \
+              "https://dreamer-archalo.github.io/padova-open-world/preview/unified/data/$name" -o "dist/data/$name"
+            test -s "dist/data/$name"
+          done
+          node -e "for(const n of ['region-padova-venice','world-padova-venice','world-terrain','venice']){const d=require('./dist/data/'+n+'.json'); if(!d||typeof d!=='object')process.exit(1)}"
+      - uses: actions/checkout@v6
+        with:
+          ref: main
+          path: .production-source
+          persist-credentials: false
+      - uses: actions/checkout@v6
+        with:
+          ref: fix/regional-taxi-20260928
+          path: .prior-unified
+          persist-credentials: false
+      - uses: actions/checkout@v6
+        with:
+          ref: feat/padova-venice-continuous-20260925
+          path: .prior-continuous
+          persist-credentials: false
+      - uses: actions/checkout@v6
+        with:
+          ref: feat/venice-world-20260924
+          path: .prior-venice
+          persist-credentials: false
+      - uses: actions/checkout@v6
+        with:
+          ref: feat/monoblocco-elevators-20260924
+          path: .pr57
+          persist-credentials: false
+      - uses: actions/checkout@v6
+        with:
+          ref: fix/shared-street-surface-20260922
+          path: .pr56
+          persist-credentials: false
+      - uses: actions/checkout@v6
+        with:
+          ref: feat/villa-treves-phase1-20260919
+          path: .pr51
+          persist-credentials: false
+      - uses: actions/checkout@v6
+        with:
+          ref: 20c6411c215ad57bdc1a57df0f0ae69554d241c2
+          path: .pr52
+          persist-credentials: false
+      - uses: actions/checkout@v6
+        with:
+          ref: cb6d5fb1f3afedfda68f8f07651916d3a8e12f28
+          path: .mandria-v11
+          persist-credentials: false
+      - name: Assemble isolated previews and retain production
+        shell: bash
+        run: |
+          set -euo pipefail
+          sha256sum .production-source/dist/index.html .production-source/dist/game.js > /tmp/production-root.sha
+          for item in 'dealerships .' 'unified .prior-unified' 'continuous .prior-continuous' 'venice .prior-venice' 'pr-57 .pr57' 'pr-56 .pr56' 'pr-51 .pr51' 'pr-52 .pr52' 'mandria-v11 .mandria-v11'; do
+            read -r label source <<< "$item"
+            mkdir -p ".production-source/dist/preview/$label"
+            cp -a "$source/dist/." ".production-source/dist/preview/$label/"
+          done
+          for label in unified continuous venice; do
+            cp dist/data/venice.json dist/data/world-padova-venice.json dist/data/world-terrain.json ".production-source/dist/preview/$label/data/"
+          done
+          cp dist/data/region-padova-venice.json .production-source/dist/preview/unified/data/
+          touch .production-source/dist/.nojekyll
+          test -s .production-source/dist/preview/dealerships/data/region-padova-venice.json
+          grep -q 'game.js?v=regional-taxi-r16-dealers-r18' .production-source/dist/preview/dealerships/index.html
+          sha256sum -c /tmp/production-root.sha
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v4
+        with:
+          path: .production-source/dist
+      - uses: actions/deploy-pages@v4
+      - name: Playtest link
+        run: echo 'https://dreamer-archalo.github.io/padova-open-world/preview/dealerships/'

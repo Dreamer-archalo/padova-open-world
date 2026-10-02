@@ -1,0 +1,140 @@
+name: Padova intelligent NPC R17 preview
+on:
+  push:
+    branches: [feat/padova-intelligent-npc-r17-20261001]
+  pull_request:
+    branches: [fix/regional-taxi-20260928]
+    paths: ['dist/urban-life.js', 'verify-padova-intelligent-npc-r17.mjs']
+  workflow_dispatch:
+permissions:
+  actions: read
+  contents: read
+  pages: write
+  id-token: write
+concurrency:
+  group: padova-npc-r17-preview-${{ github.event_name }}
+  cancel-in-progress: false
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Verify NPC R17 and all requested regression suites
+        run: |
+          set -euo pipefail
+          npm run test:padova-npc
+          npm run test
+          npm run test:city-life
+          npm run test:urban-life
+          npm run test:street-life
+          npm run test:performance
+          npm run test:taxi
+          npm run test:venice-performance
+          npm run test:initial-world
+          node verify-phase3-city-systems.mjs
+          node tools/verify-taxi-hotfix.mjs
+          node tools/verify-mandria-hangar.mjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: npc-r17-verification
+          path: docs/*results.json
+  preview:
+    if: github.event_name != 'pull_request'
+    needs: verify
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Find the latest successful published Pages artifact
+        id: published
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const runs = await github.rest.actions.listWorkflowRunsForRepo({
+              ...context.repo, status: 'success', per_page: 50
+            });
+            for (const run of runs.data.workflow_runs) {
+              if (run.id === context.runId) continue;
+              const result = await github.rest.actions.listWorkflowRunArtifacts({
+                ...context.repo, run_id: run.id
+              });
+              if (result.data.artifacts.some(a => a.name === 'github-pages' && !a.expired)) {
+                core.setOutput('run_id', String(run.id));
+                core.info(`Preserve published Pages artifact from run ${run.id}`);
+                return;
+              }
+            }
+            throw new Error('No unexpired published Pages artifact: refusing to replace other previews');
+      - uses: actions/download-artifact@v4
+        with:
+          name: github-pages
+          run-id: ${{ steps.published.outputs.run_id }}
+          github-token: ${{ github.token }}
+          path: .published-pages
+      - name: Reuse published geographic data and retain every existing preview
+        run: |
+          set -euo pipefail
+          tar -xf .published-pages/artifact.tar -C .published-pages
+          test -d .published-pages/preview
+          for name in region-padova-venice world-padova-venice world-terrain venice map-hd-extras; do
+            for source in .published-pages/preview/dealerships-r19 .published-pages/preview/padova-npc-r17 .published-pages/preview/unified .published-pages/preview/dealerships .published-pages/preview/npc-r17; do
+              if test -s "$source/data/$name.json"; then
+                cp "$source/data/$name.json" "dist/data/$name.json"
+                break
+              fi
+            done
+            node -e "JSON.parse(require('fs').readFileSync('dist/data/$name.json','utf8'))"
+          done
+          node verify-regional-npc-r14.mjs
+          node verify-venice-real-data-performance-r15.mjs
+          node verify-unified-main.mjs
+          node verify-unified-features.mjs
+          node -e "require('fs').writeFileSync('dist/build-r17.json',JSON.stringify({version:'padova-intelligent-npc-r17',commit:process.env.GITHUB_SHA,branch:process.env.GITHUB_REF_NAME}))"
+      - name: Install software WebGL browser
+        run: |
+          npm install --no-save --package-lock=false playwright@1.55.1
+          npx playwright install --with-deps chromium
+      - name: Boot real game and exercise NPC sites
+        run: |
+          node tools/serve.mjs --host 127.0.0.1 --port 4173 &
+          node tools/test-padova-npc-r17-chromium.mjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: npc-r17-browser
+          path: test-artifacts/r17-browser/*
+      - name: Checkout current production separately
+        uses: actions/checkout@v6
+        with:
+          ref: main
+          path: .production-source
+          persist-credentials: false
+      - name: Add isolated R17 preview without replacing any other published preview
+        run: |
+          set -euo pipefail
+          sha256sum .production-source/dist/index.html .production-source/dist/game.js > /tmp/production-r17.sha
+          mkdir -p .production-source/dist/preview
+          cp -a .published-pages/preview/. .production-source/dist/preview/
+          diff -qr .published-pages/preview .production-source/dist/preview
+          mkdir -p .production-source/dist/preview/npc-r17
+          cp -a dist/. .production-source/dist/preview/npc-r17/
+          grep -q 'game.js?v=regional-taxi-r16-padova-intelligent-npc-r17' .production-source/dist/preview/npc-r17/index.html
+          sha256sum -c /tmp/production-r17.sha
+          touch .production-source/dist/.nojekyll
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v4
+        with:
+          path: .production-source/dist
+      - uses: actions/deploy-pages@v4
+      - name: Verify public preview serves this commit
+        run: |
+          set -euo pipefail
+          node tools/verify-padova-npc-r17-public.mjs
