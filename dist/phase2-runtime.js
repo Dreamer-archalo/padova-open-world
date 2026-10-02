@@ -36,6 +36,9 @@ import './airport-life-v3.js';
 import './airport-blast-ballistics.js';
 // Installed last so its enemy arrows, mission HUD and control hints win visually.
 import './airport-air-hunt.js';
+// The full Padova–Venice game uses the existing fast aircraft in-place:
+// registration/model only, never an automatic page navigation.
+import './unified-michelangelo.js';
 // Decorative estate details are separate from the collision-aware hangar shell.
 import './villa-treves-estate.js';
 // Poplars follow the access road; optional plots and staff are proximity-loaded.
@@ -48,6 +51,8 @@ import './villa-mandria-estate-v2.js';
 import './villa-mandria-security-placement.js';
 import './villa-mandria-respawn-label.js';
 // All models registered before the hangar catalogue is first opened.
+// Register dockable Padova and regional boats before showing any catalog.
+import './padova-boats.js?v=startup-r13';
 import './villa-mandria-hangar.js';
 // Final populate/addCar wrapper creates distinct military models both at the
 // airport and when selecting one from the Mandria hangar.

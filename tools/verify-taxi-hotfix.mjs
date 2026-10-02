@@ -3,9 +3,10 @@ import fs from 'node:fs';
 import vm from 'node:vm';
 
 const game=fs.readFileSync('dist/game.js','utf8');
-const fare=fs.readFileSync('dist/taxi-affordability.js','utf8');
-assert.match(fare,/if\(button\.textContent!==label\)button\.textContent=label;/,'fare observer must not rewrite unchanged text');
-assert.match(fare,/if\(p&&p\.textContent!==message\)p\.textContent=message;/,'warning observer must not rewrite unchanged text');
+const controller=fs.readFileSync('dist/TaxiMenuController.js','utf8');
+const html=fs.readFileSync('dist/index.html','utf8');
+assert.match(controller,/this\.getBalance = getBalance/,'taxi must read the actual game balance');
+assert.doesNotMatch(html,/taxi-affordability\.js/,'stale DOM balance observer must not intercept taxi confirmation');
 assert.match(game,/e\.code==='KeyX'/,'X should close paused taxi menu');
 const from=game.indexOf('function dispatchPhysicalTaxi(){'),to=game.indexOf('\nfunction updateTaxi(dt){',from);
 assert(from>=0&&to>from,'dispatch function missing');
@@ -17,7 +18,7 @@ function scenario(phase,metres){
  const taxi={car,phase,driver:{visible:true},target:{x:0,z:0},path:[],blocked:0};
  const plan={spawn:{x:metres+42,z:0,y:0,yaw:0},target:{x:metres+6,z:0,y:0,yaw:0},path:[{x:metres+42,z:0},{x:metres+6,z:0}]};
  const scope={
-  state,taxi,taxiDispatcher:{planDispatch:()=>{calls.push('dispatch');return plan;}},
+  state,taxi,regionalPlayer:()=>false,taxiDispatcher:{planDispatch:()=>{calls.push('dispatch');return plan;}},
   dist:(a,b)=>Math.hypot(a.x-b.x,a.z-b.z),
   toast:t=>messages.push(t),
   taxiDriverNPC:{hide:()=>calls.push('hide')},
@@ -40,4 +41,4 @@ const near=scenario('ready',20);
 assert.equal(near.taxi.phase,'ready');
 assert.equal(near.calls.includes('dispatch'),false,'nearby cab must be reused');
 assert.equal(near.state.waypoint.x,0);
-console.log('PASS: stale taxi redispatch from 1.9 km (ready/arriving), nearby reuse, X key and observer idempotence');
+console.log('PASS: stale taxi redispatch from 1.9 km (ready/arriving), nearby reuse, X key and wallet source');

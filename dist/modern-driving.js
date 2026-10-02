@@ -24,7 +24,8 @@ export function helicopterStep(actor,input,dt,terrain,collision){
  let ny=clamp(actor.y+actor.vy*dt,ground,terrain.elevation(actor.x,actor.z)+180);
  const count=Math.max(1,Math.ceil(Math.abs(actor.speed)*dt/.5));
  for(let i=0;i<count;i++){
-  const x=clamp(actor.x+Math.sin(actor.yaw)*actor.speed*dt/count,-5970,7250),z=clamp(actor.z+Math.cos(actor.yaw)*actor.speed*dt/count,-6480,6230);
+  const bounds=terrain.unifiedBounds||{minX:-5970,maxX:7250,minZ:-6480,maxZ:6230};
+  const x=clamp(actor.x+Math.sin(actor.yaw)*actor.speed*dt/count,bounds.minX,bounds.maxX),z=clamp(actor.z+Math.cos(actor.yaw)*actor.speed*dt/count,bounds.minZ,bounds.maxZ);
   const base=airLandingHeight(terrain,x,z,ny),wet=!terrain.dry(x,z,2,ny);
   if(vehicleBlocked(x,z,actor.yaw,collision,spec,Math.min(wasY,ny))||ny<base-.2||wet&&ny<terrain.waterHeight(x,z)+3){actor.speed=0;break;}
   actor.x=x;actor.z=z;
