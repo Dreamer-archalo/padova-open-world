@@ -9,7 +9,7 @@ I dieci saloni sono nomi di fantasia in prossimità di concessionarie reali; l'i
 | Dolo | Riviera Auto | Normale | Riviera Motori, Via F.lli Bandiera 2 ([Riviera Motori](https://www.rivieramotori.it/contatti/)) |
 | Mirano | Cavin Motori | Normale | Campello Motors, Via Cavin di Sala 74/B ([Campello Motors](https://www.campellomotors.it/sedi/mirano/)) |
 | Mestre, Orlanda | Orlanda Prestige | Lusso | Ceccato Motors, Via Orlanda 8 ([Ceccato Motors](https://www.ceccatomotors.com/le-nostre-sedi/ceccato-motors-venezia-mestre/)) |
-| Mestre, S. Maria Goretti | Goretti Auto | Normale | Antolini Motors, Via S. Maria Goretti 8/3 ([Antolini Motors](https://www.antolinimotors.it/servizi)) |
+| Mestre, zona Via Orlanda | Mestre Auto | Normale | Edificio mappato nella zona Via Orlanda; il precedente riferimento in S. Maria Goretti è fuori dall'estratto regionale giocabile. |
 | Padova ZIP, Via Uruguay | Uruguay Mobilità | Industriale | De Bona Motors, Via Uruguay 32 ([De Bona Motors](https://www.debona.it/)) |
 | Padova ZIP, Nona Strada | Nona Strada Diesel | Industriale | Padova Diesel, Via IX Strada 41 ([Padova Diesel](https://www.padovadiesel.com/)) |
 | Padova ZIP, Via Germania | Germania Veicoli | Industriale | Trivellato Industriali, Via Germania 31 ([Trivellato](https://industriali.trivellato.it/sede/padova)) |

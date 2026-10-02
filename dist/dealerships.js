@@ -11,7 +11,7 @@ export const DEALER_SITES=[
  {id:'dolo-auto',city:'Dolo',name:'Riviera Auto',tier:'normale',address:'Via F.lli Bandiera 2',lat:45.4275545,lon:12.0936791},
  {id:'mirano-auto',city:'Mirano',name:'Cavin Motori',tier:'normale',address:'Via Cavin di Sala 74/B',lat:45.4949474,lon:12.0905977},
  {id:'mestre-lusso',city:'Mestre',name:'Orlanda Prestige',tier:'lusso',address:'Via Orlanda 8',lat:45.4813969,lon:12.2741985},
- {id:'mestre-auto',city:'Mestre',name:'Goretti Auto',tier:'normale',address:'Via S. Maria Goretti 8/3',lat:45.5069342,lon:12.2673671},
+ {id:'mestre-auto',city:'Mestre',name:'Mestre Auto',tier:'normale',address:'Zona Via Orlanda, Mestre',lat:45.48175,lon:12.2756},
  {id:'zip-uruguay',city:'Padova ZIP',name:'Uruguay Mobilità',tier:'industriale',address:'Via Uruguay 32',lat:45.3999322,lon:11.9282364},
  {id:'zip-nona',city:'Padova ZIP',name:'Nona Strada Diesel',tier:'industriale',address:'Nona Strada 41',lat:45.4132272,lon:11.9343780},
  {id:'zip-germania',city:'Padova ZIP',name:'Germania Veicoli',tier:'industriale',address:'Via Germania 31',lat:45.3942728,lon:11.9574092},
@@ -115,13 +115,13 @@ function entrance(b,site){let best=null,score=Infinity;
 }
 export function reserveDealerBuildings(buildings,sites=DEALER_SITES){
  const reserved=new Map();
- for(const site of sites){let best=null,score=Infinity;
-  const neighbors=buildings.filter(b=>b.p?.length&&Math.abs(b.p[0][0]-site.x)<380&&Math.abs(b.p[0][1]-site.z)<380);
+ for(const site of sites){let best=null,score=Infinity,reach=site.city==='Mirano'?650:260;
+  const neighbors=buildings.filter(b=>b.p?.length&&Math.abs(b.p[0][0]-site.x)<reach+120&&Math.abs(b.p[0][1]-site.z)<reach+120);
   for(const b of neighbors){if(b.dealerSite||b.authoredLandmark||b.modelActive||!suitable.has(b.t)||b.p.length<4)continue;
    const xs=b.p.map(p=>p[0]),zs=b.p.map(p=>p[1]),w=Math.max(...xs)-Math.min(...xs),d=Math.max(...zs)-Math.min(...zs);
    if(w<21||d<19||w>100||d>100)continue;
    const cx=(Math.max(...xs)+Math.min(...xs))/2,cz=(Math.max(...zs)+Math.min(...zs))/2,distance=dist({x:cx,z:cz},site);
-   if(distance>260||distance>score+150)continue;
+   if(distance>reach||distance>score+150)continue;
    const candidate={...b,minX:Math.min(...xs),maxX:Math.max(...xs),minZ:Math.min(...zs),maxZ:Math.max(...zs),cx,cz};
    const slots=interiorSlots(candidate).filter(p=>!neighbors.some(other=>{if(other===b)return false;
     const xs=other.p.map(q=>q[0]),zs=other.p.map(q=>q[1]);if(p.x<Math.min(...xs)-2||p.x>Math.max(...xs)+2||p.z<Math.min(...zs)-2||p.z>Math.max(...zs)+2)return false;

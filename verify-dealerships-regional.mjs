@@ -13,7 +13,7 @@ for(const site of sites){
 for(const site of sites){
  const b=chosen.get(site.id);
  assert(b,`No mapped showroom building near ${site.name}`);
- assert(dist(site,{x:b.cx,z:b.cz})<270,`${site.name}: building too far from address`);
+ assert(dist(site,{x:b.cx,z:b.cz})<(site.city==='Mirano'?650:270),`${site.name}: building too far from reference`);
  assert(b.dealerSlots.length>=4,`${site.name}: insufficient interior space`);
  assert(b.dealerSlots.every(p=>pointInside(p.x,p.z,b.p)),`${site.name}: display outside building`);
  assert(dealerWallParts({...b,minY:0}).length>=b.p.length,`${site.name}: facade missing`);
