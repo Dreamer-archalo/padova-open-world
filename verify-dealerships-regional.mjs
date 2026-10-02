@@ -7,7 +7,7 @@ const map=JSON.parse(fs.readFileSync(new URL('./dist/data/region-padova-venice.j
 const sites=DEALER_SITES.filter(site=>!site.city.startsWith('Padova'));
 const chosen=reserveDealerBuildings(map.buildings||[],sites);
 for(const site of sites){
- const nearby=(map.buildings||[]).filter(b=>b.p?.length>=3).map(b=>{const xs=b.p.map(p=>p[0]),zs=b.p.map(p=>p[1]);return {type:b.t,name:b.n||'',corners:b.p.length,w:Math.round(Math.max(...xs)-Math.min(...xs)),d:Math.round(Math.max(...zs)-Math.min(...zs)),distance:Math.round(dist(site,{x:(Math.min(...xs)+Math.max(...xs))/2,z:(Math.min(...zs)+Math.max(...zs))/2}))};}).filter(b=>b.distance<400&&b.w>=12&&b.d>=10).sort((a,b)=>a.distance-b.distance).slice(0,8);
+ const nearby=(map.buildings||[]).filter(b=>b.p?.length>=3).map(b=>{const xs=b.p.map(p=>p[0]),zs=b.p.map(p=>p[1]);return {type:b.t,name:b.n||'',corners:b.p.length,w:Math.round(Math.max(...xs)-Math.min(...xs)),d:Math.round(Math.max(...zs)-Math.min(...zs)),distance:Math.round(dist(site,{x:(Math.min(...xs)+Math.max(...xs))/2,z:(Math.min(...zs)+Math.max(...zs))/2}))};}).filter(b=>b.distance<2000&&b.w>=20&&b.d>=19&&['industrial','commercial','retail','office','warehouse','yes'].includes(b.type)).sort((a,b)=>a.distance-b.distance).slice(0,10);
  console.log(site.name,'nearby mapped buildings:',JSON.stringify(nearby));
 }
 for(const site of sites){
