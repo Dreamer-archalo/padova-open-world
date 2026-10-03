@@ -19,37 +19,27 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
-      - name: Try published regional map data
-        id: regional
+      - name: Recover the last published regional map
         run: |
           set -euo pipefail
           for name in venice.json region-padova-venice.json world-padova-venice.json world-terrain.json map-hd-extras.json; do
-            if ! curl --fail --silent --location --max-time 45 \
-              "https://dreamer-archalo.github.io/padova-open-world/preview/unified/data/$name" -o "dist/data/$name"; then
-              echo 'fallback=true' >> "$GITHUB_OUTPUT"
-              break
-            fi
-          done
-      - uses: actions/download-artifact@v4
-        if: steps.regional.outputs.fallback == 'true'
-        with:
-          name: github-pages
-          run-id: 36983088702
-          github-token: ${{ github.token }}
-          path: .previous-pages
-      - name: Recover regional data and check mapped showrooms
-        run: |
-          set -euo pipefail
-          if test -f .previous-pages/artifact.tar; then
-            tar -xf .previous-pages/artifact.tar -C .previous-pages
-            for name in venice.json region-padova-venice.json world-padova-venice.json world-terrain.json map-hd-extras.json; do
-              if test -s ".previous-pages/preview/unified/data/$name"; then
-                cp ".previous-pages/preview/unified/data/$name" "dist/data/$name"
-              elif test -s ".previous-pages/preview/padova-npc-r17/data/$name"; then
-                cp ".previous-pages/preview/padova-npc-r17/data/$name" "dist/data/$name"
+            found=false
+            for label in padova-npc-r17 dealerships-r19 unified; do
+              url="https://dreamer-archalo.github.io/padova-open-world/preview/$label/data/$name"
+              if curl --fail --silent --show-error --location --max-time 45 "$url" -o "dist/data/$name"; then
+                echo "Recovered $name from $label"
+                found=true
+                break
               fi
             done
-          fi
+            if test "$found" != true && test "$name" != map-hd-extras.json; then
+              echo "Missing required regional file: $name" >&2
+              exit 1
+            fi
+          done
+      - name: Check regional data and mapped showrooms
+        run: |
+          set -euo pipefail
           for name in venice.json region-padova-venice.json world-padova-venice.json world-terrain.json; do
             test -s "dist/data/$name"
           done
