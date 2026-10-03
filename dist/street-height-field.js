@@ -24,6 +24,17 @@ export class StreetHeightField {
     if(terrain.waterDistance(x,z)<1.2)constrain(x,z,terrain.waterHeight(x,z)+2.2);
    }
   }
+  // A bridge's approaches can be close enough to pull the common street field
+  // up under the bridge. Keep the lower road's own solved graph height at each
+  // crossing; the ceiling then tapers across the neighbouring street grid.
+  for(const crossing of roads.gradeCrossings||[]){
+   const p=roads.profiles.get(crossing.lower);if(!p||!roads.shared(crossing.lower))continue;
+   for(let i=0;i<p.ids.length;i++){
+    const n=roads.nodes[p.ids[i]];
+    if(Math.hypot(n.x-crossing.x,n.z-crossing.z)>20)continue;
+    constrain(n.x,n.z,n.base,n.h+.05);
+   }
+  }
   // The authored airport has a level runway and apron. Constrain its native
   // height before spreading the envelopes, so its approaches also stay smooth.
   for(const a of terrain.gameplayPatches||[])if(!a.platform)for(let j=0;j<h;j++)for(let i=0;i<w;i++){

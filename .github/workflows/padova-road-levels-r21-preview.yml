@@ -1,0 +1,167 @@
+name: Padova road levels R21 preview
+
+on:
+  push:
+    branches: [feat/padova-road-levels-r21]
+
+permissions:
+  actions: read
+  contents: read
+  pages: write
+  id-token: write
+
+jobs:
+  playtest:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Recover the last published regional map
+        run: |
+          set -euo pipefail
+          for name in venice.json region-padova-venice.json world-padova-venice.json world-terrain.json map-hd-extras.json; do
+            found=false
+            for label in padova-npc-r17 dealerships-r19 unified; do
+              url="https://dreamer-archalo.github.io/padova-open-world/preview/$label/data/$name"
+              if curl --fail --silent --show-error --location --max-time 45 "$url" -o "dist/data/$name"; then
+                echo "Recovered $name from $label"
+                found=true
+                break
+              fi
+            done
+            if test "$found" != true && test "$name" != map-hd-extras.json; then
+              echo "Missing required regional file: $name" >&2
+              exit 1
+            fi
+          done
+      - name: Check regional data and mapped showrooms
+        run: |
+          set -euo pipefail
+          for name in venice.json region-padova-venice.json world-padova-venice.json world-terrain.json; do
+            test -s "dist/data/$name"
+          done
+          node -e "for(const n of ['region-padova-venice','world-padova-venice','world-terrain','venice']){const d=require('./dist/data/'+n+'.json'); if(!d||typeof d!=='object')process.exit(1)}"
+          node verify-dealerships-regional.mjs
+          node tools/audit-regional-interchanges-r20.mjs
+      - name: Verify changed features
+        run: |
+          set -euo pipefail
+          npm run test:jumps
+          npm run test:interchanges
+          npm run test:geometry-integrity
+          npm run test:guardrails
+          node tools/audit-interchanges-r20.mjs
+          npm run test:taxi
+          node verify-dealerships.mjs
+          node verify-taxi-wallet.mjs
+          node verify-hangar-air.mjs
+          node tools/verify-mandria-hangar.mjs
+          node tools/verify-taxi-hotfix.mjs
+          node verify-padova-intelligent-npc-r17.mjs
+          npm run test
+          npm run test:city-life
+          npm run test:urban-life
+          npm run test:street-life
+          npm run test:performance
+          npm run test:venice-performance
+          npm run test:initial-world
+          npm run test:phase3-city
+      - uses: actions/checkout@v6
+        with:
+          ref: feat/padova-intelligent-npc-r17
+          path: .prior-padova-r17
+          persist-credentials: false
+      - uses: actions/checkout@v6
+        with:
+          ref: feat/dealerships-urban-showrooms
+          path: .prior-dealerships
+          persist-credentials: false
+      - uses: actions/checkout@v6
+        with:
+          ref: main
+          path: .production-source
+          persist-credentials: false
+      - uses: actions/checkout@v6
+        with:
+          ref: fix/regional-taxi-20260928
+          path: .prior-unified
+          persist-credentials: false
+      - uses: actions/checkout@v6
+        with:
+          ref: feat/padova-venice-continuous-20260925
+          path: .prior-continuous
+          persist-credentials: false
+      - uses: actions/checkout@v6
+        with:
+          ref: feat/venice-world-20260924
+          path: .prior-venice
+          persist-credentials: false
+      - uses: actions/checkout@v6
+        with:
+          ref: feat/monoblocco-elevators-20260924
+          path: .pr57
+          persist-credentials: false
+      - uses: actions/checkout@v6
+        with:
+          ref: fix/shared-street-surface-20260922
+          path: .pr56
+          persist-credentials: false
+      - uses: actions/checkout@v6
+        with:
+          ref: feat/villa-treves-phase1-20260919
+          path: .pr51
+          persist-credentials: false
+      - uses: actions/checkout@v6
+        with:
+          ref: 20c6411c215ad57bdc1a57df0f0ae69554d241c2
+          path: .pr52
+          persist-credentials: false
+      - uses: actions/checkout@v6
+        with:
+          ref: cb6d5fb1f3afedfda68f8f07651916d3a8e12f28
+          path: .mandria-v11
+          persist-credentials: false
+      - name: Assemble isolated previews and retain production
+        shell: bash
+        run: |
+          set -euo pipefail
+          sha256sum .production-source/dist/index.html .production-source/dist/game.js > /tmp/production-root.sha
+          for item in 'road-levels-r21 .' 'padova-npc-r17 .prior-padova-r17' 'dealerships .prior-dealerships' 'unified .prior-unified' 'continuous .prior-continuous' 'venice .prior-venice' 'pr-57 .pr57' 'pr-56 .pr56' 'pr-51 .pr51' 'pr-52 .pr52' 'mandria-v11 .mandria-v11'; do
+            read -r label source <<< "$item"
+            mkdir -p ".production-source/dist/preview/$label"
+            cp -a "$source/dist/." ".production-source/dist/preview/$label/"
+          done
+          for label in unified continuous venice; do
+            cp dist/data/venice.json dist/data/world-padova-venice.json dist/data/world-terrain.json ".production-source/dist/preview/$label/data/"
+          done
+          cp dist/data/region-padova-venice.json .production-source/dist/preview/unified/data/
+          cp dist/data/region-padova-venice.json dist/data/world-terrain.json .production-source/dist/preview/padova-npc-r17/data/
+          touch .production-source/dist/.nojekyll
+          test -s .production-source/dist/preview/road-levels-r21/data/region-padova-venice.json
+          grep -q 'game.js?v=road-levels-r21' .production-source/dist/preview/road-levels-r21/index.html
+          sha256sum -c /tmp/production-root.sha
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v4
+        with:
+          path: .production-source/dist
+      - uses: actions/deploy-pages@v4
+      - name: Verify the public R21 preview
+        run: |
+          set -euo pipefail
+          base='https://dreamer-archalo.github.io/padova-open-world/preview/road-levels-r21'
+          for attempt in 1 2 3 4 5; do
+            if curl --fail --silent --show-error --location "$base/index.html" -o /tmp/dealer-preview.html &&
+               curl --fail --silent --show-error --location "$base/game.js" -o /tmp/dealer-preview-game.js &&
+               grep -q 'game.js?v=road-levels-r21' /tmp/dealer-preview.html &&
+               curl --fail --silent --show-error --location "$base/road-surfaces.js" -o /tmp/road-levels-preview.js &&
+               grep -q 'gradeCrossings=this.gradeCrossings' /tmp/road-levels-preview.js; then
+              exit 0
+            fi
+            sleep 5
+          done
+          exit 1
+      - name: Playtest link
+        run: echo 'https://dreamer-archalo.github.io/padova-open-world/preview/road-levels-r21/'
