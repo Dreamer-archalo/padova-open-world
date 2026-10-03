@@ -1,11 +1,14 @@
 {
   "mapDate": "2026-09-05T13:23:06Z",
   "scope": "Padova extract only; regional map is streamed separately",
-  "method": "2D OSM centre-line crossings with no shared mapped vertex; candidate order uses explicit bridge tags, road class and bridge names. Manual topology review is required.",
+  "method": "2D OSM centre-line crossings with no shared mapped vertex; candidate order uses explicit bridge tags, road class and bridge names. Service tracks have a separate 2.6 m diagnostic threshold; this is not a surveyed clearance or proof of passability. Manual topology review is required.",
   "targetClearance": 5.4,
   "summary": {
     "candidateCrossings": 428,
-    "below5_2m": 60,
+    "below5_2m": 46,
+    "belowTypeThreshold": 26,
+    "vehicleBelow5_2m": 24,
+    "serviceBelow2_6m": 2,
     "ikeaCrossings": 26,
     "ikeaBelow5_2m": 0,
     "ikeaConnectedApproaches": 24
@@ -19,7 +22,7 @@
       "lower": "Via Sergio Fraccalanza",
       "lowerClass": "secondary_link",
       "explicitBridge": true,
-      "clearance": 5.3637,
+      "clearance": 5.3656,
       "nearbyConnectedEndpoints": 2,
       "ikea": true
     },
@@ -295,7 +298,7 @@
       "lower": "track",
       "lowerClass": "track",
       "explicitBridge": false,
-      "clearance": 5.6808,
+      "clearance": 5.6831,
       "nearbyConnectedEndpoints": 1,
       "ikea": true
     },
@@ -319,9 +322,375 @@
       "lower": "Via San Marco",
       "lowerClass": "secondary",
       "explicitBridge": false,
-      "clearance": 5.7106,
+      "clearance": 5.7121,
       "nearbyConnectedEndpoints": 1,
       "ikea": true
+    }
+  ],
+  "unresolved": [
+    {
+      "x": -833.2,
+      "z": -4062.5,
+      "upper": "Cavalcavia Tevere",
+      "upperClass": "unclassified",
+      "lower": "Corso Tredici Giugno",
+      "lowerClass": "trunk_link",
+      "explicitBridge": false,
+      "clearance": -2.0181,
+      "nearbyConnectedEndpoints": 2,
+      "ikea": false,
+      "requiredClearance": 5.2,
+      "rawClearance": 1.868
+    },
+    {
+      "x": -835.8,
+      "z": -4057.6,
+      "upper": "Cavalcavia Tevere",
+      "upperClass": "unclassified",
+      "lower": "Corso Tredici Giugno",
+      "lowerClass": "trunk_link",
+      "explicitBridge": false,
+      "clearance": -1.5275,
+      "nearbyConnectedEndpoints": 2,
+      "ikea": false,
+      "requiredClearance": 5.2,
+      "rawClearance": 2.3484
+    },
+    {
+      "x": -840.6,
+      "z": -4048.7,
+      "upper": "Cavalcavia Tevere",
+      "upperClass": "unclassified",
+      "lower": "Corso Tredici Giugno",
+      "lowerClass": "trunk_link",
+      "explicitBridge": false,
+      "clearance": -0.4767,
+      "nearbyConnectedEndpoints": 2,
+      "ikea": false,
+      "requiredClearance": 5.2,
+      "rawClearance": 2.7814
+    },
+    {
+      "x": -4250.2,
+      "z": 998.7,
+      "upper": "Via Monte Cero",
+      "upperClass": "unclassified",
+      "lower": "Via Monte Cero",
+      "lowerClass": "track",
+      "explicitBridge": true,
+      "clearance": 0.0214,
+      "nearbyConnectedEndpoints": 2,
+      "ikea": false,
+      "requiredClearance": 2.6,
+      "rawClearance": 1.0667
+    },
+    {
+      "x": 5167.5,
+      "z": 5220,
+      "upper": "Via Romea",
+      "upperClass": "primary",
+      "lower": "Corso Sandro Pertini",
+      "lowerClass": "tertiary",
+      "explicitBridge": true,
+      "clearance": 0.8753,
+      "nearbyConnectedEndpoints": 2,
+      "ikea": false,
+      "requiredClearance": 5.2,
+      "rawClearance": 5.4004
+    },
+    {
+      "x": -4262.5,
+      "z": 4064.7,
+      "upper": "Via Chioggia",
+      "upperClass": "unclassified",
+      "lower": "Via Chioggia",
+      "lowerClass": "tertiary",
+      "explicitBridge": true,
+      "clearance": 1.2751,
+      "nearbyConnectedEndpoints": 2,
+      "ikea": false,
+      "requiredClearance": 5.2,
+      "rawClearance": 5.3755
+    },
+    {
+      "x": -812.3,
+      "z": -3506,
+      "upper": "Corso Australia",
+      "upperClass": "trunk_link",
+      "lower": "Via Due Palazzi",
+      "lowerClass": "tertiary",
+      "explicitBridge": false,
+      "clearance": 1.6273,
+      "nearbyConnectedEndpoints": 2,
+      "ikea": false,
+      "requiredClearance": 5.2,
+      "rawClearance": 5.3732
+    },
+    {
+      "x": 1321.8,
+      "z": -4451.1,
+      "upper": "Ponte sul Brenta",
+      "upperClass": "secondary",
+      "lower": "track",
+      "lowerClass": "track",
+      "explicitBridge": true,
+      "clearance": 1.6633,
+      "nearbyConnectedEndpoints": 2,
+      "ikea": false,
+      "requiredClearance": 2.6,
+      "rawClearance": 5.1535
+    },
+    {
+      "x": 5961.1,
+      "z": 1917.4,
+      "upper": "motorway_link",
+      "upperClass": "motorway_link",
+      "lower": "Corso Stati Uniti",
+      "lowerClass": "primary",
+      "explicitBridge": false,
+      "clearance": 1.7227,
+      "nearbyConnectedEndpoints": 2,
+      "ikea": false,
+      "requiredClearance": 5.2,
+      "rawClearance": 5.3659
+    },
+    {
+      "x": 6009.4,
+      "z": 1935.6,
+      "upper": "motorway_link",
+      "upperClass": "motorway_link",
+      "lower": "Corso Stati Uniti",
+      "lowerClass": "primary",
+      "explicitBridge": false,
+      "clearance": 1.7825,
+      "nearbyConnectedEndpoints": 2,
+      "ikea": false,
+      "requiredClearance": 5.2,
+      "rawClearance": 5.3544
+    },
+    {
+      "x": -753.6,
+      "z": -3503.8,
+      "upper": "Corso Australia",
+      "upperClass": "trunk_link",
+      "lower": "Via Due Palazzi",
+      "lowerClass": "tertiary",
+      "explicitBridge": false,
+      "clearance": 2.8612,
+      "nearbyConnectedEndpoints": 1,
+      "ikea": false,
+      "requiredClearance": 5.2,
+      "rawClearance": 5.4198
+    },
+    {
+      "x": -1859.6,
+      "z": -405.8,
+      "upper": "trunk_link",
+      "upperClass": "trunk_link",
+      "lower": "Corso Australia",
+      "lowerClass": "residential",
+      "explicitBridge": true,
+      "clearance": 2.883,
+      "nearbyConnectedEndpoints": 2,
+      "ikea": false,
+      "requiredClearance": 5.2,
+      "rawClearance": 5.361
+    },
+    {
+      "x": 5234.8,
+      "z": 5282.7,
+      "upper": "Via Romea",
+      "upperClass": "primary",
+      "lower": "Autostrada Bologna-Padova",
+      "lowerClass": "motorway",
+      "explicitBridge": true,
+      "clearance": 3.2952,
+      "nearbyConnectedEndpoints": 2,
+      "ikea": false,
+      "requiredClearance": 5.2,
+      "rawClearance": 5.4141
+    },
+    {
+      "x": -1263.5,
+      "z": -1391.2,
+      "upper": "Via Giuseppe Peano",
+      "upperClass": "residential",
+      "lower": "Via Paolo Sambin",
+      "lowerClass": "secondary",
+      "explicitBridge": true,
+      "clearance": 3.4421,
+      "nearbyConnectedEndpoints": 2,
+      "ikea": false,
+      "requiredClearance": 5.2,
+      "rawClearance": 5.3521
+    },
+    {
+      "x": 5242.3,
+      "z": 5289.7,
+      "upper": "Via Romea",
+      "upperClass": "primary",
+      "lower": "Autostrada Bologna-Padova",
+      "lowerClass": "motorway",
+      "explicitBridge": true,
+      "clearance": 3.8746,
+      "nearbyConnectedEndpoints": 2,
+      "ikea": false,
+      "requiredClearance": 5.2,
+      "rawClearance": 5.4151
+    },
+    {
+      "x": -1853.3,
+      "z": -401.4,
+      "upper": "trunk_link",
+      "upperClass": "trunk_link",
+      "lower": "Corso Australia",
+      "lowerClass": "residential",
+      "explicitBridge": true,
+      "clearance": 4.0416,
+      "nearbyConnectedEndpoints": 2,
+      "ikea": false,
+      "requiredClearance": 5.2,
+      "rawClearance": 5.3611
+    },
+    {
+      "x": -803.1,
+      "z": -4055.4,
+      "upper": "Corso Tredici Giugno",
+      "upperClass": "trunk_link",
+      "lower": "Via Po",
+      "lowerClass": "residential",
+      "explicitBridge": false,
+      "clearance": 4.3929,
+      "nearbyConnectedEndpoints": 2,
+      "ikea": false,
+      "requiredClearance": 5.2,
+      "rawClearance": 4.3938
+    },
+    {
+      "x": -807.2,
+      "z": -4066.2,
+      "upper": "Corso Tredici Giugno",
+      "upperClass": "trunk_link",
+      "lower": "Via Po",
+      "lowerClass": "residential",
+      "explicitBridge": false,
+      "clearance": 4.4171,
+      "nearbyConnectedEndpoints": 1,
+      "ikea": false,
+      "requiredClearance": 5.2,
+      "rawClearance": 4.4188
+    },
+    {
+      "x": -806.2,
+      "z": -4063.6,
+      "upper": "Corso Tredici Giugno",
+      "upperClass": "trunk_link",
+      "lower": "Via Po",
+      "lowerClass": "residential",
+      "explicitBridge": false,
+      "clearance": 4.439,
+      "nearbyConnectedEndpoints": 2,
+      "ikea": false,
+      "requiredClearance": 5.2,
+      "rawClearance": 4.4421
+    },
+    {
+      "x": -2543.1,
+      "z": 848.9,
+      "upper": "Cavalcavia Brusegana",
+      "upperClass": "secondary",
+      "lower": "Corso Australia",
+      "lowerClass": "trunk",
+      "explicitBridge": true,
+      "clearance": 4.5185,
+      "nearbyConnectedEndpoints": 2,
+      "ikea": false,
+      "requiredClearance": 5.2,
+      "rawClearance": 5.4359
+    },
+    {
+      "x": -1904.5,
+      "z": -467.4,
+      "upper": "Cavalcavia Chiesanuova",
+      "upperClass": "primary",
+      "lower": "Corso Australia",
+      "lowerClass": "trunk",
+      "explicitBridge": true,
+      "clearance": 4.5901,
+      "nearbyConnectedEndpoints": 2,
+      "ikea": false,
+      "requiredClearance": 5.2,
+      "rawClearance": 5.4073
+    },
+    {
+      "x": -802.9,
+      "z": -4050.4,
+      "upper": "Corso Tredici Giugno",
+      "upperClass": "trunk_link",
+      "lower": "Via Po",
+      "lowerClass": "residential",
+      "explicitBridge": false,
+      "clearance": 4.6132,
+      "nearbyConnectedEndpoints": 2,
+      "ikea": false,
+      "requiredClearance": 5.2,
+      "rawClearance": 4.6176
+    },
+    {
+      "x": -968.1,
+      "z": -4016.1,
+      "upper": "Cavalcavia Tevere",
+      "upperClass": "unclassified",
+      "lower": "Via Po",
+      "lowerClass": "trunk",
+      "explicitBridge": false,
+      "clearance": 4.8809,
+      "nearbyConnectedEndpoints": 2,
+      "ikea": false,
+      "requiredClearance": 5.2,
+      "rawClearance": 4.8809
+    },
+    {
+      "x": -2554.1,
+      "z": 847,
+      "upper": "Cavalcavia Brusegana",
+      "upperClass": "secondary",
+      "lower": "Corso Australia",
+      "lowerClass": "trunk",
+      "explicitBridge": true,
+      "clearance": 5.0093,
+      "nearbyConnectedEndpoints": 2,
+      "ikea": false,
+      "requiredClearance": 5.2,
+      "rawClearance": 5.4385
+    },
+    {
+      "x": -1912.5,
+      "z": -467.7,
+      "upper": "Cavalcavia Chiesanuova",
+      "upperClass": "primary",
+      "lower": "Corso Australia",
+      "lowerClass": "trunk",
+      "explicitBridge": true,
+      "clearance": 5.0268,
+      "nearbyConnectedEndpoints": 2,
+      "ikea": false,
+      "requiredClearance": 5.2,
+      "rawClearance": 5.4077
+    },
+    {
+      "x": -2558.1,
+      "z": 846.9,
+      "upper": "Cavalcavia Brusegana",
+      "upperClass": "secondary",
+      "lower": "trunk_link",
+      "lowerClass": "trunk_link",
+      "explicitBridge": true,
+      "clearance": 5.185,
+      "nearbyConnectedEndpoints": 2,
+      "ikea": false,
+      "requiredClearance": 5.2,
+      "rawClearance": 5.4177
     }
   ],
   "crossings": [
@@ -345,7 +714,7 @@
       "lower": "Uscita Padova zona industriale",
       "lowerClass": "motorway_link",
       "explicitBridge": true,
-      "clearance": 2.6816,
+      "clearance": 5.3995,
       "nearbyConnectedEndpoints": 2,
       "ikea": false
     },
@@ -357,7 +726,7 @@
       "lower": "Uscita Padova zona industriale",
       "lowerClass": "motorway_link",
       "explicitBridge": true,
-      "clearance": 2.3893,
+      "clearance": 5.3992,
       "nearbyConnectedEndpoints": 2,
       "ikea": false
     },
@@ -441,7 +810,7 @@
       "lower": "Via del Plebiscito 1866",
       "lowerClass": "secondary",
       "explicitBridge": false,
-      "clearance": 5.6388,
+      "clearance": 5.7032,
       "nearbyConnectedEndpoints": 0,
       "ikea": false
     },
@@ -477,7 +846,7 @@
       "lower": "track",
       "lowerClass": "track",
       "explicitBridge": true,
-      "clearance": 5.1755,
+      "clearance": 5.1756,
       "nearbyConnectedEndpoints": 1,
       "ikea": false
     },
@@ -549,7 +918,7 @@
       "lower": "Via Galileo Galilei",
       "lowerClass": "tertiary",
       "explicitBridge": true,
-      "clearance": 5.3933,
+      "clearance": 5.3938,
       "nearbyConnectedEndpoints": 2,
       "ikea": false
     },
@@ -861,7 +1230,7 @@
       "lower": "Viale della Regione Veneto",
       "lowerClass": "residential",
       "explicitBridge": true,
-      "clearance": 3.0289,
+      "clearance": 5.3871,
       "nearbyConnectedEndpoints": 2,
       "ikea": false
     },
@@ -873,7 +1242,7 @@
       "lower": "Autostrada Bologna-Padova",
       "lowerClass": "motorway",
       "explicitBridge": true,
-      "clearance": 1.7413,
+      "clearance": 5.4012,
       "nearbyConnectedEndpoints": 2,
       "ikea": false
     },
@@ -885,7 +1254,7 @@
       "lower": "Autostrada Bologna-Padova",
       "lowerClass": "motorway",
       "explicitBridge": true,
-      "clearance": 2.3861,
+      "clearance": 5.4009,
       "nearbyConnectedEndpoints": 2,
       "ikea": false
     },
@@ -933,7 +1302,7 @@
       "lower": "Autostrada Bologna-Padova",
       "lowerClass": "motorway",
       "explicitBridge": true,
-      "clearance": 3.2437,
+      "clearance": 5.3999,
       "nearbyConnectedEndpoints": 2,
       "ikea": false
     },
@@ -1065,7 +1434,7 @@
       "lower": "Via San Marco",
       "lowerClass": "unclassified",
       "explicitBridge": true,
-      "clearance": 5.3865,
+      "clearance": 5.3906,
       "nearbyConnectedEndpoints": 0,
       "ikea": false
     },
@@ -1077,7 +1446,7 @@
       "lower": "Via San Marco",
       "lowerClass": "unclassified",
       "explicitBridge": true,
-      "clearance": 1.3881,
+      "clearance": 5.358,
       "nearbyConnectedEndpoints": 1,
       "ikea": false
     },
@@ -1209,7 +1578,7 @@
       "lower": "Corso Brasile",
       "lowerClass": "primary",
       "explicitBridge": true,
-      "clearance": 5.3966,
+      "clearance": 5.3965,
       "nearbyConnectedEndpoints": 2,
       "ikea": false
     },
@@ -1245,7 +1614,7 @@
       "lower": "Corso Sandro Pertini",
       "lowerClass": "tertiary",
       "explicitBridge": true,
-      "clearance": 5.4048,
+      "clearance": 5.2623,
       "nearbyConnectedEndpoints": 2,
       "ikea": false
     },
@@ -1293,7 +1662,7 @@
       "lower": "Autostrada Bologna-Padova",
       "lowerClass": "motorway",
       "explicitBridge": true,
-      "clearance": 2.6354,
+      "clearance": 5.4001,
       "nearbyConnectedEndpoints": 2,
       "ikea": false
     },
@@ -1353,7 +1722,7 @@
       "lower": "Via Friburgo",
       "lowerClass": "secondary",
       "explicitBridge": true,
-      "clearance": 2.3791,
+      "clearance": 5.3703,
       "nearbyConnectedEndpoints": 2,
       "ikea": false
     },
@@ -1377,7 +1746,7 @@
       "lower": "Via Friburgo",
       "lowerClass": "tertiary",
       "explicitBridge": true,
-      "clearance": 5.3951,
+      "clearance": 5.3953,
       "nearbyConnectedEndpoints": 2,
       "ikea": false
     },
@@ -1389,7 +1758,7 @@
       "lower": "Via Friburgo",
       "lowerClass": "secondary",
       "explicitBridge": true,
-      "clearance": 2.3867,
+      "clearance": 5.3705,
       "nearbyConnectedEndpoints": 2,
       "ikea": false
     },
@@ -1497,7 +1866,7 @@
       "lower": "service",
       "lowerClass": "service",
       "explicitBridge": false,
-      "clearance": 5.8138,
+      "clearance": 5.8157,
       "nearbyConnectedEndpoints": 1,
       "ikea": false
     },
@@ -1557,7 +1926,7 @@
       "lower": "service",
       "lowerClass": "service",
       "explicitBridge": true,
-      "clearance": 5.3682,
+      "clearance": 5.3755,
       "nearbyConnectedEndpoints": 0,
       "ikea": false
     },
@@ -1569,7 +1938,7 @@
       "lower": "Via Guizza",
       "lowerClass": "secondary",
       "explicitBridge": true,
-      "clearance": 5.3992,
+      "clearance": 5.3993,
       "nearbyConnectedEndpoints": 0,
       "ikea": false
     },
@@ -1581,7 +1950,7 @@
       "lower": "Via Guizza",
       "lowerClass": "secondary",
       "explicitBridge": true,
-      "clearance": 5.3831,
+      "clearance": 5.3866,
       "nearbyConnectedEndpoints": 0,
       "ikea": false
     },
@@ -1593,7 +1962,7 @@
       "lower": "service",
       "lowerClass": "service",
       "explicitBridge": true,
-      "clearance": 5.3982,
+      "clearance": 5.3983,
       "nearbyConnectedEndpoints": 0,
       "ikea": false
     },
@@ -1737,7 +2106,7 @@
       "lower": "Vicolo Raffaello Sanzio",
       "lowerClass": "residential",
       "explicitBridge": false,
-      "clearance": 5.3767,
+      "clearance": 5.3814,
       "nearbyConnectedEndpoints": 1,
       "ikea": false
     },
@@ -1881,7 +2250,7 @@
       "lower": "track",
       "lowerClass": "track",
       "explicitBridge": true,
-      "clearance": 5.1747,
+      "clearance": 5.1753,
       "nearbyConnectedEndpoints": 2,
       "ikea": false
     },
@@ -1929,7 +2298,7 @@
       "lower": "Via Po",
       "lowerClass": "residential",
       "explicitBridge": false,
-      "clearance": 4.382,
+      "clearance": 4.4171,
       "nearbyConnectedEndpoints": 1,
       "ikea": false
     },
@@ -1941,7 +2310,7 @@
       "lower": "Corso Tredici Giugno",
       "lowerClass": "trunk_link",
       "explicitBridge": false,
-      "clearance": -1.964,
+      "clearance": -2.0181,
       "nearbyConnectedEndpoints": 2,
       "ikea": false
     },
@@ -1953,7 +2322,7 @@
       "lower": "Via Ronchi Bassi",
       "lowerClass": "unclassified",
       "explicitBridge": false,
-      "clearance": 6.3701,
+      "clearance": 6.4243,
       "nearbyConnectedEndpoints": 1,
       "ikea": false
     },
@@ -2049,7 +2418,7 @@
       "lower": "Via Po",
       "lowerClass": "trunk",
       "explicitBridge": false,
-      "clearance": 4.0306,
+      "clearance": 4.8809,
       "nearbyConnectedEndpoints": 2,
       "ikea": false
     },
@@ -2061,7 +2430,7 @@
       "lower": "Corso Tredici Giugno",
       "lowerClass": "trunk_link",
       "explicitBridge": false,
-      "clearance": -0.4226,
+      "clearance": -0.4767,
       "nearbyConnectedEndpoints": 2,
       "ikea": false
     },
@@ -2073,7 +2442,7 @@
       "lower": "Corso Tredici Giugno",
       "lowerClass": "trunk_link",
       "explicitBridge": false,
-      "clearance": -1.4733,
+      "clearance": -1.5275,
       "nearbyConnectedEndpoints": 2,
       "ikea": false
     },
@@ -2169,7 +2538,7 @@
       "lower": "Via Fornaci",
       "lowerClass": "tertiary",
       "explicitBridge": false,
-      "clearance": 5.4212,
+      "clearance": 5.4261,
       "nearbyConnectedEndpoints": 0,
       "ikea": false
     },
@@ -2253,7 +2622,7 @@
       "lower": "Via del Commercio",
       "lowerClass": "primary",
       "explicitBridge": false,
-      "clearance": 5.3806,
+      "clearance": 5.3813,
       "nearbyConnectedEndpoints": 1,
       "ikea": false
     },
@@ -2409,7 +2778,7 @@
       "lower": "Autostrada Bologna-Padova",
       "lowerClass": "motorway",
       "explicitBridge": true,
-      "clearance": 3.6509,
+      "clearance": 5.4037,
       "nearbyConnectedEndpoints": 2,
       "ikea": false
     },
@@ -2433,7 +2802,7 @@
       "lower": "Autostrada Bologna-Padova",
       "lowerClass": "motorway",
       "explicitBridge": true,
-      "clearance": 3.3267,
+      "clearance": 3.2952,
       "nearbyConnectedEndpoints": 2,
       "ikea": false
     },
@@ -2445,7 +2814,7 @@
       "lower": "Via Tintoretto",
       "lowerClass": "tertiary",
       "explicitBridge": false,
-      "clearance": 5.4026,
+      "clearance": 5.4302,
       "nearbyConnectedEndpoints": 1,
       "ikea": false
     },
@@ -2469,7 +2838,7 @@
       "lower": "Autostrada Bologna-Padova",
       "lowerClass": "motorway",
       "explicitBridge": true,
-      "clearance": 3.9061,
+      "clearance": 3.8746,
       "nearbyConnectedEndpoints": 2,
       "ikea": false
     },
@@ -2493,7 +2862,7 @@
       "lower": "Autostrada Bologna-Padova",
       "lowerClass": "motorway",
       "explicitBridge": true,
-      "clearance": 3.1349,
+      "clearance": 5.403,
       "nearbyConnectedEndpoints": 2,
       "ikea": false
     },
@@ -2529,7 +2898,7 @@
       "lower": "Via Po",
       "lowerClass": "residential",
       "explicitBridge": false,
-      "clearance": 4.5629,
+      "clearance": 4.6132,
       "nearbyConnectedEndpoints": 2,
       "ikea": false
     },
@@ -2541,7 +2910,7 @@
       "lower": "Via del Plebiscito 1866",
       "lowerClass": "secondary",
       "explicitBridge": true,
-      "clearance": 5.4382,
+      "clearance": 5.4417,
       "nearbyConnectedEndpoints": 1,
       "ikea": false
     },
@@ -2553,7 +2922,7 @@
       "lower": "Via del Plebiscito 1866",
       "lowerClass": "residential",
       "explicitBridge": true,
-      "clearance": 5.3757,
+      "clearance": 5.3763,
       "nearbyConnectedEndpoints": 0,
       "ikea": false
     },
@@ -2565,7 +2934,7 @@
       "lower": "Via Domenico Leonati",
       "lowerClass": "unclassified",
       "explicitBridge": true,
-      "clearance": 5.4029,
+      "clearance": 5.4064,
       "nearbyConnectedEndpoints": 1,
       "ikea": false
     },
@@ -2613,7 +2982,7 @@
       "lower": "Via Lauro",
       "lowerClass": "tertiary",
       "explicitBridge": false,
-      "clearance": 5.3864,
+      "clearance": 5.3923,
       "nearbyConnectedEndpoints": 0,
       "ikea": false
     },
@@ -3165,7 +3534,7 @@
       "lower": "Via Sergio Fraccalanza",
       "lowerClass": "secondary_link",
       "explicitBridge": true,
-      "clearance": 5.3637,
+      "clearance": 5.3656,
       "nearbyConnectedEndpoints": 2,
       "ikea": true
     },
@@ -3225,7 +3594,7 @@
       "lower": "Viale della Regione Veneto",
       "lowerClass": "residential",
       "explicitBridge": true,
-      "clearance": 2.0191,
+      "clearance": 5.3893,
       "nearbyConnectedEndpoints": 2,
       "ikea": false
     },
@@ -3237,7 +3606,7 @@
       "lower": "Corso Sandro Pertini",
       "lowerClass": "tertiary",
       "explicitBridge": true,
-      "clearance": 5.382,
+      "clearance": 5.3877,
       "nearbyConnectedEndpoints": 2,
       "ikea": false
     },
@@ -3309,7 +3678,7 @@
       "lower": "Corso Australia",
       "lowerClass": "secondary",
       "explicitBridge": true,
-      "clearance": 5.4051,
+      "clearance": 5.4214,
       "nearbyConnectedEndpoints": 2,
       "ikea": false
     },
@@ -3333,7 +3702,7 @@
       "lower": "Via Inghilterra",
       "lowerClass": "unclassified",
       "explicitBridge": true,
-      "clearance": 5.3962,
+      "clearance": 5.3956,
       "nearbyConnectedEndpoints": 2,
       "ikea": false
     },
@@ -3477,7 +3846,7 @@
       "lower": "Via Leonardo da Vinci",
       "lowerClass": "unclassified",
       "explicitBridge": false,
-      "clearance": 5.3741,
+      "clearance": 5.3751,
       "nearbyConnectedEndpoints": 1,
       "ikea": false
     },
@@ -3489,7 +3858,7 @@
       "lower": "Via Guido Marchioro",
       "lowerClass": "residential",
       "explicitBridge": false,
-      "clearance": 5.4194,
+      "clearance": 5.4196,
       "nearbyConnectedEndpoints": 1,
       "ikea": false
     },
@@ -3501,7 +3870,7 @@
       "lower": "Viale del Lavoro",
       "lowerClass": "tertiary",
       "explicitBridge": false,
-      "clearance": 5.4096,
+      "clearance": 5.412,
       "nearbyConnectedEndpoints": 1,
       "ikea": false
     },
@@ -3621,7 +3990,7 @@
       "lower": "Via Sant'Antonio",
       "lowerClass": "tertiary",
       "explicitBridge": false,
-      "clearance": 5.3771,
+      "clearance": 5.3799,
       "nearbyConnectedEndpoints": 2,
       "ikea": false
     },
@@ -3633,7 +4002,7 @@
       "lower": "Via Sant'Antonio",
       "lowerClass": "tertiary",
       "explicitBridge": false,
-      "clearance": 5.3957,
+      "clearance": 5.3962,
       "nearbyConnectedEndpoints": 2,
       "ikea": false
     },
@@ -3717,7 +4086,7 @@
       "lower": "service",
       "lowerClass": "service",
       "explicitBridge": true,
-      "clearance": 5.377,
+      "clearance": 5.3772,
       "nearbyConnectedEndpoints": 0,
       "ikea": false
     },
@@ -3729,7 +4098,7 @@
       "lower": "service",
       "lowerClass": "service",
       "explicitBridge": true,
-      "clearance": 5.3729,
+      "clearance": 5.3761,
       "nearbyConnectedEndpoints": 0,
       "ikea": false
     },
@@ -3741,7 +4110,7 @@
       "lower": "service",
       "lowerClass": "service",
       "explicitBridge": true,
-      "clearance": 5.3788,
+      "clearance": 5.3793,
       "nearbyConnectedEndpoints": 0,
       "ikea": false
     },
@@ -3753,7 +4122,7 @@
       "lower": "Via Pietro Bembo",
       "lowerClass": "secondary",
       "explicitBridge": true,
-      "clearance": 5.378,
+      "clearance": 5.3794,
       "nearbyConnectedEndpoints": 0,
       "ikea": false
     },
@@ -3765,7 +4134,7 @@
       "lower": "Via Pietro Bembo",
       "lowerClass": "secondary",
       "explicitBridge": true,
-      "clearance": 5.3746,
+      "clearance": 5.3773,
       "nearbyConnectedEndpoints": 0,
       "ikea": false
     },
@@ -3801,7 +4170,7 @@
       "lower": "service",
       "lowerClass": "service",
       "explicitBridge": true,
-      "clearance": 5.3852,
+      "clearance": 5.3853,
       "nearbyConnectedEndpoints": 0,
       "ikea": false
     },
@@ -3969,7 +4338,7 @@
       "lower": "Via Po",
       "lowerClass": "residential",
       "explicitBridge": false,
-      "clearance": 4.3506,
+      "clearance": 4.3929,
       "nearbyConnectedEndpoints": 2,
       "ikea": false
     },
@@ -3993,7 +4362,7 @@
       "lower": "Via Po",
       "lowerClass": "residential",
       "explicitBridge": false,
-      "clearance": 4.4036,
+      "clearance": 4.439,
       "nearbyConnectedEndpoints": 2,
       "ikea": false
     },
@@ -4017,7 +4386,7 @@
       "lower": "Via San Marco",
       "lowerClass": "secondary",
       "explicitBridge": false,
-      "clearance": 5.7106,
+      "clearance": 5.7121,
       "nearbyConnectedEndpoints": 1,
       "ikea": true
     },
@@ -4029,7 +4398,7 @@
       "lower": "track",
       "lowerClass": "track",
       "explicitBridge": false,
-      "clearance": 5.6808,
+      "clearance": 5.6831,
       "nearbyConnectedEndpoints": 1,
       "ikea": true
     },
@@ -4245,7 +4614,7 @@
       "lower": "primary",
       "lowerClass": "primary",
       "explicitBridge": true,
-      "clearance": 5.3905,
+      "clearance": 5.3909,
       "nearbyConnectedEndpoints": 0,
       "ikea": false
     },
@@ -4329,7 +4698,7 @@
       "lower": "Via Don Giovanni Minzoni",
       "lowerClass": "track",
       "explicitBridge": true,
-      "clearance": 5.379,
+      "clearance": 5.391,
       "nearbyConnectedEndpoints": 2,
       "ikea": false
     },
@@ -4413,7 +4782,7 @@
       "lower": "Via Ca' Rasi",
       "lowerClass": "unclassified",
       "explicitBridge": true,
-      "clearance": 5.3574,
+      "clearance": 5.3822,
       "nearbyConnectedEndpoints": 2,
       "ikea": false
     },
@@ -4425,7 +4794,7 @@
       "lower": "Via Ca' Rasi",
       "lowerClass": "unclassified",
       "explicitBridge": true,
-      "clearance": 5.3577,
+      "clearance": 5.3859,
       "nearbyConnectedEndpoints": 2,
       "ikea": false
     },
@@ -4449,7 +4818,7 @@
       "lower": "service",
       "lowerClass": "service",
       "explicitBridge": false,
-      "clearance": 5.37,
+      "clearance": 5.3711,
       "nearbyConnectedEndpoints": 1,
       "ikea": false
     },
@@ -4557,7 +4926,7 @@
       "lower": "Via del Commercio",
       "lowerClass": "primary",
       "explicitBridge": true,
-      "clearance": 5.3882,
+      "clearance": 5.3879,
       "nearbyConnectedEndpoints": 2,
       "ikea": false
     },
@@ -4665,7 +5034,7 @@
       "lower": "Viale dell'Industria",
       "lowerClass": "tertiary",
       "explicitBridge": true,
-      "clearance": 5.3798,
+      "clearance": 5.3814,
       "nearbyConnectedEndpoints": 2,
       "ikea": false
     },
@@ -4677,7 +5046,7 @@
       "lower": "Viale dell'Industria",
       "lowerClass": "tertiary",
       "explicitBridge": true,
-      "clearance": 5.3955,
+      "clearance": 5.3969,
       "nearbyConnectedEndpoints": 2,
       "ikea": false
     },
@@ -4713,7 +5082,7 @@
       "lower": "service",
       "lowerClass": "service",
       "explicitBridge": true,
-      "clearance": 5.4274,
+      "clearance": 5.4578,
       "nearbyConnectedEndpoints": 2,
       "ikea": false
     },
@@ -4773,7 +5142,7 @@
       "lower": "Via Ca' Rasi",
       "lowerClass": "unclassified",
       "explicitBridge": true,
-      "clearance": 0.347,
+      "clearance": 5.3882,
       "nearbyConnectedEndpoints": 2,
       "ikea": false
     },
@@ -5037,7 +5406,7 @@
       "lower": "Via Domenico Leonati",
       "lowerClass": "unclassified",
       "explicitBridge": false,
-      "clearance": 5.7831,
+      "clearance": 5.7867,
       "nearbyConnectedEndpoints": 0,
       "ikea": false
     },
@@ -5061,7 +5430,7 @@
       "lower": "Via Pontevigodarzere",
       "lowerClass": "secondary",
       "explicitBridge": true,
-      "clearance": 5.4446,
+      "clearance": 5.4476,
       "nearbyConnectedEndpoints": 2,
       "ikea": false
     },
@@ -5097,7 +5466,7 @@
       "lower": "Via Pontevigodarzere",
       "lowerClass": "secondary",
       "explicitBridge": true,
-      "clearance": 5.4422,
+      "clearance": 5.4423,
       "nearbyConnectedEndpoints": 2,
       "ikea": false
     },
@@ -5121,7 +5490,7 @@
       "lower": "service",
       "lowerClass": "service",
       "explicitBridge": true,
-      "clearance": 5.3591,
+      "clearance": 5.3592,
       "nearbyConnectedEndpoints": 2,
       "ikea": false
     },
@@ -5205,7 +5574,7 @@
       "lower": "Via Madonna del Rosario",
       "lowerClass": "tertiary",
       "explicitBridge": false,
-      "clearance": 5.378,
+      "clearance": 5.3778,
       "nearbyConnectedEndpoints": 1,
       "ikea": false
     },
@@ -5277,7 +5646,7 @@
       "lower": "Via Ronchi Bassi",
       "lowerClass": "unclassified",
       "explicitBridge": false,
-      "clearance": 5.5213,
+      "clearance": 5.5755,
       "nearbyConnectedEndpoints": 2,
       "ikea": false
     },
@@ -5457,7 +5826,7 @@
       "lower": "Corso Sandro Pertini",
       "lowerClass": "tertiary",
       "explicitBridge": true,
-      "clearance": 0.5917,
+      "clearance": 0.8753,
       "nearbyConnectedEndpoints": 2,
       "ikea": false
     }

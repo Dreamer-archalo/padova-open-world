@@ -70,14 +70,26 @@ export function extendGradeApproaches(roads,crossings,reach=130){
     const choices=(ends.get(key(p))||[]).filter(v=>!seen.has(v)&&v!==c.lower).map(v=>{
      const nextSide=key(v.p[0])===key(p)?0:1,q=v.p[nextSide? v.p.length-2:1],vx=q[0]-p[0],vz=q[1]-p[1],vd=Math.hypot(vx,vz)||1;
      const cosine=(dx*vx+dz*vz)/d/vd,sameName=!!r.n&&r.n===v.n,expressMatch=express(r.k)&&express(v.k);
-     return {v,nextSide,cosine,score:cosine+(sameName?.5:0)+(expressMatch?.2:0)};
-    }).filter(v=>v.cosine>.65&&((!!r.n&&v.v.n===r.n)||(express(v.v.k)&&express(r.k))));
+     return {v,nextSide,cosine,score:cosine+(sameName?.5:0)+(expressMatch?.2:0),sameName};
+    }).filter(v=>v.cosine>.65&&(v.sameName||(express(v.v.k)&&express(r.k))||
+     // OSM bridge tags and street names often end at the same vertex. Extend
+     // through a uniquely straight, same-class continuation, not a side road.
+     (v.cosine>.88&&v.v.k===r.k&&!(ends.get(key(p))||[]).some(w=>w!==r&&w!==v.v&&w.k===r.k&&
+      [w.p[0],w.p.at(-1)].some(q=>key(q)===key(p))))));
     choices.sort((a,b)=>b.score-a.score);
     for(const next of choices){if(seen.has(next.v))continue;seen.add(next.v);next.v.gradeSeparated=true;
      let left=remaining;for(let i=1;i<next.v.p.length;i++)left-=Math.hypot(next.v.p[i][0]-next.v.p[i-1][0],next.v.p[i][1]-next.v.p[i-1][1]);
      queue.push({r:next.v,side:1-next.nextSide,remaining:left});
     }
    }
+  }
+ }
+ // The westbound Stati Uniti deck has a long, mapped exit attached to an
+ // interior vertex. Keep that exit on its own grade until it reaches ground.
+ for(const r of roads)if(r.gradeSeparated&&r.n==='Cavalcavia Stati Uniti')for(const p of r.p||[]){
+  for(const v of ends.get(key(p))||[])if(v.n==='Corso Stati Uniti'&&v.k==='primary_link'&&
+   v.p.reduce((length,q,i)=>i?length+Math.hypot(q[0]-v.p[i-1][0],q[1]-v.p[i-1][1]):0,0)>150){
+   v.gradeSeparated=true;
   }
  }
 }

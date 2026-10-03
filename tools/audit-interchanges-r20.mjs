@@ -16,15 +16,26 @@ const crossings=candidates.map(c=>{
   near({x:p[0],z:p[1]},c,110)&&(endpoints.get(key(p))||[]).some(r=>r!==c.upper));
  return {x:+c.x.toFixed(1),z:+c.z.toFixed(1),upper:c.upper.n||c.upper.k,upperClass:c.upper.k,
   lower:c.lower.n||c.lower.k,lowerClass:c.lower.k,explicitBridge:!!(c.upper.b||c.upper.bridge),
-  clearance:+(upperY-lowerY).toFixed(4),nearbyConnectedEndpoints:joints.length,
+  clearance:+(upperY-lowerY).toFixed(4),
+  nearbyConnectedEndpoints:joints.length,
   ikea:near(c,ikea,ikea.radius)};
 });
 const inadequate=crossings.filter(c=>c.clearance<5.2),ikeaCrossings=crossings.filter(c=>c.ikea);
+const service=c=>/^(track|footway|path|cycleway|steps)$/.test(c.lowerClass);
+const physicallyInadequate=crossings.filter(c=>c.clearance<(service(c)?2.6:5.2));
 const report={mapDate:map.dataDate,scope:'Padova extract only; regional map is streamed separately',
- method:'2D OSM centre-line crossings with no shared mapped vertex; candidate order uses explicit bridge tags, road class and bridge names. Manual topology review is required.',
+ method:'2D OSM centre-line crossings with no shared mapped vertex; candidate order uses explicit bridge tags, road class and bridge names. Service tracks have a separate 2.6 m diagnostic threshold; this is not a surveyed clearance or proof of passability. Manual topology review is required.',
  targetClearance:5.4,summary:{candidateCrossings:crossings.length,below5_2m:inadequate.length,
+  belowTypeThreshold:physicallyInadequate.length,vehicleBelow5_2m:physicallyInadequate.filter(c=>!service(c)).length,
+  serviceBelow2_6m:physicallyInadequate.filter(service).length,
   ikeaCrossings:ikeaCrossings.length,ikeaBelow5_2m:ikeaCrossings.filter(c=>c.clearance<5.2).length,
   ikeaConnectedApproaches:ikeaCrossings.filter(c=>c.nearbyConnectedEndpoints).length},
- priority:ikeaCrossings.sort((a,b)=>a.clearance-b.clearance),crossings};
+ priority:ikeaCrossings.sort((a,b)=>a.clearance-b.clearance),
+ unresolved:physicallyInadequate.sort((a,b)=>a.clearance-b.clearance).map(c=>{
+  const candidate=candidates[crossings.indexOf(c)];
+  return {...c,requiredClearance:service(c)?2.6:5.2,
+   rawClearance:+(terrain.roads.rawSample(candidate.upper,candidate.x,candidate.z)-
+    terrain.roads.sample(candidate.lower,candidate.x,candidate.z)).toFixed(4)};
+ }),crossings};
 fs.writeFileSync(new URL('../docs/interchange-audit-r20.json',import.meta.url),JSON.stringify(report,null,2)+'\n');
 console.log('Padova interchange audit',report.summary);
