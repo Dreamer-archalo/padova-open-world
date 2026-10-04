@@ -51,6 +51,7 @@ jobs:
           set -euo pipefail
           npm run test:taxi-r22
           npm run test:road-stunts-r23
+          npm run test:underpass-clearance
           npm run test:jumps
           npm run test:interchanges
           npm run test:geometry-integrity
