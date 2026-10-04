@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import {t} from './tools/controller-harness.mjs';
 import {groundContact,groundVehicleStep} from './dist/vehicle-dynamics.js';
 import {VEHICLES} from './dist/vehicles.js';
+import {vehicleBlocked} from './dist/movement.js';
 
 for(const [x,z] of [[5948,1954],[-1899,4129]]){
  const lanes=t.terrain.roads.candidates(x,z,5).filter(s=>/^(motorway|trunk)_link$/.test(s.road.k));
@@ -9,6 +10,15 @@ for(const [x,z] of [[5948,1954],[-1899,4129]]){
  const heights=lanes.map(s=>s.height);
  assert(Math.max(...heights)-Math.min(...heights)<.4,`overlapping lanes must meet before their common vertex at ${x},${z}`);
  for(const h of heights)assert(Math.abs(t.terrain.height(x,z,h+.075)-(h+.075))<.2,'driveable contact follows the visible lane');
+ for(const lane of lanes){
+  const s=lane.segment,dx=s.b[0]-s.a[0],dz=s.b[1]-s.a[1],length=Math.hypot(dx,dz),yaw=Math.atan2(dx,dz);
+  for(let offset=-6;offset<=6;offset++){
+   const px=x+dx/length*offset,pz=z+dz/length*offset,h=t.terrain.roads.sample(lane.road,px,pz);
+   assert(Math.abs(t.terrain.height(px,pz,h+.075)-h-.075)<.2,'merge lane keeps its own driving level');
+   for(const heading of [yaw,yaw+Math.PI])assert(!vehicleBlocked(px,pz,heading,t.world.collision,VEHICLES.mito,h+.075),
+    `clear swept footprint along both merge approaches at ${px},${pz}`);
+  }
+ }
 }
 
 const goals=t.terrain.arcadeRamps.filter(r=>r.target);
