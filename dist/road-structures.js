@@ -17,7 +17,14 @@ export function roadStructures(terrain){const boxes=[],portals=new Set();
   const key=(lower.road.surfaceId??lower.road.k)+':'+Math.round(q.x/9)+','+Math.round(q.z/9);if(portals.has(key))return;portals.add(key);
   // Side supports stay outside the lower road's full driveable envelope.
   const opening=Math.max(7.4,lower.road.w+3.2),depth=Math.max(2.0,Math.min(3.6,upperRoad.w*.30)),pierW=.62,side=opening/2+pierW/2,archTop=deckBottom+.03,pierH=archTop-lowerY;
-  for(const sign of [-1,1]){const px=q.x+Math.cos(lowerYaw)*side*sign,pz=q.z-Math.sin(lowerYaw)*side*sign;add(px,pz,lowerY-.05,pierW,pierH+.05,depth,lowerYaw,'underpass-pier',upperRoad,{color:'#8f918b'});}
+  for(const sign of [-1,1]){const px=q.x+Math.cos(lowerYaw)*side*sign,pz=q.z-Math.sin(lowerYaw)*side*sign;
+   // The selected underpass road can run beside another carriageway. Leave
+   // enough room for a car on every lower lane, not just the selected one.
+   if(terrain.roads.candidates(px,pz,1.3).some(s=>
+    !/footway|path|steps|cycleway|tram|pedestrian/.test(s.road.k)&&
+    Math.abs(s.height-lowerY)<1.8))continue;
+   add(px,pz,lowerY-.05,pierW,pierH+.05,depth,lowerYaw,'underpass-pier',upperRoad,{color:'#8f918b'});
+  }
  };
  for(const profile of terrain.roads.profiles.values()){const road=profile.road;if(!(road.crossing||road.b||Number(road.layer)>0)||road.k==='tram')continue;let run=0;
   for(let i=1;i<profile.points.length;i++){
