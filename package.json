@@ -16,6 +16,7 @@
     "test:streaming": "node --max-old-space-size=3072 verify-streaming.mjs",
     "test:guardrails": "node --max-old-space-size=3072 verify-motorway-access.mjs",
     "test:jumps": "node --max-old-space-size=3072 verify-vehicle-jumps.mjs",
+    "test:road-stunts-r23": "node --max-old-space-size=3072 verify-motorway-joins-r23.mjs",
     "test:interchanges": "node --max-old-space-size=3072 verify-padova-road-levels-r21.mjs",
     "test:multilane": "node verify-multilane.mjs",
     "test:taxi": "node --check dist/TaxiMenuController.js && node verify-taxi.mjs && node verify-taxi-fare-confirmation.mjs && node verify-regional-taxi-r16.mjs",

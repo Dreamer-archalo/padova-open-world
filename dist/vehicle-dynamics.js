@@ -44,6 +44,14 @@ export function groundVehicleStep(actor,car,input,dt,terrain,collision){
  let j=car.jump;if(!j)j=car.jump={airborne:false,vx:0,vz:0,vy:0,ramp:null,groundVy:0};
  // A teleport or a recovered vehicle must never inherit a stale ballistic arc.
  if(j.lastX!==undefined&&Math.hypot(actor.x-j.lastX,actor.z-j.lastZ)>10){resetGroundMotion(car);return groundVehicleStep(actor,car,input,dt,terrain,collision);}
+ j.boostCooldown=Math.max(0,(j.boostCooldown||0)-dt);
+ if(!j.airborne&&actor.speed>1&&j.boostCooldown===0)for(const r of terrain.arcadeRamps||[]){
+  if(r.kind!=='arcade-ramp'||!r.boostPad)continue;
+  const pad=r.boostPad,dx=actor.x-pad.x,dz=actor.z-pad.z,u=dx*Math.cos(pad.yaw)-dz*Math.sin(pad.yaw),v=dx*Math.sin(pad.yaw)+dz*Math.cos(pad.yaw);
+  if(Math.abs(u)>pad.width/2||Math.abs(v)>pad.length/2)continue;
+  actor.speed=Math.max(actor.speed,r.target?38:Math.min(40,Math.max(spec.max*1.1,actor.speed+7)));
+  j.boostCooldown=2;car.lastRampBoost=r.name;break;
+ }
  car.steerInput=(car.steerInput||0)+(input.turn-(car.steerInput||0))*(1-Math.exp(-dt*(bike?12:9)));
  // Floating-point slope noise near zero must not reverse a stationary tank's
  // steering every frame. Deliberate reverse motion still reverses steering.

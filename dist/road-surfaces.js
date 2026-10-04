@@ -79,7 +79,7 @@ export class RoadSurfaces{
   for(let pass=0;pass<4;pass++){const heap=new MaxHeap();for(const c of crossings){const a=this.nodes[c.ia],b=this.nodes[c.ib],required=this.segmentHeight(c.other,c.v)+c.clearance+.4,current=a.h*(1-c.u)+b.h*c.u;if(required>current+.01){const lift=Math.min(2,required-current,a.base+c.maxLift-a.h,b.base+c.maxLift-b.h);if(lift<=.01)continue;a.h+=lift;b.h+=lift;heap.push({id:c.ia,h:a.h});heap.push({id:c.ib,h:b.h});}}
    if(!heap.a.length)break;while(heap.a.length){const item=heap.pop(),n=this.nodes[item.id];if(item.h<n.h-.001)continue;for(const e of n.edges){const q=this.nodes[e.id],h=n.h-e.d*e.grade;if(h>q.h+.001){q.h=h;heap.push({id:e.id,h});}}}
   }
-  if(this.modern){this.alignParallelDecks();this.smoothProfiles();this.protectClearance(crossings);}
+  if(this.modern){this.alignParallelDecks();this.smoothProfiles();this.protectClearance(crossings);this.harmonizeMergeLanes();}
   for(const profile of this.profiles.values())for(let i=1;i<profile.ids.length;i++){const a=this.nodes[profile.ids[i-1]],b=this.nodes[profile.ids[i]],grade=Math.abs(a.h-b.h)/Math.max(.01,distance(profile.points[i-1],profile.points[i]));if(grade>(profile.road.k==='steps'?.65:this.modern?.055:MAX_GRADE)+.005)this.report.steep.push({road:profile.id,grade});}
   for(const n of this.nodes){n.degree=new Set(n.edges.map(e=>e.id)).size;delete n.edges;}
  }
@@ -95,6 +95,36 @@ export class RoadSurfaces{
     }
    }
   }
+ }
+ harmonizeMergeLanes(){
+  // OSM often models an accelerating lane and the through lane as two ways
+  // sharing an end vertex. Their centre heights agree at that vertex, but the
+  // wide meshes overlap well before it. Bring the lower lane up through its
+  // own grade-limited approach before the adjacent asphalt becomes a roof.
+  const express=road=>/^(motorway|trunk)(?:_link)?$/.test(road.k||'');
+  const ends=road=>[road.p[0],road.p.at(-1)];
+  const sharedEnd=(a,b,x,z)=>ends(a).some(u=>ends(b).some(v=>
+   distance(u,v)<.25&&Math.hypot(x-u[0],z-u[1])<130));
+  const heap=new MaxHeap();
+  for(const p of this.profiles.values()){
+   if(!express(p.road)||!p.road.k.endsWith('_link')||p.tunnel)continue;
+   for(let i=0;i<p.ids.length;i++){
+    const n=this.nodes[p.ids[i]],prev=p.points[Math.max(0,i-1)],next=p.points[Math.min(i+1,p.points.length-1)];
+    const dx=next[0]-prev[0],dz=next[1]-prev[1],length=Math.hypot(dx,dz);if(length<.01)continue;
+    for(const s of this.index.near(n.x,n.z,9)){
+     const other=s.profile.road;if(other===p.road||!express(other)||s.profile.tunnel||!sharedEnd(p.road,other,n.x,n.z))continue;
+     const ex=s.b[0]-s.a[0],ez=s.b[1]-s.a[1],span=Math.hypot(ex,ez);if(span<.01||Math.abs((dx*ex+dz*ez)/length/span)<.72)continue;
+     const q=nearestOnSegment(n.x,n.z,s.a,s.b),offset=Math.hypot(n.x-q.x,n.z-q.z);
+     if(offset>Math.min(7,(p.road.w+other.w)/2-1))continue;
+     const upper=this.segmentHeight(s,q.t),rise=upper-n.h;
+     if(rise>.25&&rise<3.5){n.h=upper;heap.push({id:p.ids[i],h:n.h});}
+    }
+   }
+  }
+  while(heap.a.length){const item=heap.pop(),n=this.nodes[item.id];if(item.h<n.h-1e-7)continue;
+   for(const e of n.edges){const q=this.nodes[e.id],h=n.h-e.d*e.grade;if(h>q.h+1e-7){q.h=h;heap.push({id:e.id,h});}}
+  }
+  this.updateSlopes();
  }
  protectClearance(crossings){
   for(let pass=0;pass<4;pass++){
