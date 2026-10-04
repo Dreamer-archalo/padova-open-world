@@ -68,6 +68,28 @@ jobs:
           node verify-city-micromobility.mjs
           node verify-feature-preservation.mjs
           node tools/verify-mandria-v11-roads.mjs
+      - name: Recover regional map for the definitive game
+        shell: bash
+        run: |
+          set -euo pipefail
+          for name in venice.json region-padova-venice.json world-padova-venice.json world-terrain.json map-hd-extras.json; do
+            found=false
+            for label in taxi-r22 road-levels-r21 padova-npc-r17 dealerships unified; do
+              url="https://dreamer-archalo.github.io/padova-open-world/preview/$label/data/$name"
+              if curl --fail --silent --show-error --location --max-time 45 "$url" -o "dist/data/$name"; then
+                echo "Recovered $name from $label"
+                found=true
+                break
+              fi
+            done
+            if test "$found" != true && test "$name" != map-hd-extras.json; then
+              echo "Missing required regional file: $name" >&2
+              exit 1
+            fi
+          done
+          for name in venice.json region-padova-venice.json world-padova-venice.json world-terrain.json; do
+            test -s "dist/data/$name"
+          done
       - name: Full elevation audit — mandatory continuous street geometry
         run: npm run test:geometry-integrity
       - name: Checkout historic PR 51 playtest separately
