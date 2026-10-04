@@ -52,10 +52,12 @@ export function roadStructures(terrain){const boxes=[],portals=new Set();
  }
  if(terrain.modern)return boxes.filter(b=>{
   if(/^underpass-/.test(b.kind))return true;
-  const candidates=[];for(const t of [-.5,-.25,0,.25,.5]){const x=b.x+Math.sin(b.yaw)*b.length*t,z=b.z+Math.cos(b.yaw)*b.length*t;for(const s of terrain.roads.candidates(x,z,b.kind==='deck'?0:1.3))if(s.road!==b.road&&!/footway|path|steps|cycleway|tram|pedestrian/.test(s.road.k))candidates.push(s);}
+  const candidates=[];for(const t of [-.5,-.25,0,.25,.5]){const x=b.x+Math.sin(b.yaw)*b.length*t,z=b.z+Math.cos(b.yaw)*b.length*t;for(const s of terrain.roads.candidates(x,z,1.3))if(s.road!==b.road&&!/footway|path|steps|cycleway|tram|pedestrian/.test(s.road.k))candidates.push(s);}
   if(b.kind!=='deck')return !candidates.some(s=>s.height+2>b.minY&&s.height<b.minY+b.h+.2);
-  // A neighbouring deck cannot move this slab independently of its asphalt.
-  return true;
+  // A bridge tag may cover a river crossing or a pedestrian path that meets
+  // another road at road level. Its decorative slab must not become a low
+  // ceiling across that road; the asphalt still has terrain/road support.
+  return !candidates.some(s=>s.height<b.driveTopMin-.35&&s.height+1.85>b.minY);
  });
  return boxes;
 }
