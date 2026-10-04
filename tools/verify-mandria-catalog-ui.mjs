@@ -11,9 +11,10 @@ import {hangarCatalogue} from '../dist/villa-mandria-hangar.js';
 import {HANGAR_SECTIONS,hangarSection,hangarPreviewModel} from '../dist/villa-mandria-catalog-ui.js';
 const all=hangarCatalogue(),ids=all.map(e=>e.id);
 assert.deepEqual(HANGAR_SECTIONS.map(s=>s.id),['air','land','urban','water']);
-assert(HANGAR_SECTIONS.find(s=>s.id==='water')?.enabled===false,'boats must not imply playable vehicles');
+assert(HANGAR_SECTIONS.find(s=>s.id==='water')?.enabled===true,'playable boats keep their hangar category');
 assert(ids.length>=52,'do not lose the existing vehicle registry');
-assert(ids.every(id=>['air','land','urban'].includes(hangarSection(id,VEHICLES[id]))),'every existing vehicle in one available top-level category');
+assert(ids.every(id=>['air','land','urban','water'].includes(hangarSection(id,VEHICLES[id]))),'every existing vehicle in one available top-level category');
+assert(ids.filter(id=>hangarSection(id)==='water').length>=10,'registered watercraft remain available');
 assert.equal(hangarSection('bicycle'),'urban');
 assert.equal(hangarSection('kick-scooter'),'urban');
 assert.equal(hangarSection('tank'),'land');
@@ -29,7 +30,7 @@ for(const id of examples){
  assert(count>0,'preview model has no renderable geometry '+id);
 }
 const aircraft=ids.filter(id=>hangarSection(id)==='air');
-assert.equal(aircraft.length,16,'verify all 16 currently catalogued aircraft');
+assert(aircraft.length>=16,'preserve the original 16 aircraft alongside new models');
 for(const id of aircraft){
  // In the reported bug a live world actor could be a truck placeholder. Its
  // clone must never be used when a dedicated aircraft preview is requested.
@@ -39,4 +40,4 @@ for(const id of aircraft){
  let meshes=0;object.traverse(o=>{if(o.isMesh)meshes++;});
  assert(meshes>0,'aircraft preview has no mesh: '+id);
 }
-console.log('PASS hangar sections: '+JSON.stringify({total:ids.length,air:aircraft.length,land:ids.filter(id=>hangarSection(id)==='land').length,urban:ids.filter(id=>hangarSection(id)==='urban').length,boats:'disabled',modelFactories:examples.length,aircraftPlaceholderRegressions:aircraft.length}));
+console.log('PASS hangar sections: '+JSON.stringify({total:ids.length,air:aircraft.length,land:ids.filter(id=>hangarSection(id)==='land').length,urban:ids.filter(id=>hangarSection(id)==='urban').length,boats:ids.filter(id=>hangarSection(id)==='water').length,modelFactories:examples.length,aircraftPlaceholderRegressions:aircraft.length}));

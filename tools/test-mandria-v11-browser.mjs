@@ -23,12 +23,10 @@ try{
  assert(estate.apes.length>=3&&estate.apes.every(c=>c.waypoints>40),'long Ape circuits were lost');
  assert(estate.horses>=2&&estate.v10.roamingHorses>=1,'horses must remain in arena and on estate');
  assert(estate.v9.workers>=8&&estate.v11.zonedWorkers>=0,'workforce must be preserved');
- assert(estate.menu,'v11 test tools must be present only when requested');
- phase='inspection menu';await page.keyboard.press('F8');await page.waitForFunction(()=>!document.querySelector('#mandriaV11Qa [data-panel]')?.hidden,null,{timeout:10000});
- await page.locator('#mandriaV11Qa [data-site="rear"]').click();
- const teleported=await page.evaluate(async()=>{const g=globalThis.__mandriaV11,{areaLocal,VILLA}=await import('./gameplay-areas.js'),p=areaLocal(VILLA,g.state.x,g.state.z);
-  return {u:p.u,v:p.v,mode:g.state.mode,panel:document.querySelector('#mandriaV11Qa [data-panel]').hidden};});
- assert(teleported.mode==='foot'&&teleported.panel&&teleported.v<0&&Math.abs(teleported.u)<50,'debug teleport must reach safe rear estate on foot');
+ assert(!estate.menu,'production must not expose the old v11 debug teleport menu');
+ phase='rear estate inspection';const teleported=await page.evaluate(async()=>{const g=globalThis.__mandriaV11,{areaLocal,areaPoint,VILLA}=await import('./gameplay-areas.js'),target=areaPoint(VILLA,0,-48);Object.assign(g.state,{x:target.x,z:target.z,y:g.terrain.height(target.x,target.z),mode:'foot',car:null,speed:0,vy:0});const p=areaLocal(VILLA,g.state.x,g.state.z);
+  return {u:p.u,v:p.v,mode:g.state.mode};});
+ assert(teleported.mode==='foot'&&teleported.v<0&&Math.abs(teleported.u)<1,'inspection reaches the rear estate on foot');
  phase='distance detail';await page.waitForFunction(()=>globalThis.__mandriaV11.villaV11.report.lodChanges>0,null,{timeout:15000});
  phase='geometry movement';await page.waitForTimeout(1200);
  const geometry=await page.evaluate(()=>{const g=globalThis.__mandriaV11;
