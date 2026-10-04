@@ -25,7 +25,7 @@ import {applyCityData,Districts,DISTRICTS} from './districts.js';
 import * as THREE from './vendor/three.module.js';
 import {RegionalWorld} from './regional-world.js?v=venice-perf-r15';
 import {RegionalAirTraffic} from './regional-air-traffic.js';
-import {UnifiedMap} from './unified-map.js?v=carto-r10';
+import {UnifiedMap,mapWheelZoomFactor} from './unified-map.js?v=taxi-map-r22';
 import {VisibleMapTiles} from './map-live-tiles.js?v=hd-water-r4';
 import {LocalRespawn} from './local-respawn.js';
 import {WaterGameplay} from './water-gameplay.js?v=hd-water-r4';
@@ -116,13 +116,17 @@ async function startUnifiedRegion(){
     if(unifiedMap){unifiedMap.addMapDetail(extras);if($('mapDialog').open)drawFullMap();}
    }).catch(error=>console.warn('[HD map] Optional extra parcels unavailable; existing vectors remain sharp:',error));
   const full=$('fullmap'),place=$('mapDialog');
-  full.onwheel=ev=>{if(!place.open||taxiMapPick)return;ev.preventDefault();
+  full.style.touchAction='none';
+  let mapDrawQueued=false;
+  const queueMapDraw=()=>{if(mapDrawQueued)return;mapDrawQueued=true;requestAnimationFrame(()=>{mapDrawQueued=false;if(place.open)drawFullMap();});};
+  full.onwheel=ev=>{if(!place.open)return;ev.preventDefault();
     const rect=full.getBoundingClientRect();
+    if(!(rect.width>0&&rect.height>0))return;
     unifiedMap.zoomAt((ev.clientX-rect.left)*full.width/rect.width,
-      (ev.clientY-rect.top)*full.height/rect.height,ev.deltaY<0?1:-1);
-    drawFullMap();};
+      (ev.clientY-rect.top)*full.height/rect.height,mapWheelZoomFactor(ev.deltaY,ev.deltaMode,rect.height),{factor:true});
+    queueMapDraw();};
   full.addEventListener('pointerdown',ev=>{
-    if(!place.open||taxiMapPick||ev.button!==0)return;
+    if(!place.open||ev.button!==0)return;
     full.setPointerCapture(ev.pointerId);
     if(ev.pointerType==='touch'){
      mapTouches.set(ev.pointerId,{x:ev.clientX,y:ev.clientY});
@@ -142,7 +146,7 @@ async function startUnifiedRegion(){
        const rect=full.getBoundingClientRect(),x=(a.x+b.x)/2,y=(a.y+b.y)/2;
        unifiedMap.zoomAt((x-rect.left)*full.width/rect.width,
         (y-rect.top)*full.height/rect.height,length/mapPinchDistance,{factor:true});
-       drawFullMap();
+       queueMapDraw();
       }
       mapPinchDistance=length;mapDragged=true;return;
      }
@@ -152,7 +156,7 @@ async function startUnifiedRegion(){
     if(Math.abs(dx)+Math.abs(dy)>3)mapDragged=true;
     if(mapDragged){
      const rect=full.getBoundingClientRect();
-     unifiedMap.pan(dx*full.width/rect.width,dy*full.height/rect.height);drawFullMap();
+     unifiedMap.pan(dx*full.width/rect.width,dy*full.height/rect.height);queueMapDraw();
     }
     mapPointer.x=ev.clientX;mapPointer.y=ev.clientY;
    });

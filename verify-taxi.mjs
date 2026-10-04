@@ -67,7 +67,9 @@ for(const [label,expected] of [
 assert(controller.includes('executeConfirmedTransition()')&&controller.includes('openConfirmation('),'menu requires confirmed transition');
 assert(system.includes('async travel('),'TaxiSystem exposes asynchronous loading');
 assert(loading.includes('show(')&&loading.includes('hide('),'loading overlay has show and hide');
-assert(mapUI.includes('mapPointFromPointer'),'custom destination pointer conversion exists');
+assert(mapUI.includes('activities.prepend(choose)'),'custom destination remains first in taxi menu');
+assert(!mapUI.includes('guardTaxiConfirmation')&&!mapUI.includes('ensureTestWallet'),'taxi UI must not intercept confirmation or modify saved money');
+assert(game.includes('unifiedMap.fromCanvas(')&&game.includes('taxiMenuController.onSelectFromMap('),'custom map destination uses the map viewport');
 assert(html.includes('TAXI ABUSIVO IN TRANSITO…'),'taxi loading markup exists');
 assert(fs.statSync('dist/assets/taxi-loading-pixel-atlas.webp').size>100000,'pixel-art atlas present');
 console.log('PASS current taxi: fare, ten destinations, route, dispatch, bounds and runtime wiring; visual WebGL still requires manual test');

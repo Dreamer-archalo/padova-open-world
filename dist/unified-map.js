@@ -4,6 +4,11 @@ import {REGIONAL_ZONES} from './unified-regions.js';
 import {VectorMapDetail} from './unified-map-detail.js?v=carto-r10';
 import {VisibleMapTiles} from './map-live-tiles.js?v=hd-water-r4';
 
+export function mapWheelZoomFactor(deltaY,deltaMode=0,viewportHeight=700){
+ const pixels=deltaY*(deltaMode===1?16:deltaMode===2?viewportHeight:1);
+ return Math.exp(Math.max(-180,Math.min(180,-pixels))*.002);
+}
+
 export class UnifiedMap {
  constructor(canvas,padovaCanvas,padovaBounds,region,padovaData=null){
   this.canvas=canvas;this.padova=padovaCanvas;this.padovaBounds=padovaBounds;this.region=region;
