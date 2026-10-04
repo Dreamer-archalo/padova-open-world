@@ -1,4 +1,5 @@
 import {StreetHeightField} from './street-height-field.js';
+import {findGradeCrossings,extendGradeApproaches} from './road-grade-crossings.js';
 import {SpatialIndex,nearestOnSegment,clamp} from './core.js';
 
 export const MAX_GRADE=.085;
@@ -9,6 +10,8 @@ class MaxHeap{constructor(){this.a=[];}push(v){let i=this.a.length;this.a.push(v
 // without a shared OSM vertex stay separate, so the lower street remains usable.
 export class RoadSurfaces{
  constructor(map,terrain){this.terrain=terrain;this.modern=terrain.modern;this.index=new SpatialIndex(80);this.nodes=[];this.profiles=new Map();this.report={roads:map.roads.length,inferred:[],submergedEnds:[],steep:[],layers:0,culverts:0};const lookup=new Map();
+  const gradeCrossings=this.gradeCrossings=this.modern?findGradeCrossings(map.roads):[];
+  if(this.modern)extendGradeApproaches(map.roads,gradeCrossings);
   // The compact OSM import stores both building passages and underground ways
   // as tunnel=true. Only an explicitly negative layer establishes a subsurface
   // level. A covered portico must not excavate its entire connected street.
@@ -29,9 +32,9 @@ export class RoadSurfaces{
    const ids=[],points=[];for(let i=1;i<road.p.length;i++){const a=road.p[i-1],b=road.p[i],n=Math.max(1,Math.ceil(distance(a,b)/9));for(let j=i===1?0:1;j<=n;j++){const p=[a[0]+(b[0]-a[0])*j/n,a[1]+(b[1]-a[1])*j/n];points.push(p);ids.push(node(p,j===0||j===n,road,i===1&&j===0||i===road.p.length-1&&j===n));}}
    if(ids.length<2)continue;
    const wet=points.map(p=>!terrain.prato(...p)&&terrain.waterDistance(...p)<0),hasWater=wet.some(Boolean),explicit=!!road.b,layer=Number(road.layer)||0,tunnel=!!road.tunnel;
-   const inferred=hasWater&&!explicit&&!tunnel;road.crossing=explicit||inferred;road.surfaceId=id;
+   const inferred=hasWater&&!explicit&&!tunnel;road.crossing=explicit||inferred||!!road.gradeSeparated;road.surfaceId=id;
    if(inferred)this.report.inferred.push(id);if(wet[0]||wet.at(-1))this.report.submergedEnds.push(id);if(layer||tunnel)this.report.layers++;
-   const riverDeck=this.modern&&!tunnel&&!/motorway|trunk/.test(road.k)&&layer<=1&&points.some(p=>terrain.waterDistance(...p)<40);
+   const riverDeck=this.modern&&!tunnel&&!road.gradeSeparated&&!/motorway|trunk/.test(road.k)&&layer<=1&&points.some(p=>terrain.waterDistance(...p)<40);
    const profile={id,road,ids,points,wet,hasWater,layer,tunnel,riverDeck};this.profiles.set(road,profile);
    for(let i=0;i<ids.length;i++){
     const n=this.nodes[ids[i]];
@@ -56,6 +59,23 @@ export class RoadSurfaces{
     crossings.push({maxLift:Math.max(1,order(p))*6+3,ia:p.ids[i-1],ib:p.ids[i],u,other:s,v,clearance:['footway','path','cycleway','steps'].includes(s.profile.road.k)?2.6:4.8});
    }
   }}
+  // Untagged expressway bridges are separated in the imported OSM topology
+  // despite the missing layer tag. Use those geometric crossings in the same
+  // grade solver as tagged bridges, without creating a traffic junction.
+  for(const c of gradeCrossings){
+   if(c.upper.b||Number(c.upper.layer)>0)continue;
+   const upper=this.profiles.get(c.upper),lower=this.profiles.get(c.lower);
+   if(!upper||!lower)continue;
+   const nearest=p=>{let best=null,d=Infinity;for(let i=1;i<p.points.length;i++){
+    const q=nearestOnSegment(c.x,c.z,p.points[i-1],p.points[i]),dd=Math.hypot(q.x-c.x,q.z-c.z);
+    if(dd<d){d=dd;best={i,u:q.t};}
+   }return best;};
+   const up=nearest(upper),down=nearest(lower);
+   if(!up||!down)continue;
+   crossings.push({maxLift:9,ia:upper.ids[up.i-1],ib:upper.ids[up.i],u:up.u,
+    other:{ia:lower.ids[down.i-1],ib:lower.ids[down.i],a:lower.points[down.i-1],b:lower.points[down.i],profile:lower,i:down.i-1},
+    v:down.u,clearance:4.8});
+  }
   for(let pass=0;pass<4;pass++){const heap=new MaxHeap();for(const c of crossings){const a=this.nodes[c.ia],b=this.nodes[c.ib],required=this.segmentHeight(c.other,c.v)+c.clearance+.4,current=a.h*(1-c.u)+b.h*c.u;if(required>current+.01){const lift=Math.min(2,required-current,a.base+c.maxLift-a.h,b.base+c.maxLift-b.h);if(lift<=.01)continue;a.h+=lift;b.h+=lift;heap.push({id:c.ia,h:a.h});heap.push({id:c.ib,h:b.h});}}
    if(!heap.a.length)break;while(heap.a.length){const item=heap.pop(),n=this.nodes[item.id];if(item.h<n.h-.001)continue;for(const e of n.edges){const q=this.nodes[e.id],h=n.h-e.d*e.grade;if(h>q.h+.001){q.h=h;heap.push({id:e.id,h});}}}
   }
@@ -122,7 +142,7 @@ export class RoadSurfaces{
  rawCandidates(x,z,margin=0){const found=[];for(const s of this.index.near(x,z,this.modern?margin:0)){const q=nearestOnSegment(x,z,s.a,s.b),d=Math.hypot(x-q.x,z-q.z);if(d<=s.profile.road.w/2+margin)found.push({height:this.segmentHeight(s,q.t),road:s.profile.road,d,segment:s});}if(!this.modern)return found;const closest=new Map();for(const s of found){const previous=closest.get(s.road);if(!previous||s.d<previous.d-1e-7)closest.set(s.road,s);}return [...closest.values()];}
  // Ordinary streets, tram tracks and pavements share this world-space field.
  // Grade-separated decks retain their own profile, including their sidewalk.
- shared(road){const p=this.profiles.get(road);return !!p&&!p.tunnel&&(p.riverDeck||!road.b);}
+ shared(road){const p=this.profiles.get(road);return !!p&&!p.tunnel&&(p.riverDeck||!road.b&&!road.gradeSeparated&&!/^(motorway|trunk)(?:_link)?$/.test(road.k||''));}
  streetHeight(x,z){this.streetField??=new StreetHeightField(this);return this.streetField.sample(x,z);}
  solveDeckProfiles(){
   if(this.deckProfilesReady)return;

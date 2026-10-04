@@ -1,5 +1,6 @@
 import * as THREE from './vendor/three.module.js';
 import {dist,angleDiff,clamp} from './core.js';
+import {vehicleBlocked} from './movement.js';
 export class TrafficSignals{
  constructor(graph,mapped=[]){this.graph=graph;this.junctions=new Map();
   const incoming=new Map();for(const s of graph.segments){if(s.road.k==='pedestrian'||s.road.junction==='roundabout'||s.road.roundabout||/motorway|trunk/.test(s.road.k))continue;const direction=s.road.oneway??(s.road.one?1:0);for(const [from,to] of [[s.a,s.b],[s.b,s.a]]){if(direction===1&&to===s.a||direction===-1&&to===s.b)continue;const a=graph.nodes[from],n=graph.nodes[to];if(!incoming.has(to))incoming.set(to,[]);incoming.get(to).push({from,road:s.road,yaw:Math.atan2(n.x-a.x,n.z-a.z)});}}
@@ -58,6 +59,20 @@ export function trafficLane(car,target,actors,player,time,nextYaw=null){
  car.desiredLane=desired;return desired;
 }
 export function advanceTrafficSpeed(car,desired,dt){const wanted=clamp((desired-car.speed)/Math.max(dt,1/60),-car.spec.brake*.72,car.spec.accel*.72),jerk=wanted<(car.longAccel||0)?car.spec.brake*3:car.spec.accel*2.2;car.longAccel=(car.longAccel||0)+clamp(wanted-(car.longAccel||0),-jerk*dt,jerk*dt);car.speed=Math.max(0,car.speed+car.longAccel*dt);if(desired===0&&car.speed<.08){car.speed=0;car.longAccel=0;}return car.speed;}
+// Pick a reachable curb on the car's current directed road segment, ahead of
+// the car. The old graph targets remain intact for departure after the visit.
+export function curbParkingTarget(car,node,terrain,collision,actors=[]){
+ const road=car.road;if(!node||!road||road.w<6.5||road.w>15||!/^(residential|tertiary|secondary|unclassified|service)$/.test(road.k||''))return null;
+ const ahead=dist(car,node);if(ahead<18)return null;
+ const yaw=Math.atan2(node.x-car.x,node.z-car.z),along=Math.min(20,ahead-8),cx=car.x+Math.sin(yaw)*along,cz=car.z+Math.cos(yaw)*along;
+ for(const side of [1,-1]){const offset=road.w/2+car.spec.width/2+.5,x=cx+Math.cos(yaw)*side*offset,z=cz-Math.sin(yaw)*side*offset,y=terrain.height(x,z,car.y);
+  const exit={x:x+Math.cos(yaw)*side*(car.spec.width/2+1),z:z-Math.sin(yaw)*side*(car.spec.width/2+1)};
+  if(!terrain.dry(x,z,car.spec.width/2,y)||!terrain.dry(exit.x,exit.z,.4,y)||vehicleBlocked(x,z,yaw,collision,car.spec,y))continue;
+  if(actors.some(a=>a!==car&&a.mesh?.visible&&Math.abs((a.y||0)-y)<3&&dist(a,{x,z})<(a.spec.length+car.spec.length)/2+2))continue;
+  return {x,z,y,yaw,exit,lane:{x:cx,z:cz}};
+ }
+ return null;
+}
 function roundaboutRoad(road){return road?.junction==='roundabout'||road?.roundabout===true||road?.j==='roundabout';}
 export function trafficSpeed(car,target,actors,signals,time,{nextYaw=null}={}){const yaw=Math.atan2(target.x-car.x,target.z-car.z),turn=Math.abs(angleDiff(yaw,car.yaw)),road=car.road,k=road?.k||'',limit=/motorway|trunk/.test(k)?31:k==='primary'?18:k==='secondary'?15:k==='pedestrian'?3:10,family=car.spec.family||car.style||'',mood=scooterMood(car),moodFactor=mood==='group'?1.12:mood==='wheelie'?1.08:mood==='zigzag'?1.06:1,classFactor=(['sport','supercar'].includes(family)?1.1:['freight','work','van','truck','utility'].includes(family)?.86:1)*moodFactor,curve=clamp(1-turn/1.25,.3,1);let speed=Math.min(car.spec.max*.86,limit*(car.driver||1)*classFactor)*curve;
  if(mood==='group'){const friend=actors.find(a=>a!==car&&['scooter','motorcycle'].includes(a.style)&&a.mesh?.visible&&dist(a,car)<35);if(friend)speed=Math.min(car.spec.max*.88,Math.max(speed,friend.speed*.97));}

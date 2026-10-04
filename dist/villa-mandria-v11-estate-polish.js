@@ -85,27 +85,11 @@ function distanceDetail(g,s){if(g.state.elapsed<s.nextLOD)return;s.nextLOD=g.sta
   if(animal.v11Detail===level)continue;animal.v11Detail=level;shadows(animal.a,level==='near');s.report.lodChanges++;
  }
 }
-function testLocation(g,options){for(const [u,v] of options){const p=at(u,v);if(mandriaFree(g,u,v,.85,2.3)&&Number.isFinite(g.terrain.height(p.x,p.z)))return p;}return null;}
-function showMenu(g,s){if(typeof document==='undefined'||s.menu)return;
- const allowed=location.pathname.includes('/preview/')||new URLSearchParams(location.search).has('estateDebug');if(!allowed)return;
- const css=document.createElement('style');css.textContent=`#mandriaV11Qa{position:fixed;z-index:91;right:12px;bottom:12px;max-width:min(290px,92vw);font:13px/1.35 system-ui;color:#f7edce}#mandriaV11Qa button{cursor:pointer;background:#19322e;color:#f7edce;border:1px solid #c4a46e;padding:8px;border-radius:7px}#mandriaV11Qa [data-panel]{margin-top:4px;background:#132721ed;border:1px solid #c4a46e;padding:10px;border-radius:8px;display:grid;gap:6px}#mandriaV11Qa [hidden]{display:none}`;document.head.append(css);
- const box=document.createElement('div');box.id='mandriaV11Qa';box.innerHTML='<button type="button" data-toggle>COLLAUDO VILLA · F8</button><div data-panel hidden><strong>Teletrasporto di prova (a piedi)</strong><button data-site="road">Strada esterna</button><button data-site="horses">Circuito cavalli</button><button data-site="store">Magazzino / camion</button><button data-site="rear">Retro della villa</button><button data-site="farm">Fattoria e lavoratori</button><small>Solo anteprima: non altera i salvataggi.</small></div>';document.body.append(box);
- const panel=box.querySelector('[data-panel]'),toggle=()=>{panel.hidden=!panel.hidden;};box.querySelector('[data-toggle]').addEventListener('click',toggle);
- const destinations={road:[[0,91],[12,95],[-12,91],[0,110]],horses:()=>{const c=g.villaV4.corral;return [[c.u+13,c.v],[c.u-13,c.v],[c.u,c.v+13]];},store:[[-8,38],[-15,32],[-7,29]],rear:[[0,-48],[-31,-50],[28,-48]],farm:[[-90,-65],[92,-65],[-97,-23]]};
- box.addEventListener('click',e=>{const id=e.target?.dataset?.site;if(!id||!g.state?.started)return;
-  let opts=typeof destinations[id]==='function'?destinations[id]():destinations[id];if(id==='road'){
-   const road=(g.map?.roads||g.city?.roads||[]).find(r=>r.estateBypass);if(road?.p?.length)opts=[...road.p.slice(Math.floor(road.p.length/2),Math.floor(road.p.length/2)+2).map(p=>{const c=areaLocal(VILLA,...p);return [c.u,c.v];}),...opts];
-  }const p=testLocation(g,opts);if(!p){g.toast?.('Nessun punto di collaudo libero per questa destinazione.',3);return;}
-  const state=g.state;if(state.car)state.car.speed=0;Object.assign(state,{mode:'foot',car:null,x:p.x,z:p.z,y:g.terrain.height(p.x,p.z),speed:0,vy:0});g.toast?.('Collaudo: '+e.target.textContent,2);panel.hidden=true;
- });
- const key=e=>{if(e.code==='F8'&&!e.repeat){e.preventDefault();toggle();}};window.addEventListener('keydown',key);
- s.menu=box;s.cleanup=()=>{window.removeEventListener('keydown',key);box.remove();css.remove();};
-}
 export function mandriaV11Update(g,dt){if(!g.state?.started||!g.villaV10||!g.villaV9||!Number.isFinite(dt)||dt<=0)return;
  if(!g.villaV11||g.villaV11.life!==g.villaLife){g.villaV11?.cleanup?.();g.villaV11?.root?.parent?.remove(g.villaV11.root);
   const root=new THREE.Group();root.name='Mandria v11 · corsie sterrate di servizio';g.villaV10.root.add(root);
   const s={root,life:g.villaLife,report:{serviceCars:0,separatedSections:0,zonedWorkers:0,horseRoutesReviewed:0,horseRoutesSeparated:0,lodChanges:0},nextLOD:0,menu:null};g.villaV11=s;
   makeServiceLanes(g,s);separateHorses(g,s);workZones(g,s);
  }
- const s=g.villaV11;keepWorkersZoned(g,s);distanceDetail(g,s);showMenu(g,s);
+ const s=g.villaV11;keepWorkersZoned(g,s);distanceDetail(g,s);
 }

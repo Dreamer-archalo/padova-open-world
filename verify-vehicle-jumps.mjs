@@ -6,7 +6,7 @@ import {VEHICLES} from './dist/vehicles.js';
 import {SpatialIndex} from './dist/core.js';
 
 const ramps=t.terrain.arcadeRamps||[];
-assert.equal(ramps.filter(r=>r.name==='Salto laterale').length,4,'retain four mapped motorway jump ramps');
+assert.equal(ramps.filter(r=>r.name==='Salto laterale').length,8,'eight collision-checked motorway jump ramps');
 const airportRamps=ramps.filter(r=>r.name?.startsWith('Aeroporto · rampa'));
 assert(airportRamps.length>=1,'airport must contain at least one collision-checked playable ramp');
 const results=[];
@@ -29,4 +29,4 @@ assert(turbo.yaw>1,'turbo steering remains effective');assert(turbo.yaw<normal.y
 assert.equal(JUMP_GRAVITY,18);assert(steeringRate(VEHICLES.cinquecento,110)>1);
 const report={ramps:results,airportRamps:airportRamps.length,gravity:JUMP_GRAVITY,steeringRadiansPerSecond:{cinquecentoNormal:normal.yaw,cinquecentoTurbo:turbo.yaw,motorcycle:moto.yaw,airborne:air.yaw}};
 fs.writeFileSync('docs/vehicle-jump-results.json',JSON.stringify(report,null,2)+'\n');
-console.log('PASS four original and airport stunt ramps, ballistic motion, landing and high-speed steering',report);
+console.log('PASS eight motorway and airport stunt ramps, ballistic motion, landing and high-speed steering',report);

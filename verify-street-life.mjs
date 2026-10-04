@@ -4,6 +4,7 @@ import assert from 'node:assert/strict';
 const read=p=>fs.readFileSync(new URL(p,import.meta.url),'utf8');
 const taxi=read('./dist/taxi-service.js');
 const map=read('./dist/taxi-map-ui.js');
+const game=read('./dist/game.js');
 const cruise=read('./dist/cruise-control.js');
 const traffic=read('./dist/traffic.js');
 const pursuit=read('./dist/ambient-pursuits.js');
@@ -15,8 +16,8 @@ const destinations=['Prato della Valle','Piazza dei Signori','Portello','Aeropor
 for(const name of destinations)assert.ok(taxi.includes(name),`Taxi destination missing: ${name}`);
 for(const old of ['Sacro Cuore','Stazione Centrale','Villa Treves'])assert.ok(!taxi.includes(old),`Old taxi destination still exposed: ${old}`);
 assert.ok(map.includes('activities.prepend(choose)'),'SCEGLI TU is not promoted to the first Taxi option');
-assert.ok(map.includes('e.preventDefault()')&&map.includes('scale=next'),'Map zoom must remain internal to the map');
-assert.ok(map.includes('Math.max(a,Math.min(b,n))'),'Map zoom must be bounded');
+assert.ok(!map.includes('canvas.style.transform')&&!map.includes('guardTaxiConfirmation'),'Taxi map uses the shared map viewport and one confirmation handler');
+assert.ok(game.includes('unifiedMap.zoomAt(')&&game.includes('unifiedMap.pan('),'Shared map viewport supports zoom and pan');
 
 assert.ok(cruise.includes('KeyK'),'Cruise keyboard shortcut K missing');
 assert.ok(cruise.includes('Math.round(current)'),'Cruise must capture current speed');

@@ -26,6 +26,8 @@ function runConfirmed(controller){
  const pending=controller.__taxiConfirmPending;
  if(!pending||controller.busy)return false;
  const {targetCoords,meta,fare}=pending;
+ const balance=Number(controller.getBalance?.());
+ if(Number.isFinite(balance)&&balance<fare){controller.onInsufficientFunds?.(fare,balance);return false;}
  controller.__taxiConfirmPending=null;
  controller.pending=null;
  if(!controller.validCoords?.(targetCoords)){
@@ -91,7 +93,8 @@ TaxiMenuController.prototype.startTaxiTransition=function(targetCoords,meta={}){
  const title=this.document?.getElementById?.('menuTitle');
  if(title)title.textContent='Conferma taxi';
  const name=escapeHtml(meta.name||target.name||'Destinazione'),tag=escapeHtml(meta.tag||'');
- this.menuContent.innerHTML=`<p class="about-copy"><strong>${name}</strong>${tag?`<br>${tag}`:''}<br><br>Tariffa: <strong>€${fare}</strong><br><small>Lo spostamento non partirà finché non confermi.</small></p><div class="menu-actions"><button type="button" class="primary" id="confirmTaxi">CONFERMA · €${fare}</button><button type="button" id="cancelTaxiConfirm">INDIETRO</button></div>`;
+ const balance=Number(this.getBalance?.()),affordable=!Number.isFinite(balance)||balance>=fare;
+ this.menuContent.innerHTML=`<p class="about-copy"><strong>${name}</strong>${tag?`<br>${tag}`:''}<br><br>Tariffa: <strong>€${fare}</strong><br>Saldo: €${Number.isFinite(balance)?Math.floor(balance).toLocaleString('it-IT'):'—'}<br><small>Lo spostamento non partirà finché non confermi.</small></p><div class="menu-actions"><button type="button" class="primary" id="confirmTaxi" ${affordable?'':'disabled'}>${affordable?`CONFERMA · €${fare}`:'Fondi insufficienti'}</button><button type="button" id="cancelTaxiConfirm">INDIETRO</button></div>`;
  try{if(!this.menu.open)this.menu.showModal();}catch(error){this.onError?.(error,'confirmation dialog');return false;}
  const confirm=this.menuContent.querySelector?.('#confirmTaxi'),back=this.menuContent.querySelector?.('#cancelTaxiConfirm');
  confirm?.addEventListener('click',event=>{

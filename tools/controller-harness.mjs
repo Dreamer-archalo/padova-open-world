@@ -21,6 +21,19 @@ import * as districtModule from '../dist/districts.js';
 import * as trafficModule from '../dist/traffic.js';
 import * as tramModule from '../dist/tram.js';
 import * as incidentModule from '../dist/incidents.js';
+import * as regionalWorldModule from '../dist/regional-world.js';
+import * as regionalAirModule from '../dist/regional-air-traffic.js';
+import * as unifiedMapModule from '../dist/unified-map.js';
+import * as mapTilesModule from '../dist/map-live-tiles.js';
+import * as localRespawnModule from '../dist/local-respawn.js';
+import * as waterGameplayModule from '../dist/water-gameplay.js';
+import * as nauticalModule from '../dist/nautical-catalog.js';
+import * as michelangeloModule from '../dist/unified-michelangelo.js';
+import * as pickupModule from '../dist/unified-vehicle-pickup.js';
+import * as padovaBoatsModule from '../dist/padova-boats.js';
+import * as regionsModule from '../dist/unified-regions.js';
+import * as loadingModule from '../dist/loading-resilience.js';
+import * as dealershipsModule from '../dist/dealerships.js';
 import {SpeedCameras} from '../dist/speed-cameras.js';
 import fs from 'node:fs';
 import vm from 'node:vm';
@@ -42,11 +55,11 @@ import {GLTFLoader} from '../dist/vendor/GLTFLoader.js';
 const html=fs.readFileSync(new URL('../dist/index.html',import.meta.url),'utf8');
 const ids=[...html.matchAll(/\bid="([^"]+)"/g)].map(m=>m[1]);assert.equal(ids.length,new Set(ids).size);
 const els=new Map();const context2d=new Proxy({}, {get:(obj,key)=>obj[key]||(()=>{}),set:(obj,key,val)=>(obj[key]=val,true)});
-const element=()=>({style:{},dataset:{},hidden:false,open:false,textContent:'',width:440,height:340,getContext:()=>context2d,addEventListener(){},showModal(){this.open=true;},close(){this.open=false;},querySelectorAll:()=>[],appendChild(){}});
+const element=()=>({style:{},dataset:{},hidden:false,open:false,textContent:'',width:440,height:340,getContext:()=>context2d,addEventListener(){},showModal(){this.open=true;},close(){this.open=false;},querySelectorAll:()=>[],querySelector:()=>element(),appendChild(){},getBoundingClientRect:()=>({width:440,height:340})});
 ids.forEach(id=>els.set(id,element()));
-const document={body:{classList:{add(){},remove(){}}},getElementById(id){assert(els.has(id),'missing DOM id '+id);return els.get(id);},querySelectorAll:()=>[],addEventListener(){},createElement:element};
+const document={head:{appendChild(){}},body:{appendChild(){},classList:{add(){},remove(){}}},getElementById(id){return els.get(id)||null;},querySelector:()=>null,querySelectorAll:()=>[],addEventListener(){},createElement:element};
 globalThis.document=document;
-const ctx=vm.createContext({THREE,SpeedCameras,...perfOverlay,...inputModule,...taxiDispatcherModule,...taxiLoadingOverlayModule,...taxiDriverModule,...taxiPathfinderModule,...taxiSystemModule,...taxiMenuControllerModule,...groundDynamics,...footController,...characterModule,...qualityModule,...fullscreenModule,...gameplayAreas,...specialVehicles,...modernGameplay,...modernVehicles,...modernDriving,...cameraModule,...districtModule,...trafficModule,...tramModule,...incidentModule,...core,...worldModule,...movement,cameraBoom:movement.cameraBoomContinuous,...terrainModule,...vehicles,...taxiModule,...portelloModule,...urbanLifeModule,...vehicleDamageModule,BuildingModels,document,window:{addEventListener(){}},localStorage:{getItem:()=>null,setItem(){}},console,Math,JSON,Set,Map,Number,Array,Float32Array,Uint8Array,devicePixelRatio:1,innerWidth:1440,innerHeight:900,requestAnimationFrame(){},location:{reload(){}}});
+const ctx=vm.createContext({THREE,SpeedCameras,...perfOverlay,...inputModule,...taxiDispatcherModule,...taxiLoadingOverlayModule,...taxiDriverModule,...taxiPathfinderModule,...taxiSystemModule,...taxiMenuControllerModule,...groundDynamics,...footController,...characterModule,...qualityModule,...fullscreenModule,...gameplayAreas,...specialVehicles,...modernGameplay,...modernVehicles,...modernDriving,...cameraModule,...districtModule,...trafficModule,...tramModule,...incidentModule,...regionalWorldModule,...regionalAirModule,...unifiedMapModule,...mapTilesModule,...localRespawnModule,...waterGameplayModule,...nauticalModule,...michelangeloModule,...pickupModule,...padovaBoatsModule,...regionsModule,...loadingModule,...dealershipsModule,...core,...worldModule,...movement,cameraBoom:movement.cameraBoomContinuous,...terrainModule,...vehicles,...taxiModule,...portelloModule,...urbanLifeModule,...vehicleDamageModule,BuildingModels,document,window:{addEventListener(){}},localStorage:{getItem:()=>null,setItem(){}},console,Math,JSON,Set,Map,Number,Array,Float32Array,Uint8Array,devicePixelRatio:1,innerWidth:1440,innerHeight:900,requestAnimationFrame(){},location:{reload(){}}});
 let code=fs.readFileSync(new URL('../dist/game.js',import.meta.url),'utf8').replace(/^import .*;\n/gm,'').replace(/init\(\);\s*$/,'');vm.runInContext(code,ctx);
 ctx.testData=JSON.parse(fs.readFileSync(new URL('../dist/data/padova.json',import.meta.url)));
 ctx.cityData=JSON.parse(fs.readFileSync(new URL('../dist/data/city.json',import.meta.url)));
@@ -55,5 +68,5 @@ vm.runInContext(`data=testData;applyCityData(data,cityData);prepareGameplayMap(d
 // Taxi was modularized after this harness was written. Do not require removed
 // legacy globals just to inspect unrelated systems such as Portello. Existing
 // callers receive undefined for obsolete optional functions instead of a VM crash.
-const t=vm.runInContext('({terrain,waterRecovery,recover,dryRoad,addCar,poseVehicle,travel,falling,state,keys,cars,people,world,scene,player,camera,clock,movePlayer,updateTraffic,updateCamera,updateUI,toggleVehicle,beginMission,cancelMission,updateMission,clearPolice,simulate,graph,callTaxi:typeof callTaxi==="function"?callTaxi:undefined,updateTaxi,beginTaxiTrip:typeof beginTaxiTrip==="function"?beginTaxiTrip:undefined,taxiCanTalk:typeof taxiCanTalk==="function"?taxiCanTalk:undefined})',ctx);
+const t=vm.runInContext('({terrain,waterRecovery,waterGame,recover,dryRoad,addCar,poseVehicle,travel,falling,state,keys,cars,people,world,scene,player,camera,clock,movePlayer,updateTraffic,updateCamera,updateUI,toggleVehicle,beginMission,cancelMission,updateMission,clearPolice,simulate,graph,callTaxi:typeof callTaxi==="function"?callTaxi:undefined,updateTaxi,beginTaxiTrip:typeof beginTaxiTrip==="function"?beginTaxiTrip:undefined,taxiCanTalk:typeof taxiCanTalk==="function"?taxiCanTalk:undefined})',ctx);
 export {t,ctx,els};

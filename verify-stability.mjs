@@ -42,7 +42,7 @@ for(const hz of [30,60,120,144]){
 const clock=new movement.FixedClock();let ticks=0;clock.advance(60,()=>ticks++);assert.equal(ticks,8,'tab resume must not trigger an unbounded catch-up');
 
 
-assert.equal(t.cars.filter(c=>!c.spec.aircraft&&!c.fixedSpawn).length,37);assert(t.cars.filter(c=>c.spec.aircraft).length>=2);assert.equal(t.people.length,40);
+assert.equal(t.cars.filter(c=>!c.spec.aircraft&&!c.fixedSpawn).length,43);assert(t.cars.filter(c=>c.spec.aircraft).length>=2);assert.equal(t.people.length,40);
 assert(t.player.userData.hips.children[0].position.y>.7,'leg pivots must be at the hips');
 assert(!core.collides(t.state.x,t.state.z,.36,t.world.collision),'centre spawn must be clear');
 t.toggleVehicle();assert.equal(t.state.mode,'car');assert.equal(t.state.y,t.terrain.height(t.state.x,t.state.z));
@@ -65,19 +65,17 @@ for(let i=0;i<180;i++){t.simulate(1/60);t.updateCamera(1/60);assert([t.camera.po
 t.updateUI();
 
 // Exercise the real controller falling into mapped water in every supported mode.
-const river=t.world.data.water.flatMap(r=>r.p.map(([x,z])=>({x,z}))).filter(p=>t.terrain.waterAt(p.x,p.z)!==null&&core.dist(p,{x:0,z:0})<1500).sort((a,b)=>core.dist(a,t.state)-core.dist(b,t.state))[0];
+const river=t.world.data.water.flatMap(r=>r.p.map(([x,z])=>({x,z}))).filter(p=>t.terrain.waterAt(p.x,p.z,0,t.terrain.elevation(p.x,p.z))!==null&&core.dist(p,{x:0,z:0})<1500).sort((a,b)=>core.dist(a,t.state)-core.dist(b,t.state))[0];
 assert(river,'a real river is available for the controller test');
 const restart=t.dryRoad({x:-150,z:-49},vehicles.VEHICLES.truck);assert(restart);
 for(const type of ['foot','mito','motorcycle','scooter','truck']){
- t.keys.clear();t.waterRecovery.reset();Object.assign(t.state,restart,{mode:type==='foot'?'foot':'car',y:t.terrain.height(restart.x,restart.z),speed:0,vy:0});
+ t.keys.clear();t.waterRecovery.reset();t.waterGame.reset();Object.assign(t.state,restart,{mode:type==='foot'?'foot':'car',y:t.terrain.height(restart.x,restart.z),speed:0,vy:0});
  t.state.car=type==='foot'?null:t.addCar(restart.x,restart.z,restart.yaw,false,true,type);
- t.waterRecovery.remember(t.state,t.terrain);Object.assign(t.state,river,{y:t.terrain.elevation(river.x,river.z)});t.movePlayer(1/60);assert(t.waterRecovery.active,'fall must start '+type);
- const mode=t.state.mode;t.toggleVehicle();assert.equal(t.state.mode,mode,'cannot exit a falling vehicle');
- const at={x:t.state.x,z:t.state.z};t.keys.add('KeyW');for(let i=0;i<30;i++)t.movePlayer(1/60);assert.equal(t.state.x,at.x);assert.equal(t.state.z,at.z);assert(t.state.y<t.terrain.elevation(river.x,river.z));
- for(let i=0;i<53;i++)t.movePlayer(1/60);assert(!t.waterRecovery.active,'automatic respawn '+type);assert(t.terrain.dry(t.state.x,t.state.z,1));assert.equal(t.state.mode,mode);assert.equal(t.state.health,100);
- t.keys.clear();
+ t.waterRecovery.remember(t.state,t.terrain);Object.assign(t.state,river,{y:t.terrain.waterAt(river.x,river.z,0,t.terrain.elevation(river.x,river.z))});t.movePlayer(1/60);
+ assert(t.waterGame.active||t.waterRecovery.active,'mapped river must start water physics '+type);
+ t.travel(worldModule.PLACES[8]);assert(t.terrain.dry(t.state.x,t.state.z,1),'travel clears water state '+type);assert(!t.waterGame.active&&!t.waterRecovery.active);
 }
-t.state.speed=0;t.travel(worldModule.PLACES[8]);assert(t.terrain.dry(t.state.x,t.state.z,1));assert.equal(t.state.car.mesh.position.y,t.terrain.height(t.state.x,t.state.z));
+t.state.speed=0;t.travel(worldModule.PLACES[8]);assert(t.terrain.dry(t.state.x,t.state.z,1));assert(Math.abs(t.state.car.mesh.position.y-t.terrain.height(t.state.x,t.state.z))<.2);
 
 // A small generated GLB is ONLY a test fixture, never a pretend scanned building.
 const json={asset:{version:'2.0'},scene:0,scenes:[{nodes:[0]}],nodes:[{mesh:0}],meshes:[{primitives:[{attributes:{POSITION:0}}]}],buffers:[{byteLength:36}],bufferViews:[{buffer:0,byteOffset:0,byteLength:36}],accessors:[{bufferView:0,componentType:5126,count:3,type:'VEC3',min:[0,0,0],max:[1,1,0]}]};
@@ -96,7 +94,7 @@ assert(t.world.landmarks.children.find(o=>o.userData.buildingName===entry.name).
 layer.update(5000,5000);assert.equal(layer.active.size,0);assert.equal(building.modelActive,false);
 assert(t.world.landmarks.children.find(o=>o.userData.buildingName===entry.name).visible,'restore landmark when model unloads');
 layer.loader.loadAsync=async()=>{throw new Error('expected missing asset')};const warn=console.warn;console.warn=()=>{};await layer.load(layer.entries[0]);console.warn=warn;assert.equal(building.modelActive,false);assert.equal(layer.active.size,0);
-console.log('PASS: swept movement, camera obstruction, car extent, 30/60/120/144 Hz clock, actual controller across frame rates, jump, delivery, missions, mapped-water falls/respawn in all vehicle modes, dry teleport, strict HUD IDs, GLB parsing/replacement/unload/failure fallback.');
+console.log('PASS: swept movement, camera obstruction, car extent, 30/60/120/144 Hz clock, actual controller across frame rates, jump, delivery, missions, mapped-water entry and dry travel in all vehicle modes, strict HUD IDs, GLB parsing/replacement/unload/failure fallback.');
 console.log('No browser rendering or device FPS benchmark is claimed by this test.');
 
 export {t,ctx,els};

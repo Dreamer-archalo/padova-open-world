@@ -6,10 +6,13 @@ export class PerformanceOverlay{
   if(m&&dt>.05)m.longFrames++;
   if(this.total>.5){this.fps=this.frames/this.total;this.frames=0;this.total=0;}
   if(!this.visible||state.elapsed-this.last<.2)return;this.last=state.elapsed;
-  this.element.textContent=[`FPS ${this.fps.toFixed(0)} · ${state.quality}`,`Chunk ${m?.loaded||0} · coda ${m?.queued||0} (nucleo ${m?.coreQueued||0})`,
+  const regional=counts.regional;
+  this.element.textContent=[`FPS ${this.fps.toFixed(0)} · ${state.quality}`,`Chunk Padova ${m?.loaded||0} · coda ${m?.queued||0} (nucleo ${m?.coreQueued||0})`,
    `Streaming ${(m?.streamMs||0).toFixed(1)} ms · max ${(m?.maxStreamMs||0).toFixed(1)} ms`,
    `Nucleo ${(m?.coreLoadMs||0).toFixed(0)} ms · worker ${(m?.workerMs||0).toFixed(0)} ms`,
    `Prefetch ${m?.prefetch||0} m · ${m?.backend||'avvio'} · ${m?.pressure?'priorità terreno/strade':'dettaglio'}`,
-   `NPC ${counts.people} · veicoli ${counts.cars} · tram ${counts.trams}`,`Frame >50 ms: ${m?.longFrames||0} · F3 chiude`].join('\n');
+   regional?`Regione ${regional.loaded} settori · coda ${regional.queued} · build ${regional.lastBuildMs.toFixed(1)} / max ${regional.maxBuildMs.toFixed(1)} ms`:null,
+   regional?`Attori regionali ${regional.actors} · auto ${regional.cars} · profilo ${regional.profile}`:null,
+   `NPC ${counts.people} · veicoli ${counts.cars} · tram ${counts.trams}`,`Frame >50 ms: ${m?.longFrames||0} · F3 chiude`].filter(Boolean).join('\n');
  }
 }

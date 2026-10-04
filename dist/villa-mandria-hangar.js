@@ -7,6 +7,7 @@ import {VILLA,AIRPORT,HOME,areaPoint,areaLocal} from './gameplay-areas.js';
 import {VILLA_GARAGE} from './villa-treves-layout.js';
 import {vehicleBlocked} from './movement.js';
 import {installVehicleDamage} from './vehicle-damage.js';
+import {createMichelangeloModel} from './unified-michelangelo.js';
 
 // Rideable versions of the bicycles and standing electric scooters already
 // found as NPC scenery in Padova. They use the standard ground driving physics.
@@ -20,7 +21,7 @@ const CAT=Object.freeze({aircraft:'Aerei',helicopter:'Elicotteri',bicycle:'Bici 
 const $=id=>document.getElementById(id);
 const escapeHTML=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 export function hangarCategory(id,s){
- if(s.plane)return 'aircraft';if(s.aircraft)return 'helicopter';if(id==='bicycle'||id==='kick-scooter')return 'bicycle';
+ if(s.watercraft)return 'watercraft';if(s.plane)return 'aircraft';if(s.aircraft)return 'helicopter';if(id==='bicycle'||id==='kick-scooter')return 'bicycle';
  if(s.tracked)return 'tracked';if(s.bike||['motorcycle','scooter'].includes(id)||s.family==='motorcycle')return 'motorcycle';
  if(['freight','work','van','pickup'].includes(s.family)||s.length>=7&&!s.aircraft)return 'freight';return 'car';
 }
@@ -107,7 +108,7 @@ function createInBay(g,id,color){
  if(!unobstructed(g,p,s,yaw))return null;
  const micro=id==='bicycle'||id==='kick-scooter',c=g.addCar(p.x,p.z,yaw,false,true,micro?'motorcycle':id);
  if(micro||id.startsWith('airport-')){
-  const old=c.mesh;g.scene.remove(old);c.mesh=micro?microModel(id,color):airportModel(id,s,color);
+  const old=c.mesh;g.scene.remove(old);c.mesh=micro?microModel(id,color):id==='airport-michelangelo'?createMichelangeloModel():airportModel(id,s,color);
   c.style=id;c.spec=s;c.name=s.name;c.rider=null;
   if(micro&&id==='bicycle'){c.rider=createRider();c.mesh.add(c.rider);}
   g.scene.add(c.mesh);installVehicleDamage(c);
@@ -116,6 +117,35 @@ function createInBay(g,id,color){
  c.hangarInventory=true;c.parked=true;c.speed=0;c.health=100;c.y=g.terrain.height(p.x,p.z);
  paintHangarVehicle(c.mesh,color);g.pose(c);g.forget?.(c);g.mandriaHangar.staged=c;
  teleportFoot(g,s);return c;
+}
+export function roofDeparturePoint(g,spec){
+ const centre=bay(),base=g.terrain.height(centre.x,centre.z),plane=!!spec.plane;
+ const y=base+VILLA_GARAGE.roofHeight+(plane?Math.max(18,spec.height+9):1.25),yaw=VILLA.yaw+Math.PI/2;
+ for(const [du,dv] of [[0,0],[0,-5],[0,5],[5,0],[-5,0]]){
+  const p=areaPoint(VILLA,VILLA_GARAGE.u+du,VILLA_GARAGE.v+dv),roofY=g.terrain.height(p.x,p.z)+VILLA_GARAGE.roofHeight;
+  if(!g.terrain.dry(p.x,p.z,2,y)||y<roofY+spec.height*.3||vehicleBlocked(p.x,p.z,yaw,g.collision,spec,y))continue;
+  if(g.cars.some(c=>c.mesh.visible&&Math.abs((c.y||0)-y)<Math.max(spec.height,c.spec.height)&&Math.hypot(c.x-p.x,c.z-p.z)<Math.max(9,(c.spec.length+spec.length)/2+2)))continue;
+  if(plane){const ahead={x:p.x+Math.sin(yaw)*Math.max(10,spec.length/2),z:p.z+Math.cos(yaw)*Math.max(10,spec.length/2)};if(vehicleBlocked(ahead.x,ahead.z,yaw,g.collision,spec,y))continue;}
+  return {...p,y,yaw,speed:plane?Math.min(spec.max,31):0};
+ }
+ return null;
+}
+function deliverAirOnRoof(g,id,color){
+ const spec=VEHICLES[id],p=roofDeparturePoint(g,spec);if(!p)return false;
+ const c=g.addCar(p.x,p.z,p.yaw,false,!spec.plane,id);
+ if(id.startsWith('airport-')){
+  const old=c.mesh;g.scene.remove(old);
+  c.mesh=id==='airport-michelangelo'?createMichelangeloModel():airportModel(id,spec,color);
+  g.scene.add(c.mesh);installVehicleDamage(c);
+ }
+ Object.assign(c,{x:p.x,z:p.z,y:p.y,yaw:p.yaw,speed:p.speed,health:100,style:id,spec,name:spec.name,
+  parked:!spec.plane,fixedSpawn:false,hangarInventory:false,hangarRoofDeparture:true,vy:0});
+ paintHangarVehicle(c.mesh,color);g.pose(c);g.forget?.(c);
+ const s=g.state,player=character(g);
+ Object.assign(s,{x:p.x,z:p.z,y:p.y,yaw:p.yaw,speed:p.speed,vy:0,mode:'car',car:c,health:100,parachuting:false,waypoint:null,route:[]});
+ if(player)player.visible=false;
+ g.toast?.(spec.plane?'Aereo in volo sopra l’hangar · mantieni la quota con SPACE.':'Elicottero sul tetto dell’hangar · SPACE per salire.',6);
+ return true;
 }
 function departurePoint(g,c){
  const places=c.spec.aircraft?c.spec.plane?[[0,-420],[0,-350],[0,-260],[0,-175],[0,95]].map(([u,v])=>areaPoint(AIRPORT,u,v))
@@ -162,6 +192,23 @@ function renderCatalogue(g){
 async function choose(g,id,color){
  if(g.mandriaHangar.busy)return;
  const s=VEHICLES[id],p=bay();if(!s||!g.state.started||!hangarCatalogue().some(e=>e.id===id))return;
+ if(s.watercraft){
+  // Watercraft are launched at real mapped docks, never on the villa lawn.
+  const eligible=g.nautical?.docks?.filter(d=>d.width>=s.minChannel+1&&
+   (d.region?s.places.includes('venice')||s.places.includes('padova'):s.places.includes('padova')))||[];
+  const d=eligible.sort((a,b)=>Math.hypot(a.x-g.state.x,a.z-g.state.z)-Math.hypot(b.x-g.state.x,b.z-g.state.z))[0];
+  closeDialog(g);
+  if(!d){g.toast?.('Nessuna darsena compatibile; prova il menu B.',4);return;}
+  g.nautical.launch(id,d.id,color);return;
+ }
+ if(s.aircraft){
+  if(g.state.car&&g.state.car!==g.mandriaHangar.staged){g.toast?.('Scendi prima dal mezzo attuale.',4);return;}
+  if(!roofDeparturePoint(g,s)){g.toast?.('Tetto occupato: libera la piazzola e riprova.',5);return;}
+  g.mandriaHangar.busy=true;closeDialog(g);g.state.paused=true;
+  try{removeOccupant(g);deliverAirOnRoof(g,id,color);}
+  finally{g.mandriaHangar.busy=false;g.state.paused=false;}
+  return;
+ }
  // Never erase an occupied/mission vehicle; the only replaceable object is our
  // own staged vehicle, and only while it is physically still inside the bay.
  const old=g.mandriaHangar.staged;
@@ -200,7 +247,7 @@ function ensureUI(){
  openButton.onclick=()=>{if(live)showCatalog(live);};
  status=document.createElement('div');status.id='mandriaHangarStatus';status.hidden=true;status.setAttribute('role','status');document.body.appendChild(status);
  dialog=document.createElement('dialog');dialog.id='mandriaHangarDialog';dialog.setAttribute('aria-label','Catalogo mezzi Villa della Mandria');
- dialog.innerHTML=`<div class="hangar-header"><div><small>VILLA DELLA MANDRIA · HANGAR</small><h2>Scegli qualsiasi mezzo</h2></div><button type="button" class="hangar-close" id="hangarClose">Chiudi ×</button></div><p class="hangar-current"></p><div class="hangar-controls"><input type="search" id="hangarSearch" placeholder="Cerca per nome" aria-label="Cerca mezzo"><select id="hangarFilter" aria-label="Categoria"><option value="all">Tutti i mezzi</option>${Object.entries(CAT).map(([k,v])=>`<option value="${k}">${v}</option>`).join('')}</select><label for="hangarPaint">Colore</label><input type="color" id="hangarPaint" value="${COLORS[0]}"></div><div id="hangarCount" role="status"></div><div id="hangarGrid"></div><div class="hangar-actions"><button type="button" id="hangarDeliver">Porta fuori il mezzo attuale</button><button type="button" id="hangarCloseBottom">Torna al gioco</button></div><p class="hangar-current">Il portone si chiude durante la sostituzione e poi si riapre. I mezzi già usciti rimangono fuori. Gli aerei vengono trasferiti su una piazzola sicura dell’aeroporto per il decollo.</p>`;
+ dialog.innerHTML=`<div class="hangar-header"><div><small>VILLA DELLA MANDRIA · HANGAR</small><h2>Scegli qualsiasi mezzo</h2></div><button type="button" class="hangar-close" id="hangarClose">Chiudi ×</button></div><p class="hangar-current"></p><div class="hangar-controls"><input type="search" id="hangarSearch" placeholder="Cerca per nome" aria-label="Cerca mezzo"><select id="hangarFilter" aria-label="Categoria"><option value="all">Tutti i mezzi</option>${Object.entries(CAT).map(([k,v])=>`<option value="${k}">${v}</option>`).join('')}</select><label for="hangarPaint">Colore</label><input type="color" id="hangarPaint" value="${COLORS[0]}"></div><div id="hangarCount" role="status"></div><div id="hangarGrid"></div><div class="hangar-actions"><button type="button" id="hangarDeliver">Porta fuori il mezzo attuale</button><button type="button" id="hangarCloseBottom">Torna al gioco</button></div><p class="hangar-current">I mezzi stradali si preparano nella baia. Gli elicotteri compaiono sul tetto; gli aerei partono già in volo sopra l’hangar, dove non serve una pista.</p>`;
  document.body.appendChild(dialog);
  $('hangarClose').onclick=$('hangarCloseBottom').onclick=()=>closeDialog(live);
  dialog.addEventListener('cancel',()=>{if(live?.state)live.state.paused=false;});

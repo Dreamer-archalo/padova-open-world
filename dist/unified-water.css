@@ -1,0 +1,19 @@
+/* Water interaction HUD: deliberately separate from the 3D rendering LOD. */
+#waterStatus:not([hidden]){
+ display:block;position:fixed;left:50%;bottom:clamp(100px,14vh,180px);
+ transform:translateX(-50%);z-index:25;
+ max-width:min(90vw,640px);padding:12px 20px;border-radius:9px;
+ text-align:center;background:rgba(12,54,79,.91);
+ border:1px solid rgba(114,200,236,.88);box-shadow:0 5px 22px #10242c7a;
+ font:700 clamp(12px,1.6vw,17px) system-ui,sans-serif;
+ letter-spacing:.04em;color:#e4faff;pointer-events:none;
+}
+@media(max-width:750px){
+ #waterStatus:not([hidden]){bottom:clamp(158px,27vh,290px);font-size:12px;padding:9px 12px;}
+}
+
+/* Reuse the very same taxi pixel-art atlas for Venice streaming. The 2D
+   illustration stays visible while real regional chunks are being built. */
+.venice-loading{position:fixed;inset:0;display:grid;place-items:center;z-index:100;padding:clamp(12px,3vw,40px);background:#050a12}
+.venice-loading[hidden]{display:none!important}
+.venice-loading .taxi-meme{box-shadow:0 14px 60px #000b}

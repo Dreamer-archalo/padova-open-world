@@ -29,8 +29,21 @@ export function chooseTrafficStyle(zone,random=Math.random,road=null){const pool
 const cube=new THREE.BoxGeometry(),wheelGeo=new THREE.CylinderGeometry(1,1,1,10),materials=new Map();
 function mat(color){if(!materials.has(color))materials.set(color,new THREE.MeshStandardMaterial({color,roughness:.55}));return materials.get(color);}
 function box(g,c,x,y,z,w,h,d){const m=new THREE.Mesh(cube,mat(c));m.position.set(x,y,z);m.scale.set(w,h,d);g.add(m);return m;}
-export function createNPCCar(type,color='#76828c'){
+function roundedCar(type,color,wheelColor){
+ const s=NPC_VEHICLES[type],g=new THREE.Group(),w=s.width,l=s.length,h=s.height,variant=type==='zenit'?'grand':type==='vortice'?'tourer':type==='lido'?'spider':'classic';
+ const body=new THREE.Mesh(new THREE.SphereGeometry(1,18,10),mat(color));body.position.set(0,.57,0);body.scale.set(w*.49,.48,l*.49);g.add(body);
+ const nose=new THREE.Mesh(new THREE.SphereGeometry(1,16,8),mat(color));nose.position.set(0,.53,l*(variant==='grand'?.3:.33));nose.scale.set(w*.46,.35,l*(variant==='grand'?.22:.17));g.add(nose);
+ const cabin=new THREE.Mesh(new THREE.SphereGeometry(1,18,10),mat('#253d48'));cabin.position.set(0,variant==='spider'?.87:variant==='grand'?1.03:1.00,variant==='tourer'?-.22:-.13);cabin.scale.set(w*.39,variant==='spider'?.13:variant==='grand'?.34:.29,l*(variant==='grand'?.31:.27));g.add(cabin);
+ if(variant==='classic'){const roof=new THREE.Mesh(new THREE.SphereGeometry(1,14,8),mat(color));roof.position.set(0,h-.18,-.13);roof.scale.set(w*.4,.12,l*.27);g.add(roof);}
+ for(const side of [-1,1]){
+  for(const z of [-s.wheelbase/2,s.wheelbase/2]){const wheel=new THREE.Mesh(wheelGeo,mat(wheelColor==='bronze'?'#a47b49':'#252b2c'));wheel.position.set(side*w*.43,.29,z);wheel.scale.set(.29,.22,.29);wheel.rotation.z=Math.PI/2;g.add(wheel);}
+  box(g,'#ebeee8',side*w*.34,.61,l*.47,w*.16,.12,.07);box(g,'#b72c35',side*w*.36,.59,-l*.48,w*.15,.10,.06);
+ }
+ g.userData.vehicleType=type;return g;
+}
+export function createNPCCar(type,color='#76828c',wheelColor='standard'){
  const s=NPC_VEHICLES[type],g=new THREE.Group(),{width:w,length:l,height:h,family:f,variant:v}=s;
+ if(['zenit','vortice','saetta','ambra','lido'].includes(type))return roundedCar(type,color,wheelColor);
  if(['sport','supercar'].includes(f))return createWedgeCar(color,w,l,h,f==='supercar'||type==='vortice');
  const low=['sport','supercar','convertible'].includes(f),tall=['van','mpv','suv'].includes(f),bodyY=low?.43:.63,trim=['classic','luxury'].includes(f)?'#c2c3b4':'#30393e';
  box(g,color,0,bodyY,0,w*.89,low?.43:.58,l*.97);
@@ -41,7 +54,7 @@ export function createNPCCar(type,color='#76828c'){
   for(let j=0;j<(tall?3:2);j++)box(g,color,side*w*.397,(h+bodyY)/2,roofZ-roofLength/2+j*roofLength/(tall?2:1),.07,h-bodyY,.075);
   box(g,trim,side*w*.454,bodyY-.17,0,.025,.06,l*.88);
   box(g,color,side*w*.485,bodyY+.35,l*.17,.1,.12,.24);
-  for(const z of [-s.wheelbase/2,s.wheelbase/2]){const m=new THREE.Mesh(wheelGeo,mat('#22282c'));m.position.set(side*w*.42,low?.26:.34,z);m.scale.set(low?.27:.34,.2,low?.27:.34);m.rotation.z=Math.PI/2;g.add(m);}
+  for(const z of [-s.wheelbase/2,s.wheelbase/2]){const m=new THREE.Mesh(wheelGeo,mat(wheelColor==='bronze'?'#a47b49':'#22282c'));m.position.set(side*w*.42,low?.26:.34,z);m.scale.set(low?.27:.34,.2,low?.27:.34);m.rotation.z=Math.PI/2;g.add(m);}
   box(g,v%2?'#f1eace':'#d5eef0',side*w*.32,bodyY+.1,l*.491,w*(v%3===0?.14:.25),low?.09:.15,.035);
   box(g,'#bd3e35',side*w*.32,bodyY+.06,-l*.491,w*.23,.12,.035);
  }

@@ -1,4 +1,5 @@
 import {CityStream} from './streaming.js';
+import {DEALER_SITES,reserveDealerBuildings,dealerWallParts} from './dealerships.js';
 import {createWedgeCar} from './sport-models.js';
 import {motorwayBarriers} from './motorways.js';
 import {arcadeRamps} from './arcade-ramps.js';
@@ -87,11 +88,11 @@ function makeLandmarks(scene,data){const g=new THREE.Group(),root=g;
   g.add(prato);scene.add(g);return g;
 }
 export class CityWorld{
- constructor(scene,data,terrain=null,quality=null){if(terrain?.modern){data.buildings=modernFootprints(data.buildings,terrain);preparePortello(data);}this.terrain=terrain;this.scene=scene;this.data=data;this.chunks=new Map();this.collision=new SpatialIndex(60);this.loaded=new Map();this.queue=[];this.lastKey='';this.quality=terrain?.modern?quality||'medium':'medium';this.profile=qualityFor(this.quality);this.radius=this.profile.radius;this.pendingBuild=null;
+ constructor(scene,data,terrain=null,quality=null){if(terrain?.modern){data.buildings=modernFootprints(data.buildings,terrain);preparePortello(data);reserveDealerBuildings(data.buildings,DEALER_SITES.filter(s=>s.city.startsWith('Padova')));}this.terrain=terrain;this.scene=scene;this.data=data;this.chunks=new Map();this.collision=new SpatialIndex(60);this.loaded=new Map();this.queue=[];this.lastKey='';this.quality=terrain?.modern?quality||'medium':'medium';this.profile=qualityFor(this.quality);this.radius=this.profile.radius;this.pendingBuild=null;
   this.wallMats={historic:new THREE.MeshStandardMaterial({map:facadeTexture('historic'),vertexColors:true,roughness:1,side:THREE.DoubleSide}),modern:new THREE.MeshStandardMaterial({map:facadeTexture('modern'),vertexColors:true,roughness:.92,side:THREE.DoubleSide}),industrial:new THREE.MeshStandardMaterial({map:facadeTexture('industrial'),vertexColors:true,roughness:1,side:THREE.DoubleSide})};this.roofMat=new THREE.MeshStandardMaterial({vertexColors:true,roughness:1,side:THREE.DoubleSide});this.groundMat=new THREE.MeshStandardMaterial({vertexColors:true,roughness:1,side:THREE.DoubleSide});this.flatMat=new THREE.MeshBasicMaterial({vertexColors:true,side:THREE.DoubleSide});this.detailMats=new Set([...Object.values(this.wallMats),this.roofMat,this.groundMat]);
   if(!terrain){const ground=new THREE.Mesh(new THREE.PlaneGeometry(45000,45000),material('#8c9b73'));ground.rotation.x=-Math.PI/2;ground.position.y=-.05;scene.add(ground);}
   else for(let x=-6400;x<7680;x+=CHUNK)for(let z=-7040;z<6720;z+=CHUNK)this.chunk(x,z);
-  for(const b of data.buildings){b.minX=Math.min(...b.p.map(p=>p[0]));b.maxX=Math.max(...b.p.map(p=>p[0]));b.minZ=Math.min(...b.p.map(p=>p[1]));b.maxZ=Math.max(...b.p.map(p=>p[1]));b.cx=(b.minX+b.maxX)/2;b.cz=(b.minZ+b.maxZ)/2;b.minY=terrain?terrain.elevation(b.cx,b.cz):0;if(terrain?.modern){const bottom=Math.min(b.minY,...b.p.map(p=>terrain.groundHeight(...p)-.25));b.h+=b.minY-bottom;b.minY=bottom;}if(!b.passableGateway)this.collision.add(b,b.minX,b.minZ,b.maxX,b.maxZ);this.chunk(b.cx,b.cz).buildings.push(b);}
+  for(const b of data.buildings){b.minX=Math.min(...b.p.map(p=>p[0]));b.maxX=Math.max(...b.p.map(p=>p[0]));b.minZ=Math.min(...b.p.map(p=>p[1]));b.maxZ=Math.max(...b.p.map(p=>p[1]));b.cx=(b.minX+b.maxX)/2;b.cz=(b.minZ+b.maxZ)/2;b.minY=terrain?terrain.elevation(b.cx,b.cz):0;if(terrain?.modern){const bottom=Math.min(b.minY,...b.p.map(p=>terrain.groundHeight(...p)-.25));b.h+=b.minY-bottom;b.minY=bottom;}if(b.dealerSite){b.modelActive=true;for(const wall of dealerWallParts(b))this.collision.add(wall,wall.minX,wall.minZ,wall.maxX,wall.maxZ);}else if(!b.passableGateway)this.collision.add(b,b.minX,b.minZ,b.maxX,b.maxZ);this.chunk(b.cx,b.cz).buildings.push(b);}
   this.landmarks=makeLandmarks(scene,data);
   if(terrain)for(const o of this.landmarks.children){const b=data.buildings.find(b=>b.n===o.userData.buildingName);o.position.y+=b?b.minY:terrain.elevation(o.position.x,o.position.z);}
   if(terrain?.modern){

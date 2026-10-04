@@ -1,81 +1,25 @@
-const menuContent=document.getElementById('menuContent');
-const mapDialog=document.getElementById('mapDialog');
-const canvas=document.getElementById('fullmap');
-const wrap=canvas?.closest('.fullmap-wrap');
+// Keep the custom destination at the top of the taxi list. The confirmation
+// button belongs to TaxiMenuController/taxi-confirmation-runtime alone: a
+// capture listener here used to disable it before its click handler could run.
+const menuContent = document.getElementById('menuContent');
 
-const TEST_BALANCE=50000;
-function ensureTestWallet(){
- try{
-  const key='padova-game-v1',reloadKey='padova-test-wallet-reloaded';
-  const saved=JSON.parse(localStorage.getItem(key)||'{}');
-  if(Number.isFinite(saved.money)&&saved.money>=TEST_BALANCE){sessionStorage.removeItem(reloadKey);return false;}
-  saved.money=TEST_BALANCE;localStorage.setItem(key,JSON.stringify(saved));
-  if(!sessionStorage.getItem(reloadKey)){sessionStorage.setItem(reloadKey,'1');location.reload();return true;}
- }catch(error){console.warn('[Padova test wallet]',error);}
- return false;
+function promoteChooseYourself() {
+  const choose = document.getElementById('taxiChoose');
+  const activities = choose?.closest('.activities');
+  if (choose && activities && activities.firstElementChild !== choose) activities.prepend(choose);
 }
-ensureTestWallet();
 
-const taxiConfirmations=new WeakSet();
-function guardTaxiConfirmation(){
- const confirm=document.getElementById('confirmTaxi');
- if(!confirm||confirm.dataset.singleChargeGuard==='1')return;
- confirm.dataset.singleChargeGuard='1';
- confirm.addEventListener('click',event=>{
-  if(taxiConfirmations.has(confirm)){
-   event.preventDefault();event.stopImmediatePropagation();return;
-  }
-  taxiConfirmations.add(confirm);
-  confirm.setAttribute('aria-busy','true');
-  queueMicrotask(()=>{confirm.disabled=true;});
- },true);
-}
-function promoteChooseYourself(){
- const choose=document.getElementById('taxiChoose'),activities=choose?.closest('.activities');
- if(choose&&activities&&activities.firstElementChild!==choose)activities.prepend(choose);
- guardTaxiConfirmation();
-}
-if(menuContent){new MutationObserver(promoteChooseYourself).observe(menuContent,{childList:true,subtree:true});}
+if (menuContent) new MutationObserver(promoteChooseYourself)
+  .observe(menuContent, {childList: true, subtree: true});
 
-// SPACE can confirm the taxi from anywhere in the confirmation dialog, but never
-// synthesise a second click when the native button itself already has focus.
-window.addEventListener('keydown',e=>{
- if(e.code!=='Space'||e.repeat)return;
- const confirm=document.getElementById('confirmTaxi'),menu=document.getElementById('menu');
- if(!confirm||!menu?.open||confirm.disabled||taxiConfirmations.has(confirm))return;
- if(document.activeElement===confirm)return;
- e.preventDefault();e.stopImmediatePropagation();confirm.click();
-},true);
-
-if(canvas&&wrap){
- wrap.style.overflow='hidden';wrap.style.position='relative';canvas.style.touchAction='none';canvas.style.transformOrigin='0 0';
- let scale=1,tx=0,ty=0,drag=null,moved=false;
- const nativeMapClick=canvas.onclick;
- const controls=document.createElement('div');controls.className='map-zoom-controls';controls.setAttribute('aria-label','Zoom mappa');
- controls.innerHTML='<button type="button" data-map-zoom="out" aria-label="Riduci zoom mappa">−</button><button type="button" data-map-zoom="reset" aria-label="Ripristina zoom mappa">1×</button><button type="button" data-map-zoom="in" aria-label="Aumenta zoom mappa">+</button>';
- Object.assign(controls.style,{position:'absolute',right:'10px',top:'10px',zIndex:'5',display:'flex',gap:'4px'});
- for(const b of controls.querySelectorAll('button'))Object.assign(b.style,{minWidth:'36px',height:'34px',borderRadius:'6px',border:'1px solid rgba(255,255,255,.25)',background:'rgba(12,24,30,.88)',color:'#fff',fontWeight:'800',cursor:'pointer'});
- wrap.appendChild(controls);
- const clamp=(n,a,b)=>Math.max(a,Math.min(b,n));
- function bounds(){const w=canvas.clientWidth||wrap.clientWidth,h=canvas.clientHeight||wrap.clientHeight;return {w,h,minX:Math.min(0,wrap.clientWidth-w*scale),minY:Math.min(0,wrap.clientHeight-h*scale)};}
- function constrain(){const b=bounds();tx=clamp(tx,b.minX,0);ty=clamp(ty,b.minY,0);if(scale===1){tx=0;ty=0;}}
- function paint(){constrain();canvas.style.transform=`translate(${tx}px,${ty}px) scale(${scale})`;controls.querySelector('[data-map-zoom="reset"]').textContent=scale.toFixed(scale%1?1:0)+'×';}
- function zoomAt(next,cx=wrap.clientWidth/2,cy=wrap.clientHeight/2){next=clamp(next,1,4);const ux=(cx-tx)/scale,uy=(cy-ty)/scale;tx=cx-ux*next;ty=cy-uy*next;scale=next;paint();}
- function mapPointFromPointer(e){const r=wrap.getBoundingClientRect(),width=canvas.clientWidth||wrap.clientWidth,height=canvas.clientHeight||wrap.clientHeight;if(!Number.isFinite(e?.clientX)||!Number.isFinite(e?.clientY)||!Number.isFinite(width)||!Number.isFinite(height)||width<=0||height<=0||!Number.isFinite(scale)||scale<=0)return null;const u=(e.clientX-r.left-tx)/(width*scale),v=(e.clientY-r.top-ty)/(height*scale);return Number.isFinite(u)&&Number.isFinite(v)?{u:clamp(u,0,1),v:clamp(v,0,1)}:null;}
- controls.addEventListener('click',e=>{const mode=e.target.closest('button')?.dataset.mapZoom;if(!mode)return;e.stopPropagation();if(mode==='in')zoomAt(scale+.5);else if(mode==='out')zoomAt(scale-.5);else{scale=1;tx=ty=0;paint();}});
- canvas.addEventListener('wheel',e=>{e.preventDefault();const r=wrap.getBoundingClientRect(),cx=e.clientX-r.left,cy=e.clientY-r.top;zoomAt(scale*(e.deltaY<0?1.22:.82),cx,cy);},{passive:false});
- canvas.addEventListener('pointerdown',e=>{if(scale<=1)return;drag={id:e.pointerId,x:e.clientX,y:e.clientY,tx,ty,threshold:e.pointerType==='touch'?12:5};moved=false;canvas.setPointerCapture?.(e.pointerId);});
- canvas.addEventListener('pointermove',e=>{if(!drag||drag.id!==e.pointerId)return;const dx=e.clientX-drag.x,dy=e.clientY-drag.y;if(Math.hypot(dx,dy)>drag.threshold)moved=true;tx=drag.tx+dx;ty=drag.ty+dy;paint();});
- const end=e=>{if(drag?.id===e.pointerId){canvas.releasePointerCapture?.(e.pointerId);drag=null;}};canvas.addEventListener('pointerup',end);canvas.addEventListener('pointercancel',end);
- canvas.addEventListener('click',e=>{if(!moved)return;moved=false;e.preventDefault();e.stopImmediatePropagation();},true);
- if(typeof nativeMapClick==='function')canvas.onclick=e=>{
-  try{
-   if(scale<=1)return nativeMapClick.call(canvas,e);
-   const point=mapPointFromPointer(e);if(!point)throw new Error('Invalid zoomed map coordinates');
-   const {u,v}=point,r=canvas.getBoundingClientRect(),size=Math.min(r.width,r.height);if(!Number.isFinite(size)||size<=0)throw new Error('Invalid map dimensions');const offsetX=(r.width-size)/2,offsetY=(r.height-size)/2,clientX=r.left+offsetX+u*size,clientY=r.top+offsetY+v*size;if(!Number.isFinite(clientX)||!Number.isFinite(clientY))throw new Error('Map remap produced NaN');
-   return nativeMapClick.call(canvas,{clientX,clientY});
-  }catch(error){console.warn('[Taxi map] click guard',error);try{mapDialog?.dispatchEvent(new Event('cancel',{cancelable:true}));}catch{}try{if(mapDialog?.open)mapDialog.close();}catch{}const toast=document.getElementById('toast');if(toast){toast.textContent='Destinazione non raggiungibile';toast.hidden=false;}return null;}
- };
- if(mapDialog)new MutationObserver(()=>{if(mapDialog.open){scale=1;tx=ty=0;moved=false;paint();}}).observe(mapDialog,{attributes:true,attributeFilter:['open']});
- paint();
-}
+// Space works when focus is elsewhere in the confirmation dialog. The native
+// button already handles Space/Enter when it has focus.
+window.addEventListener('keydown', event => {
+  if (event.code !== 'Space' || event.repeat) return;
+  const confirm = document.getElementById('confirmTaxi');
+  const menu = document.getElementById('menu');
+  if (!confirm || !menu?.open || confirm.disabled || document.activeElement === confirm) return;
+  event.preventDefault();
+  event.stopImmediatePropagation();
+  confirm.click();
+}, true);

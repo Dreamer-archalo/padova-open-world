@@ -31,11 +31,11 @@ export function motorwayBarriers(terrain){
  // A handful of short outer-shoulder openings are reserved for authored jump
  // ramps. Prefer the side with less parallel road infrastructure beyond it.
  for(const path of [...paths].sort((a,b)=>b.total-a.total)){
-  if(rampSites.length>=12)break;
+  if(rampSites.length>=24)break;
   const {profile,points,lengths,total}=path,road=profile.road;if(road.crossing||road.k.endsWith('_link')||total<70)continue;
   const at=total*.52;let travelled=0,i=0;while(i<lengths.length-1&&travelled+lengths[i]<at)travelled+=lengths[i++];
   const a=points[i],b=points[i+1],t=(at-travelled)/lengths[i],x=a[0]+(b[0]-a[0])*t,z=a[1]+(b[1]-a[1])*t,yaw=Math.atan2(b[0]-a[0],b[1]-a[1]),y=terrain.roads.sample(road,x,z);
-  if(x<-5900||x>7200||z<-6400||z>6200||Math.hypot(x,z)<1700||terrain.waterDistance(x,z)<35||rampSites.some(r=>Math.hypot(r.x-x,r.z-z)<1400)||gaps.some(g=>Math.hypot(g.x-x,g.z-z)<90))continue;
+  if(x<-5900||x>7200||z<-6400||z>6200||Math.hypot(x,z)<1700||terrain.waterDistance(x,z)<35||rampSites.some(r=>Math.hypot(r.x-x,r.z-z)<950)||gaps.some(g=>Math.hypot(g.x-x,g.z-z)<90))continue;
   let best=null;for(const side of [-1,1]){const ox=x+Math.cos(yaw)*side*(road.w/2+18),oz=z-Math.sin(yaw)*side*(road.w/2+18);let traffic=0;for(const s of index.near(ox,oz,18)){if(s.profile===profile)continue;const q=nearestOnSegment(ox,oz,s.a,s.b);if(Math.hypot(q.x-ox,q.z-oz)<s.profile.road.w/2+8&&Math.abs(terrain.roads.sample(s.profile.road,q.x,q.z)-y)<3)traffic++;}if(!best||traffic<best.traffic)best={side,traffic};}
   if(!best||best.traffic>1)continue;const side=best.side,rx=x+Math.cos(yaw)*side*(road.w/2+.65),rz=z-Math.sin(yaw)*side*(road.w/2+.65),site={x:rx,z:rz,y,yaw,side,road,profileId:profile.id,length:12,kind:'ramp'};rampSites.push(site);gaps.push(site);
  }
