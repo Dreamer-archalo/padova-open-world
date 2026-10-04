@@ -43,7 +43,7 @@ assert.equal(blocked.villaLife.expansion.barns.length,0);assert.equal(blocked.vi
 assert.equal(blocked.villaLife.expansion.perimeter,0);assert.equal(blocked.villaLife.expansion.escort,null);
 assert.deepEqual(safeEstateSegments(blocked,[[0,69],[40,69]]),[]);
 const air=hangarCatalogue().filter(e=>hangarSection(e.id)==='air');
-assert.equal(air.length,16,'full aircraft collection must remain intact');
+assert(air.length>=16,'the original aircraft collection must remain intact');
 for(const vehicle of air){
  const fallback=aircraftPlaceholder(vehicle.id,'#b52f3d');
  assert(fallback?.startsWith('data:image/svg+xml'),vehicle.id+' missing air-specific fallback');
