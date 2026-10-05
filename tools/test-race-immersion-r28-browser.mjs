@@ -20,7 +20,7 @@ try{
    const m=__raceQA,r=m.race,g=m.game,THREE=await import('./vendor/three.module.js');g.state.paused=true;g.scene.updateMatrixWorld(true);
    // Every physical ramp is rendered at its real slope and base, using ray tests.
    const ramps=r.ramps.map(e=>{const ray=new THREE.Raycaster(new THREE.Vector3(e.x,e.baseY+5,e.z),new THREE.Vector3(0,-1,0),0,8),hits=ray.intersectObject(r.immersion.root,true);return {index:e.index,rendered:hits.some(h=>Math.abs(h.point.y-(e.baseY+e.rise/2+.07))<.12)};});
-   const e=r.ramps[0];g.camera.position.set(e.x-16,e.baseY+9,e.z-18);g.camera.lookAt(e.x,e.baseY+1,e.z);g.renderer.render(g.scene,g.camera);
+   const e=r.ramps[0];__r28.camera.position.set(e.x-16,e.baseY+9,e.z-18);__r28.camera.lookAt(e.x,e.baseY+1,e.z);__r28.renderer.render(g.scene,__r28.camera);
    return {mode:r.difficulty,style:r.playerCar.style,models:r.ai.map(c=>c.style),counts:r.immersion.counts,drawCalls:r.immersion.root.children.length,ramps};
   });assert.equal(sceneCheck.mode,mode);assert.equal(sceneCheck.style,vehicle);assert(sceneCheck.ramps.every(r=>r.rendered),'ramp render matches physical height');assert.equal(sceneCheck.drawCalls,1);
   await page.screenshot({path:`test-artifacts/r28/${mode}-track.png`});
