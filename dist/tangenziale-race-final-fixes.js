@@ -45,7 +45,7 @@ function installCollisionGuard(manager){
  const original=collision.near.bind(collision);collision.__tangenzialeFinalGuard=true;collision.__tangenzialeOriginalNear=original;
  collision.near=function(x,z,radius=0){
   const found=original(x,z,radius),m=activeManager,race=m?.race,state=m?.game?.state;
-  if(!race?.__secondRace||race.phase!=='running'||remaining(race)>COLLISION_FILTER_METRES||!state)return found;
+  if(!race?.__secondRace||race.advancedSecond||race.phase!=='running'||remaining(race)>COLLISION_FILTER_METRES||!state)return found;
   // Only relax bad bridge/support geometry for collision queries around the player's
   // car. Buildings, guardrails, medians and unrelated world collision remain intact.
   if(Math.hypot(x-state.x,z-state.z)>18)return found;
@@ -53,7 +53,7 @@ function installCollisionGuard(manager){
  };
 }
 function cleanSecondRaceFinish(manager){
- const r=manager.race,g=manager.game;if(!r?.__secondRace||r.__finalSectionClean||r.phase!=='running'||remaining(r)>CLEAN_FINAL_METRES)return;
+ const r=manager.race,g=manager.game;if(!r?.__secondRace||r.advancedSecond||r.__finalSectionClean||r.phase!=='running'||remaining(r)>CLEAN_FINAL_METRES)return;
  r.__finalSectionClean=true;
  // At this point all stunt content is behind the player or close enough to the
  // finish to become a liability. The last 1.35 km is deliberately a clean drive.
@@ -64,7 +64,7 @@ function cleanSecondRaceFinish(manager){
  g.toast('ULTIMO TRATTO · pista libera fino al traguardo',1.8);
 }
 function keepFinalRoadLive(manager,dt){
- const r=manager.race,s=manager.game.state;if(!r?.__secondRace||r.phase!=='running'||remaining(r)>CLEAN_FINAL_METRES||r.playerFinished)return;
+ const r=manager.race,s=manager.game.state;if(!r?.__secondRace||r.advancedSecond||r.phase!=='running'||remaining(r)>CLEAN_FINAL_METRES||r.playerFinished)return;
  const current=nearestIndex(r,s),p=r.samples[current];
  if(!p)return;
  const roadY=p.road?manager.game.terrain.roads?.sample?.(p.road,s.x,s.z):NaN;

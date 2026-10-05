@@ -257,7 +257,7 @@ function yieldFrame(){return new Promise(r=>requestAnimationFrame(r));}
 function setupGameplay(){
  if(gameplay)return;
  speedCameras=new SpeedCameras({state,data,terrain,scene,save,toast});
- gameplay=new ModernGameplay({state,data,cars,people,cops,scene,terrain,signals,graph:patrolGraph||graph,collision:world.collision,addCar,pose:poseVehicle,safeRoad:dryRoad,raiseWanted,defeat:explodePlayer,toast,
+ gameplay=new ModernGameplay({state,data,cars,people,cops,scene,terrain,world,signals,graph:patrolGraph||graph,collision:world.collision,addCar,pose:poseVehicle,safeRoad:dryRoad,raiseWanted,defeat:explodePlayer,toast,
   forget:c=>previousActors.delete(c.mesh),remove:c=>{scene.remove(c.mesh);previousActors.delete(c.mesh);for(const pool of [cars,cops]){const i=pool.indexOf(c);if(i>=0)pool.splice(i,1);}if(c.police)c.mesh.traverse(o=>{if(o.isMesh){o.geometry.dispose();o.material.dispose();}});}});
  dealerships=new Dealerships({scene,terrain,collision:world.collision,addCar,cars,state,regionalWorld:()=>regionalWorld,roadAt:p=>regionalWorld?.contains(p.x,p.z)?regionalWorld.nearestRoad(p.x,p.z,90):nearestRoad(p,graph,false,{maxRadius:90,fallback:false,maxMs:2}),pose:poseVehicle,buildings:data.buildings,createPerson});if(regionalWorld?.data.buildings)dealerships.register(regionalWorld.data.buildings);
  parachute=createParachute();scene.add(parachute);
@@ -881,7 +881,7 @@ function movePlayer(dt){if(taxi?.phase==='transition'){state.speed=0;return;}if(
    if(!enterGameplayWater(waterY))waterRecovery.remember(state,terrain);
   }
  }
- const oldX=state.x,oldZ=state.z,bound=regionalWorld?unifiedBounds:{minX:-5970,maxX:7250,minZ:-6480,maxZ:6230};state.x=clamp(state.x,bound.minX,bound.maxX);state.z=clamp(state.z,bound.minZ,bound.maxZ);if(oldX!==state.x||oldZ!==state.z){state.speed=0;toast('Limite dell’attuale mondo percorribile.',2);}
+ const oldX=state.x,oldZ=state.z,bound=regionalWorld||state.car?.raceTwoRules?unifiedBounds:{minX:-5970,maxX:7250,minZ:-6480,maxZ:6230};state.x=clamp(state.x,bound.minX,bound.maxX);state.z=clamp(state.z,bound.minZ,bound.maxZ);if(oldX!==state.x||oldZ!==state.z){state.speed=0;toast('Limite dell’attuale mondo percorribile.',2);}
 }
 function trafficChoices(c,node){const edges=node.edges.filter(e=>e.id!==c.prev&&e.road.k!=='pedestrian'&&!['no','private'].includes(e.road?.access)&&e.road.w>c.spec.width+1),fallback=node.edges.filter(e=>e.road.k!=='pedestrian'&&!['no','private'].includes(e.road?.access)&&e.road.w>c.spec.width+1),pool=edges.length?edges:fallback;return pool.map(e=>({e,score:Math.random()*1.2-Math.abs(angleDiff(Math.atan2(graph.nodes[e.id].x-node.x,graph.nodes[e.id].z-node.z),c.yaw))*.25-cars.filter(o=>o!==c&&o.mesh.visible&&o.target===e.id).length*.35})).sort((a,b)=>b.score-a.score).map(v=>v.e);}
 function updateTraffic(dt){for(const c of cars){

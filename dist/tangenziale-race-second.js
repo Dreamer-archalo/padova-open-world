@@ -102,7 +102,7 @@ function buildRamp(game,r,index,side,interactive=false){const p=r.samples[index]
 function addDecelerator(root,game,r,index){const p=r.samples[index],yaw=yawAt(r.samples,index),y=heightAt(game,p)+.035,width=Math.max(7.2,Math.min(10.5,p.road?.w||8.5)),length=5.6,d={index,x:p.x,z:p.z,yaw,width,length,lastToast:-Infinity};for(let k=-3;k<=3;k++){const along=k*.72,x=p.x+Math.sin(yaw)*along,z=p.z+Math.cos(yaw)*along;box(root,k%2?'#f4d13d':'#262b30',x,y,z,width,.045,.38,true).rotation.y=yaw;}r.decelerators.push(d);}
 function positionObstacle(game,r,def,car){const p=r.samples[def.index],baseYaw=yawAt(r.samples,def.index),q=lateral(p,baseYaw,def.offset);Object.assign(car,{x:q.x,z:q.z,y:heightAt(game,p,q.x,q.z),yaw:baseYaw+def.yawOffset,speed:0,parked:true,missionUnit:true,fixedSpawn:true,tangenzialeObstacle:true,budgetSleeping:false,name:def.label});car.mesh.visible=true;game.pose(car);}
 
-function configureSecond(manager){
+export function configureSecond(manager){
  const r=manager.race,g=manager.game,s=g.state;if(!r||r.__secondRace)return false;
  const fullSamples=prepareFullSamples(g,manager.routeCache),window=chooseSecondWindow(r,fullSamples);
  if(!window){manager.restoreSnapshot();g.toast('Seconda gara non disponibile: serve un tratto di tangenziale abbastanza lontano e lungo.',5);return false;}

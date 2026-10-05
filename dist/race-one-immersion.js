@@ -105,7 +105,7 @@ export function safeSpectatorSpot(g,x,z,y){
  }
  return g.terrain.dry(x,z,.5,y)&&!vehicleBlocked(x,z,0,g.collision,{width:.8,length:.8,height:1.9},y);
 }
-function crowds(root,g,r,count){
+export function crowds(root,g,r,count){
  const spectators=[];let groups=0;
  for(let n=0;n<count;n++){
   const target=Math.round(r.startIndex+5+(r.samples.length-r.startIndex-18)*(n+1)/(count+1));
@@ -131,17 +131,18 @@ function crowds(root,g,r,count){
  return {spectators,groups};
 }
 // Bake static signs/crowds/ramps into one draw call; no per-frame crowd AI.
-function bake(root){
+export function bake(root){
  root.updateMatrixWorld(true);const positions=[],normals=[],colors=[],v=new THREE.Vector3(),n=new THREE.Vector3(),inv=root.matrixWorld.clone().invert(),materials=new Set();
  root.traverse(m=>{if(!m.isMesh)return;const matrix=new THREE.Matrix4().multiplyMatrices(inv,m.matrixWorld),normal=new THREE.Matrix3().getNormalMatrix(matrix),geo=m.geometry,indices=geo.index?.array,col=m.material.color;
   for(let j=0;j<(indices?.length||geo.attributes.position.count);j++){const i=indices?indices[j]:j;v.fromBufferAttribute(geo.attributes.position,i).applyMatrix4(matrix);n.fromBufferAttribute(geo.attributes.normal,i).applyMatrix3(normal).normalize();positions.push(v.x,v.y,v.z);normals.push(n.x,n.y,n.z);colors.push(col.r,col.g,col.b);}materials.add(m.material);
  });root.clear();for(const m of materials)m.dispose();const geo=new THREE.BufferGeometry();geo.setAttribute('position',new THREE.Float32BufferAttribute(positions,3));geo.setAttribute('normal',new THREE.Float32BufferAttribute(normals,3));geo.setAttribute('color',new THREE.Float32BufferAttribute(colors,3));root.add(new THREE.Mesh(geo,new THREE.MeshStandardMaterial({vertexColors:true,roughness:.7})));
 }
-function clearLegacyFeatures(manager){
+export function clearLegacyFeatures(manager){
  const r=manager.race,g=manager.game;g.terrain.arcadeRamps=(g.terrain.arcadeRamps||[]).filter(x=>!x.tangenzialeRace);
- for(const root of r.roots)if(/tangenziale-(short-sprint-ramps|race-ramps|bridge-jump-ramps|race-boost-pads)/.test(root.name))g.scene.remove(root);
+ for(const root of r.roots)if(/tangenziale-(short-sprint-ramps|race-ramps|bridge-jump-ramps|race-boost-pads|second-race-features)/.test(root.name))g.scene.remove(root);
  for(const c of r.obstacles)g.retire(c);r.obstacles=[];r.obstacleDefs=[];r.ramps=[];r.fakeRamps=[];
  r.__rampsStabilized=true;r.playerRampBoostUntil=0;r.lastBoostRamp=null;
+ r.interactiveRamps=[];r.decelerators=[];
 }
 export function configureRaceEnvironment(manager,mode,seed=1){
  const r=manager.race;if(!r||r.__secondRace||r.immersion)return false;

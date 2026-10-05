@@ -59,7 +59,7 @@ function relocateObstacle(manager,car,index,slot){
  return side;
 }
 function sanitizeSecondRaceEndgame(manager){
- const r=manager.race;if(!r?.__secondRace||r.__endgameSanitized)return;r.__endgameSanitized=true;
+ const r=manager.race;if(!r?.__secondRace||r.advancedSecond||r.__endgameSanitized)return;r.__endgameSanitized=true;
  const used=[];const late=[];
  for(const [i,car] of (r.obstacles||[]).entries()){
   const found=nearestRouteIndex(r,car),fraction=routeFraction(r,found.index);
@@ -84,7 +84,7 @@ function safeRecoveryIndex(r,from){
  return Math.min(r.samples.length-4,lo);
 }
 function recoverSecondRaceDeadlock(manager,dt){
- const r=manager.race,s=manager.game.state;if(!r?.__secondRace||r.phase!=='running'||r.playerFinished)return;
+ const r=manager.race,s=manager.game.state;if(!r?.__secondRace||r.advancedSecond||r.phase!=='running'||r.playerFinished)return;
  const remaining=Math.max(0,r.total-(r.playerProgress||0));
  if(remaining>ENDGAME_DEADLOCK_WINDOW){r.__lateDeadlockScore=0;r.__lateDeadlockLast=null;return;}
  const pos={x:s.x,z:s.z},last=r.__lateDeadlockLast,moved=last?Math.hypot(pos.x-last.x,pos.z-last.z):Infinity;
@@ -130,7 +130,7 @@ function scheduleRaceOverview(manager){
 function openRaceHub(){
  const manager=activeManager,menu=document.getElementById('menu'),title=document.getElementById('menuTitle'),content=document.getElementById('menuContent');if(!manager||!menu||!content)return;
  if(title)title.textContent='Gare in tangenziale';
- content.innerHTML='<p class="about-copy">Scegli la gara da avviare.</p><div class="activities"><button class="activity" id="raceHubOne"><span class="icon">⚑</span><span><b>GARA 1 · TANGENZIALE</b><small>Mezzo a scelta · bot variabili · difficoltà · imprevisti</small></span><span class="reward">+€350</span></button><button class="activity" id="raceHubTwo"><span class="icon">⚑</span><span><b>GARA 2 · SETTE SPORTIVE</b><small>7 auto · percorso lungo · rampe interattive · deceleratori</small></span><span class="reward">+€350</span></button></div><div class="menu-actions"><button id="raceHubBack">INDIETRO ALLE ATTIVITÀ</button></div>';
+ content.innerHTML='<p class="about-copy">Scegli la gara da avviare.</p><div class="activities"><button class="activity" id="raceHubOne"><span class="icon">⚑</span><span><b>GARA 1 · TANGENZIALE</b><small>Mezzo a scelta · bot variabili · difficoltà · imprevisti</small></span><span class="reward">+€350</span></button><button class="activity" id="raceHubTwo"><span class="icon">⚑</span><span><b>GARA 2 · SFIDA AVANZATA</b><small>7 mezzi a scelta · due carreggiate · rampe, trappole e sprint</small></span><span class="reward">+€350</span></button></div><div class="menu-actions"><button id="raceHubBack">INDIETRO ALLE ATTIVITÀ</button></div>';
  document.getElementById('raceHubOne').onclick=()=>manager.openConfirmation();
  document.getElementById('raceHubTwo').onclick=()=>manager.openSecondRaceConfirmation?.();
  document.getElementById('raceHubBack').onclick=()=>document.getElementById('activityBtn')?.click();

@@ -1,0 +1,90 @@
+name: Advanced second race, shared events and both carriageways R30
+
+on:
+  push:
+    branches: [feat/race-two-advanced-r30]
+
+permissions:
+  actions: read
+  contents: read
+
+concurrency:
+  group: race-two-preview
+  cancel-in-progress: true
+
+jobs:
+  playtest:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Recover the last published regional map
+        run: |
+          set -euo pipefail
+          for name in venice.json region-padova-venice.json world-padova-venice.json world-terrain.json map-hd-extras.json; do
+            found=false
+            for label in solo-cars-r26 road-fixes-r25 padova-npc-r17 dealerships-r19 unified; do
+              url="https://dreamer-archalo.github.io/padova-open-world/preview/$label/data/$name"
+              if curl --fail --silent --show-error --location --max-time 45 "$url" -o "dist/data/$name"; then
+                echo "Recovered $name from $label"
+                found=true
+                break
+              fi
+            done
+            if test "$found" != true && test "$name" != map-hd-extras.json; then
+              echo "Missing required regional file: $name" >&2
+              exit 1
+            fi
+          done
+      - name: Check regional data and mapped showrooms
+        run: |
+          set -euo pipefail
+          for name in venice.json region-padova-venice.json world-padova-venice.json world-terrain.json; do
+            test -s "dist/data/$name"
+          done
+          node -e "for(const n of ['region-padova-venice','world-padova-venice','world-terrain','venice']){const d=require('./dist/data/'+n+'.json'); if(!d||typeof d!=='object')process.exit(1)}"
+          node verify-dealerships-regional.mjs
+          node tools/audit-regional-interchanges-r20.mjs
+      - name: Verify first race and preserved world geometry
+        if: "!contains(github.event.head_commit.message, '[browser-only]')"
+        run: |
+          set -euo pipefail
+          npm run test:tangenziale-race
+          node verify-race-one-difficulty.mjs
+          node tools/verify-race-one-r27.mjs
+          node tools/verify-race-immersion-r28.mjs
+          node tools/verify-race-driving-r29.mjs
+          npm run test:race-two
+          node verify-feature-preservation.mjs
+          node verify-elevation-harmony.mjs
+          node verify-geometry-integrity.mjs
+          node verify-collector-cars-r26.mjs
+      - name: Check long-vehicle checkpoint recovery
+        run: node tools/verify-race-two-deadlock-r30.mjs
+      - name: Install Chromium for road mesh verification
+        run: |
+          npm install --no-save playwright@1.55.1
+          npx playwright install --with-deps chromium
+      - name: Verify all three race modes and bridge openings in real Chromium
+        run: |
+          if test '${{ contains(github.event.head_commit.message, '[browser-only]') }}' != true; then
+            git fetch --no-tags --depth=1 origin ea05ddbd85f887e32850acf51f69ebeba985ba1c
+            PADOVA_R27_BASELINE=1 node tools/test-race-one-r27-browser.mjs
+            node tools/test-race-immersion-r28-browser.mjs
+          fi
+          node tools/test-race-two-r30-browser.mjs
+      - name: Retain complete-race timings and bridge comparisons
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: race-two-r30-webgl
+          path: |
+            test-artifacts/r27
+            test-artifacts/r29
+            test-artifacts/r30
+          if-no-files-found: ignore
+      - name: Verify previously repaired R25 road meshes
+        run: node tools/test-northeast-roads-r25-browser.mjs

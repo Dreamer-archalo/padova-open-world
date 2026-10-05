@@ -9,7 +9,7 @@ permissions:
 jobs:
   integration:
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 25
     steps:
       - uses: actions/checkout@v6
       - uses: actions/setup-node@v4
@@ -41,6 +41,7 @@ jobs:
           npm run test:tangenziale-race
           node tools/verify-race-one-r27.mjs
           npm run test:race-immersion
+          npm run test:race-two
           node verify-online-race.mjs
           node verify-online-race-second-fix.mjs
           node --max-old-space-size=3072 verify-streaming.mjs
@@ -48,11 +49,11 @@ jobs:
           node verify-feature-preservation.mjs
   browser:
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 25
     strategy:
       fail-fast: false
       matrix:
-        test: [race-immersion-r28-browser, shared-streets-browser, mandria-estate-v2-chromium, mandria-estate-v3-chromium, mandria-v5-chromium, mandria-v5-estate-chromium, mandria-v6-browser, mandria-v7-browser, mandria-v8-browser, mandria-v11-browser, mandria-hangar-chromium, airport-military-fleet-chromium, air-hunt-chromium, monoblocco-chromium]
+        test: [race-two-r30-browser, race-immersion-r28-browser, shared-streets-browser, mandria-estate-v2-chromium, mandria-estate-v3-chromium, mandria-v5-chromium, mandria-v5-estate-chromium, mandria-v6-browser, mandria-v7-browser, mandria-v8-browser, mandria-v11-browser, mandria-hangar-chromium, airport-military-fleet-chromium, air-hunt-chromium, monoblocco-chromium]
     steps:
       - uses: actions/checkout@v6
       - uses: actions/setup-node@v4

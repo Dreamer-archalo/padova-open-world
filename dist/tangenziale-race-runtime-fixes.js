@@ -1,3 +1,4 @@
+import {raceCorridorPosition,corridorSurface,corridorFinish,corridorLanes} from './race-corridor.js';
 import {raceDriveSettings,activateRaceTurbo,applyRaceImpact,collideRaceCars,raceBodiesOverlap} from './race-driving-rules.js';
 import {steeringRate} from './vehicle-dynamics.js';
 import {TangenzialeRace} from './tangenziale-race.js';
@@ -85,11 +86,11 @@ function laneBounds(car,road){
  return Math.max(1.25,Math.min(3.45,halfRoad-(car.spec?.width||2)*.5-.28));
 }
 function chooseLane(manager,car,p,index){
- const r=manager.race,samples=r.samples,center=samples[p.index],routeYaw=yawAt(samples,p.index),bound=laneBounds(car,center.road);
- const tuned=!r.__secondRace&&car.raceTuning;
+ const r=manager.race,samples=r.samples,center=samples[p.index],routeYaw=yawAt(samples,p.index),bound=r.corridor?Math.max(...(corridorLanes(manager,p.index,car)||[3.45]).map(Math.abs)):laneBounds(car,center.road);
+ const tuned=(!r.__secondRace||r.advancedSecond)&&car.raceTuning;
  const preferred=tuned?(car.raceTargetLane??car.raceOffset):car.raceOffset;
  const base=clamp(Number.isFinite(preferred)?preferred:0,-bound,bound);
- const candidates=[-bound,0,bound];
+ const candidates=corridorLanes(manager,p.index,car)||[-bound,0,bound];
  if(Math.abs(base)>.35)candidates.push(base);
  const hazards=[];
  const scan=Math.max(34,Math.min(88,Math.abs(car.speed||0)*1.45+24));
@@ -107,7 +108,7 @@ function chooseLane(manager,car,p,index){
  for(const lane of [...new Set(candidates.map(v=>Math.round(v*100)/100))]){
   let score=-Math.abs(lane-base)*.42;
   if(car.raceOneRules)for(let j=p.index;j<=Math.min(samples.length-2,p.index+3);j++){
-   const point=samples[j],yaw=yawAt(samples,j),q=lateral(point,yaw,lane),y=surfaceY(manager.game,point,q.x,q.z,point.y);
+   const point=samples[j],yaw=yawAt(samples,j),q=lateral(point,yaw,lane),y=corridorSurface(manager.game,r,point,q.x,q.z,point.y);
    if(vehicleBlocked(q.x,q.z,yaw,manager.game.collision,car.spec,y))score-=280/(1+j-p.index);
   }
   score+=(index%2?-.04:.04)*lane;
@@ -130,7 +131,7 @@ function chooseLane(manager,car,p,index){
 function turboCap(car,r,game){
  const turbo=game.state.elapsed<(car.raceTurboUntil||0);
  const interactive=game.state.elapsed<(car.secondInteractiveUntil||0);
- const tuning=!r.__secondRace&&car.raceTuning;
+ const tuning=(!r.__secondRace||r.advancedSecond)&&car.raceTuning;
  const skill=tuning?car.raceSkill:(r.__secondRace?1:clamp(car.raceSkill||1,.975,1.04));
  if(car.raceOneRules)return raceDriveSettings(car,game.state.elapsed).max*skill;
  return car.spec.max*skill+(turbo?(tuning?.boost??6.2):0)+(interactive?8.8:0);
@@ -146,7 +147,7 @@ function triggerAITurbo(car,r,game){
 }
 function moveRaceAI(manager,car,dt,index,p,laneInfo){
  const r=manager.race,g=manager.game,samples=r.samples;
- const tuning=!r.__secondRace&&car.raceTuning;
+ const tuning=(!r.__secondRace||r.advancedSecond)&&car.raceTuning;
  const currentRoad=samples[p.index]?.road,bound=laneInfo.bound;
  const wantedLane=clamp(laneInfo.lane,-bound,bound);
  if(!Number.isFinite(car.raceLane))car.raceLane=clamp(car.raceOffset||0,-bound,bound);
@@ -172,7 +173,7 @@ function moveRaceAI(manager,car,dt,index,p,laneInfo){
  }
  const q=lateral(target,tyaw,car.raceLane);
  // Aim beyond the line instead of turning back towards the final sample.
- if(!r.__secondRace&&ti>=samples.length-2){const yaw=yawAt(samples,samples.length-1);q.x+=Math.sin(yaw)*28;q.z+=Math.cos(yaw)*28;}
+ if((!r.__secondRace||r.advancedSecond)&&ti>=samples.length-2){const yaw=yawAt(samples,samples.length-1);q.x+=Math.sin(yaw)*28;q.z+=Math.cos(yaw)*28;}
  const goal=Math.atan2(q.x-car.x,q.z-car.z),diff=angleDiff(goal,car.yaw),futureYaw=yawAt(samples,Math.min(samples.length-1,ti+3)),bend=Math.abs(angleDiff(futureYaw,tyaw));
  let desired=turboCap(car,r,g);
  if(Math.abs(diff)>.7)desired=Math.min(desired,13);
@@ -197,7 +198,7 @@ function moveRaceAI(manager,car,dt,index,p,laneInfo){
  for(let n=0;n<steps;n++){
   const nx=car.x+Math.sin(car.yaw)*car.speed*step,nz=car.z+Math.cos(car.yaw)*car.speed*step;
   const guideIndex=car.raceOneRules?nearestSample2D({x:nx,z:nz},samples,p.index).index:Math.min(samples.length-1,p.index+Math.max(1,Math.round((n+1)/steps*lookahead))),guide=samples[guideIndex];
-  let ny=surfaceY(g,guide,nx,nz,car.y);
+  let ny=r.corridor?corridorSurface(g,r,guide,nx,nz,car.y):surfaceY(g,guide,nx,nz,car.y);
   // Bridge and flyover samples are authoritative: never snap an AI car to the road underneath.
   if((guide.road?.b||guide.road?.crossing||Number(guide.road?.layer)>0)&&Number.isFinite(guide.y)&&Math.abs(ny-guide.y)>2.2)ny=guide.y;
   if(!Number.isFinite(nx)||!Number.isFinite(nz)||!Number.isFinite(ny)||vehicleBlocked(nx,nz,car.yaw,g.collision,car.spec,ny)){
@@ -222,18 +223,33 @@ function updateSmartAI(dt){
  for(const [i,c] of r.ai.entries()){
   this.ensureRacer(c,i+1,c.raceOffset??0);
   if(c.raceFinished){c.speed=0;c.parked=true;g.pose(c);continue;}
-  const p=nearestSample2D(c,r.samples,c.raceHint??r.startIndex??0);
+  const p=r.corridor?raceCorridorPosition(g,r,c,c.raceHint??r.startIndex??0):nearestSample2D(c,r.samples,c.raceHint??r.startIndex??0);
   this.updateCheckpoint(c,p,'raceHint','raceCheckpoint');
-  c.raceProgress=Math.max(c.raceProgress||0,progressAt(r,p.index));
-  if(crossedFinish(c,r,c.raceProgress)){this.markFinished(i+1,c);continue;}
+  c.raceProgress=Math.max(c.raceProgress||0,p.progress??progressAt(r,p.index));
+  if(r.corridor?corridorFinish(r,c,c.raceProgress):crossedFinish(c,r,c.raceProgress)){this.markFinished(i+1,c);continue;}
   triggerAITurbo(c,r,g);
   const laneInfo=chooseLane(this,c,p,i+1);
   moveRaceAI(this,c,dt,i+1,p,laneInfo);
-  const after=nearestSample2D(c,r.samples,c.raceHint??p.index);
-  c.raceHint=after.index;c.raceProgress=Math.max(c.raceProgress||0,progressAt(r,after.index));
-  if(after.d>AI_OFFROAD_LIMIT||(c.stuck||0)>3.2){
-   const cp=respawnCheckpoint(r.startIndex||0,c.raceCheckpoint??r.startIndex??0,r.samples.length);
-   this.respawnActor(c,cp,c.raceLane??c.raceOffset??0);c.raceLane=c.raceOffset??0;
+  const after=r.corridor?raceCorridorPosition(g,r,c,c.raceHint??p.index):nearestSample2D(c,r.samples,c.raceHint??p.index);
+  c.raceHint=after.index;c.raceProgress=Math.max(c.raceProgress||0,after.progress??progressAt(r,after.index));
+  if(r.advancedSecond){
+   if(after.progress>(c.raceForwardWatermark??0)+.6){c.raceForwardWatermark=after.progress;c.raceStallTime=0;}else c.raceStallTime=(c.raceStallTime||0)+dt;
+  }
+  const stalled=r.advancedSecond&&(c.raceStallTime||0)>6;
+  if((r.corridor?!after.valid:after.d>AI_OFFROAD_LIMIT)||(c.stuck||0)>3.2||stalled){
+   let cp=respawnCheckpoint(r.startIndex||0,c.raceCheckpoint??r.startIndex??0,r.samples.length),side=c.raceLane??c.raceOffset??0;
+   // Reversing back and forth is movement, but cannot be an endless deadlock.
+   // Find a clear pose at this checkpoint or behind it; never skip ahead.
+   if(r.advancedSecond){
+    cp=Math.min(cp,c.raceHint??cp);
+    let found=false;
+    for(let back=0;back<=6&&!found;back++){
+     const index=Math.max(r.startIndex||0,cp-back),point=r.samples[index],yaw=yawAt(r.samples,index),members=r.corridor.stations[index].members;
+     for(const lane of [0,...members.slice(1).map(m=>m.side),-2.2,2.2]){const q=lateral(point,yaw,lane),y=corridorSurface(g,r,point,q.x,q.z,point.y);if(vehicleBlocked(q.x,q.z,yaw,g.collision,c.spec,y))continue;cp=index;side=lane;found=true;break;}
+    }
+   }
+   this.respawnActor(c,cp,side);c.raceLane=r.advancedSecond?side:c.raceOffset??0;
+   if(r.advancedSecond){c.raceTargetLane=side;c.raceStallTime=0;c.raceForwardWatermark=progressAt(r,cp);c.raceReverseUntil=0;c.raceNextReverse=0;}
   }
  }
 }
