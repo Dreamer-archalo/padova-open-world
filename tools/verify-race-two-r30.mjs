@@ -5,7 +5,7 @@ import {raceCorridorPosition,corridorFinish} from '../dist/race-corridor.js';
 import {raceDriveSettings} from '../dist/race-driving-rules.js';
 import {safeSpectatorSpot} from '../dist/race-one-immersion.js';
 const m=raceOneHarness();m.restoreSnapshot();
-const reports=[];
+const reports=[],hz=Number(process.env.PADOVA_R30_HZ||60);assert([30,60].includes(hz));
 for(const mode of ['easy','medium','hard']){
  m.start({race:2,difficulty:mode,vehicle:'cinquecento',seed:1234});const r=m.race,g=m.game,s=g.state;
  assert(r.advancedSecond&&r.ai.length===6);assert.equal(new Set([r.playerCar,...r.ai].map(c=>c.style)).size,7);assert.equal(r.playerCar.style,'cinquecento');
@@ -34,8 +34,8 @@ for(const mode of ['easy','medium','hard']){
  // Rebuild grid after zone probes, then run every rival through the actual map.
  m.freezeGrid();r.phase='running';r.startedAt=s.elapsed;r.playerFinished=true;r.playerCar.raceFinished=true;r.finishTimes[0]=1;r.firstFinishAt=s.elapsed-20;m.recoveries=0;
  const recoveryLog=[],recover=m.respawnActor;m.respawnActor=function(c,index,...rest){recoveryLog.push({health:c.health,hint:c.raceHint,index,stuck:c.stuck,x:c.x,z:c.z,y:c.y});assert(index<=c.raceHint,'recovery cannot skip ahead');return recover.call(this,c,index,...rest);};
- for(let tick=0;r.ai.some(c=>!c.raceFinished)&&tick<18000;tick++){s.elapsed+=1/60;m.updateAI(1/60);}
- const report={mode,counts:r.immersion.counts,checked,finished:r.ai.map(c=>c.raceFinished),times:r.finishTimes.slice(1),recoveries:m.recoveries,recoveryLog,positions:r.ai.map(c=>({progress:c.raceProgress,hint:c.raceHint,speed:c.speed,health:c.health,x:c.x,z:c.z,y:c.y}))};console.log('R30_RACE',JSON.stringify(report));assert(report.finished.every(Boolean));assert(report.recoveries<20);assert(recoveryLog.every(e=>e.health<=0||e.stuck>3),'no false offroad recoveries');reports.push(report);m.respawnActor=recover;m.abort();
+ for(let tick=0;r.ai.some(c=>!c.raceFinished)&&tick<hz*300;tick++){s.elapsed+=1/hz;m.updateAI(1/hz);}
+ const report={mode,hz,counts:r.immersion.counts,checked,finished:r.ai.map(c=>c.raceFinished),times:r.finishTimes.slice(1),recoveries:m.recoveries,recoveryLog,positions:r.ai.map(c=>({progress:c.raceProgress,hint:c.raceHint,speed:c.speed,health:c.health,x:c.x,z:c.z,y:c.y}))};console.log('R30_RACE',JSON.stringify(report));assert(report.finished.every(Boolean));assert(report.recoveries<20);assert(recoveryLog.every(e=>e.health<=0||e.stuck>3),'no false offroad recoveries');reports.push(report);m.respawnActor=recover;m.abort();
  assert(!g.terrain.arcadeRamps.some(e=>e.tangenzialeRace));
 }
 for(let i=1;i<reports.length;i++)for(const key of ['ramps','trapRamps','slow','chains','spectators'])assert(reports[i].counts[key]>=reports[i-1].counts[key],`progressive ${key}`);

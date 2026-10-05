@@ -85,7 +85,7 @@ export function applySecondRaceEvents(manager,dt){
 }
 const priorConfirm=TangenzialeRace.prototype.openSecondRaceConfirmation;
 TangenzialeRace.prototype.openSecondRaceConfirmation=function(){
- const out=priorConfirm.call(this);if(this.race||this.game.state.mission)return out;
+ const out=priorConfirm.call(this);if(this.race||this.game.state.mission||typeof window!=='undefined'&&window.PadovaOnline?.connected)return out;
  const content=document.getElementById('menuContent'),title=document.getElementById('menuTitle');if(!content)return out;if(title)title.textContent='Gara 2 · sfida avanzata';
  content.innerHTML='<p class="about-copy"><strong>7 mezzi, due carreggiate valide.</strong><br>Rampe e rampe trappola, rallentatori lunghi, tre sprint consecutivi e più tifosi. Anche il contromano è percorso di gara.<br>Scegli la difficoltà, poi il mezzo con immagine e statistiche. SHIFT: 3 turbo. Vittoria +€350 · sconfitta -€100.</p><label for="raceTwoDifficulty"><strong>DIFFICOLTÀ · BOT E PERCORSO</strong><select id="raceTwoDifficulty" style="width:100%;padding:9px;margin:10px 0">'+Object.entries(SECOND_RACE_ENVIRONMENTS).map(([key,c])=>'<option value="'+key+'">'+RACE_ONE_DIFFICULTIES[key].name+' · '+c.summary+'</option>').join('')+'</select></label><div class="menu-actions"><button class="primary" id="startTangenzialeRaceSecond">INIZIA GARA 2</button><button id="cancelTangenzialeRaceSecond">ANNULLA</button></div>';
  const select=document.getElementById('raceTwoDifficulty');select.value=this.selectedSecondRaceDifficulty||'medium';
