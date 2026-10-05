@@ -15,6 +15,13 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
+      - name: Recover regional map for integrated checks
+        shell: bash
+        run: |
+          set -euo pipefail
+          for name in venice.json region-padova-venice.json world-padova-venice.json world-terrain.json; do
+            curl --fail --silent --show-error --location --max-time 60 "https://dreamer-archalo.github.io/padova-open-world/preview/solo-cars-r26/data/$name" -o "dist/data/$name"
+          done
       - name: Continuity, villa v11, catalogue and preserved game systems
         run: |
           node tools/verify-shared-streets.mjs
@@ -49,6 +56,13 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
+      - name: Recover regional map for integrated checks
+        shell: bash
+        run: |
+          set -euo pipefail
+          for name in venice.json region-padova-venice.json world-padova-venice.json world-terrain.json; do
+            curl --fail --silent --show-error --location --max-time 60 "https://dreamer-archalo.github.io/padova-open-world/preview/solo-cars-r26/data/$name" -o "dist/data/$name"
+          done
       - name: Install software WebGL browser
         run: |
           npm install --no-save playwright@1.55.1

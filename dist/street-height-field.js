@@ -24,6 +24,19 @@ export class StreetHeightField {
     if(terrain.waterDistance(x,z)<1.2)constrain(x,z,terrain.waterHeight(x,z)+2.2);
    }
   }
+  // The common field includes the approaches of nearby bridges. It must not
+  // rise over an independently solved, above-ground carriageway: otherwise a
+  // continuous road disappears inside grass (Darwin / Strada del Santo).
+  // Ceiling envelopes carve a gradual cutting, including the full road width,
+  // while leaving terrain above explicitly underground tunnels intact.
+  for(const p of roads.profiles.values())if(!roads.shared(p.road)&&!p.tunnel&&
+   ['Corso Irlanda','Cavalcavia Charles Darwin','Nuova Strada del Santo'].includes(p.road.n))for(let i=0;i<p.ids.length;i++){
+   const n=roads.nodes[p.ids[i]],a=p.points[Math.max(0,i-1)],b=p.points[Math.min(p.points.length-1,i+1)],d=Math.hypot(b[0]-a[0],b[1]-a[1])||1;
+   for(const side of [-1,0,1]){
+    const offset=side*(p.road.w/2+1),x=n.x-(b[1]-a[1])/d*offset,z=n.z+(b[0]-a[0])/d*offset;
+    constrain(x,z,-Infinity,n.h);
+   }
+  }
   // A bridge's approaches can be close enough to pull the common street field
   // up under the bridge. Keep the lower road's own solved graph height at each
   // crossing; the ceiling then tapers across the neighbouring street grid.

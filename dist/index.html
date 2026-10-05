@@ -12,18 +12,19 @@
   <link rel="stylesheet" href="./initial-loader.css">
   <link rel="stylesheet" href="./unified-main.css?v=carto-r10">
   <link rel="stylesheet" href="./unified-water.css?v=shore-r7">
+  <link rel="stylesheet" href="./compact-hud.css?v=solo-cars-r26-hud2">
 </head>
 <body>
   <div id="initialLoader" role="status" aria-live="polite" aria-label="Caricamento iniziale città">
     <div class="initial-loader-panel">
-      <div class="initial-loader-kicker">PADOVA / INITIAL WORLD STREAM</div>
-      <h1 class="initial-loader-title">CARICAMENTO CITTÀ</h1>
-      <p class="initial-loader-copy">Genero completamente il punto di partenza e gli 8 chunk adiacenti prima di farti entrare nel mondo.</p>
+      <div class="initial-loader-kicker">PADOVA / OPEN WORLD</div>
+      <h1 class="initial-loader-title">CARICAMENTO DEL GIOCO</h1>
+      <p class="initial-loader-copy">Preparazione della città e del punto di partenza.</p>
       <div class="initial-loader-row"><strong id="initialLoaderPercent" class="initial-loader-percent">0%</strong><span id="initialLoaderStatus" class="initial-loader-status">Inizializzazione script…</span></div>
       <div class="initial-loader-track"><i id="initialLoaderBar"></i></div>
       <pre id="initialLoaderError" hidden style="margin:.75rem 0 0;max-width:100%;white-space:pre-wrap;overflow-wrap:anywhere;font:600 .72rem/1.35 ui-monospace,SFMono-Regular,Menlo,monospace;color:#ffb3a7;"></pre>
       <button id="initialLoaderRetry" class="initial-loader-retry" type="button" hidden>Riprova il caricamento</button>
-      <div class="initial-loader-note">La percentuale rappresenta chunk realmente generati e inseriti nella scena WebGL.</div>
+      <div class="initial-loader-note">Attendi il completamento del caricamento per entrare nel mondo.</div>
     </div>
   </div>
   <script>
@@ -73,7 +74,7 @@
   <header class="hud topbar">
     <div class="wordmark">PADOVA<span>OPEN WORLD</span></div>
     <div class="location"><span class="eyebrow">ITALIA / VENETO</span><strong id="location">Piazza delle Erbe</strong></div>
-    <div class="topright"><div id="wanted" aria-label="Wanted level">☆☆☆☆☆</div><div class="money">€ <span id="money">0</span></div><button id="pauseBtn" aria-label="Pause game">Ⅱ</button></div>
+    <div class="topright"><div id="wanted" aria-label="Wanted level">☆☆☆☆☆</div><div class="money">€ <span id="money">0</span></div><button id="hudDetailsBtn" type="button" hidden aria-pressed="false">HUD +</button><button id="pauseBtn" aria-label="Pause game">Ⅱ</button></div>
   </header>
   <section id="intro" class="intro">
     <div class="edition"><span></span> A CITY YOU KNOW. YOUR STREETS.</div>
@@ -91,7 +92,7 @@
       <small>Partenza: villa di Parco Treves</small>
     </label>
     <div class="intro-actions">
-      <button id="playBtn" class="primary" disabled>Building the city…</button>
+      <button id="playBtn" class="primary" disabled>Preparazione del gioco…</button>
       <button id="aboutBtn" class="textbutton">About this world <span>↗</span></button>
     </div>
     <div class="loading"><div id="loadingBar"></div></div><div id="loadingText" class="small">Scegli la grafica prima di caricare. Iper Performance per PC meno potenti.</div>
@@ -102,7 +103,7 @@
     <div class="character-panel"><div id="characterChoices" class="character-choices" aria-label="Personaggi"></div><p id="characterOutfit" aria-live="polite"></p><button id="confirmCharacter" class="primary">Entra nella villa →</button></div>
   </section>
   <div id="playingUI" hidden>
-    <aside class="hud mission"><div class="eyebrow" id="missionType">FREE ROAM</div><h2 id="missionTitle">The city is yours.</h2><p id="missionDesc">Explore, borrow a car, or pick an activity.</p><div id="missionTimer"></div><button id="activityBtn">Choose an activity <span>J</span></button></aside>
+    <aside class="hud mission"><div class="eyebrow" id="missionType">FREE ROAM</div><h2 id="missionTitle">The city is yours.</h2><p id="missionDesc">Explore, borrow a car, or pick an activity.</p><div id="missionTimer"></div></aside>
     <div class="hud minimap"><canvas id="minimap" width="660" height="510" aria-label="Nearby streets and objective"></canvas><a class="minimap-osm-credit" href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">© OpenStreetMap contributors</a><div class="map-footer"><span id="district">CENTRO STORICO</span><small id="minimapStatus" hidden style="display:none"></small><small id="regionalLoadStatus">REGIONE: CARICAMENTO</small><button id="mapBtn">MAP <kbd>M</kbd></button></div></div>
     <div class="hud driving">
       <div class="vehicle-heading"><div><span class="eyebrow">VEHICLE</span><div id="vehicleName">ON FOOT</div></div><span id="gear" class="gear">N</span></div>
@@ -111,10 +112,11 @@
       <div id="cannonStatus" class="modern-only" hidden>TAB · CANNONE PRONTO</div>
       <div class="tach"><span>RPM</span><div><i id="rpm"></i></div><b id="rpmValue">0.0</b></div>
       <div class="telemetry"><span><small>TRIP</small><b id="odometer">0.0 KM</b></span><span><small>HEADING</small><b id="heading">N</b></span><span><small>TRAFFIC</small><b id="trafficLevel">LOW</b></span></div>
-      <div class="terrain-telemetry"><span>ALTITUDE <b id="altitude">0 M</b></span><span>GRADE <b id="gradient">0.0%</b></span><button id="vehicleMenuBtn">VEHICLES <kbd>V</kbd></button></div>
+      <div class="terrain-telemetry"><span>ALTITUDE <b id="altitude">0 M</b></span><span>GRADE <b id="gradient">0.0%</b></span></div>
       <div class="health-row"><span id="healthLabel">VEHICLE CONDITION</span><b id="healthValue">100%</b></div><div class="healthtrack"><i id="health"></i></div>
     </div>
     <div class="hud keybar"><span><kbd>W A S D</kbd> move</span><span><kbd>E</kbd> vehicle</span><span><kbd>T</kbd> saluta</span><span><kbd>V</kbd> vehicles</span><span><kbd>SPACE</kbd> brake / jump</span><span><kbd>SHIFT</kbd> boost / sprint</span><span><kbd>C</kbd> camera</span><span><kbd>ESC</kbd> pause</span></div>
+    <nav id="hudActions" aria-label="Azioni di gioco"><button id="activityBtn" type="button">Attività <kbd>J</kbd></button><button id="vehicleMenuBtn" type="button">Veicoli <kbd>V</kbd></button></nav>
     <div id="interact" class="interaction" hidden></div>
     <button id="dealerBtn" class="dealer-action" type="button" hidden>G · ACQUISTA AUTO</button>
     <div id="toast" class="toast" role="status" hidden></div>
@@ -133,11 +135,11 @@
   <div id="taxiLoading" class="taxi-loading" hidden role="status" aria-live="polite"><div id="taxiMeme" class="taxi-meme"><div><span>TAXI ABUSIVO IN TRANSITO…</span><strong>Caricamento destinazione</strong><p id="taxiFact"></p><small id="taxiLoadingStatus">Preparazione di terreno e strade</small><button id="taxiNext" type="button">CLICCA / TOCCA · PROSSIMA CURIOSITÀ</button></div></div></div>
   <footer id="credits"><a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">© OpenStreetMap contributors</a><a href="https://github.com/tilezen/joerd/blob/master/docs/attribution.md" target="_blank" rel="noopener">Terrain: Copernicus EU-DEM / USGS via Mapzen</a><span id="modelCredits"></span><span id="scaleCredit">Real-world scale · stylised reconstruction</span></footer>
   <script type="module" src="./initial-loader.js?v=venice-perf-r15"></script>
-  <script type="module" src="./game.js?v=taxi-r22"></script>
+  <script type="module" src="./game.js?v=solo-cars-r26"></script>
   <script type="module" src="./taxi-facts-extra.js"></script>
   <script type="module" src="./zone-indicator.js"></script>
   <script type="module" src="./ambient-audio.js"></script>
-  <script type="module" src="./phase2-runtime.js?v=taxi-r22"></script>
+  <script type="module" src="./phase2-runtime.js?v=solo-cars-r26"></script>
   <script type="module" src="./cruise-control.js"></script>
 <pre id="performanceOverlay" hidden aria-hidden="true"></pre></body>
 </html>

@@ -1,4 +1,5 @@
 import {PerformanceOverlay} from './performance-overlay.js';
+import {updateHUDState} from './compact-hud.js';
 import {InputManager} from './InputManager.js';
 import {TaxiDispatcher} from './TaxiDispatcher.js';
 import {TaxiLoadingOverlay} from './TaxiLoadingOverlay.js';
@@ -938,6 +939,7 @@ function updateCamera(dt){
  sun.position.set(state.x-100,state.y+180,state.z+70);sun.target.position.set(state.x,state.y,state.z);sun.target.updateMatrixWorld();
 }
 function updateUI(){
+ updateHUDState(state,waterGame);
  const ws=$('waterStatus');
  if(ws){
   // Keep the compact existing interaction hint at the surface: the large

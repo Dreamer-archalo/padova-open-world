@@ -31,18 +31,21 @@ export class RoadSurfaces{
   for(const [id,road] of map.roads.entries()){
    const ids=[],points=[];for(let i=1;i<road.p.length;i++){const a=road.p[i-1],b=road.p[i],n=Math.max(1,Math.ceil(distance(a,b)/9));for(let j=i===1?0:1;j<=n;j++){const p=[a[0]+(b[0]-a[0])*j/n,a[1]+(b[1]-a[1])*j/n];points.push(p);ids.push(node(p,j===0||j===n,road,i===1&&j===0||i===road.p.length-1&&j===n));}}
    if(ids.length<2)continue;
-   const wet=points.map(p=>!terrain.prato(...p)&&terrain.waterDistance(...p)<0),hasWater=wet.some(Boolean),explicit=!!road.b,layer=Number(road.layer)||0,tunnel=!!road.tunnel;
+   const wet=points.map(p=>!terrain.prato(...p)&&terrain.waterDistance(...p)<0),hasWater=wet.some(Boolean),explicit=!!road.b||!!road.gradeSeparated&&road.n==='Cavalcavia Charles Darwin',layer=Number(road.layer)||0,tunnel=!!road.tunnel;
    const inferred=hasWater&&!explicit&&!tunnel;road.crossing=explicit||inferred||!!road.gradeSeparated;road.surfaceId=id;
    if(inferred)this.report.inferred.push(id);if(wet[0]||wet.at(-1))this.report.submergedEnds.push(id);if(layer||tunnel)this.report.layers++;
    const riverDeck=this.modern&&!tunnel&&!road.gradeSeparated&&!/motorway|trunk/.test(road.k)&&layer<=1&&points.some(p=>terrain.waterDistance(...p)<40);
-   const profile={id,road,ids,points,wet,hasWater,layer,tunnel,riverDeck};this.profiles.set(road,profile);
+   const profile={id,road,ids,points,wet,hasWater,explicit,layer,tunnel,riverDeck};this.profiles.set(road,profile);
    for(let i=0;i<ids.length;i++){
     const n=this.nodes[ids[i]];
     // A canal bridge joins its existing banks. layer=1 describes ordering,
     // not an extra storey above those banks. Real road-under-road clearance is
     // still enforced by the crossing solve below, including riverside paths.
     const riverBridge=riverDeck;
-    const lift=terrain.prato(n.x,n.z)||riverBridge?0:explicit&&!hasWater?Math.max(1,layer)*5.4:layer>0?layer*5.4:0;
+    // A motorway bridge can span both a canal and dry roads. A wet node must
+    // not switch off the deck lift along the entire way, leaving a dip between
+    // its two carriageways. Ordinary canal bridges retain their bank datum.
+    const lift=terrain.prato(n.x,n.z)||riverBridge?0:explicit&&(!hasWater||road.n==='Nuova Strada del Santo')?Math.max(1,layer)*5.4:layer>0?layer*5.4:0;
     const deck=wet[i]?Math.max(n.base,terrain.waterHeight(n.x,n.z)+2.2):n.base;
     if(!tunnel)n.h=Math.max(n.h,deck+lift);
     if(i){const prev=this.nodes[ids[i-1]],d=distance(points[i-1],points[i]);const grade=this.modern?.055:road.k==='steps'?.65:MAX_GRADE;n.edges.push({id:ids[i-1],d,grade});prev.edges.push({id:ids[i],d,grade});const s={a:points[i-1],b:points[i],ia:ids[i-1],ib:ids[i],profile,i:i-1};this.index.add(s,Math.min(s.a[0],s.b[0])-road.w,Math.min(s.a[1],s.b[1])-road.w,Math.max(s.a[0],s.b[0])+road.w,Math.max(s.a[1],s.b[1])+road.w);}
@@ -79,7 +82,7 @@ export class RoadSurfaces{
   for(let pass=0;pass<4;pass++){const heap=new MaxHeap();for(const c of crossings){const a=this.nodes[c.ia],b=this.nodes[c.ib],required=this.segmentHeight(c.other,c.v)+c.clearance+.4,current=a.h*(1-c.u)+b.h*c.u;if(required>current+.01){const lift=Math.min(2,required-current,a.base+c.maxLift-a.h,b.base+c.maxLift-b.h);if(lift<=.01)continue;a.h+=lift;b.h+=lift;heap.push({id:c.ia,h:a.h});heap.push({id:c.ib,h:b.h});}}
    if(!heap.a.length)break;while(heap.a.length){const item=heap.pop(),n=this.nodes[item.id];if(item.h<n.h-.001)continue;for(const e of n.edges){const q=this.nodes[e.id],h=n.h-e.d*e.grade;if(h>q.h+.001){q.h=h;heap.push({id:e.id,h});}}}
   }
-  if(this.modern){this.alignParallelDecks();this.smoothProfiles();this.protectClearance(crossings);}
+  if(this.modern){this.alignParallelDecks();this.smoothProfiles();this.protectClearance(crossings);this.harmonizeMergeLanes();}
   for(const profile of this.profiles.values())for(let i=1;i<profile.ids.length;i++){const a=this.nodes[profile.ids[i-1]],b=this.nodes[profile.ids[i]],grade=Math.abs(a.h-b.h)/Math.max(.01,distance(profile.points[i-1],profile.points[i]));if(grade>(profile.road.k==='steps'?.65:this.modern?.055:MAX_GRADE)+.005)this.report.steep.push({road:profile.id,grade});}
   for(const n of this.nodes){n.degree=new Set(n.edges.map(e=>e.id)).size;delete n.edges;}
  }
@@ -96,6 +99,36 @@ export class RoadSurfaces{
    }
   }
  }
+ harmonizeMergeLanes(){
+  // OSM often models an accelerating lane and the through lane as two ways
+  // sharing an end vertex. Their centre heights agree at that vertex, but the
+  // wide meshes overlap well before it. Bring the lower lane up through its
+  // own grade-limited approach before the adjacent asphalt becomes a roof.
+  const express=road=>/^(motorway|trunk)(?:_link)?$/.test(road.k||'');
+  const ends=road=>[road.p[0],road.p.at(-1)];
+  const sharedEnd=(a,b,x,z)=>ends(a).some(u=>ends(b).some(v=>
+   distance(u,v)<.25&&Math.hypot(x-u[0],z-u[1])<130));
+  const heap=new MaxHeap();
+  for(const p of this.profiles.values()){
+   if(!express(p.road)||!p.road.k.endsWith('_link')||p.tunnel)continue;
+   for(let i=0;i<p.ids.length;i++){
+    const n=this.nodes[p.ids[i]],prev=p.points[Math.max(0,i-1)],next=p.points[Math.min(i+1,p.points.length-1)];
+    const dx=next[0]-prev[0],dz=next[1]-prev[1],length=Math.hypot(dx,dz);if(length<.01)continue;
+    for(const s of this.index.near(n.x,n.z,9)){
+     const other=s.profile.road;if(other===p.road||!express(other)||s.profile.tunnel||!sharedEnd(p.road,other,n.x,n.z))continue;
+     const ex=s.b[0]-s.a[0],ez=s.b[1]-s.a[1],span=Math.hypot(ex,ez);if(span<.01||Math.abs((dx*ex+dz*ez)/length/span)<.72)continue;
+     const q=nearestOnSegment(n.x,n.z,s.a,s.b),offset=Math.hypot(n.x-q.x,n.z-q.z);
+     if(offset>Math.min(7,(p.road.w+other.w)/2-1))continue;
+     const upper=this.segmentHeight(s,q.t),rise=upper-n.h;
+     if(rise>.25&&rise<3.5){n.h=upper;heap.push({id:p.ids[i],h:n.h});}
+    }
+   }
+  }
+  while(heap.a.length){const item=heap.pop(),n=this.nodes[item.id];if(item.h<n.h-1e-7)continue;
+   for(const e of n.edges){const q=this.nodes[e.id],h=n.h-e.d*e.grade;if(h>q.h+1e-7){q.h=h;heap.push({id:e.id,h});}}
+  }
+  this.updateSlopes();
+ }
  protectClearance(crossings){
   for(let pass=0;pass<4;pass++){
    const heap=new MaxHeap();
@@ -109,7 +142,7 @@ export class RoadSurfaces{
  }
  smoothProfiles(){
   const floors=new Float64Array(this.nodes.length).fill(-Infinity);
-  for(const p of this.profiles.values())for(let i=0;i<p.ids.length;i++)if(p.wet[i]||p.layer>0||p.road.b){const id=p.ids[i];floors[id]=Math.max(floors[id],this.nodes[id].h);}
+  for(const p of this.profiles.values())for(let i=0;i<p.ids.length;i++)if(p.wet[i]||p.layer>0||p.explicit){const id=p.ids[i];floors[id]=Math.max(floors[id],this.nodes[id].h);}
   const next=new Float64Array(this.nodes.length);
   // Sixteen diffusion passes are enough to remove DEM noise while avoiding the
   // former 64-pass main-thread startup cost.

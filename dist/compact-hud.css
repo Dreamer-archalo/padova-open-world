@@ -1,0 +1,85 @@
+body[data-playing="false"] .topbar,body[data-playing="false"] #hudActions{display:none}
+/* Compact is the default. HUD + restores the complete original information. */
+body[data-ui="compact"][data-playing="true"] .topbar{padding:18px 24px;background:linear-gradient(#0c1a2566,transparent)}
+body[data-ui="compact"][data-playing="true"] .wordmark,
+body[data-ui="compact"] .location .eyebrow,
+body[data-ui="compact"] .keybar,
+body[data-ui="compact"] .tach,
+body[data-ui="compact"] .telemetry,
+body[data-ui="compact"] .vehicle-heading .eyebrow,
+body[data-ui="compact"] .gear{display:none}
+#regionalLoadStatus{display:none}
+body[data-ui="compact"] .location{border:0;padding-left:0;max-width:45vw}
+body[data-ui="compact"] .location strong{font-size:14px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+body[data-ui="compact"] .topright{gap:16px}
+body[data-wanted-active="false"] #wanted{display:none}
+body[data-driving="false"] .driving{display:none}
+body[data-ui="compact"][data-mission-active="false"] .mission{display:none}
+body[data-ui="compact"] .mission{top:80px;left:24px;width:260px;padding:12px 15px}
+body[data-ui="compact"] .mission h2{font-size:16px;margin:5px 0}
+body[data-ui="compact"] .mission p{font-size:12px;margin:0}
+body[data-ui="compact"] .minimap{left:24px;bottom:60px}
+body[data-ui="compact"] .driving{right:24px;bottom:24px;width:216px;padding:12px 14px;background:linear-gradient(145deg,#0a151bd9,#122731b3);border-color:#ffffff20}
+body[data-ui="compact"] #vehicleName{font-size:11px;letter-spacing:.5px}
+body[data-ui="compact"] .vehicle-heading>div{max-width:100%}
+body[data-ui="compact"] .driving .speed{margin:4px 0 9px}
+body[data-ui="compact"] .driving .speed>span{font-size:58px}
+body[data-ui="compact"] .terrain-telemetry{display:none}
+body[data-ui="compact"][data-aircraft="true"] .terrain-telemetry{display:flex;justify-content:flex-end;margin:2px 0 10px}
+body[data-ui="compact"][data-aircraft="true"] .terrain-telemetry>span:last-child{display:none}
+body[data-ui="compact"][data-driving="false"] .driving .speed,
+body[data-ui="compact"][data-driving="false"] .driving .vehicle-heading,
+body[data-ui="compact"][data-driving="false"] .cruise-control{display:none}
+body[data-ui="compact"] .cruise-control{margin-top:8px;padding-top:8px}
+body[data-ui="compact"] .cruise-control>span,
+body[data-ui="compact"] .cruise-control small,
+body[data-ui="compact"] .cruise-control[data-active="false"] [data-cruise="up"],
+body[data-ui="compact"] .cruise-control[data-active="false"] [data-cruise="down"]{display:none}
+body[data-ui="compact"] .cruise-control>div{justify-content:flex-end}
+body[data-ui="compact"] .health-row{margin-top:7px}
+#hudDetailsBtn{font-size:10px!important;width:54px!important;border-radius:6px!important;font-weight:700;white-space:nowrap}
+#hudActions{position:fixed;z-index:3;bottom:24px;left:24px;display:flex;gap:8px}
+#hudActions button{padding:8px 10px;font-size:11px;background:#10222cda;border-radius:5px}
+#hudActions kbd{font-size:9px;margin:0 0 0 5px;padding:1px 3px}
+body[data-ui="complete"] #hudActions{left:295px;bottom:90px}
+body[data-ui="compact"] .interaction{bottom:105px;padding:10px 15px;font-size:12px;max-width:calc(100vw - 32px)}
+body[data-ui="compact"] #credits{left:auto;right:24px;bottom:5px;font-size:8px;gap:8px}
+body[data-ui="compact"] #credits span,body[data-ui="compact"] #credits a:nth-child(2){display:none}
+body[data-ui="compact"] #zoneBanner{display:none!important}
+body[data-ui="compact"] #toast{top:74px;padding:10px 14px;font-size:12px;max-width:min(430px,90vw)}
+body[data-ui="compact"] #mandriaHangarButton:not([hidden]),body[data-ui="compact"] #nauticalButton:not([hidden]){
+ position:static!important;top:auto!important;bottom:auto!important;left:auto!important;transform:none!important;
+ min-width:0;max-width:none;padding:8px 10px!important;display:block!important;border:1px solid #ffffff30!important;
+ border-radius:5px!important;box-shadow:none!important;background:#10222cda!important;font:500 11px system-ui!important;color:#f6f3e9!important;
+}
+@media(max-width:800px){
+ body[data-ui="compact"][data-playing="true"] .topbar{padding:12px 14px}
+ body[data-ui="compact"] .topright{gap:10px}
+ body[data-ui="compact"] .minimap{left:14px;bottom:104px}
+ body[data-ui="compact"] .driving{right:14px;width:174px;padding:10px}
+ body[data-ui="compact"] .driving .speed>span{font-size:48px}
+ #hudActions{left:14px;gap:5px;width:172px;display:grid;grid-template-columns:repeat(2,minmax(0,1fr))}#hudActions button{padding:8px;font-size:10px}#hudActions kbd{display:none}
+ body[data-ui="complete"] #hudActions{left:14px;bottom:90px}
+ body[data-ui="compact"] .mission{left:14px;width:220px}
+}
+@media(pointer:coarse){
+ body[data-ui="compact"] .minimap{bottom:196px}
+ body[data-ui="compact"] .driving{bottom:196px}
+ #hudActions,body[data-ui="complete"] #hudActions{bottom:156px}
+ body[data-ui="compact"] .interaction{bottom:265px}
+ body[data-ui="compact"] #touchControls{left:14px;right:14px;bottom:24px;align-items:flex-end}
+ body[data-ui="compact"] #touchControls>div{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px;max-width:none}
+ body[data-ui="compact"] #touchControls>div:first-child{width:90px}
+ body[data-ui="compact"] #touchControls>div:last-child{width:180px}
+ body[data-ui="compact"] #touchControls button{padding:10px 6px;font-size:10px;min-height:39px}
+}
+
+@media(max-width:800px) and (pointer:coarse){body[data-ui="compact"] .minimap{bottom:232px}}
+@media(max-width:380px){
+ body[data-ui="compact"] #hudActions{width:calc(50vw - 24px)}
+ body[data-ui="compact"] .driving{width:calc(50vw - 22px)}
+}
+/* Short touch screens need the same canvas adjustment in both HUD layouts. */
+@media(max-height:500px) and (pointer:coarse){
+ .hud.minimap #minimap{height:clamp(96px,calc(100dvh - 294px),200px)}
+}

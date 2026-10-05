@@ -8,6 +8,8 @@ import {t} from './tools/controller-harness.mjs';
 
 const report={scenarios:[],measurement:'Node controller + actual geometry worker; CPU timings, not GPU FPS'};
 const snapshot=streamingSnapshot(t.terrain),copy=hydrateTerrain(structuredClone(snapshot));
+assert.equal(copy.roads.gradeCrossings.length,t.terrain.roads.gradeCrossings.length,'worker retains solved grade-separated crossings');
+for(const c of copy.roads.gradeCrossings)assert(copy.roads.profiles.has(c.upper),'crossing references the same worker road profile');
 for(const [x,z] of [[-2500,3000],[0,0],[1200,-600],[4000,0],[-2800,1200]]){
  assert.equal(copy.height(x,z),t.terrain.height(x,z));assert.equal(copy.waterHeight(x,z),t.terrain.waterHeight(x,z));
 }

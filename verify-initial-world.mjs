@@ -19,7 +19,7 @@ const checks={
  naturalTerrainReturn:terrain.includes('natural*(1-factor)+roadY*factor'),
  impossibleHeightGuard:terrain.includes('SAFE_MIN_Y=-10')&&terrain.includes('SAFE_MAX_Y=100')&&terrain.includes('safeTerrainHeight'),
  continuousGroundSkin:surface.includes('preserveUnderRoads=!!height&&!pedestrian&&!exclude')&&surface.includes('if(options.preserveUnderRoads)return [poly]'),
- bridgeFascia:roads.includes('road.crossing&&!ped')&&roads.includes('thickness=.58')
+ bridgeFascia:roads.includes('(road.crossing||localDeck)&&!ped')&&roads.includes('thickness=.58')
 };
 for(const [name,ok] of Object.entries(checks))assert(ok,'Initial-world regression failed: '+name);
 console.log(JSON.stringify({ok:true,checks},null,2));

@@ -12,7 +12,7 @@ const checks=[
  ['bad bridge structure collision is filtered only near player',/STRUCTURE_IGNORE_KINDS/.test(finalFixes)&&/COLLISION_FILTER_METRES=1500/.test(finalFixes)&&/Math\.hypot\(x-state\.x,z-state\.z\)>18/.test(finalFixes)],
  ['sudden-stop recovery exists',/suddenStop=previousSpeed>8&&speed<1\.2/.test(finalFixes)&&/current\+2/.test(finalFixes)],
  ['old collisionless faux bridge arch blocks are gone',!/underpass-lintel/.test(structures)&&!/underpass-arch/.test(structures)],
- ['underpass still has real side piers and deck',/underpass-pier/.test(structures)&&/kind==='deck'/.test(structures)],
+ ['underpass still has real side piers and deck',/underpass-pier/.test(structures)&&/add\(x,z,deckTop-\.35/.test(structures)&&/b\.kind!=='deck'/.test(structures)],
  ['final fixes load after race polish',/tangenziale-race-v2-polish\.js';\nimport '\.\/tangenziale-race-final-fixes\.js'/.test(upgrades)]
 ];
 

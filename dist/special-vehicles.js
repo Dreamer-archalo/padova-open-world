@@ -1,5 +1,6 @@
 import * as THREE from './vendor/three.module.js';
 import {VEHICLES} from './vehicles.js';
+import {COLLECTOR_CARS,createCollectorCar} from './collector-cars.js';
 import {clamp,pointInside} from './core.js';
 import {vehicleBlocked,slideMove} from './movement.js';
 
@@ -21,7 +22,7 @@ export const EXTRA_TRAFFIC={
  trail:{name:'Sentiero · moto trail',family:'motorcycle',width:.86,length:2.25,height:1.55,wheelbase:1.53,accel:14,brake:24,max:43,boost:49,reverse:4,steer:1.6,mass:.6,npcOnly:true,bike:true},
  cruiser:{name:'Notturna · moto cruiser',family:'motorcycle',width:.97,length:2.55,height:1.28,wheelbase:1.8,accel:12,brake:22,max:46,boost:51,reverse:4,steer:1.25,mass:.8,npcOnly:true,bike:true}
 };
-Object.assign(SPECIAL_VEHICLES,EXTRA_TRAFFIC);Object.assign(VEHICLES,SPECIAL_VEHICLES);
+Object.assign(SPECIAL_VEHICLES,EXTRA_TRAFFIC,COLLECTOR_CARS);Object.assign(VEHICLES,SPECIAL_VEHICLES);
 const cube=new THREE.BoxGeometry(),material=new THREE.MeshStandardMaterial({vertexColors:true,roughness:.77}),templates=new Map();
 function batch(parts){const p=[],n=[],c=[],v=new THREE.Vector3(),normal=new THREE.Vector3();for(const [x,y,z,w,h,d,color] of parts){const m=new THREE.Matrix4().compose(new THREE.Vector3(x,y,z),new THREE.Quaternion(),new THREE.Vector3(w,h,d)),nm=new THREE.Matrix3().getNormalMatrix(m),col=new THREE.Color(color);for(const i of cube.index.array){v.fromBufferAttribute(cube.attributes.position,i).applyMatrix4(m);normal.fromBufferAttribute(cube.attributes.normal,i).applyMatrix3(nm).normalize();p.push(v.x,v.y,v.z);n.push(normal.x,normal.y,normal.z);c.push(col.r,col.g,col.b);}}
  const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.Float32BufferAttribute(p,3));g.setAttribute('normal',new THREE.Float32BufferAttribute(n,3));g.setAttribute('color',new THREE.Float32BufferAttribute(c,3));const mesh=new THREE.Mesh(g,material);mesh.castShadow=mesh.receiveShadow=true;return mesh;
@@ -65,7 +66,7 @@ function template(style){const g=new THREE.Group(),parts=[];
  }
  g.add(batch(parts));return g;
 }
-export function createSpecialVehicle(style){if(!templates.has(style))templates.set(style,template(style));const g=templates.get(style).clone(true);g.userData.turret=g.getObjectByName('turret');g.userData.propeller=g.getObjectByName('propeller');g.userData.rotor=g.getObjectByName('rotor');g.userData.tailRotor=g.getObjectByName('tailRotor');return g;}
+export function createSpecialVehicle(style){if(COLLECTOR_CARS[style])return createCollectorCar(style);if(!templates.has(style))templates.set(style,template(style));const g=templates.get(style).clone(true);g.userData.turret=g.getObjectByName('turret');g.userData.propeller=g.getObjectByName('propeller');g.userData.rotor=g.getObjectByName('rotor');g.userData.tailRotor=g.getObjectByName('tailRotor');return g;}
 export function createParachute(){const g=new THREE.Group(),parts=[[0,5,0,6,.35,3.2,'#cf9d51']];for(const x of [-2.4,2.4])for(const z of [-1.1,1.1])parts.push([x/2,3.5,z/2,.035,3,.035,'#e3ded0']);g.add(batch(parts));g.visible=false;return g;}
 export function footSurface(x,z,referenceY,terrain,collision){let height=terrain.height(x,z,referenceY);for(const b of collision.near(x,z,.5)){const top=(b.minY||0)+b.h;if(top<=height||referenceY<top-.25)continue;if([[0,0],[.3,0],[-.3,0],[0,.3],[0,-.3]].every(([dx,dz])=>pointInside(x+dx,z+dz,b.p)))height=top;}return height;}
 export function planeStep(actor,input,dt,terrain,collision){

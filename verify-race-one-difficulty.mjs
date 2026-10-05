@@ -24,5 +24,6 @@ const upgrades=fs.readFileSync('dist/gameplay-upgrades.js','utf8');
 assert(source.includes('raceOneDifficulty')&&source.includes('DIFFICOLTÀ BOT · GARA 1')&&source.includes('openConfirmation'));
 assert(source.includes('if(!r||r.__secondRace||!r.difficulty||r.difficulty===\'medium\')'));
 assert(source.includes('const isSecond=this.__nextRaceMode===\'second\''));
-assert(upgrades.indexOf("import './tangenziale-race-difficulty.js';")>0&&upgrades.indexOf("import './tangenziale-race-difficulty.js';")<upgrades.indexOf("import './online-race-v2.js';"),'online ownership wrappers load after difficulty');
-console.log('PASS race 1 difficulty: three AI levels, no player or race 2 spec changes, online ownership import order');
+assert(upgrades.indexOf("import './tangenziale-race-difficulty.js';")>upgrades.indexOf("import './tangenziale-race-runtime-fixes.js';"),'difficulty settings load after the shared local race controller');
+assert(!upgrades.includes("import './online-race-v2.js';"),'traditional entry excludes online ownership hooks');
+console.log('PASS race 1 difficulty: three AI levels, no player or race 2 spec changes, solo import order');

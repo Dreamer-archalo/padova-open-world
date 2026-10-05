@@ -1,8 +1,8 @@
 {
   "game": "Padova After Hours",
   "version": "1.2.1",
-  "releaseName": "Versione 1.2.1 · Villa della Mandria v11",
-  "baselineSourceCommit": "bf51b9fc3a0eb8701628ae733e37f129e7dc9326",
+  "releaseName": "R26 · Gioco tradizionale, strade e auto speciali",
+  "baselineSourceCommit": "08872df934e5118b3efa7b69811de9aa3843925c",
   "repository": "Dreamer-archalo/padova-open-world",
   "productionBranch": "main",
   "publishDirectory": "dist",

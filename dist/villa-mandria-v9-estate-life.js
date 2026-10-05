@@ -147,8 +147,11 @@ function animals(g,dt){const t=g.state.elapsed;
  }
 }
 function setupDeliveryUi(){let el=document.getElementById('mandriaV9DeliveryNotice');if(el)return el;
- const css=document.createElement('style');css.textContent=`#mandriaV9DeliveryNotice:not([hidden]){position:fixed;z-index:79;top:10%;right:2%;width:min(380px,92vw);padding:14px 17px;border:2px solid #dcbf80;border-radius:13px;background:linear-gradient(130deg,#152d31f5,#32433bf5);color:#fff3db;box-shadow:0 10px 32px #0008;font:600 14px/1.5 system-ui;cursor:pointer;text-align:left}#mandriaV9DeliveryNotice strong{display:block;font-size:16px;color:#ffe0a2}#mandriaV9DeliveryNotice small{display:block;margin-top:4px;color:#e9dbc0;font-size:12px}@media(max-width:600px){#mandriaV9DeliveryNotice:not([hidden]){top:8%;right:3%;width:94vw;font-size:12px}}`;document.head.appendChild(css);
- el=document.createElement('button');el.type='button';el.id='mandriaV9DeliveryNotice';el.hidden=true;document.body.appendChild(el);return el;
+ const css=document.createElement('style');css.textContent=`#mandriaV9DeliveryNotice:not([hidden]){position:fixed;z-index:79;top:80px;right:24px;width:min(350px,92vw);border:1px solid #dcbf8066;border-radius:8px;background:linear-gradient(130deg,#152d31a8,#32433b99);color:#fff3db;box-shadow:0 6px 20px #0003;font:500 13px/1.5 system-ui;text-align:left}#mandriaDeliveryNoticeBody{display:block;width:100%;padding:12px 40px 12px 15px;border:0;border-radius:8px;text-align:left;font:inherit}#mandriaV9DeliveryNotice strong{display:block;font-size:14px;color:#ffe0a2}#mandriaV9DeliveryNotice small{display:block;margin-top:4px;color:#e9dbc0;font-size:11px}#mandriaDeliveryNoticeClose{position:absolute;top:4px;right:4px;width:32px;height:32px;padding:0;border:0;border-radius:4px;font:24px/1 system-ui}@media(max-width:600px){#mandriaV9DeliveryNotice:not([hidden]){top:70px;right:14px;width:min(350px,calc(100vw - 28px));font-size:12px}}`;document.head.appendChild(css);
+ el=document.createElement('section');el.id='mandriaV9DeliveryNotice';el.hidden=true;el.setAttribute('aria-label','Notifica forniture della villa');
+ el.innerHTML='<button id="mandriaDeliveryNoticeBody" type="button"><span role="status" aria-live="polite"></span></button><button id="mandriaDeliveryNoticeClose" type="button" aria-label="Chiudi notifica">×</button>';
+ el.querySelector('#mandriaDeliveryNoticeClose').onclick=()=>{el.hidden=true;};
+ document.body.appendChild(el);return el;
 }
 function decorateTruck(d){const root=d.truck?.mesh;if(!root||root.userData.mandriaV9Decor)return;
  root.userData.mandriaV9Decor=true;
@@ -162,17 +165,22 @@ function delivery(g,s){const manager=g.villaV8Delivery,notice=setupDeliveryUi();
  if(!s.delivery){s.delivery={active:null,phase:null,initialized:true};if(!manager.active)manager.nextAt=Math.min(manager.nextAt,g.state.elapsed+27);}
  const current=manager.active,prior=s.delivery.active;
  if(prior&&!current){manager.nextAt=Math.min(manager.nextAt,g.state.elapsed+155);s.delivery.phase=null;notice.hidden=true;}
- if(current&&!prior){decorateTruck(current);s.report.deliveryNotices++;g.toast?.('Forniture in arrivo alla Villa della Mandria: un camion si avvicina al cancello.',4);}
+ if(current&&!prior){decorateTruck(current);s.report.deliveryNotices++;}
  if(current){
   decorateTruck(current);
   if(current.phase!==s.delivery.phase&&current.phase==='permission'){
-   s.report.deliveryNotices++;g.toast?.('Il camion è pronto per scaricare la merce in villa. Quando sei pronto, torna per validarne la consegna.',7);
+   s.report.deliveryNotices++;
   }
   const texts={enter:['FORNITURE IN ARRIVO','Il camion sta entrando nella tenuta.'],permission:['CAMION PRONTO PER LO SCARICO','Quando sei pronto, torna alla villa per validarne la consegna.'],unload:['SCARICO AUTORIZZATO','Il personale sta trasferendo le casse nel deposito.'],exit:['CONSEGNA CONCLUSA','Il camion sta lasciando la proprietà.']};
   const [header,body]=texts[current.phase]||texts.enter;
-  notice.innerHTML='<strong>'+header+'</strong>'+body+'<small>'+(current.phase==='permission'?'Avvicinati all’autista e premi E per autorizzare o rinviare.':'La consegna prosegue senza interrompere il gioco.')+'</small>';
-  notice.hidden=false;
-  notice.onclick=()=>{if(current.phase!=='permission')return;
+  // Show once per truck/phase. Frame updates must not undo dismissal or expiry.
+  if(current!==prior||current.phase!==s.delivery.phase){
+   notice.querySelector('[role="status"]').innerHTML='<strong>'+header+'</strong>'+body+'<small>'+(current.phase==='permission'?'Avvicinati all’autista e premi E per autorizzare o rinviare.':'La consegna prosegue senza interrompere il gioco.')+'</small>';
+   notice.hidden=false;
+   clearTimeout(notice.dismissTimer);
+   notice.dismissTimer=setTimeout(()=>{notice.hidden=true;},6000);
+  }
+  notice.querySelector('#mandriaDeliveryNoticeBody').onclick=()=>{if(current.phase!=='permission')return;
    const p=current.driver.obj.position,near=g.state.mode==='foot'&&Math.hypot(g.state.x-p.x,g.state.z-p.z)<4.2;
    if(near)document.getElementById('mandriaDeliveryPrompt')?.click();
    else g.toast?.('Il camion ti aspetta alla zona di servizio della villa. Raggiungi l’autista per autorizzare.',4);
