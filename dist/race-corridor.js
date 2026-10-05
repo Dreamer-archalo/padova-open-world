@@ -1,8 +1,8 @@
 import {nearestOnSegment} from './core.js';
 import {vehicleBlocked} from './movement.js';
 
-const motorway=road=>/^(motorway|trunk)(?:_link)?$/.test(road?.k||'');
-const parallel=(a,b)=>Math.abs(Math.cos(a-b))>.96;
+const motorway=road=>/^(motorway|trunk)$/.test(road?.k||'');
+const parallel=(a,b)=>Math.cos(a-b)<-.96;
 const yawOf=s=>Math.atan2(s.b[0]-s.a[0],s.b[1]-s.a[1]);
 export function buildRaceCorridor(game,race){
  const roads=game.terrain.roads,stations=[];
@@ -10,7 +10,7 @@ export function buildRaceCorridor(game,race){
   const p=race.samples[i],a=race.samples[Math.max(0,i-1)],b=race.samples[Math.min(race.samples.length-1,i+1)],yaw=Math.atan2(b.x-a.x,b.z-a.z);
   const members=[{road:p.road,side:0,x:p.x,z:p.z,y:p.y,yaw}];
   for(const candidate of roads.candidates(p.x,p.z,38)){
-   if(candidate.road===p.road||!motorway(candidate.road)||!parallel(yaw,yawOf(candidate.segment)))continue;
+   if(candidate.road===p.road||!motorway(candidate.road)||candidate.road.w<8||!parallel(yaw,yawOf(candidate.segment)))continue;
    if(Math.abs(candidate.height+.05-p.y)>2.2)continue;
    const q=nearestOnSegment(p.x,p.z,candidate.segment.a,candidate.segment.b),side=(q.x-p.x)*Math.cos(yaw)-(q.z-p.z)*Math.sin(yaw);
    const along=(q.x-p.x)*Math.sin(yaw)+(q.z-p.z)*Math.cos(yaw);
@@ -34,8 +34,9 @@ export function raceCorridorPosition(game,race,actor,hint=0){
  const i=best.t>.5?best.index+1:best.index,station=stations[i],p=path[i],yaw=station.yaw,side=(actor.x-best.x)*Math.cos(yaw)-(actor.z-best.z)*Math.sin(yaw);
  const airborne=!!actor.jump?.airborne,verticalTolerance=airborne?30:2.5;
  const adjacent=stations.slice(Math.max(0,i-2),i+3).flatMap(s=>s.members);
- const candidates=game.terrain.roads.candidates(actor.x,actor.z,1.2).filter(c=>adjacent.some(m=>m.road===c.road)&&Math.abs(actor.y-c.height-.05)<verticalTolerance);
- let member=candidates.length?adjacent.find(m=>m.road===candidates[0].road):null;
+ const expectedY=path[best.index].y+(path[best.index+1].y-path[best.index].y)*best.t;
+ const candidates=game.terrain.roads.candidates(actor.x,actor.z,1.2).filter(c=>race.corridor.roads.has(c.road)&&best.d<45&&Math.abs(c.height+.05-expectedY)<3&&Math.abs(actor.y-c.height-.05)<verticalTolerance);
+ let member=candidates.length?(adjacent.find(m=>m.road===candidates[0].road)||{road:candidates[0].road,side,y:candidates[0].height+.05}):null;
  // The median transition is valid too, without admitting side fields or lower decks.
  const min=Math.min(...station.members.map(m=>m.side-m.road.w/2)),max=Math.max(...station.members.map(m=>m.side+m.road.w/2));
  const surface=game.terrain.height(actor.x,actor.z,actor.y),median=station.members.length>1&&side>=min&&side<=max&&best.d<42&&Math.abs(actor.y-surface)<verticalTolerance&&Math.abs(surface-p.y)<2.5;

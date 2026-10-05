@@ -881,7 +881,7 @@ function movePlayer(dt){if(taxi?.phase==='transition'){state.speed=0;return;}if(
    if(!enterGameplayWater(waterY))waterRecovery.remember(state,terrain);
   }
  }
- const oldX=state.x,oldZ=state.z,bound=regionalWorld?unifiedBounds:{minX:-5970,maxX:7250,minZ:-6480,maxZ:6230};state.x=clamp(state.x,bound.minX,bound.maxX);state.z=clamp(state.z,bound.minZ,bound.maxZ);if(oldX!==state.x||oldZ!==state.z){state.speed=0;toast('Limite dell’attuale mondo percorribile.',2);}
+ const oldX=state.x,oldZ=state.z,bound=regionalWorld||state.car?.raceTwoRules?unifiedBounds:{minX:-5970,maxX:7250,minZ:-6480,maxZ:6230};state.x=clamp(state.x,bound.minX,bound.maxX);state.z=clamp(state.z,bound.minZ,bound.maxZ);if(oldX!==state.x||oldZ!==state.z){state.speed=0;toast('Limite dell’attuale mondo percorribile.',2);}
 }
 function trafficChoices(c,node){const edges=node.edges.filter(e=>e.id!==c.prev&&e.road.k!=='pedestrian'&&!['no','private'].includes(e.road?.access)&&e.road.w>c.spec.width+1),fallback=node.edges.filter(e=>e.road.k!=='pedestrian'&&!['no','private'].includes(e.road?.access)&&e.road.w>c.spec.width+1),pool=edges.length?edges:fallback;return pool.map(e=>({e,score:Math.random()*1.2-Math.abs(angleDiff(Math.atan2(graph.nodes[e.id].x-node.x,graph.nodes[e.id].z-node.z),c.yaw))*.25-cars.filter(o=>o!==c&&o.mesh.visible&&o.target===e.id).length*.35})).sort((a,b)=>b.score-a.score).map(v=>v.e);}
 function updateTraffic(dt){for(const c of cars){

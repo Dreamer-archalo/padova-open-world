@@ -101,7 +101,7 @@ TangenzialeRace.prototype.start=function(options={}){
  const first=chooseRaceRoster(mode,player,random,this.previousSecondRoster||[]),roster=[...first,...chooseRaceRoster(mode,player,random,[...(this.previousSecondRoster||[]),...first])],styles=[player,...roster];
  for(const [i,old] of [r.playerCar,...r.ai].entries()){
   const c=g.addCar(old.x,old.z,old.yaw,false,true,styles[i]);for(const key of Object.keys(old))if(key.startsWith('race'))c[key]=old[key];
-  Object.assign(c,{spec:raceVehicleSpec(c.style),raceOneRules:true,raceTuning:RACE_ONE_DIFFICULTIES[mode],raceSkill:i?RACE_ONE_DIFFICULTIES[mode].skills[(i-1)%3]:1,raceTurbo:i?RACE_ONE_DIFFICULTIES[mode].turbo:3,raceLane:old.raceOffset,missionUnit:true,fixedSpawn:true,tangenzialeRace:true,budgetSleeping:false});g.retire(old);if(i===0)r.playerCar=c;else r.ai[i-1]=c;
+  Object.assign(c,{spec:raceVehicleSpec(c.style),raceOneRules:true,raceTwoRules:true,raceTuning:RACE_ONE_DIFFICULTIES[mode],raceSkill:i?RACE_ONE_DIFFICULTIES[mode].skills[(i-1)%3]:1,raceTurbo:i?RACE_ONE_DIFFICULTIES[mode].turbo:3,raceLane:old.raceOffset,missionUnit:true,fixedSpawn:true,tangenzialeRace:true,budgetSleeping:false});g.retire(old);if(i===0)r.playerCar=c;else r.ai[i-1]=c;
  }
  this.selectedSecondRaceVehicle=player;this.previousSecondRoster=roster;g.claim(r.playerCar);g.state.car=r.playerCar;
  configureAdvancedSecond(this,mode,options.seed);this.freezeGrid();g.toast('GARA 2 · '+RACE_ONE_DIFFICULTIES[mode].name+' · '+r.playerCar.name+' · entrambe le carreggiate valide',4);
@@ -115,6 +115,18 @@ TangenzialeRace.prototype.updatePlayer=function(){
  r.playerHint=p.index;r.playerProgress=Math.max(r.playerProgress,p.progress);
  if(p.index>=r.playerCheckpoint&&p.index<=previous+6){r.playerCheckpoint=p.index;r.playerCheckpointSide=p.side;}
  if(corridorFinish(r,{...s,jump:r.playerCar.jump},r.playerProgress))this.markFinished(0,r.playerCar);return true;
+};
+// A healthy driver who leaves the route keeps the same damage after recovery.
+// Only a destroyed vehicle is repaired, and no checkpoint can be ahead of progress.
+const priorRespawn=TangenzialeRace.prototype.respawnActor;
+TangenzialeRace.prototype.respawnActor=function(car,index,side=0){
+ const r=this.race;if(!r?.advancedSecond)return priorRespawn.call(this,car,index,side);
+ const isPlayer=car===r.playerCar,health=isPlayer?this.game.state.health:car.health,hint=isPlayer?r.playerHint:car.raceHint;
+ const checkpoint=clamp(Math.min(index,hint??index),0,r.samples.length-1);
+ const out=priorRespawn.call(this,car,checkpoint,side);
+ if(health>0){car.health=health;if(isPlayer)this.game.state.health=health;}
+ car.raceSprintUntil=0;car.raceSlowUntil=0;car.raceTurboUntil=0;if(isPlayer)r.playerTurboUntil=0;
+ return out;
 };
 const priorCheckpoint=TangenzialeRace.prototype.updateCheckpoint;
 TangenzialeRace.prototype.updateCheckpoint=function(c,p,indexKey,checkpointKey){if(!this.race?.advancedSecond)return priorCheckpoint.call(this,c,p,indexKey,checkpointKey);const prev=c[indexKey]??0;c[indexKey]=p.index;if(p.valid&&p.index>=c[checkpointKey]&&p.index<=prev+6)c[checkpointKey]=p.index;};
