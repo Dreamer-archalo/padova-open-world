@@ -10,6 +10,7 @@ import {installVehicleDamage} from './vehicle-damage.js';
 import {laneCount,laneOffset} from './traffic.js';
 import {regionalNpcStep,regionalRoadEligible,regionalOneWay,reviveRegionalCar} from './regional-traffic-physics.js';
 import {createSpecialVehicle} from './special-vehicles.js';
+import {rareCollectorStyle} from './collector-cars.js';
 import {createPerson} from './world.js';
 import {PADOVA_EAST,regionalDetail,activeRegionalPlace} from './unified-regions.js';
 import {clipPolygon,coastalBand,harborBand} from './regional-hydro.js';
@@ -555,10 +556,15 @@ export class RegionalWorld{
   const count=available.length?Math.min(profile.cars,
    Math.max(1,Math.ceil(available.length/(this.quality==='hyper'?27:17)))):0;
   for(let i=0;i<count;i++){
-   const r=available[(i*97+chunk.roads.length*11)%available.length],
+   const r=available[(i*97+chunk.roads.length*11)%available.length];
+   // Stable per-road encounters survive sector unloading/reloading. Independent
+   // PRNG draws retain the same rarity and equal availability of all 15 models.
+   let rareSeed=(Math.imul(Math.round(r.a[0]*10),73856093)^Math.imul(Math.round(r.a[1]*10),19349663)^Math.imul(i+1,83492791))>>>0;
+   const rareRandom=()=>{rareSeed=(Math.imul(rareSeed,1664525)+1013904223)>>>0;return rareSeed/4294967296;};
+   const collector=rareCollectorStyle(rareRandom,r),
     heavy=i===0&&r.w>=8&&chunk.roads.length%7===0,
     fleet=industrial?industryFleet:townFleet,
-    requested=heavy?'autotreno':fleet[Math.abs(Math.floor(r.a[0]*.07+r.a[1]*.13)+i*11)%fleet.length],
+    requested=collector||(heavy?'autotreno':fleet[Math.abs(Math.floor(r.a[0]*.07+r.a[1]*.13)+i*11)%fleet.length]),
     style=VEHICLES[requested]&&VEHICLES[requested].width+1.1<=r.w?requested:
      'nido',
     spec=VEHICLES[style],mesh=regionalCar(style),dir=regionalOneWay(r)|| (i%2?1:-1),

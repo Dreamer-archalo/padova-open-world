@@ -22,10 +22,7 @@ import './monoblocco-roof-exploration.js';
 import './monoblocco-island-bridges.js';
 import './hospital-rooftop-elevators.js';
 import './taxi-loading-guard.js';
-// Must precede online ownership hooks so remote human cars are never AI-driven.
 import './tangenziale-race-difficulty.js';
-import './online-race-v2.js';
-import './online-race-second-fix.js';
 
 // Exact Ospedale Civile Monoblocco footprint, not the former Treves-side roof.
 installPoliceAIHooks();

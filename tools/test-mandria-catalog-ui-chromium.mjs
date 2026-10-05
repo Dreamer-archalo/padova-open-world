@@ -26,8 +26,8 @@ try{
  phase='categories';await open();
  const landing=await page.evaluate(()=>({sections:[...document.querySelectorAll('#hangarSections [data-section]')].map(b=>({id:b.dataset.section,disabled:b.disabled})),gridHidden:document.getElementById('hangarGrid').hidden,boatCount:[...document.querySelectorAll('#hangarGrid [data-hangar-id]')].filter(b=>/boat|barca/.test(b.dataset.hangarId)).length}));
  console.log('HANGAR_LANDING '+JSON.stringify(landing));
- assert.deepEqual(landing.sections.map(x=>x.id),['air','land','urban','water']);
- assert(landing.sections[3].disabled&&landing.gridHidden,'boats must be disabled; categories must be first screen');
+ assert.deepEqual(landing.sections.map(x=>x.id),['collector','air','land','urban','water']);
+ assert(!landing.sections.find(s=>s.id==='water').disabled&&landing.gridHidden,'boats remain playable; categories must be first screen');
  await page.screenshot({path:'test-artifacts/mandria-catalog-categories.png',timeout:20000});
  phase='land previews';await page.locator('[data-section="land"]').click();
  assert(!(await page.locator('#hangarGrid').evaluate(el=>el.hidden)),'land selection did not open vehicles');

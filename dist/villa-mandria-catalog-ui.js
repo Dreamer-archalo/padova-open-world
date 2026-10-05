@@ -6,11 +6,12 @@ import {VEHICLES,createVehicle} from './vehicles.js';
 import {NPC_VEHICLES,createNPCCar,createHelicopter} from './modern-vehicles.js';
 import {SPECIAL_VEHICLES,createSpecialVehicle} from './special-vehicles.js';
 import {MILITARY_FLEET,militaryFleetModel} from './airport-military-fleet.js';
-import {hangarCatalogue,paintHangarVehicle} from './villa-mandria-hangar.js';
+import {hangarCatalogue,paintHangarVehicle,hangarPaintFor} from './villa-mandria-hangar.js';
 import {createBoatModel} from './nautical-catalog.js';
 import {createMichelangeloModel} from './unified-michelangelo.js';
 
 export const HANGAR_SECTIONS=Object.freeze([
+ {id:'collector',title:'Auto speciali',subtitle:'15 modelli unici · incontri rari nella mappa',symbol:'◇',enabled:true},
  {id:'air',title:'Aerei e velivoli',subtitle:'Aerei, jet ed elicotteri',symbol:'✈',enabled:true},
  {id:'land',title:'Terrestri',subtitle:'Auto, moto, camion, blindati e carri',symbol:'▰',enabled:true},
  {id:'urban',title:'Mobilità urbana',subtitle:'Biciclette e monopattini',symbol:'♢',enabled:true},
@@ -18,6 +19,7 @@ export const HANGAR_SECTIONS=Object.freeze([
 ]);
 export function hangarSection(id,spec=VEHICLES[id]){
  if(!spec)return null;
+ if(spec.collector)return 'collector';
  if(spec.watercraft)return 'water';
  if(id==='bicycle'||id==='kick-scooter')return 'urban';
  return spec.aircraft?'air':'land';
@@ -118,7 +120,7 @@ function picture(id,color){
    ?'<path d="M128 29 140 72 215 100 215 110 141 98 142 128 167 143 167 150 128 141 89 150 89 143 114 128 115 98 41 110 41 100 116 72Z"/>'
    :'<path d="M72 90Q72 64 107 64H148Q184 64 184 90L161 109H92Z"/><path d="M28 48H228V54H28ZM124 48H132V113H124ZM124 100H134V133H124ZM111 134H145V138H111Z"/>')
    :'<path d="M24 105L44 66h168l20 39Z"/>';
-  const svg=`<svg xmlns="http://www.w3.org/2000/svg" width="256" height="176"><rect width="256" height="176" rx="12" fill="#172532"/><g fill="${color}">${silhouette}</g><text x="128" y="160" fill="#fff" font-family="Arial" font-size="11" text-anchor="middle">${esc(s?.name||id).slice(0,29)}</text></svg>`;
+  const svg=`<svg xmlns="http://www.w3.org/2000/svg" width="256" height="176"><rect width="256" height="176" rx="12" fill="#172532"/><g fill="${color||s?.color||'#b52f3d'}">${silhouette}</g><text x="128" y="160" fill="#fff" font-family="Arial" font-size="11" text-anchor="middle">${esc(s?.name||id).slice(0,29)}</text></svg>`;
   url='data:image/svg+xml;charset=utf-8,'+encodeURIComponent(svg);
  }
  // Factory models may share cached geometry and materials with live vehicles.
@@ -144,17 +146,17 @@ function refresh(){
  home.hidden=!isHome;nav.hidden=isHome;controls.hidden=isHome;count.hidden=isHome;grid.hidden=isHome;
  if(isHome){observer?.disconnect();queue.length=0;return;}
  nav.querySelector('strong').textContent=HANGAR_SECTIONS.find(s=>s.id===mode).title;
- const color=$('hangarPaint').value;
+ const color=$('hangarPaint').value+'/'+($('hangarLivery')?.value||'original');
  if(color!==lastColor){lastColor=color;cached.clear();queue.length=0;observer?.disconnect();}
  const category=hangarCatalogue().filter(e=>hangarSection(e.id,e.spec)===mode),ids=new Set(category.map(e=>e.id));
  let matches=0;
  for(const card of grid.querySelectorAll('[data-hangar-id]')){
   const id=card.dataset.hangarId,show=ids.has(id);card.hidden=!show;if(!show)continue;
   matches++;const img=card.querySelector('img');if(!img)continue;
-  const key=id+'/'+color;
+  const modelColor=hangarPaintFor(id),key=id+'/'+modelColor;
   if(img.dataset.previewReady===key&&cached.has(key)){img.src=cached.get(key);continue;}
   img.dataset.previewReady='';img.dataset.previewPending='';img.alt='Anteprima tridimensionale del modello '+VEHICLES[id].name;
-  if(observer)observer.observe(img);else enqueue(img,id,color);
+  if(observer)observer.observe(img);else enqueue(img,id,modelColor);
  }
  count.textContent=`${matches} risultati · ${category.length} mezzi nella categoria`;
 }
@@ -180,10 +182,10 @@ function install(g){
  home.querySelectorAll('[data-section]:not(:disabled)').forEach(b=>b.addEventListener('click',()=>enter(b.dataset.section)));
  nav.querySelector('button').addEventListener('click',goHome);
  observer=typeof IntersectionObserver==='undefined'?null:new IntersectionObserver(entries=>{
-  const color=$('hangarPaint').value;for(const e of entries)if(e.isIntersecting){observer.unobserve(e.target);const card=e.target.closest('[data-hangar-id]');if(card&&!card.hidden)enqueue(e.target,card.dataset.hangarId,color);}
+  for(const e of entries)if(e.isIntersecting){observer.unobserve(e.target);const card=e.target.closest('[data-hangar-id]');if(card&&!card.hidden)enqueue(e.target,card.dataset.hangarId,hangarPaintFor(card.dataset.hangarId));}
  },{root:dialog,rootMargin:'80px'});
  new MutationObserver(()=>{if(mode!=='home')refresh();}).observe($('hangarGrid'),{childList:true});
- for(const event of ['input','change'])for(const id of ['hangarSearch','hangarFilter','hangarPaint'])$(id).addEventListener(event,()=>{if(mode!=='home')refresh();});
+ for(const event of ['input','change'])for(const id of ['hangarSearch','hangarFilter','hangarPaint','hangarLivery'])$(id).addEventListener(event,()=>{if(mode!=='home')refresh();});
  new MutationObserver(()=>{if(dialog.open)goHome();else{observer?.disconnect();queue.length=0;}}).observe(dialog,{attributes:true,attributeFilter:['open']});
  goHome();
 }
