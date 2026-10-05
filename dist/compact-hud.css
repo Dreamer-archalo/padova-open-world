@@ -7,18 +7,18 @@ body[data-ui="compact"] .keybar,
 body[data-ui="compact"] .tach,
 body[data-ui="compact"] .telemetry,
 body[data-ui="compact"] .vehicle-heading .eyebrow,
-body[data-ui="compact"] .gear,
-body[data-ui="compact"] #regionalLoadStatus{display:none}
+body[data-ui="compact"] .gear{display:none}
+#regionalLoadStatus{display:none}
 body[data-ui="compact"] .location{border:0;padding-left:0;max-width:45vw}
 body[data-ui="compact"] .location strong{font-size:14px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 body[data-ui="compact"] .topright{gap:16px}
-body[data-ui="compact"][data-wanted-active="false"] #wanted{display:none}
+body[data-wanted-active="false"] #wanted{display:none}
+body[data-driving="false"] .driving{display:none}
 body[data-ui="compact"][data-mission-active="false"] .mission{display:none}
 body[data-ui="compact"] .mission{top:80px;left:24px;width:260px;padding:12px 15px}
 body[data-ui="compact"] .mission h2{font-size:16px;margin:5px 0}
 body[data-ui="compact"] .mission p{font-size:12px;margin:0}
-body[data-ui="compact"] .minimap{left:24px;bottom:60px;width:215px}
-body[data-ui="compact"] .minimap #minimap{height:157px}
+body[data-ui="compact"] .minimap{left:24px;bottom:60px}
 body[data-ui="compact"] .driving{right:24px;bottom:24px;width:216px;padding:12px 14px;background:linear-gradient(145deg,#0a151bd9,#122731b3);border-color:#ffffff20}
 body[data-ui="compact"] #vehicleName{font-size:11px;letter-spacing:.5px}
 body[data-ui="compact"] .vehicle-heading>div{max-width:100%}
@@ -30,7 +30,6 @@ body[data-ui="compact"][data-aircraft="true"] .terrain-telemetry>span:last-child
 body[data-ui="compact"][data-driving="false"] .driving .speed,
 body[data-ui="compact"][data-driving="false"] .driving .vehicle-heading,
 body[data-ui="compact"][data-driving="false"] .cruise-control{display:none}
-body[data-ui="compact"][data-driving="false"][data-health-alert="false"] .driving{display:none}
 body[data-ui="compact"] .cruise-control{margin-top:8px;padding-top:8px}
 body[data-ui="compact"] .cruise-control>span,
 body[data-ui="compact"] .cruise-control small,
@@ -56,8 +55,7 @@ body[data-ui="compact"] #mandriaHangarButton:not([hidden]),body[data-ui="compact
 @media(max-width:800px){
  body[data-ui="compact"][data-playing="true"] .topbar{padding:12px 14px}
  body[data-ui="compact"] .topright{gap:10px}
- body[data-ui="compact"] .minimap{left:14px;width:172px;bottom:104px}
- body[data-ui="compact"] .minimap #minimap{height:125px}
+ body[data-ui="compact"] .minimap{left:14px;bottom:104px}
  body[data-ui="compact"] .driving{right:14px;width:174px;padding:10px}
  body[data-ui="compact"] .driving .speed>span{font-size:48px}
  #hudActions{left:14px;gap:5px;width:172px;display:grid;grid-template-columns:repeat(2,minmax(0,1fr))}#hudActions button{padding:8px;font-size:10px}#hudActions kbd{display:none}
@@ -78,6 +76,10 @@ body[data-ui="compact"] #mandriaHangarButton:not([hidden]),body[data-ui="compact
 
 @media(max-width:800px) and (pointer:coarse){body[data-ui="compact"] .minimap{bottom:232px}}
 @media(max-width:380px){
- body[data-ui="compact"] .minimap,body[data-ui="compact"] #hudActions{width:calc(50vw - 24px)}
+ body[data-ui="compact"] #hudActions{width:calc(50vw - 24px)}
  body[data-ui="compact"] .driving{width:calc(50vw - 22px)}
+}
+/* Short touch screens need the same canvas adjustment in both HUD layouts. */
+@media(max-height:500px) and (pointer:coarse){
+ .hud.minimap #minimap{height:clamp(96px,calc(100dvh - 294px),200px)}
 }

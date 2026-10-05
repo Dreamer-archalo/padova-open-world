@@ -43,7 +43,7 @@ try{
   updateHUDState({...s,mission:{},wanted:2,health:50},{active:false});
   const result={mission:getComputedStyle(document.querySelector('.mission')).display!=='none',wanted:getComputedStyle(document.getElementById('wanted')).display!=='none',health:getComputedStyle(document.querySelector('.driving')).display!=='none'};
   updateHUDState(s,{active:false});return result;
- });assert(contextual.mission&&contextual.wanted&&contextual.health);
+ });assert(contextual.mission&&contextual.wanted&&!contextual.health,'vehicle panel stays hidden on foot, including when hurt');
  phase='hangar access';
  await page.evaluate(async()=>{
   const {VILLA,areaPoint}=await import('./gameplay-areas.js'),{VILLA_GARAGE}=await import('./villa-treves-layout.js');

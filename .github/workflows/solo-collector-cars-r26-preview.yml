@@ -66,7 +66,7 @@ jobs:
         run: |
           npm install --no-save playwright@1.55.1
           npx playwright install --with-deps chromium
-      - name: Verify compact HUD on phone and landscape layouts
+      - name: Verify contextual HUD, minimap size and six-second notifications
         run: node tools/test-compact-hud-r26-layout.mjs
       - name: Verify solo startup, compact HUD and all 15 collector cars
         run: node tools/test-solo-collector-r26-browser.mjs
@@ -221,7 +221,11 @@ jobs:
                curl --fail --silent --show-error --location "$base/road-grade-crossings.js" -o /tmp/r25-crossings.js &&
                grep -q 'localGradeDeck' /tmp/r25-crossings.js &&
                curl --fail --silent --show-error --location "$base/collector-cars.js" -o /tmp/r26-cars.js &&
-               grep -q 'COLLECTOR_CHANCE=.015' /tmp/r26-cars.js; then
+               grep -q 'COLLECTOR_CHANCE=.015' /tmp/r26-cars.js &&
+               curl --fail --silent --show-error --location "$base/compact-hud.css?v=$GITHUB_SHA" -o /tmp/r26-hud.css &&
+               cmp dist/compact-hud.css /tmp/r26-hud.css &&
+               curl --fail --silent --show-error --location "$base/villa-mandria-v9-estate-life.js?v=$GITHUB_SHA" -o /tmp/r26-delivery.js &&
+               cmp dist/villa-mandria-v9-estate-life.js /tmp/r26-delivery.js; then
               exit 0
             fi
             sleep 5
