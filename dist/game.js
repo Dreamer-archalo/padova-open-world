@@ -257,7 +257,7 @@ function yieldFrame(){return new Promise(r=>requestAnimationFrame(r));}
 function setupGameplay(){
  if(gameplay)return;
  speedCameras=new SpeedCameras({state,data,terrain,scene,save,toast});
- gameplay=new ModernGameplay({state,data,cars,people,cops,scene,terrain,signals,graph:patrolGraph||graph,collision:world.collision,addCar,pose:poseVehicle,safeRoad:dryRoad,raiseWanted,defeat:explodePlayer,toast,
+ gameplay=new ModernGameplay({state,data,cars,people,cops,scene,terrain,world,signals,graph:patrolGraph||graph,collision:world.collision,addCar,pose:poseVehicle,safeRoad:dryRoad,raiseWanted,defeat:explodePlayer,toast,
   forget:c=>previousActors.delete(c.mesh),remove:c=>{scene.remove(c.mesh);previousActors.delete(c.mesh);for(const pool of [cars,cops]){const i=pool.indexOf(c);if(i>=0)pool.splice(i,1);}if(c.police)c.mesh.traverse(o=>{if(o.isMesh){o.geometry.dispose();o.material.dispose();}});}});
  dealerships=new Dealerships({scene,terrain,collision:world.collision,addCar,cars,state,regionalWorld:()=>regionalWorld,roadAt:p=>regionalWorld?.contains(p.x,p.z)?regionalWorld.nearestRoad(p.x,p.z,90):nearestRoad(p,graph,false,{maxRadius:90,fallback:false,maxMs:2}),pose:poseVehicle,buildings:data.buildings,createPerson});if(regionalWorld?.data.buildings)dealerships.register(regionalWorld.data.buildings);
  parachute=createParachute();scene.add(parachute);

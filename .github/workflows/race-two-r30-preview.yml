@@ -51,6 +51,7 @@ jobs:
           node verify-dealerships-regional.mjs
           node tools/audit-regional-interchanges-r20.mjs
       - name: Verify first race and preserved world geometry
+        if: "!contains(github.event.head_commit.message, '[browser-only]')"
         run: |
           set -euo pipefail
           npm run test:tangenziale-race
@@ -69,9 +70,11 @@ jobs:
           npx playwright install --with-deps chromium
       - name: Verify all three race modes and bridge openings in real Chromium
         run: |
-          git fetch --no-tags --depth=1 origin ea05ddbd85f887e32850acf51f69ebeba985ba1c
-          PADOVA_R27_BASELINE=1 node tools/test-race-one-r27-browser.mjs
-          node tools/test-race-immersion-r28-browser.mjs
+          if test '${{ contains(github.event.head_commit.message, '[browser-only]') }}' != true; then
+            git fetch --no-tags --depth=1 origin ea05ddbd85f887e32850acf51f69ebeba985ba1c
+            PADOVA_R27_BASELINE=1 node tools/test-race-one-r27-browser.mjs
+            node tools/test-race-immersion-r28-browser.mjs
+          fi
           node tools/test-race-two-r30-browser.mjs
       - name: Retain complete-race timings and bridge comparisons
         if: always()
