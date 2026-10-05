@@ -42,6 +42,6 @@
     "test:tangenziale-race": "node --check dist/tangenziale-race-rules.js && node --check dist/tangenziale-race.js && node --check dist/tangenziale-race-polish.js && node --check dist/tangenziale-race-short-sprint.js && node --check dist/tangenziale-race-second.js && node --check dist/tangenziale-race-runtime-fixes.js && node --check dist/tangenziale-race-v2-polish.js && node --check dist/tangenziale-race-final-fixes.js && node --check dist/road-structures.js && node verify-tangenziale-race.mjs && node verify-tangenziale-race-e2e.mjs && node verify-tangenziale-short-sprint.mjs && node verify-tangenziale-second-race.mjs && node verify-tangenziale-race-runtime-fixes.mjs && node verify-tangenziale-final-fixes.mjs",
     "test:city-continuity": "node verify-city-continuity.mjs && node verify-roadside-harmony.mjs && node verify-road-support.mjs && node verify-junction-fans.mjs && node verify-pedestrian-layering.mjs",
     "test:earth-access": "node --max-old-space-size=3072 tools/verify-earth-access.mjs",
-    "test:race-immersion": "node --check dist/race-one-immersion.js && node tools/verify-race-immersion-r28.mjs"
+    "test:race-immersion": "node --check dist/race-one-immersion.js && node tools/verify-race-immersion-r28.mjs && node tools/verify-race-driving-r29.mjs"
   }
 }

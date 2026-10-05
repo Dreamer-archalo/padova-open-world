@@ -5,8 +5,8 @@ import {TangenzialeRace} from './tangenziale-race.js';
 // receive altered specifications or artificial acceleration.
 export const RACE_ONE_DIFFICULTIES=Object.freeze({
  easy:Object.freeze({name:'FACILE',skills:[.70,.72,.74],turbo:0,accel:9.4,turn:1.55,boost:0,corner:.72,laneRate:2.8}),
- medium:Object.freeze({name:'MEDIO',skills:[.94,.97,1],turbo:3,accel:14.4,turn:1.78,boost:6.2,corner:1,laneRate:3.8}),
- hard:Object.freeze({name:'DIFFICILE',skills:[1.10,1.14,1.18],turbo:3,accel:18.5,turn:2.15,boost:9.2,corner:1.13,laneRate:4.5})
+ medium:Object.freeze({name:'MEDIO',skills:[.85,.88,.91],turbo:3,accel:14.4,turn:1.78,boost:6.2,corner:1,laneRate:3.8}),
+ hard:Object.freeze({name:'DIFFICILE',skills:[.94,.96,.98],turbo:3,accel:15,turn:1.55,boost:6.2,corner:1,laneRate:3.4})
 });
 export const raceOneDifficulty=value=>Object.hasOwn(RACE_ONE_DIFFICULTIES,value)?value:'medium';
 export function applyRaceOneDifficulty(race,mode){

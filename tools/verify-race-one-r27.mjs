@@ -30,9 +30,9 @@ for(const hz of [60,30,20]){
  }
  for(let i=0;i<3;i++){
   assert(modes.easy.seconds[i]>modes.medium.seconds[i]*1.15,'easy takes at least 15% longer');
-  assert(modes.medium.seconds[i]>modes.hard.seconds[i]*1.10,'hard is at least 10% faster than medium');
+  assert(modes.medium.seconds[i]>modes.hard.seconds[i],'hard is quicker through better driving');
  }
- assert(modes.hard.maxSpeed>65*1.1,'hard rivals genuinely exceed standard maximum speed');
+ assert(modes.hard.maxSpeed<=65+6.2+.01,'hard has no hidden speed multiplier above the standard boost');
  results.push({hz,...modes});
 }
 assert(roadNeedsTerrainSeal({k:'residential',w:8}),'ordinary road fill retained');
