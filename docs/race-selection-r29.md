@@ -6,13 +6,14 @@ SHIFT consuma una delle tre cariche: impulso iniziale di 8 m/s, accelerazione 2,
 
 In difficile i bot usano il 94–98% del limite del proprio mezzo e non superano la sua accelerazione o autorità di sterzo. Il turbo e i danni sono condivisi con il giocatore. La gara non assegna tempi finti e non teletrasporta gli avversari avanti per recuperare uno svantaggio. Le collisioni tra mezzi vengono controllate durante i sottopassi di movimento dei bot; gli urti riducono velocità e salute, con 0,8 secondi di protezione dal conteggio ripetuto dello stesso contatto. I mezzi robusti subiscono meno danni, mentre moto e scooter sono più delicati. A salute zero, giocatore e bot tornano al proprio checkpoint. Un impatto rapido non fa esplodere immediatamente il giocatore fuori dalla gara.
 
-I gruppi di tifosi aumentano da 12 a 28 a 48 secondo la difficoltà, con fino a 10 spettatori per gruppo. Ogni posizione viene controllata contro tutte le strade vicine, edifici e acqua. Ponti e gallerie vengono esclusi. I tifosi, le rampe e i segnali restano in un'unica mesh statica.
+I budget dei gruppi di tifosi aumentano da 12 a 28 a 48 secondo la difficoltà, con fino a 10 spettatori per gruppo. Ogni posizione viene controllata contro tutte le strade vicine, edifici e acqua. Ponti e gallerie vengono esclusi e le posizioni non sicure vengono saltate. Sul percorso del test: 48, 113 e 201 spettatori nei tre livelli. I tifosi, le rampe e i segnali restano in un'unica mesh statica.
 
 ## Verifica
 
 - `npm run test:race-immersion`: sei gare complete a 30/60 Hz con modelli diversi, posizione dei tifosi, collisioni e pulizia dello stato; 24 casi di decollo/atterraggio su rampe reali; prova dell'acceleratore e SHIFT nel controller principale, quattro modelli; collisione reale di bot contro ostacolo; resistenza, cariche e checkpoint.
 - `node tools/verify-race-one-r27.mjs`: nove gare con la stessa auto a 20/30/60 Hz, progressione della difficoltà e geometria dei ponti.
 - `npm run test:tangenziale-race`: regressioni di entrambe le gare, rampe, ponti e traguardo.
+- `node tools/verify-race-merit-r29.mjs`: una guida di riferimento della Cinquecento con i comandi reali vince in difficile senza danni o respawn (55,62 s; bot 67,72–86,07 s), senza modificare posizione o velocità. È un singolo scenario ripetibile, non una promessa di vittoria per ogni giocatore o seed.
 - Chromium: due fasi del menu, 30 immagini reali, quattro barre, gare complete facile/medio/difficile, rampe visuali e fisiche, spettatori e seconda gara.
 
 Misura locale sulla Cinquecento a piena salute, con acceleratore premuto: 62 → 81,84 m/s (223 → 295 km/h), 132,14 → 179,67 metri in 2,4 secondi. Taxi, Fiamma e Cobalto mostrano circa 45–47 metri aggiuntivi nello stesso test. I risultati di una gara con ostacoli possono variare: anche i bot sbagliano e subiscono danni reali.
