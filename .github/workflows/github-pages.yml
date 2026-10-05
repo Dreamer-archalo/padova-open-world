@@ -168,7 +168,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          for item in 'solo-cars-r26 08872df934e5118b3efa7b69811de9aa3843925c' 'road-fixes-r25 7ad45f1332c3b95a79518336ddd9a9929d56857d' 'road-stunts-r23 1a053682b054087a4d36638c459b6afc5295f92d' 'taxi-r22 fix/taxi-confirm-map-r22' 'road-levels-r21 feat/padova-road-levels-r21' 'padova-npc-r17 feat/padova-intelligent-npc-r17' 'dealerships feat/dealerships-urban-showrooms' 'unified fix/regional-taxi-20260928' 'continuous feat/padova-venice-continuous-20260925' 'venice feat/venice-world-20260924' 'pr-57 feat/monoblocco-elevators-20260924'; do
+          for item in 'race-one-r27 c28f0244cbeceaf741ab5f8451cbeb4a37b1739b' 'race-immersion-r28 feat/race-immersion-r28' 'solo-cars-r26 08872df934e5118b3efa7b69811de9aa3843925c' 'road-fixes-r25 7ad45f1332c3b95a79518336ddd9a9929d56857d' 'road-stunts-r23 1a053682b054087a4d36638c459b6afc5295f92d' 'taxi-r22 fix/taxi-confirm-map-r22' 'road-levels-r21 feat/padova-road-levels-r21' 'padova-npc-r17 feat/padova-intelligent-npc-r17' 'dealerships feat/dealerships-urban-showrooms' 'unified fix/regional-taxi-20260928' 'continuous feat/padova-venice-continuous-20260925' 'venice feat/venice-world-20260924' 'pr-57 feat/monoblocco-elevators-20260924'; do
             read -r label ref <<< "$item"
             git fetch --no-tags --depth=1 origin "$ref"
             source="${RUNNER_TEMP}/retained-$label"

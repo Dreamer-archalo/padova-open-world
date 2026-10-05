@@ -84,20 +84,24 @@ function laneBounds(car,road){
 }
 function chooseLane(manager,car,p,index){
  const r=manager.race,samples=r.samples,center=samples[p.index],routeYaw=yawAt(samples,p.index),bound=laneBounds(car,center.road);
- const base=clamp(Number.isFinite(car.raceOffset)?car.raceOffset:0,-bound,bound);
+ const tuned=!r.__secondRace&&car.raceTuning;
+ const preferred=tuned?(car.raceTargetLane??car.raceOffset):car.raceOffset;
+ const base=clamp(Number.isFinite(preferred)?preferred:0,-bound,bound);
  const candidates=[-bound,0,bound];
  if(Math.abs(base)>.35)candidates.push(base);
  const hazards=[];
  const scan=Math.max(34,Math.min(88,Math.abs(car.speed||0)*1.45+24));
- for(const other of [...r.obstacles,r.playerCar,...r.ai]){
+ const optionalStunts=(r.immersion?.events||[]).filter(e=>e.kind==='ramp'||e.kind==='trap').map(e=>({x:e.x,z:e.z,y:e.baseY,spec:{width:e.width,length:e.length},mesh:{visible:true}}));
+ for(const other of [...r.obstacles,...optionalStunts,r.playerCar,...r.ai]){
   if(!other||other===car||other.mesh?.visible===false||other.raceFinished)continue;
   if(Number.isFinite(other.y)&&Number.isFinite(car.y)&&Math.abs(other.y-car.y)>4.5)continue;
-  const q=localToRoute(other,center,routeYaw);
+  const q=localToRoute(other,tuned?car:center,routeYaw);
+  if(tuned)q.side=localToRoute(other,center,routeYaw).side;
   if(q.forward<-5||q.forward>scan)continue;
   hazards.push({other,...q});
  }
  let bestLane=base,bestScore=-Infinity,nearestAhead=Infinity;
- for(const h of hazards)if(h.forward>=0)nearestAhead=Math.min(nearestAhead,h.forward);
+ if(!tuned)for(const h of hazards)if(h.forward>=0)nearestAhead=Math.min(nearestAhead,h.forward);
  for(const lane of [...new Set(candidates.map(v=>Math.round(v*100)/100))]){
   let score=-Math.abs(lane-base)*.42;
   score+=(index%2?-.04:.04)*lane;
@@ -110,13 +114,19 @@ function chooseLane(manager,car,p,index){
   }
   if(score>bestScore){bestScore=score;bestLane=lane;}
  }
+ if(tuned){
+  car.raceTargetLane=bestLane;
+  // A rival alongside us in another lane must not make both cars crawl.
+  for(const h of hazards)if(h.forward>1&&Math.abs(bestLane-h.side)<((car.spec?.width||2)+(h.other.spec?.width||2))*.5+.42)nearestAhead=Math.min(nearestAhead,h.forward);
+ }
  return {lane:bestLane,nearestAhead,hazards,bound};
 }
 function turboCap(car,r,game){
  const turbo=game.state.elapsed<(car.raceTurboUntil||0);
  const interactive=game.state.elapsed<(car.secondInteractiveUntil||0);
- const skill=r.__secondRace?1:clamp(car.raceSkill||1,.975,1.04);
- return car.spec.max*skill+(turbo?6.2:0)+(interactive?8.8:0);
+ const tuning=!r.__secondRace&&car.raceTuning;
+ const skill=tuning?car.raceSkill:(r.__secondRace?1:clamp(car.raceSkill||1,.975,1.04));
+ return car.spec.max*skill+(turbo?(tuning?.boost??6.2):0)+(interactive?8.8:0);
 }
 function triggerAITurbo(car,r,game){
  if((car.raceTurbo||0)<=0)return;
@@ -127,22 +137,42 @@ function triggerAITurbo(car,r,game){
 }
 function moveRaceAI(manager,car,dt,index,p,laneInfo){
  const r=manager.race,g=manager.game,samples=r.samples;
+ const tuning=!r.__secondRace&&car.raceTuning;
  const currentRoad=samples[p.index]?.road,bound=laneInfo.bound;
  const wantedLane=clamp(laneInfo.lane,-bound,bound);
  if(!Number.isFinite(car.raceLane))car.raceLane=clamp(car.raceOffset||0,-bound,bound);
- const laneRate=3.8*dt;
+ const laneRate=(tuning?.laneRate??3.8)*dt;
  car.raceLane+=clamp(wantedLane-car.raceLane,-laneRate,laneRate);
  const lookahead=clamp(2+Math.floor(Math.abs(car.speed||0)/13),2,7);
- const ti=Math.min(samples.length-1,p.index+lookahead),target=samples[ti],tyaw=yawAt(samples,ti),q=lateral(target,tyaw,car.raceLane);
+ let ti=Math.min(samples.length-1,p.index+lookahead),target=samples[ti],tyaw=yawAt(samples,ti);
+ if(tuning){
+  // Follow the actual curve at a distance in metres, rather than cutting
+  // across several 28 m route samples at racing speed.
+  let best=Infinity,along=samples.cumulative[p.index];
+  for(let j=Math.max(r.startIndex,p.index-1);j<Math.min(samples.length-1,p.index+2);j++){
+   const a=samples[j],b=samples[j+1],dx=b.x-a.x,dz=b.z-a.z,len=Math.hypot(dx,dz);
+   const f=clamp(((car.x-a.x)*dx+(car.z-a.z)*dz)/(len*len||1),0,1);
+   const d=Math.hypot(car.x-a.x-dx*f,car.z-a.z-dz*f);
+   if(d<best){best=d;along=samples.cumulative[j]+len*f;}
+  }
+  const aim=along+18+Math.abs(car.speed||0)*.32;
+  ti=p.index;while(ti<samples.length-2&&samples.cumulative[ti+1]<aim)ti++;
+  const a=samples[ti],b=samples[Math.min(ti+1,samples.length-1)],len=Math.hypot(b.x-a.x,b.z-a.z);
+  const f=clamp((aim-samples.cumulative[ti])/(len||1),0,1);
+  target={x:a.x+(b.x-a.x)*f,z:a.z+(b.z-a.z)*f};tyaw=Math.atan2(b.x-a.x,b.z-a.z);
+ }
+ const q=lateral(target,tyaw,car.raceLane);
+ // Aim beyond the line instead of turning back towards the final sample.
+ if(!r.__secondRace&&ti>=samples.length-2){const yaw=yawAt(samples,samples.length-1);q.x+=Math.sin(yaw)*28;q.z+=Math.cos(yaw)*28;}
  const goal=Math.atan2(q.x-car.x,q.z-car.z),diff=angleDiff(goal,car.yaw),futureYaw=yawAt(samples,Math.min(samples.length-1,ti+3)),bend=Math.abs(angleDiff(futureYaw,tyaw));
  let desired=turboCap(car,r,g);
  if(Math.abs(diff)>.7)desired=Math.min(desired,13);
  else if(Math.abs(diff)>.38)desired=Math.min(desired,25);
- if(bend>.42)desired=Math.min(desired,20);
- else if(bend>.24)desired=Math.min(desired,31);
+ if(bend>.42)desired=Math.min(desired,20*(tuning?.corner??1));
+ else if(bend>.24)desired=Math.min(desired,31*(tuning?.corner??1));
  if(laneInfo.nearestAhead<13)desired=Math.min(desired,7);
  else if(laneInfo.nearestAhead<22)desired=Math.min(desired,18);
- const accel=14.8,brake=Math.max(18,car.spec.brake||20),turnRate=1.95;
+ const accel=tuning?.accel??14.8,brake=Math.max(18,car.spec.brake||20),turnRate=tuning?.turn??1.95;
  car.speed+=clamp(desired-car.speed,-brake*dt,accel*dt);
  const nextYaw=car.yaw+clamp(diff,-turnRate*dt,turnRate*dt);
  if(Number.isFinite(nextYaw))car.yaw=nextYaw;

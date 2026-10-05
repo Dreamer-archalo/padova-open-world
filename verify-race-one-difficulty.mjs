@@ -22,7 +22,7 @@ assert.deepEqual(second.ai,[{raceSkill:1,raceTurbo:3}]);
 const source=fs.readFileSync('dist/tangenziale-race-difficulty.js','utf8');
 const upgrades=fs.readFileSync('dist/gameplay-upgrades.js','utf8');
 assert(source.includes('raceOneDifficulty')&&source.includes('DIFFICOLTÀ BOT · GARA 1')&&source.includes('openConfirmation'));
-assert(source.includes('if(!r||r.__secondRace||!r.difficulty||r.difficulty===\'medium\')'));
+assert(source.includes('return previousAI.call(this,dt)'),'all levels share the obstacle-aware controller');
 assert(source.includes('const isSecond=this.__nextRaceMode===\'second\''));
 assert(upgrades.indexOf("import './tangenziale-race-difficulty.js';")>upgrades.indexOf("import './tangenziale-race-runtime-fixes.js';"),'difficulty settings load after the shared local race controller');
 assert(!upgrades.includes("import './online-race-v2.js';"),'traditional entry excludes online ownership hooks');

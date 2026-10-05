@@ -23,6 +23,7 @@ import './monoblocco-island-bridges.js';
 import './hospital-rooftop-elevators.js';
 import './taxi-loading-guard.js';
 import './tangenziale-race-difficulty.js';
+import './race-one-immersion.js';
 
 // Exact Ospedale Civile Monoblocco footprint, not the former Treves-side roof.
 installPoliceAIHooks();
