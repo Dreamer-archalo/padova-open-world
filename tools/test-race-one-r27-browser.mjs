@@ -36,6 +36,8 @@ try{
   if(mode!=='hard')await page.evaluate(()=>{__raceQA.restoreSnapshot();__r27.state.paused=false;});
  }
  for(let i=0;i<3;i++){assert(times.easy[i]>times.medium[i]*1.15);assert(times.medium[i]>times.hard[i]*1.1);}
+ // Hide temporary race props only for the bridge comparison screenshots.
+ await page.evaluate(()=>{for(const root of __raceQA.race.roots)root.visible=false;});
  await page.addStyleTag({content:'body > :not(#world) {visibility:hidden !important;}'});
  for(const name of ['Via San Tommaso','Via Francesco Petrarca','Via Ugo Foscolo']){
   const result=await page.evaluate(async name=>{
