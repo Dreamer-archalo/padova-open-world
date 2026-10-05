@@ -61,7 +61,9 @@ jobs:
           npm install --no-save playwright@1.55.1
           npx playwright install --with-deps chromium
       - name: Verify all three race modes and bridge openings in real Chromium
-        run: node tools/test-race-one-r27-browser.mjs
+        run: |
+          git fetch --no-tags --depth=1 origin ea05ddbd85f887e32850acf51f69ebeba985ba1c
+          node tools/test-race-one-r27-browser.mjs
       - name: Retain complete-race timings and bridge comparisons
         if: always()
         uses: actions/upload-artifact@v4
