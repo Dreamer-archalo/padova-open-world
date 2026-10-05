@@ -9,7 +9,7 @@ const checks=[
  ['finish requires physical line crossing',/crossedFinish\(actor,r,progress\)/.test(fixes)&&/along>=-FINISH_PLANE_TOLERANCE/.test(fixes)&&!/playerProgress>=r\.total-28/.test(fixes)],
  ['player finish override installed',/TangenzialeRace\.prototype\.updatePlayer=updatePlayerFinishCorrectly/.test(fixes)],
  ['adaptive lane choice scans obstacles and racers',/chooseLane\(manager,car,p,index\)/.test(fixes)&&/\.\.\.r\.obstacles,\.\.\.optionalStunts,r\.playerCar,\.\.\.r\.ai/.test(fixes)&&/candidates=\[-bound,0,bound\]/.test(fixes)],
- ['AI can steer and overtake instead of driving straight',/wantedLane/.test(fixes)&&/raceLane/.test(fixes)&&/goal=Math\.atan2/.test(fixes)&&/turnRate=tuning\?\.turn\?\?1\.95/.test(fixes)],
+ ['AI can steer and overtake instead of driving straight',/wantedLane/.test(fixes)&&/raceLane/.test(fixes)&&/goal=Math\.atan2/.test(fixes)&&/steeringRate\(car\.spec,car\.speed\)/.test(fixes)],
  ['bridge deck height is authoritative',/Bridge and flyover samples are authoritative/.test(fixes)&&/roads\?\.sample/.test(fixes)&&/guide\.road\?\.b/.test(fixes)],
  ['AI collision fallback and respawn remain active',/vehicleBlocked\(nx,nz,car\.yaw,g\.collision,car\.spec,ny\)/.test(fixes)&&/AI_OFFROAD_LIMIT=26/.test(fixes)&&/respawnCheckpoint/.test(fixes)],
  ['last ramp is moved earlier and softened',/LAST_RAMP_MAX_FRACTION=\.76/.test(fixes)&&/LAST_RAMP_MAX_RISE=2\.05/.test(fixes)&&/relocateRamp/.test(fixes)],

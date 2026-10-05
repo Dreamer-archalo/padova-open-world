@@ -8,19 +8,25 @@ import './tangenziale-race-difficulty.js';
 import {raceOneDifficulty,RACE_ONE_DIFFICULTIES} from './tangenziale-race-difficulty.js';
 import {clamp,angleDiff} from './core.js';
 import {vehicleBlocked} from './movement.js';
+import {openRaceGarage} from './race-garage.js';
+import {activateRaceTurbo} from './race-driving-rules.js';
 
 // Event counts are budgets: an unsafe location is skipped, never forced onto a bridge.
 export const RACE_ENVIRONMENTS=Object.freeze({
- easy:Object.freeze({ramps:1,rise:.85,traps:0,parked:1,moving:0,crowds:2,warning:210,penalty:1,summary:'1 salto dolce, 1 ostacolo segnalato, poche distrazioni'}),
- medium:Object.freeze({ramps:2,rise:1.25,traps:1,parked:3,moving:1,crowds:5,warning:180,penalty:.72,summary:'2 salti, 1 rallentatore, 3 ostacoli e 1 mezzo lento'}),
- hard:Object.freeze({ramps:3,rise:1.65,traps:2,parked:5,moving:2,crowds:8,warning:155,penalty:.58,summary:'3 salti, 2 rallentatori, 5 ostacoli e 2 mezzi lenti'})
+ easy:Object.freeze({ramps:1,rise:.85,traps:0,parked:1,moving:0,crowds:12,warning:210,penalty:1,summary:'1 salto dolce, 1 ostacolo segnalato, poche distrazioni'}),
+ medium:Object.freeze({ramps:2,rise:1.25,traps:1,parked:3,moving:1,crowds:28,warning:180,penalty:.72,summary:'2 salti, 1 rallentatore, 3 ostacoli e 1 mezzo lento'}),
+ hard:Object.freeze({ramps:3,rise:1.65,traps:2,parked:5,moving:2,crowds:48,warning:155,penalty:.58,summary:'3 salti, 2 rallentatori, 5 ostacoli e 2 mezzi lenti'})
 });
 export const RACE_PROFILES=Object.freeze({
- agile:Object.freeze({label:'Agile',max:62,accel:16.2,brake:26,steer:1.18,description:'Ripresa e maneggevolezza maggiori, velocità massima inferiore'}),
- balanced:Object.freeze({label:'Equilibrato',max:65,accel:15,brake:24,steer:1.08,description:'Compromesso tra velocità, ripresa e guida'}),
- sprint:Object.freeze({label:'Veloce',max:68,accel:13.8,brake:23,steer:.99,description:'Più velocità sul rettilineo, meno ripresa e maneggevolezza'}),
- robust:Object.freeze({label:'Stabile',max:63.5,accel:14.8,brake:26,steer:1.1,description:'Frenata maggiore, ingombro più impegnativo'})
+ agile:Object.freeze({label:'Agile',max:62,accel:16.5,brake:26,steer:1.22,turbo:1.32,damage:1.15,description:'Ottima ripresa e curve rapide, più delicato negli urti'}),
+ balanced:Object.freeze({label:'Equilibrato',max:64,accel:15.8,brake:25,steer:1.14,turbo:1.29,damage:1,description:'Velocità, controllo e resistenza ben distribuiti'}),
+ sprint:Object.freeze({label:'Veloce',max:65.5,accel:15,brake:24,steer:1.08,turbo:1.26,damage:1.12,description:'Più veloce sul dritto, meno agile e resistente'}),
+ robust:Object.freeze({label:'Resistente',max:63,accel:15.2,brake:26,steer:1.12,turbo:1.28,damage:.68,description:'Sopporta più urti; ingombro maggiore da gestire'})
 });
+export const RACE_VEHICLE_IDS=Object.freeze([
+ 'cinquecento','taxi','fulmine','mito','motorcycle','scooter','trail','cruiser','zenit','vortice','lido','officina','campo','porto','selva',
+ ...['ametista','ruggine','nebula','zebra','mandarino','azzurra','cobalto','limone','velluto','sale','prisma','bruma','fiamma','perla','magnete'].map(id=>'collector-'+id)
+]);
 export function eligibleRaceVehicle(spec){return !!spec&&!spec.aircraft&&!spec.watercraft&&!spec.tracked&&!spec.armor&&Number.isFinite(spec.max)&&spec.width<=2.7&&spec.length<=6.6&&spec.height<=2.9;}
 export function raceVehicleProfile(spec){
  if(spec.bike||spec.width<1.15||spec.length<3.9)return 'agile';
@@ -34,16 +40,23 @@ export function raceVehicleSpec(style){
  // Fulmine remains the familiar reference car. Every other model stays close to it.
  const tuning=style==='fulmine'?RACE_PROFILES.balanced:profile;
  return {...base,max:tuning.max,boost:tuning.max,accel:tuning.accel,brake:tuning.brake,steer:tuning.steer,
-  reverse:7,mass:clamp(base.mass||1,.8,1.4),turboMax:tuning.max,turboAccel:tuning.accel,critical:Infinity};
+  reverse:7,mass:clamp(base.mass||1,.8,1.4),turboMax:tuning.max*tuning.turbo,turboAccel:tuning.accel*2.2,
+  raceDamageFactor:base.bike||base.width<1.15?1.35:tuning.damage,critical:Infinity};
 }
-export const raceVehicleChoices=()=>Object.entries(VEHICLES).filter(([,s])=>eligibleRaceVehicle(s)).map(([id,s])=>({id,name:s.name,profile:id==='fulmine'?'balanced':raceVehicleProfile(s)}));
+export const raceVehicleChoices=()=>RACE_VEHICLE_IDS.filter(id=>eligibleRaceVehicle(VEHICLES[id])).map(id=>({id,name:VEHICLES[id].name,profile:id==='fulmine'?'balanced':raceVehicleProfile(VEHICLES[id])}));
+export function raceVehicleStats(id){const s=raceVehicleSpec(id);return [
+ {key:'speed',label:'Velocità',value:Math.round(s.max/75*100),detail:Math.round(s.max*3.6)+' km/h'},
+ {key:'handling',label:'In curva',value:Math.round(s.steer/1.5*100),detail:'Maneggevolezza'},
+ {key:'turbo',label:'Turbo',value:Math.round((s.turboMax/s.max-1)/.4*100),detail:'+'+Math.round((s.turboMax/s.max-1)*100)+'% · '+Math.round(s.turboMax*3.6)+' km/h'},
+ {key:'durability',label:'Resistenza',value:Math.round(.6/s.raceDamageFactor*100),detail:'Meno danni con valori più alti'}
+];}
 function randomSource(seed){let n=seed>>>0;return ()=>{n=(Math.imul(1664525,n)+1013904223)>>>0;return n/4294967296;};}
 function hash(value){let h=2166136261;for(const c of String(value)){h^=c.charCodeAt(0);h=Math.imul(h,16777619);}return h>>>0;}
 export function chooseRaceRoster(mode,player='fulmine',random=Math.random,previous=[]){
  const choices=raceVehicleChoices();
  const preferred=choices.filter(c=>mode==='easy'?['agile','balanced','robust'].includes(c.profile):mode==='hard'?['sprint','balanced'].includes(c.profile):true);
  const fresh=preferred.filter(c=>c.id!==player&&!previous.includes(c.id));
- const pool=[...fresh,...preferred.filter(c=>c.id!==player&&!fresh.includes(c))];
+ const pool=fresh.length>=3?[...fresh]:preferred.filter(c=>c.id!==player);
  const ids=[];while(pool.length&&ids.length<3){const i=Math.min(pool.length-1,Math.floor(random()*pool.length));ids.push(pool.splice(i,1)[0].id);}
  return ids;
 }
@@ -86,12 +99,36 @@ function warningSign(root,g,r,event){
  const group=at(root,{...q,yaw,baseY:y});block(group,'#8a969e',0,1,0,.09,2,.09);block(group,event.kind==='ramp'?'#44b8c7':'#f7bf45',0,2.05,0,1.05,.68,.09);
  block(group,'#18232b',0,2.05,.055,event.kind==='ramp'?.5:.08,.4,.03);
 }
-function crowds(root,g,r,count){
- for(let n=0;n<count;n++){
-  const i=Math.round(r.startIndex+(r.samples.length-r.startIndex-15)*(n+1)/(count+1)),p=r.samples[i],yaw=yawAt(r,i),side=n%2?-1:1,q=offset(p,yaw,side*(p.road.w/2+2.2)),y=surface(g,p,q.x,q.z),group=at(root,{...q,yaw,baseY:y});
-  block(group,'#dca13e',0,.5,0,2.8,.08,.12);for(const x of [-1.3,1.3])block(group,'#879294',x,.28,0,.08,.55,.12);
-  for(let j=0;j<3;j++){const x=(j-1)*.78;block(group,j%2?'#307caa':'#b8445c',x,.95,-.8,.34,.75,.26);block(group,'#e5c5a6',x,1.53,-.8,.24,.25,.23);block(group,'#242e38',x,.34,-.8,.3,.48,.22);}
+export function safeSpectatorSpot(g,x,z,y){
+ for(const [dx,dz] of [[0,0],[.45,.45],[-.45,.45],[.45,-.45],[-.45,-.45]]){
+  if(g.terrain.roads.candidates(x+dx,z+dz,.7).length)return false;
  }
+ return g.terrain.dry(x,z,.5,y)&&!vehicleBlocked(x,z,0,g.collision,{width:.8,length:.8,height:1.9},y);
+}
+function crowds(root,g,r,count){
+ const spectators=[];let groups=0;
+ for(let n=0;n<count;n++){
+  const target=Math.round(r.startIndex+5+(r.samples.length-r.startIndex-18)*(n+1)/(count+1));
+  for(const delta of [0,1,-1,2,-2,3,-3]){
+   const i=clamp(target+delta,r.startIndex+4,r.samples.length-5),p=r.samples[i],yaw=yawAt(r,i),road=p.road;
+   if(!road||road.b||road.tunnel||road.crossing||Number(road.layer)>0)continue;
+   const side=n%2?-1:1,positions=[];
+   for(let j=0;j<10;j++){
+    const q=offset(p,yaw,side*(road.w/2+2.4+(j%2)*.85)),along=(Math.floor(j/2)-2)*1.2;
+    q.x+=Math.sin(yaw)*along;q.z+=Math.cos(yaw)*along;const y=g.terrain.height(q.x,q.z,p.y);
+    if(!Number.isFinite(y)||Math.abs(y-p.y)>2.5||!safeSpectatorSpot(g,q.x,q.z,y))continue;
+    positions.push({...q,y,yaw});
+   }
+   if(positions.length<3)continue;
+   for(const [j,p] of positions.entries()){
+    const person=at(root,{...p,baseY:p.y});block(person,['#307caa','#b8445c','#efc553','#65a478'][j%4],0,.98,0,.34,.75,.26);block(person,'#e5c5a6',0,1.53,0,.24,.25,.23);block(person,'#242e38',0,.34,0,.3,.48,.22);
+    block(person,'#e5c5a6',.26,1.28,0,.12,.52,.13);if(j%3===0){block(person,'#ccd6cc',.32,1.72,0,.035,.7,.035);block(person,j%2?'#e95456':'#63dcde',.48,1.98,0,.38,.28,.03);}
+    spectators.push(p);
+   }
+   groups++;break;
+  }
+ }
+ return {spectators,groups};
 }
 // Bake static signs/crowds/ramps into one draw call; no per-frame crowd AI.
 function bake(root){
@@ -133,8 +170,8 @@ export function configureRaceEnvironment(manager,mode,seed=1){
   }
   warningSign(root,g,r,event);events.push(event);
  }
- crowds(root,g,r,config.crowds);bake(root);g.scene.add(root);r.roots.push(root);
- r.immersion={mode:key,config,seed,events,root,next:null,counts:{ramps:r.ramps.length,traps:events.filter(e=>e.kind==='trap').length,parked:events.filter(e=>e.kind==='parked').length,moving:events.filter(e=>e.kind==='moving').length,crowds:config.crowds}};
+ const audience=crowds(root,g,r,config.crowds);bake(root);g.scene.add(root);r.roots.push(root);
+ r.immersion={mode:key,config,seed,events,root,spectators:audience.spectators,next:null,counts:{ramps:r.ramps.length,traps:events.filter(e=>e.kind==='trap').length,parked:events.filter(e=>e.kind==='parked').length,moving:events.filter(e=>e.kind==='moving').length,crowds:audience.groups,spectators:audience.spectators.length}};
  // Suppress nearby ambient cars, saving their state; scheduled race traffic is predictable.
  r.immersion.ambient=[];
  for(const c of g.cars){if(c===r.snapshot.car||c.tangenzialeRace||c.tangenzialeObstacle||c.spec.aircraft||c.spec.watercraft)continue;
@@ -171,32 +208,26 @@ export function applyRaceHazards(manager){
 const priorConfirm=TangenzialeRace.prototype.openConfirmation;
 TangenzialeRace.prototype.openConfirmation=function(...args){
  const out=priorConfirm.apply(this,args),content=typeof document==='undefined'?null:document.getElementById('menuContent');
- if(!content||!document.getElementById('raceOneDifficulty')||content.querySelector('#raceOneVehicle'))return out;
- const actions=content.querySelector('.menu-actions');if(!actions)return out;
- const copy=content.querySelector('.about-copy');if(copy)copy.innerHTML='<strong>Gara 1 · scegli mezzo e difficoltà</strong><br>3 avversari con mezzi diversi a ogni gara. Tre turbo su SHIFT; X abbandona e ripristina la partita. Vittoria +€350 · sconfitta -€100.';
- const difficulty=document.getElementById('raceOneDifficulty');
+ const difficulty=document.getElementById('raceOneDifficulty');if(!content||!difficulty)return out;
+ const copy=content.querySelector('.about-copy');if(copy)copy.innerHTML='<strong>Gara 1 · scegli la difficoltà</strong><br>Premi Inizia gara per scegliere il tuo mezzo. 3 avversari diversi, 3 turbo su SHIFT. Vittoria +€350 · sconfitta -€100.';
  const label=content.querySelector('label[for="raceOneDifficulty"] strong');if(label)label.textContent='DIFFICOLTÀ · BOT E PERCORSO';
  for(const o of difficulty.options)o.textContent=RACE_ONE_DIFFICULTIES[o.value].name+' · '+RACE_ENVIRONMENTS[o.value].summary;
- const panel=document.createElement('div');panel.style.cssText='padding:12px;border:1px solid #b5a58c;border-radius:8px;margin:12px 0';
- panel.innerHTML='<label for="raceOneVehicle"><strong>MEZZO DA GARA</strong></label><select id="raceOneVehicle" style="width:100%;padding:9px;margin:8px 0"></select><p id="raceOneVehicleStats" style="margin:4px 0;font-size:13px"></p><p id="raceOneEnvironment" style="margin:8px 0;font-size:13px"></p><small>Allestimento temporaneo bilanciato. Dimensioni e modello conservati. Aerei, barche, mezzi blindati e camion troppo lunghi esclusi.</small>';
- actions.before(panel);const select=document.getElementById('raceOneVehicle');
- for(const profile of Object.keys(RACE_PROFILES)){const group=document.createElement('optgroup');group.label=RACE_PROFILES[profile].label;
-  for(const c of raceVehicleChoices().filter(c=>c.profile===profile)){const o=document.createElement('option');o.value=c.id;o.textContent=c.name;group.appendChild(o);}select.appendChild(group);
- }
- select.value=this.selectedRaceVehicle||'fulmine';
- const paint=()=>{const spec=raceVehicleSpec(select.value),profile=RACE_PROFILES[select.value==='fulmine'?'balanced':raceVehicleProfile(VEHICLES[select.value])];
-  document.getElementById('raceOneVehicleStats').textContent=profile.label+' · '+Math.round(spec.max*3.6)+' km/h · '+profile.description;
-  document.getElementById('raceOneEnvironment').textContent=RACE_ENVIRONMENTS[difficulty.value].summary+'. Salti facoltativi, ostacoli segnalati e ultimo tratto libero.';
- };select.onchange=paint;difficulty.onchange=paint;paint();return out;
+ difficulty.value=this.selectedRaceDifficulty||'medium';
+ document.getElementById('startTangenzialeRace').onclick=()=>{this.selectedRaceDifficulty=difficulty.value;openRaceGarage(this,difficulty.value,{choices:raceVehicleChoices(),spec:raceVehicleSpec,stats:raceVehicleStats,profiles:RACE_PROFILES,profile:raceVehicleProfile});};
+ return out;
 };
+const priorTurbo=TangenzialeRace.prototype.applyPlayerTurbo;
+TangenzialeRace.prototype.applyPlayerTurbo=function(dt){const r=this.race;if(!r?.immersion)return priorTurbo.call(this,dt);r.playerCar.raceTurboUntil=r.playerFinished?0:r.playerTurboUntil;};
+const priorKey=TangenzialeRace.prototype.keyDown;
+TangenzialeRace.prototype.keyDown=function(e){const r=this.race,before=r?.playerTurboUntil||0,out=priorKey.call(this,e);if(r?.immersion&&r.playerTurboUntil>before){activateRaceTurbo(this.game.state,r.playerCar,this.game.state.elapsed,r.playerTurboUntil);this.game.toast('TURBO +'+Math.round((r.playerCar.spec.turboMax/r.playerCar.spec.max-1)*100)+'% · '+r.playerTurbo+' rimasti',1.6);}return out;};
 const priorStart=TangenzialeRace.prototype.start;
 TangenzialeRace.prototype.start=function(...args){
  if(this.race)return;
  if(this.__nextRaceMode==='second'||typeof window!=='undefined'&&window.PadovaOnline?.connected)return priorStart.apply(this,args);
- const mode=raceOneDifficulty(args[0]?.difficulty||document.getElementById('raceOneDifficulty')?.value),requested=args[0]?.vehicle||document.getElementById('raceOneVehicle')?.value||this.selectedRaceVehicle||'fulmine',player=eligibleRaceVehicle(VEHICLES[requested])?requested:'fulmine';
+ const mode=raceOneDifficulty(args[0]?.difficulty||document.getElementById('raceOneDifficulty')?.value),requested=args[0]?.vehicle||this.selectedRaceVehicle||'fulmine',player=eligibleRaceVehicle(VEHICLES[requested])?requested:'fulmine';
  const seed=Number.isFinite(args[0]?.seed)?args[0].seed:hash(Date.now()+':'+Math.random()),random=randomSource(seed),roster=chooseRaceRoster(mode,player,random,this.previousRaceRoster||[]),styles=[player,...roster],game=this.game,add=game.addCar;
  let slot=0,out;
- game.addCar=function(...a){if(a[5]==='fulmine'&&slot<4){a[5]=styles[slot++];const car=add.apply(this,a);car.spec=raceVehicleSpec(car.style);car.raceProfile=car.style==='fulmine'?'balanced':raceVehicleProfile(VEHICLES[car.style]);return car;}return add.apply(this,a);};
+ game.addCar=function(...a){if(a[5]==='fulmine'&&slot<4){a[5]=styles[slot++];const car=add.apply(this,a);car.spec=raceVehicleSpec(car.style);car.raceOneRules=true;car.raceProfile=car.style==='fulmine'?'balanced':raceVehicleProfile(VEHICLES[car.style]);return car;}return add.apply(this,a);};
  try{out=priorStart.apply(this,args);}finally{game.addCar=add;}
  const r=this.race;if(!r||r.__secondRace)return out;
  this.selectedRaceVehicle=player;this.previousRaceRoster=roster;
@@ -221,7 +252,7 @@ function drawEventMap(r){
 }
 const priorPaint=TangenzialeRace.prototype.paintHud;
 TangenzialeRace.prototype.paintHud=function(...args){const out=priorPaint.apply(this,args),r=this.race;if(r?.immersion&&typeof document!=='undefined')queueMicrotask(()=>{
- if(this.race!==r)return;drawEventMap(r);const board=document.getElementById('tangenzialeBoard');if(board)board.style.maxWidth='min(360px,45vw)';const desc=document.getElementById('missionDesc');if(desc){const next=r.immersion.next;desc.textContent=r.playerCar.name+' · '+RACE_ONE_DIFFICULTIES[r.difficulty].name+' · Turbo '+r.playerTurbo+'/3 · '+Math.round(r.playerProgress/r.total*100)+'%'+(next?' · '+next.label+' '+Math.round(next.progress-r.playerProgress)+' m':' · X abbandona');}
+ if(this.race!==r)return;drawEventMap(r);const board=document.getElementById('tangenzialeBoard');if(board)board.style.maxWidth='min(360px,45vw)';const desc=document.getElementById('missionDesc');if(desc){const next=r.immersion.next;desc.textContent=r.playerCar.name+' · '+RACE_ONE_DIFFICULTIES[r.difficulty].name+' · '+(this.game.state.elapsed<r.playerTurboUntil?'TURBO ATTIVO '+Math.max(0,r.playerTurboUntil-this.game.state.elapsed).toFixed(1)+'s · '+Math.round(r.playerCar.spec.turboMax*3.6)+' km/h':'SHIFT · Turbo '+r.playerTurbo+'/3')+' · '+Math.round(r.playerProgress/r.total*100)+'%'+(next?' · '+next.label+' '+Math.round(next.progress-r.playerProgress)+' m':' · X abbandona');}
  });return out;};
 const priorBoard=TangenzialeRace.prototype.raceBoard;
 TangenzialeRace.prototype.raceBoard=function(){const r=this.race;if(!r?.immersion)return priorBoard.call(this);return priorBoard.call(this).replace(/AUTO ([1-4])(?: · TU)?/g,(_,n)=>{const c=n==='1'?r.playerCar:r.ai[Number(n)-2];return c.name+(n==='1'?' · TU':'');});};
