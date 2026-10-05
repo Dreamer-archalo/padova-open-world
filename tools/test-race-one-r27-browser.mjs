@@ -10,6 +10,7 @@ const browser=await chromium.launch({headless:true,args:['--no-sandbox','--enabl
 const page=await browser.newPage({viewport:{width:1280,height:800}}),errors=[];
 page.on('pageerror',e=>errors.push(e.message));fs.mkdirSync('test-artifacts/r27',{recursive:true});
 try{
+ if(process.env.PADOVA_R27_BASELINE)await page.route('**/race-one-immersion.js',route=>route.fulfill({contentType:'application/javascript',body:'// R27 baseline for preserved bridge/difficulty comparison'}));
  await page.route('**/game.js*',async route=>{const response=await route.fetch();await route.fulfill({response,body:await response.text()+`\nglobalThis.__r27={state,get gameplay(){return gameplay},get terrain(){return terrain},get world(){return world},get scene(){return scene},get camera(){return camera},get renderer(){return renderer}};`});});
  await page.route('**/phase4-terrain-fixes.js*',async route=>{const response=await route.fetch();await route.fulfill({response,body:await response.text()+'\n'+oldBuilder+'\nglobalThis.__bridgeQA={legacyBuildPatchSeal,buildPatchSeal,SOUTH_PATCHES};'});});
  await page.goto('http://127.0.0.1:4177/',{waitUntil:'domcontentloaded'});

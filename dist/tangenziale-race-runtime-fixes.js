@@ -91,7 +91,8 @@ function chooseLane(manager,car,p,index){
  if(Math.abs(base)>.35)candidates.push(base);
  const hazards=[];
  const scan=Math.max(34,Math.min(88,Math.abs(car.speed||0)*1.45+24));
- for(const other of [...r.obstacles,r.playerCar,...r.ai]){
+ const optionalStunts=(r.immersion?.events||[]).filter(e=>e.kind==='ramp'||e.kind==='trap').map(e=>({x:e.x,z:e.z,y:e.baseY,spec:{width:e.width,length:e.length},mesh:{visible:true}}));
+ for(const other of [...r.obstacles,...optionalStunts,r.playerCar,...r.ai]){
   if(!other||other===car||other.mesh?.visible===false||other.raceFinished)continue;
   if(Number.isFinite(other.y)&&Number.isFinite(car.y)&&Math.abs(other.y-car.y)>4.5)continue;
   const q=localToRoute(other,tuned?car:center,routeYaw);
