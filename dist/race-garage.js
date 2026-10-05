@@ -29,8 +29,9 @@ async function renderThumbnails(content,choices){
 }
 export function openRaceGarage(manager,mode,catalogue){
  const content=document.getElementById('menuContent');if(!content)return;
- const {choices,spec,stats,profiles,profile}=catalogue;
- let selected=choices.some(c=>c.id===manager.selectedRaceVehicle)?manager.selectedRaceVehicle:'fulmine';
+ const {choices,spec,stats,profiles,profile,raceNumber=1}=catalogue;
+ const remembered=raceNumber===2?manager.selectedSecondRaceVehicle:manager.selectedRaceVehicle;
+ let selected=choices.some(c=>c.id===remembered)?remembered:'fulmine';
  document.getElementById('menuTitle').textContent='Scegli il tuo mezzo';
  content.innerHTML=`<style>
  #menu:has(#raceGarage){width:min(940px,94vw)}
@@ -43,7 +44,7 @@ export function openRaceGarage(manager,mode,catalogue){
  .race-garage-actions{position:sticky;bottom:-30px;background:#101e28;padding:10px 0;margin-top:12px}.race-garage-actions .primary{flex:1}
  @media(max-width:600px){.race-garage-head{grid-template-columns:1fr;padding:12px;gap:3px}.race-garage-head img{height:110px}.race-garage-head h3{font-size:20px}.race-vehicle-grid{grid-template-columns:repeat(3,minmax(0,1fr));max-height:26vh}.race-vehicle-card img{height:55px}.race-stat-label{margin-top:6px}}
  @media(prefers-reduced-motion:reduce){.race-stat-track i{transition:none}}
- </style><div id="raceGarage"><p class="about-copy" style="margin-top:0">${{easy:'Facile',medium:'Medio',hard:'Difficile'}[mode]} · <strong>30 mezzi, scegli il tuo.</strong> Tre turbo SHIFT, prestazioni bilanciate per la gara.</p>
+ </style><div id="raceGarage"><p class="about-copy" style="margin-top:0">Gara ${raceNumber} · ${{easy:'Facile',medium:'Medio',hard:'Difficile'}[mode]} · <strong>30 mezzi, scegli il tuo.</strong> Tre turbo SHIFT, prestazioni bilanciate per la gara.</p>
  <div class="race-garage-head"><div><img id="raceGaragePreview" alt=""><small id="raceGarageImageHint">Il modello che guiderai in gara</small></div><div><h3 id="raceGarageName"></h3><p id="raceGarageDescription"></p><div id="raceGarageStats"></div></div></div>
  <div class="race-vehicle-grid" aria-label="Mezzi disponibili">${choices.map(c=>`<button type="button" class="race-vehicle-card" data-vehicle="${c.id}" aria-pressed="false"><img alt="${c.name}" ${thumbnails.has(c.id)?`src="${thumbnails.get(c.id)}"`:''}><b>${c.name}</b><small>${profiles[c.profile].label}</small></button>`).join('')}</div>
  <div class="menu-actions race-garage-actions"><button id="confirmRaceVehicle" class="primary">CORRI CON QUESTO MEZZO</button><button id="backRaceDifficulty">INDIETRO</button></div></div>`;
@@ -55,7 +56,7 @@ export function openRaceGarage(manager,mode,catalogue){
   for(const button of content.querySelectorAll('[data-vehicle]'))button.setAttribute('aria-pressed',String(button.dataset.vehicle===selected));
  };
  for(const button of content.querySelectorAll('[data-vehicle]'))button.onclick=()=>{selected=button.dataset.vehicle;paint();};
- document.getElementById('confirmRaceVehicle').onclick=()=>{manager.selectedRaceVehicle=selected;manager.start({difficulty:mode,vehicle:selected});};
- document.getElementById('backRaceDifficulty').onclick=()=>manager.openConfirmation();paint();
+ document.getElementById('confirmRaceVehicle').onclick=()=>{if(raceNumber===2)manager.selectedSecondRaceVehicle=selected;else manager.selectedRaceVehicle=selected;manager.start({difficulty:mode,vehicle:selected,race:raceNumber});};
+ document.getElementById('backRaceDifficulty').onclick=()=>raceNumber===2?manager.openSecondRaceConfirmation():manager.openConfirmation();paint();
  renderThumbnails(content,choices);document.getElementById('confirmRaceVehicle').focus();
 }

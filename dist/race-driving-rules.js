@@ -4,9 +4,9 @@ import {vehiclePerformanceFactor} from './vehicle-damage.js';
 
 // Pure shared rules: both drivers use the same caps, boost and impact damage.
 export function raceDriveSettings(car,time,health=car.health??100){
- const boosted=time<(car.raceTurboUntil||0),condition=vehiclePerformanceFactor(health);
- return {boosted,max:(boosted?car.spec.turboMax:car.spec.max)*condition,
-  accel:(boosted?car.spec.turboAccel:car.spec.accel)*condition};
+ const boosted=time<Math.max(car.raceTurboUntil||0,car.raceSprintUntil||0),slow=time<(car.raceSlowUntil||0),condition=vehiclePerformanceFactor(health);
+ return {boosted,max:(boosted?car.spec.turboMax:car.spec.max)*condition*(slow?.5:1),
+  accel:(boosted?car.spec.turboAccel:car.spec.accel)*condition*(slow?.45:1)};
 }
 export function activateRaceTurbo(actor,car,time,until){
  car.raceTurboUntil=until;
