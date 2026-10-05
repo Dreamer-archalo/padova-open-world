@@ -1,6 +1,6 @@
 # Gara 1: percorso progressivo e mezzi variabili (R28)
 
-Base: `c28f0244cbeceaf741ab5f8451cbeb4a37b1739b` (R27, PR #71). Anteprima autonoma; nessun merge in main.
+Base: `c28f0244cbeceaf741ab5f8451cbeb4a37b1739b` (R27, PR #71). Pubblicazione ufficiale autorizzata il 5 ottobre 2026.
 
 | Livello | Rampe facoltative | Rallentatori | Mezzi fermi | Mezzi lenti | Gruppi di pubblico |
 | --- | ---: | ---: | ---: | ---: | ---: |
@@ -19,6 +19,6 @@ Uscita e risultati ripristinano la situazione precedente e rimuovono mezzi, ramp
 Verifiche riproducibili:
 - `npm run test:race-immersion`: catalogo, prestazioni, griglie variabili, eventi su dati reali, completamento bot a 30/60 Hz, ripristino, penalità e 24 salti con fisica reale.
 - `node tools/test-race-immersion-r28-browser.mjs`: avvio WebGL, selettore, tre gare complete, superfici renderizzate delle rampe, pulizia e conservazione della gara 2.
-- Workflow `race-immersion-r28-preview.yml`: regressioni R27, sottopassi e strade R25; pubblicazione isolata con confronto byte per byte della produzione.
+- Workflow di produzione: controlli integrati, regressioni R27 e gare R28 in Chromium prima della pubblicazione; conservazione delle preview precedenti.
 
 La QA sul telefono dell'utente e la valutazione soggettiva del bilanciamento restano da fare nella preview.
