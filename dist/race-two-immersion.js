@@ -3,7 +3,7 @@ import {TangenzialeRace} from './tangenziale-race.js';
 import {configureSecond} from './tangenziale-race-second.js';
 import {VEHICLES} from './vehicles.js';
 import {RACE_ONE_DIFFICULTIES,raceOneDifficulty} from './tangenziale-race-difficulty.js';
-import {raceVehicleChoices,raceVehicleSpec,raceVehicleStats,raceVehicleProfile,RACE_PROFILES,chooseRaceRoster,safeRaceEventIndex,clearLegacyFeatures,crowds,bake} from './race-one-immersion.js';
+import {raceVehicleChoices,raceVehicleSpec,raceVehicleStats,raceVehicleProfile,RACE_PROFILES,chooseRaceRoster,safeRaceEventIndex,clearLegacyFeatures,crowds,bake,safeSpectatorSpot} from './race-one-immersion.js';
 import {openRaceGarage} from './race-garage.js';
 import {buildRaceCorridor,raceCorridorPosition,corridorSurface,corridorFinish} from './race-corridor.js';
 import {clamp} from './core.js';
@@ -34,7 +34,14 @@ function spot(manager,fraction,used,number,width=2.4,length=13){
  return null;
 }
 function zoneVisual(root,e,color){const g=group(root,e);for(let j=-e.length/2+1;j<e.length/2;j+=2)block(g,j%4<2?color:'#202b34',0,.035,j,e.width,.045,.7);for(const s of [-1,1])block(g,color,s*(e.width/2-.08),.055,0,.12,.05,e.length);}
-function sign(root,e){const g=group(root,{...e,x:e.x+Math.cos(e.yaw)*(e.side<0?-5.5:5.5),z:e.z-Math.sin(e.yaw)*(e.side<0?-5.5:5.5)});block(g,'#8797a1',0,1,0,.08,2,.08);block(g,e.label.includes('TRAPPOLA')?'#ef6948':e.kind==='sprint'?'#54e0e8':'#f7d257',0,2.1,0,.9,.65,.08);}
+function sign(root,e,manager){
+ const station=manager.race.corridor.stations[e.index],members=station.members,edges=[Math.min(...members.map(m=>m.side-m.road.w/2))-1.4,Math.max(...members.map(m=>m.side+m.road.w/2))+1.4];
+ edges.sort((a,b)=>Math.abs(a-e.side)-Math.abs(b-e.side));
+ for(const side of edges){const q=point(manager,e.index,side);q.baseY=manager.game.terrain.height(q.x,q.z,e.baseY);if(!safeSpectatorSpot(manager.game,q.x,q.z,q.baseY))continue;
+  const g=group(root,q);block(g,'#8797a1',0,1,0,.08,2,.08);block(g,e.label.includes('TRAPPOLA')?'#ef6948':e.kind==='sprint'?'#54e0e8':'#f7d257',0,2.1,0,.9,.65,.08);break;
+ }
+}
+
 export function configureAdvancedSecond(manager,mode='medium',seed=Date.now()){
  const r=manager.race,g=manager.game;if(!r?.__secondRace||r.advancedSecond)return false;
  r.advancedSecond=true;r.difficulty=raceOneDifficulty(mode);r.corridor=buildRaceCorridor(g,r);
@@ -46,7 +53,7 @@ export function configureAdvancedSecond(manager,mode='medium',seed=Date.now()){
   if(!e.trapRamp)e.boostPad={x:e.x-Math.sin(e.yaw)*10.5,z:e.z-Math.cos(e.yaw)*10.5,yaw:e.yaw,width:2.2,length:4.8,used:false};
   const v=group(root,e),plate=block(v,e.trapRamp?'#df6143':'#ce883e',0,e.rise/2,0,e.width,.14,Math.hypot(e.length,e.rise));plate.rotation.x=-Math.atan2(e.rise,e.length);
   for(const s of [-1,1]){const rail=block(v,e.trapRamp?'#ffe073':'#c4f5f3',s*(e.width/2-.08),e.rise/2+.10,0,.09,.12,Math.hypot(e.length,e.rise));rail.rotation.x=plate.rotation.x;}
-  r.ramps.push(e);g.terrain.arcadeRamps.push(e);events.push(e);sign(root,e);
+  r.ramps.push(e);g.terrain.arcadeRamps.push(e);events.push(e);sign(root,e,manager);
   if(e.trapRamp){const landing={...e,kind:'slow',label:'ATTERRAGGIO TRAPPOLA',x:e.x+Math.sin(e.yaw)*32,z:e.z+Math.cos(e.yaw)*32,width:3.2,length:26,progress:e.progress+32,trapLanding:true};landing.baseY=corridorSurface(g,r,r.samples[e.index+1],landing.x,landing.z,e.baseY);zoneVisual(root,landing,'#e57b48');events.push(landing);}
  }
  // Each chain crosses both roads. Three consecutive pads refresh a capped boost;
@@ -54,17 +61,17 @@ export function configureAdvancedSecond(manager,mode='medium',seed=Date.now()){
  for(let n=0;n<config.chains;n++){
   const target=r.total*(.16+.57*n/Math.max(1,config.chains-1)),indices=r.samples.map((_,i)=>i).filter(i=>safeRaceEventIndex(r,i)&&safeRaceEventIndex(r,i+2)&&!events.some(e=>e.kind==='sprint'&&Math.abs(e.progress-r.samples.cumulative[i])<84));
   indices.sort((a,b)=>Math.abs(r.samples.cumulative[a]-target)-Math.abs(r.samples.cumulative[b]-target));const i=indices[0];if(i===undefined)continue;
-  for(let j=0;j<3;j++)for(const member of r.corridor.stations[i+j].members){const e={...point(manager,i+j,member.side),kind:'sprint',label:'SPRINT '+(j+1)+'/3',chain:n,pad:j,width:member.road.w-.8,length:5,hits:new Set(),warned:false};zoneVisual(root,e,'#46d9de');events.push(e);if(j===0)sign(root,e);}
+  for(let j=0;j<3;j++)for(const member of r.corridor.stations[i+j].members){const e={...point(manager,i+j,member.side),kind:'sprint',label:'SPRINT '+(j+1)+'/3',chain:n,pad:j,width:member.road.w-.8,length:5,hits:new Set(),warned:false};zoneVisual(root,e,'#46d9de');events.push(e);if(j===0)sign(root,e,manager);}
  }
  for(let n=0;n<config.slow;n++){
   const e=spot(manager,.20+.55*n/Math.max(1,config.slow-1),used,n+1);if(!e)continue;
   // Long zones occupy half a carriageway; another lane remains an escape route.
-  Object.assign(e,{kind:'slow',label:'RALLENTATORE LUNGO · '+config.slowLength+' m',width:4.4,length:config.slowLength,warned:false});zoneVisual(root,e,'#e4be48');events.push(e);sign(root,e);
+  Object.assign(e,{kind:'slow',label:'RALLENTATORE LUNGO · '+config.slowLength+' m',width:4.4,length:config.slowLength,warned:false});zoneVisual(root,e,'#e4be48');events.push(e);sign(root,e,manager);
  }
  for(let n=0;n<config.parked;n++){
   const e=spot(manager,.12+.65*n/Math.max(1,config.parked-1),used,n+2,2.5,10);if(!e)continue;
   const c=g.addCar(e.x,e.z,e.yaw,false,true,['compact','wagon','officina','campo'][n%4]);Object.assign(c,{y:e.baseY,speed:0,parked:true,missionUnit:true,fixedSpawn:true,tangenzialeObstacle:true,budgetSleeping:false});g.pose(c);
-  Object.assign(e,{kind:'parked',label:'MEZZO FERMO',car:c,warned:false});r.obstacles.push(c);r.obstacleDefs.push({index:e.index,offset:e.side,style:c.style,label:e.label});events.push(e);sign(root,e);
+  Object.assign(e,{kind:'parked',label:'MEZZO FERMO',car:c,warned:false});r.obstacles.push(c);r.obstacleDefs.push({index:e.index,offset:e.side,style:c.style,label:e.label});events.push(e);sign(root,e,manager);
  }
  for(const member of r.corridor.stations[r.samples.length-2].members){const e={...point(manager,r.samples.length-2,member.side),baseY:member.y};const line=group(root,e);for(let j=0;j<Math.floor(member.road.w);j++)for(let k=0;k<2;k++)block(line,(j+k)%2?'#f2f5ec':'#192b35',j-(member.road.w-1)/2,.045,k-.5,1,.04,1);}
  const audience=crowds(root,g,r,config.crowds);bake(root);g.scene.add(root);r.roots.push(root);events.sort((a,b)=>a.progress-b.progress);
