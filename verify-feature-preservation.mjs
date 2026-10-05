@@ -31,10 +31,14 @@ assert.match(city,/cityMicromobilityBudget\(world\.quality\)/,'quality-scaled po
 assert.match(city,/cityMicromobilityRoadAllowed/,'road and district safety filtering must remain');
 
 // Existing functionality must survive later race/taxi/terrain modifications.
-for(const file of ['tangenziale-race.js','tangenziale-race-second.js','tangenziale-race-difficulty.js','online-race-v2.js','online-race-second-fix.js','hospital-rooftop-easter-egg.js','taxi-loading-guard.js'])
+for(const file of ['tangenziale-race.js','tangenziale-race-second.js','tangenziale-race-difficulty.js','hospital-rooftop-easter-egg.js','taxi-loading-guard.js'])
   assert(gameplay.includes(`import './${file}';`),`missing gameplay import: ${file}`);
+for(const file of ['online-race-v2.js','online-race-second-fix.js']){
+  assert(!gameplay.includes(`import './${file}';`),'traditional game must not load online hooks');
+  assert(source('./dist/'+file).length>0,'archived online implementation remains available to its standalone regression');
+}
 assert(runtime.includes("import './gameplay-upgrades.js';"),'gameplay upgrades must be loaded');
 assert(!/^import\s+['"]\.\/road-reality-(?:pass|audit)\.js['"]/m.test(runtime),'disabled height monkey-patches must not be re-enabled without geometry validation');
 
-console.log('PASS: Portello plus citywide micromobility, both races, online modules, taxi guard and safe geometry wiring retained.');
+console.log('PASS: Portello plus citywide micromobility, both local races, solo entry, taxi guard and safe geometry wiring retained.');
 console.log('Structural regression checks do not replace actual WebGL, two-device or full elevation tests.');

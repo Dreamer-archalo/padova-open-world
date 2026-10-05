@@ -30,6 +30,28 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '22'
+      - name: Recover regional map for the definitive game
+        shell: bash
+        run: |
+          set -euo pipefail
+          for name in venice.json region-padova-venice.json world-padova-venice.json world-terrain.json map-hd-extras.json; do
+            found=false
+            for label in solo-cars-r26 road-fixes-r25 taxi-r22 road-levels-r21 padova-npc-r17 dealerships unified; do
+              url="https://dreamer-archalo.github.io/padova-open-world/preview/$label/data/$name"
+              if curl --fail --silent --show-error --location --max-time 45 "$url" -o "dist/data/$name"; then
+                echo "Recovered $name from $label"
+                found=true
+                break
+              fi
+            done
+            if test "$found" != true && test "$name" != map-hd-extras.json; then
+              echo "Missing required regional file: $name" >&2
+              exit 1
+            fi
+          done
+          for name in venice.json region-padova-venice.json world-padova-venice.json world-terrain.json; do
+            test -s "dist/data/$name"
+          done
       - name: Validate production runtime
         run: |
           test -f dist/index.html
@@ -68,28 +90,6 @@ jobs:
           node verify-city-micromobility.mjs
           node verify-feature-preservation.mjs
           node tools/verify-mandria-v11-roads.mjs
-      - name: Recover regional map for the definitive game
-        shell: bash
-        run: |
-          set -euo pipefail
-          for name in venice.json region-padova-venice.json world-padova-venice.json world-terrain.json map-hd-extras.json; do
-            found=false
-            for label in taxi-r22 road-levels-r21 padova-npc-r17 dealerships unified; do
-              url="https://dreamer-archalo.github.io/padova-open-world/preview/$label/data/$name"
-              if curl --fail --silent --show-error --location --max-time 45 "$url" -o "dist/data/$name"; then
-                echo "Recovered $name from $label"
-                found=true
-                break
-              fi
-            done
-            if test "$found" != true && test "$name" != map-hd-extras.json; then
-              echo "Missing required regional file: $name" >&2
-              exit 1
-            fi
-          done
-          for name in venice.json region-padova-venice.json world-padova-venice.json world-terrain.json; do
-            test -s "dist/data/$name"
-          done
       - name: Full elevation audit — mandatory continuous street geometry
         run: npm run test:geometry-integrity
       - name: Checkout historic PR 51 playtest separately
@@ -164,6 +164,25 @@ jobs:
           cp -a "${RUNNER_TEMP}/pr56-current/dist/." dist/preview/pr-56/
           cmp dist/game.js dist/preview/pr-56/game.js
           cmp dist/street-height-field.js dist/preview/pr-56/street-height-field.js
+      - name: Preserve validated regional previews
+        shell: bash
+        run: |
+          set -euo pipefail
+          for item in 'solo-cars-r26 08872df934e5118b3efa7b69811de9aa3843925c' 'road-fixes-r25 7ad45f1332c3b95a79518336ddd9a9929d56857d' 'road-stunts-r23 1a053682b054087a4d36638c459b6afc5295f92d' 'taxi-r22 fix/taxi-confirm-map-r22' 'road-levels-r21 feat/padova-road-levels-r21' 'padova-npc-r17 feat/padova-intelligent-npc-r17' 'dealerships feat/dealerships-urban-showrooms' 'unified fix/regional-taxi-20260928' 'continuous feat/padova-venice-continuous-20260925' 'venice feat/venice-world-20260924' 'pr-57 feat/monoblocco-elevators-20260924'; do
+            read -r label ref <<< "$item"
+            git fetch --no-tags --depth=1 origin "$ref"
+            source="${RUNNER_TEMP}/retained-$label"
+            mkdir -p "$source" "dist/preview/$label"
+            git archive FETCH_HEAD dist | tar -x -C "$source"
+            cp -a "$source/dist/." "dist/preview/$label/"
+            for name in venice.json region-padova-venice.json world-padova-venice.json world-terrain.json; do
+              cp "dist/data/$name" "dist/preview/$label/data/$name"
+            done
+            if test -s dist/data/map-hd-extras.json; then
+              cp dist/data/map-hd-extras.json "dist/preview/$label/data/"
+            fi
+          done
+          git diff --exit-code -- dist/index.html dist/game.js
       - name: Configure GitHub Pages
         uses: actions/configure-pages@v5
       - name: Upload definitive game plus historic previews
