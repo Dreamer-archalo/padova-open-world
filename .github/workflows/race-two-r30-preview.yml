@@ -64,6 +64,8 @@ jobs:
           node verify-elevation-harmony.mjs
           node verify-geometry-integrity.mjs
           node verify-collector-cars-r26.mjs
+      - name: Check long-vehicle checkpoint recovery
+        run: node tools/verify-race-two-deadlock-r30.mjs
       - name: Install Chromium for road mesh verification
         run: |
           npm install --no-save playwright@1.55.1

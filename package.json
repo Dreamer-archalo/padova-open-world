@@ -43,6 +43,6 @@
     "test:city-continuity": "node verify-city-continuity.mjs && node verify-roadside-harmony.mjs && node verify-road-support.mjs && node verify-junction-fans.mjs && node verify-pedestrian-layering.mjs",
     "test:earth-access": "node --max-old-space-size=3072 tools/verify-earth-access.mjs",
     "test:race-immersion": "node --check dist/race-one-immersion.js && node tools/verify-race-immersion-r28.mjs && node tools/verify-race-driving-r29.mjs && node tools/verify-race-merit-r29.mjs",
-    "test:race-two": "node --check dist/race-corridor.js && node --check dist/race-two-immersion.js && node tools/verify-race-two-r30.mjs && node tools/verify-race-two-driving-r30.mjs"
+    "test:race-two": "node --check dist/race-corridor.js && node --check dist/race-two-immersion.js && node tools/verify-race-two-r30.mjs && node tools/verify-race-two-driving-r30.mjs && node tools/verify-race-two-deadlock-r30.mjs"
   }
 }

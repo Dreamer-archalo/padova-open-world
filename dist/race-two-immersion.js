@@ -113,6 +113,12 @@ TangenzialeRace.prototype.start=function(options={}){
  this.selectedSecondRaceVehicle=player;this.previousSecondRoster=roster;g.claim(r.playerCar);g.state.car=r.playerCar;
  configureAdvancedSecond(this,mode,options.seed);this.freezeGrid();g.toast('GARA 2 · '+RACE_ONE_DIFFICULTIES[mode].name+' · '+r.playerCar.name+' · entrambe le carreggiate valide',4);
 };
+const priorKey=TangenzialeRace.prototype.keyDown;
+TangenzialeRace.prototype.keyDown=function(e){
+ const r=this.race;if(!r?.advancedSecond||e.code!=='KeyR')return priorKey.call(this,e);
+ e.preventDefault();e.stopImmediatePropagation();if(e.repeat||r.phase!=='running'||r.playerFinished)return;
+ this.respawnActor(r.playerCar,r.playerCheckpoint,-1.2);this.game.toast('RECUPERO · checkpoint valido, danni conservati',2);
+};
 const priorPlayer=TangenzialeRace.prototype.updatePlayer;
 TangenzialeRace.prototype.updatePlayer=function(){
  const r=this.race,g=this.game,s=g.state;if(!r?.advancedSecond)return priorPlayer.call(this);

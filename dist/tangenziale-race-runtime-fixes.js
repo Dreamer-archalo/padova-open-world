@@ -232,9 +232,24 @@ function updateSmartAI(dt){
   moveRaceAI(this,c,dt,i+1,p,laneInfo);
   const after=r.corridor?raceCorridorPosition(g,r,c,c.raceHint??p.index):nearestSample2D(c,r.samples,c.raceHint??p.index);
   c.raceHint=after.index;c.raceProgress=Math.max(c.raceProgress||0,after.progress??progressAt(r,after.index));
-  if((r.corridor?!after.valid:after.d>AI_OFFROAD_LIMIT)||(c.stuck||0)>3.2){
-   const cp=respawnCheckpoint(r.startIndex||0,c.raceCheckpoint??r.startIndex??0,r.samples.length);
-   this.respawnActor(c,cp,c.raceLane??c.raceOffset??0);c.raceLane=c.raceOffset??0;
+  if(r.advancedSecond){
+   if(after.progress>(c.raceForwardWatermark??0)+.6){c.raceForwardWatermark=after.progress;c.raceStallTime=0;}else c.raceStallTime=(c.raceStallTime||0)+dt;
+  }
+  const stalled=r.advancedSecond&&(c.raceStallTime||0)>6;
+  if((r.corridor?!after.valid:after.d>AI_OFFROAD_LIMIT)||(c.stuck||0)>3.2||stalled){
+   let cp=respawnCheckpoint(r.startIndex||0,c.raceCheckpoint??r.startIndex??0,r.samples.length),side=c.raceLane??c.raceOffset??0;
+   // Reversing back and forth is movement, but cannot be an endless deadlock.
+   // Find a clear pose at this checkpoint or behind it; never skip ahead.
+   if(r.advancedSecond){
+    cp=Math.min(cp,c.raceHint??cp);
+    let found=false;
+    for(let back=0;back<=6&&!found;back++){
+     const index=Math.max(r.startIndex||0,cp-back),point=r.samples[index],yaw=yawAt(r.samples,index),members=r.corridor.stations[index].members;
+     for(const lane of [0,...members.slice(1).map(m=>m.side),-2.2,2.2]){const q=lateral(point,yaw,lane),y=corridorSurface(g,r,point,q.x,q.z,point.y);if(vehicleBlocked(q.x,q.z,yaw,g.collision,c.spec,y))continue;cp=index;side=lane;found=true;break;}
+    }
+   }
+   this.respawnActor(c,cp,side);c.raceLane=r.advancedSecond?side:c.raceOffset??0;
+   if(r.advancedSecond){c.raceTargetLane=side;c.raceStallTime=0;c.raceForwardWatermark=progressAt(r,cp);c.raceReverseUntil=0;c.raceNextReverse=0;}
   }
  }
 }
