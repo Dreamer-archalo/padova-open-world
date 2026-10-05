@@ -38,7 +38,13 @@ export function findGradeCrossings(roads,{cell=90,minimumAngle=.23}={}){
    if(aExplicit&&bExplicit&&Number(a.layer)===Number(b.layer))continue;
    let upper,lower;if(aExplicit!==bExplicit){upper=aExplicit?a:b;lower=aExplicit?b:a;}
    else if(rank(a)!==rank(b)){upper=rank(a)>rank(b)?a:b;lower=upper===a?b:a;}
-   else continue;
+   // The compact Padova extract omits the A4 deck tags at Corso Irlanda.
+   // These four non-junction crossings have the motorway above the ring road.
+   // Equal expressway rank elsewhere is ambiguous and stays uninferred.
+   else if([a,b].some(r=>r.k==='motorway'&&r.n==='Autostrada Serenissima')&&
+           [a,b].some(r=>r.k==='trunk'&&r.n==='Corso Irlanda')){
+    upper=a.k==='motorway'?a:b;lower=upper===a?b:a;
+   }else continue;
    // Without an overpass tag or named bridge, two expressway slip roads may
    // merge in the same plane. Their crossing alone does not establish a deck.
    if(!explicit(upper)&&express(lower.k)&&express(upper.k)&&
@@ -60,7 +66,15 @@ export function extendGradeApproaches(roads,crossings,reach=130){
  for(const r of roads)if(r.p?.length>1)for(const p of [r.p[0],r.p.at(-1)]){
   const k=key(p);if(!ends.has(k))ends.set(k,[]);ends.get(k).push(r);
  }
- for(const c of crossings){if(express(c.upper.k))continue;c.upper.gradeSeparated=true;
+ for(const c of crossings){if(express(c.upper.k)){
+   if(c.upper.n==='Cavalcavia Charles Darwin')c.upper.gradeSeparated=true;
+   if(c.upper.n==='Autostrada Serenissima'&&c.lower.n==='Corso Irlanda'){
+    // This way is kilometres long; only the inferred crossing span is a deck.
+    // Keep its ground-level shoulder openings and existing stunt sites intact.
+    c.upper.localGradeDeck=true;
+   }
+   continue;
+  }c.upper.gradeSeparated=true;
   for(const start of [0,1]){
    const r=c.upper,side=start,remaining=reach-Math.hypot(r.p[side?r.p.length-1:0][0]-c.x,r.p[side?r.p.length-1:0][1]-c.z);
    const queue=[{r,side,remaining}],seen=new Set([r]);

@@ -125,7 +125,11 @@ export class CityWorld{
    for(let x=ch.i*CHUNK;x<(ch.i+1)*CHUNK;x+=16){for(let z=ch.j*CHUNK;z<(ch.j+1)*CHUNK;z+=16){tile(x,z,16);yield;}}
    const mesh=ground.mesh(this.groundMat);mesh.receiveShadow=true;g.add(mesh);
   }
-  for(const a of ch.areas)surface(terrain?.modern&&a.k!=='water'?surfaceBatch(surfaces,terrain,{height:(x,z)=>height(x,z)-.02}):surfaces,a.p,a.k==='water'&&!a.fountain?water:(x,z)=>height(x,z)-.02,col(a.k==='water'?'#639b9c':a.k==='pitch'?'#7d9e72':'#789961'));
+  // Land-use polygons follow the ground, not the closest driving support.
+  // Asking height() here can put a park/field on top of an overpass and hide
+  // the carriageway even when the base terrain mesh is correctly carved.
+  const areaHeight=terrain?.modern?(x,z)=>groundHeight(x,z)-.08:(x,z)=>height(x,z)-.02;
+  for(const a of ch.areas)surface(terrain?.modern&&a.k!=='water'?surfaceBatch(surfaces,terrain,{height:areaHeight}):surfaces,a.p,a.k==='water'&&!a.fountain?water:areaHeight,col(a.k==='water'?'#639b9c':a.k==='pitch'?'#7d9e72':'#789961'));
   for(const r of ch.water)strip(surfaces,r.a,r.b,r.w,water,col('#659b9e'));
   if(terrain?.modern){const roads=new GeometryBatch();yield* modernRoadSteps(roads,ch.roads,terrain,{coarse:true});const mesh=roads.mesh(this.groundMat);if(mesh){mesh.userData.streamRoads=true;g.add(mesh);}}else {
   const roadJoins=new Set();for(const s of ch.roads){const k=s.road.k,ped=['pedestrian','footway','path','cycleway','steps'].includes(k),mx=(s.a[0]+s.b[0])/2,mz=(s.a[1]+s.b[1])/2,central=Math.hypot(mx*.82,mz)<1550,bridge=s.road.crossing,edge=bridge?'#c2b49a':ped&&central?'#d0c2a4':'#c3bca8',road=ped?(central?'#bdae91':'#b7b09a'):(central?'#696d69':'#6c7472');

@@ -1,4 +1,4 @@
-name: Motorway joins and stunt ramps R23 preview
+name: Northeast road corrections R25 preview
 
 on:
   push:
@@ -52,6 +52,7 @@ jobs:
           npm run test:taxi-r22
           npm run test:road-stunts-r23
           npm run test:underpass-clearance
+          node verify-northeast-roads-r25.mjs
           npm run test:jumps
           npm run test:interchanges
           npm run test:geometry-integrity
@@ -72,6 +73,24 @@ jobs:
           npm run test:venice-performance
           npm run test:initial-world
           npm run test:phase3-city
+      - name: Install Chromium for road mesh verification
+        run: |
+          npm install --no-save playwright@1.55.1
+          npx playwright install --with-deps chromium
+      - name: Verify R25 road meshes in real WebGL
+        run: node tools/test-northeast-roads-r25-browser.mjs
+      - name: Retain road geometry screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: northeast-roads-r25-webgl
+          path: test-artifacts/r25
+          if-no-files-found: ignore
+      - uses: actions/checkout@v6
+        with:
+          ref: 1a053682b054087a4d36638c459b6afc5295f92d
+          path: .prior-road-stunts
+          persist-credentials: false
       - uses: actions/checkout@v6
         with:
           ref: fix/taxi-confirm-map-r22
@@ -142,7 +161,7 @@ jobs:
         run: |
           set -euo pipefail
           sha256sum .production-source/dist/index.html .production-source/dist/game.js > /tmp/production-root.sha
-          for item in 'road-stunts-r23 .' 'taxi-r22 .prior-taxi-r22' 'road-levels-r21 .prior-road-levels' 'padova-npc-r17 .prior-padova-r17' 'dealerships .prior-dealerships' 'unified .prior-unified' 'continuous .prior-continuous' 'venice .prior-venice' 'pr-57 .pr57' 'pr-56 .pr56' 'pr-51 .pr51' 'pr-52 .pr52' 'mandria-v11 .mandria-v11'; do
+          for item in 'road-fixes-r25 .' 'road-stunts-r23 .prior-road-stunts' 'taxi-r22 .prior-taxi-r22' 'road-levels-r21 .prior-road-levels' 'padova-npc-r17 .prior-padova-r17' 'dealerships .prior-dealerships' 'unified .prior-unified' 'continuous .prior-continuous' 'venice .prior-venice' 'pr-57 .pr57' 'pr-56 .pr56' 'pr-51 .pr51' 'pr-52 .pr52' 'mandria-v11 .mandria-v11'; do
             read -r label source <<< "$item"
             mkdir -p ".production-source/dist/preview/$label"
             cp -a "$source/dist/." ".production-source/dist/preview/$label/"
@@ -152,13 +171,13 @@ jobs:
           done
           cp dist/data/region-padova-venice.json .production-source/dist/preview/unified/data/
           cp dist/data/region-padova-venice.json dist/data/world-terrain.json .production-source/dist/preview/padova-npc-r17/data/
-          for label in taxi-r22 road-levels-r21; do
+          for label in taxi-r22 road-levels-r21 road-stunts-r23; do
             for name in venice.json region-padova-venice.json world-padova-venice.json world-terrain.json; do
               cp "dist/data/$name" ".production-source/dist/preview/$label/data/$name"
             done
           done
           if test -s dist/data/map-hd-extras.json; then
-            for label in taxi-r22 road-levels-r21; do
+            for label in taxi-r22 road-levels-r21 road-stunts-r23; do
               cp dist/data/map-hd-extras.json ".production-source/dist/preview/$label/data/"
             done
           fi
@@ -169,35 +188,37 @@ jobs:
             cp dist/data/map-hd-extras.json .production-source/dist/data/
           fi
           touch .production-source/dist/.nojekyll
-          test -s .production-source/dist/preview/road-stunts-r23/data/region-padova-venice.json
-          grep -q 'game.js?v=road-stunts-r23' .production-source/dist/preview/road-stunts-r23/index.html
+          test -s .production-source/dist/preview/road-fixes-r25/data/region-padova-venice.json
+          grep -q 'game.js?v=road-fixes-r25' .production-source/dist/preview/road-fixes-r25/index.html
           sha256sum -c /tmp/production-root.sha
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v4
         with:
           path: .production-source/dist
       - uses: actions/deploy-pages@v4
-      - name: Verify the public R23 preview
+      - name: Verify the public R25 preview
         run: |
           set -euo pipefail
-          base='https://dreamer-archalo.github.io/padova-open-world/preview/road-stunts-r23'
+          base='https://dreamer-archalo.github.io/padova-open-world/preview/road-fixes-r25'
           for attempt in 1 2 3 4 5; do
             if curl --fail --silent --show-error --location "$base/index.html" -o /tmp/road-stunts-r23-preview.html &&
                curl --fail --silent --show-error --location "$base/game.js" -o /tmp/road-stunts-r23-game.js &&
                curl --fail --silent --show-error --location "$base/taxi-map-ui.js" -o /tmp/road-stunts-r23-map-ui.js &&
                curl --fail --silent --show-error --location "$base/unified-map.js" -o /tmp/road-stunts-r23-unified-map.js &&
-               grep -q 'game.js?v=road-stunts-r23' /tmp/road-stunts-r23-preview.html &&
+               grep -q 'game.js?v=road-fixes-r25' /tmp/road-stunts-r23-preview.html &&
                grep -q 'mapWheelZoomFactor' /tmp/road-stunts-r23-game.js &&
                grep -q 'capture listener here used to disable' /tmp/road-stunts-r23-map-ui.js &&
                grep -q 'mapWheelZoomFactor' /tmp/road-stunts-r23-unified-map.js &&
                curl --fail --silent --show-error --location "$base/road-surfaces.js" -o /tmp/road-stunts-r23-roads.js &&
                curl --fail --silent --show-error --location "$base/arcade-ramps.js" -o /tmp/road-stunts-r23-ramps.js &&
                grep -q 'harmonizeMergeLanes' /tmp/road-stunts-r23-roads.js &&
-               grep -q 'jump-gate-sign' /tmp/road-stunts-r23-ramps.js; then
+               grep -q 'jump-gate-sign' /tmp/road-stunts-r23-ramps.js &&
+               curl --fail --silent --show-error --location "$base/road-grade-crossings.js" -o /tmp/r25-crossings.js &&
+               grep -q 'localGradeDeck' /tmp/r25-crossings.js; then
               exit 0
             fi
             sleep 5
           done
           exit 1
       - name: Playtest link
-        run: echo 'https://dreamer-archalo.github.io/padova-open-world/preview/road-stunts-r23/'
+        run: echo 'https://dreamer-archalo.github.io/padova-open-world/preview/road-fixes-r25/'

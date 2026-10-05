@@ -26,7 +26,7 @@ export function roadStructures(terrain){const boxes=[],portals=new Set();
    add(px,pz,lowerY-.05,pierW,pierH+.05,depth,lowerYaw,'underpass-pier',upperRoad,{color:'#8f918b'});
   }
  };
- for(const profile of terrain.roads.profiles.values()){const road=profile.road;if(!(road.crossing||road.b||Number(road.layer)>0)||road.k==='tram')continue;let run=0;
+ for(const profile of terrain.roads.profiles.values()){const road=profile.road;if(!(road.crossing||road.localGradeDeck||road.b||Number(road.layer)>0)||road.k==='tram')continue;let run=0;
   for(let i=1;i<profile.points.length;i++){
    const from=profile.points[i-1],to=profile.points[i],dx=to[0]-from[0],dz=to[1]-from[1],total=Math.hypot(dx,dz);
    // A steep OSM stairway can change height by metres across a six-metre road
@@ -35,7 +35,9 @@ export function roadStructures(terrain){const boxes=[],portals=new Set();
    const pieces=terrain.modern&&road.k==='steps'?Math.max(1,Math.ceil(total)):1;
    for(let part=0;part<pieces;part++){
     const a=[from[0]+dx*part/pieces,from[1]+dz*part/pieces],b=[from[0]+dx*(part+1)/pieces,from[1]+dz*(part+1)/pieces],x=(a[0]+b[0])/2,z=(a[1]+b[1])/2;
-    if(terrain.prato(x,z))continue;const h=terrain.roads.sample(road,x,z),base=terrain.elevation(x,z),len=Math.hypot(b[0]-a[0],b[1]-a[1]);if(h-base<.7&&!profile.wet[i]&&!profile.wet[i-1]&&!road.b&&Number(road.layer)<=0)continue;
+    if(terrain.prato(x,z))continue;
+    if(road.localGradeDeck&&!road.crossing&&!terrain.roads.gradeCrossings.some(c=>c.upper===road&&Math.hypot(c.x-x,c.z-z)<160))continue;
+    const h=terrain.roads.sample(road,x,z),base=terrain.elevation(x,z),len=Math.hypot(b[0]-a[0],b[1]-a[1]);if(h-base<.7&&!profile.wet[i]&&!profile.wet[i-1]&&!road.b&&(Number(road.layer)||0)<=0)continue;
     const yaw=Math.atan2(b[0]-a[0],b[1]-a[1]),edge=road.w/2+(terrain.modern?(/motorway|trunk/.test(road.k)?1.5:1.05):.7);
     for(const side of [-1,1]){const px=x+Math.cos(yaw)*edge*side,pz=z-Math.sin(yaw)*edge*side;
      // Suppress barriers at junctions and do not plant a pier on another road.

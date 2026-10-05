@@ -75,7 +75,12 @@ export function surfaceBatch(batch,terrain,{pedestrian=false,exclude=null,height
         // surface street, but they must stay visibly below its asphalt. Without
         // this clamp a height callback could pick the road support itself and put
         // grass only millimetres below (or above) the carriageway at slip roads.
-        if(height&&!pedestrian&&!exclude&&terrain?.roads){const support=terrain.roads.at(p[0],p[1],null,1.25),road=support?.road;if(support&&isCarriageway(road)&&!independentLevel(road)&&support.d<=road.w/2+1.0)value=Math.min(value,support.height-.18);}
+        if(height&&!pedestrian&&!exclude&&terrain?.roads){const support=terrain.roads.at(p[0],p[1],null,1.25),road=support?.road;if(support&&isCarriageway(road)&&!road.tunnel&&support.d<=road.w/2+1.0){
+          value=Math.min(value,support.height-.18);
+          // Area height callbacks can select the bridge itself as support.
+          // Grass belongs to the ground underneath, not to its asphalt deck.
+          if(independentLevel(road)&&terrain.groundHeight)value=Math.min(value,terrain.groundHeight(p[0],p[1])-.08);
+        }}
         return value;
       };
       const expected=Math.sign(signedArea2(poly))||1;
