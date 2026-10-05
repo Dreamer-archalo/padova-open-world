@@ -35,5 +35,5 @@ for(const expected of [
  'Number.isFinite(meta.quotedFare)?meta.quotedFare',
  "if(regionalPlayer()){"
 ])assert(game.includes(expected),`regional taxi runtime missing: ${expected}`);
-assert(/<script[^>]*type="module"[^>]*src="(?:\./)?game\.js\?v=[a-z0-9-]+"/.test(html),'versioned regional taxi game entry missing');
+assert(/<script[^>]*type="module"[^>]*src="(?:\.[/])?game\.js\?v=[a-z0-9-]+"/.test(html),'versioned regional taxi game entry missing');
 console.log('PASS regional taxi: Padova, Dolo, Riviera, Marghera, Mestre and Venice fares/destinations are wired');
