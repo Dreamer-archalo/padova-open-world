@@ -27,9 +27,9 @@ try{
  assert(report.poplars>=1,'poplars must be planted inside the gate');
  assert(report.horses>=1&&report.apes>=1&&report.registered,'mounted and three-wheel private patrols must exist as game actors');
  phase='visible contextual hangar prompt';
- const prompt=await page.evaluate(()=>{const b=document.getElementById('mandriaHangarButton');return {visible:b&&!b.hidden,html:b?.innerHTML,top:b?getComputedStyle(b).top:null};});
+ const prompt=await page.evaluate(()=>{const b=document.getElementById('mandriaHangarButton');return {visible:b&&!b.hidden,html:b?.innerHTML,parent:b?.parentElement?.id,layout:document.body.dataset.ui};});
  console.log('HANGAR_PROMPT '+JSON.stringify(prompt));
- assert(prompt.visible&&prompt.html.includes('PREMI H')&&prompt.top!=='auto','hangar prompt should be large and raised above the bottom HUD');
+ assert(prompt.visible&&prompt.layout==='compact'&&prompt.html==='Hangar'&&prompt.parent==='hudActions','hangar remains accessible in the approved compact action bar');
  await page.screenshot({path:'test-artifacts/mandria-v3-gate.png',timeout:25000});
  phase='speech above NPC';
  await page.evaluate(()=>{const g=globalThis.__mandriaV3,p=g.villaLife.people.find(p=>p.role==='servant');g.state.mode='foot';g.state.car=null;g.state.x=p.obj.position.x;g.state.z=p.obj.position.z;g.state.y=g.terrain.height(g.state.x,g.state.z);p.helloAt=-100;g.villaLife.lastHello=-100;});
@@ -52,6 +52,6 @@ try{
  assert(speed.max>=13&&speed.speed>0,'mounted horse must respond to the standard forward input');
  await page.screenshot({path:'test-artifacts/mandria-v3-riding.png',timeout:25000});
  assert.equal(errors.length,0,'Unhandled browser errors: '+errors.join(' | '));
- console.log('PASS Mandria v3: open entrance, houses, rows of poplars, mounted/Ape patrols, raised H, NPC speech and rideable horse');
+ console.log('PASS Mandria v3: open entrance, houses, rows of poplars, mounted/Ape patrols, compact hangar action, NPC speech and rideable horse');
 }catch(error){console.error('MANDRIA_V3_FAIL '+phase+' '+(error.stack||error));console.error('JS_ERRORS '+JSON.stringify(errors.slice(-12)));try{await page.screenshot({path:'test-artifacts/mandria-v3-failure.png',timeout:15000});}catch{}process.exitCode=1;}
 finally{await browser.close();}
