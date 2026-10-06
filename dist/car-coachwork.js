@@ -68,7 +68,7 @@ function mesh(g,geo,kind,color,x,y,z,sx=1,sy=1,sz=1){const m=new THREE.Mesh(geo,
 function box(g,kind,c,x,y,z,w,h,d){return mesh(g,cube,kind,c,x,y,z,w,h,d);}
 function polygon(g,kind,c,vertices){const a=[];for(let i=1;i<vertices.length-1;i++)a.push(...vertices[0],...vertices[i],...vertices[i+1]);const geo=new THREE.BufferGeometry();geo.setAttribute('position',new THREE.Float32BufferAttribute(a,3));geo.setAttribute('uv',new THREE.Float32BufferAttribute(a.flatMap((_,i)=>i%3===0?[a[i],a[i+2]]:[]),2));geo.computeVertexNormals();geo.userData.coachTransient=true;const o=mesh(g,geo,kind,c,0,0,0);return o;}
 function insetFace(g,kind,c,points,factor=.87){const center=points.reduce((v,p)=>v.map((n,i)=>n+p[i]/points.length),[0,0,0]);polygon(g,kind,c,points.map(p=>p.map((v,i)=>center[i]+(v-center[i])*factor)));}
-const mix=(a,b,t)=>a+(b-a)*t;
+function mix(a,b,t){return a+(b-a)*t;}
 function sample(points,t){let i=1;while(i<points.length-1&&t>points[i][0])i++;const a=points[i-1],b=points[i],u=Math.max(0,Math.min(1,(t-a[0])/(b[0]-a[0])));return mix(a[1],b[1],u);}
 function radius(s){return ['suv','pickup'].includes(s.family)?.37:['van','mpv'].includes(s.family)?.35:['sport','supercar','convertible'].includes(s.family)?.29:.31;}
 function bodyGeometry(type,s,p){
