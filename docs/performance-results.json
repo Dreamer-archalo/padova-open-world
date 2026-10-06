@@ -36,32 +36,32 @@
     "medium": {
       "people": 80,
       "traffic": 64,
-      "actorCalls": 250,
-      "calls": 991,
-      "triangles": 458875
+      "actorCalls": 284,
+      "calls": 1025,
+      "triangles": 462569
     },
     "hyper": {
       "people": 24,
       "traffic": 24,
-      "actorCalls": 86,
-      "calls": 811,
-      "triangles": 219821
+      "actorCalls": 82,
+      "calls": 807,
+      "triangles": 215123
     },
     "low": {
       "people": 40,
       "traffic": 42,
-      "actorCalls": 145,
-      "calls": 878,
-      "triangles": 289359
+      "actorCalls": 141,
+      "calls": 874,
+      "triangles": 287141
     }
   },
   "adaptivePixelRatioFloor": 0.45,
-  "updatePeople120TicksMs": 8.772138000000268,
-  "updateTraffic120TicksMs": 496.3994160000002,
-  "updateCamera120TicksMs": 22.58353200000056,
+  "updatePeople120TicksMs": 20.23674900000333,
+  "updateTraffic120TicksMs": 934.9226520000011,
+  "updateCamera120TicksMs": 53.16005199999927,
   "chunkStreaming": {
     "yieldPoints": 586,
-    "maxSliceMs": 0.9209569999984524
+    "maxSliceMs": 26.422983000004024
   },
   "browser": {
     "threeD": "not performed in this run",

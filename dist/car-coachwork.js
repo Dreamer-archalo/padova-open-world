@@ -78,7 +78,7 @@ function mix(a,b,t){return a+(b-a)*t;}
 function sample(points,t){let i=1;while(i<points.length-1&&t>points[i][0])i++;const a=points[i-1],b=points[i],u=Math.max(0,Math.min(1,(t-a[0])/(b[0]-a[0])));return mix(a[1],b[1],u);}
 function radius(s){return ['suv','pickup'].includes(s.family)?.37:['van','mpv'].includes(s.family)?.35:['sport','supercar','convertible'].includes(s.family)?.29:.31;}
 function bodyGeometry(type,s,p){
- const key='body/'+type;if(geometryCache.has(key))return geometryCache.get(key);
+ const key='body/'+type+'/'+[s.width,s.length,s.height,s.wheelbase,s.family].join('/');if(geometryCache.has(key))return geometryCache.get(key);
  const w=s.width,l=s.length,r=radius(s),belt=p[4],nose=p[5],round=p[7];
  const curved=p[7]>=.075,outline=curved?[[-.5,.65],[-.47,.84],[-.37,.96],[-.20,1],[.15,.99],[.32,.96],[.44,.87],[.5,.67]]:[[-.5,.77],[-.44,.94],[-.30,1],[-.07,.99],[.23,.98],[.39,.94],[.5,.75]],tops=[[-.5,belt-.14],[-.43,belt-.045],[-.20,belt+.025],[.15,belt+.02],[.32,belt-.025],[.46,nose+.035],[.5,nose-.055]];
  const ts=new Set(Array.from({length:25},(_,i)=>i/24-.5));

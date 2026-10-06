@@ -9,12 +9,13 @@ import {DEALER_CATALOG,createDealerVehicle,dealerQuote,Dealerships,dealerDisplay
 import {dealerBuildSpec,dealerCapabilities} from '../dist/dealer-customization.js';
 import {COLLECTOR_CARS} from '../dist/collector-cars.js';
 import {TRAFFIC_VEHICLES} from '../dist/modern-vehicles.js';
-import {compactCoachwork,coachworkLOD} from '../dist/car-coachwork.js';
+import {compactCoachwork,coachworkLOD,createCoachwork} from '../dist/car-coachwork.js';
 import {paintHangarVehicle} from '../dist/villa-mandria-hangar.js';
 import {hangarPreviewModel} from '../dist/villa-mandria-catalog-ui.js';
 import {polygonsOverlap} from '../dist/movement.js';
 import {pointInside} from '../dist/core.js';
 const report={models:[],shops:[],options:{},purchase:{}};
+for(const spec of [VEHICLES.taxi,VEHICLES.sedan,VEHICLES.taxi]){const body=createCoachwork('legacy-sedan',{...spec,family:'sedan'}).children[0];body.geometry.computeBoundingBox();assert(Math.abs(body.geometry.boundingBox.max.z-body.geometry.boundingBox.min.z-spec.length)<1e-5,'cached sedan shell preserves taxi/police dimensions regardless of build order');}
 const hash=g=>{const h=createHash('sha256');g.traverse(o=>{if(o.isMesh)h.update(Buffer.from(o.geometry.attributes.position.array.buffer));});return h.digest('hex');};
 for(const id of ROAD_FLEET_IDS){
  const spec=VEHICLES[id],root=SPECIAL_VEHICLES[id]?createSpecialVehicle(id):createVehicle(id),size=new THREE.Box3().setFromObject(root).getSize(new THREE.Vector3());
@@ -31,7 +32,11 @@ const bikeIds=['motorcycle','scooter','naked','supersport','touring','cruiser','
 // A pane can exist in the mesh while facing inward or being hidden by the cab.
 // Probe the rendered outside surfaces, rather than only counting glass vertices.
 for(const id of ['truck','cisterna','ape']){const s=VEHICLES[id],root=id==='truck'||id==='ape'?createVehicle(id):createSpecialVehicle(id),y=id==='ape'?1.39:s.height*.87*.71,z=id==='ape'?.45:s.length*.5-1.25,ray=new THREE.Raycaster(new THREE.Vector3(s.width+1,y,z),new THREE.Vector3(-1,0,0));root.updateMatrixWorld(true);assert.equal(ray.intersectObject(root,true)[0]?.object.material.userData.coachBucket,'glass',id+' side glass visible from outside');}
+{const root=createVehicle('ape');root.updateMatrixWorld(true);const ray=new THREE.Raycaster(new THREE.Vector3(0,1.65,3),new THREE.Vector3(0,0,-1));assert.equal(ray.intersectObject(root,true)[0]?.object.material.userData.coachBucket,'glass','Ape windscreen visible above nose');}
 for(const id of ['naked','scooter','enduro']){const q=dealerQuote(id,{brakes:'race'}),root=createDealerVehicle(id,q.color,q.wheels,q),red=new THREE.Color('#b44f36');let count=0;root.traverse(o=>{if(!o.isMesh)return;const p=o.geometry.attributes.position,c=o.geometry.attributes.color;for(let i=0;i<p.count;i++)if(Math.abs(c.getX(i)-red.r)<1e-5&&Math.abs(c.getY(i)-red.g)<1e-5&&Math.abs(c.getZ(i)-red.b)<1e-5){assert(Math.abs(p.getX(i))<.12,id+' brake caliper mounted at wheel');count++;}});assert(count>0,id+' purchased calipers visible');}
+for(const [id,ceiling] of [['ape',1.15],['cantiere',2.22],['pianale-6',1.48]]){const q=dealerQuote(id,{cargo:'rails'}),root=createDealerVehicle(id,q.color,q.wheels,q),rail=new THREE.Color('#a0afb3');let count=0;root.traverse(o=>{if(!o.isMesh)return;const p=o.geometry.attributes.position,c=o.geometry.attributes.color;for(let i=0;i<p.count;i++)if(Math.abs(c.getX(i)-rail.r)<1e-5&&Math.abs(c.getY(i)-rail.g)<1e-5&&Math.abs(c.getZ(i)-rail.b)<1e-5){assert(p.getY(i)<=ceiling,id+' rails mounted on cargo walls');count++;}});assert(count>0,id+' mounted purchased rails');}
+for(const id of ['cisterna','betoniera','soccorso'])assert(!dealerCapabilities({...VEHICLES[id],vehicleType:id}).cargo.values.some(v=>v[0]==='rails'),id+' no incompatible roof rails');
+{const root=createSpecialVehicle('tank');root.updateMatrixWorld(true);const ray=new THREE.Raycaster(new THREE.Vector3(3,.66,.40),new THREE.Vector3(-1,0,0));assert.equal(ray.intersectObject(root,true)[0]?.object.material.userData.coachBucket,'alloy','tank road wheels visible inside track frame');}
 for(const id of Object.keys(TRAFFIC_VEHICLES))assert(!VEHICLES[id].clubReward,'club premium models remain earned');
 const police=compactCoachwork(createPoliceCoachwork(VEHICLES.sedan));assert.equal(police.userData.vehicleType,'police');assert.equal(police.children.length,4);assert.equal(coachworkLOD(police).type,'Mesh');
 for(const kind of ['fire','ambulance']){const m=createEmergencyCoachwork(kind==='fire'?VEHICLES.truck:VEHICLES.utility,kind);assert.equal(m.userData.emergencyFlashers.length,2);assert.equal(m.userData.modelRevision,36);}

@@ -20,6 +20,7 @@ function panel(g,k,c,points,paintable=k==='paint'){
 // Rounded octagonal sections keep cab shoulders, noses and tanks smooth while
 // retaining a closed shell with correctly wound front and rear caps.
 function loft(g,key,k,c,sections,paintable=k==='paint'){
+ key+='/' + JSON.stringify(sections);
  if(!geometries.has(key)){
   const p=[],uv=[],ix=[];
   for(const [z,w,lo,hi] of sections){const h=hi-lo;for(const [x,y] of [[-.38,0],[.38,0],[.5,.13],[.5,.84],[.37,1],[-.37,1],[-.5,.84],[-.5,.13]]){p.push(x*w,lo+y*h,z);uv.push(x+.5,z);}}
@@ -54,7 +55,7 @@ function lights(g,w,l,y,round=false){
 const glyphs={P:['110','101','110','100','100'],O:['010','101','101','101','010'],L:['100','100','100','100','111'],I:['111','010','010','010','111'],Z:['111','001','010','100','111'],A:['010','101','111','101','101'],T:['111','010','010','010','010'],X:['101','101','010','101','101']};
 function label(g,text,x,y,z,scale=.022,color='#e2e7df'){
  for(const side of [-1,1])for(const [i,ch] of [...text].entries())for(const [row,bits] of (glyphs[ch]||[]).entries())for(let col=0;col<3;col++)if(bits[col]==='1'){
-  const b=y+(2-row)*scale,c=z+(i*4+col-text.length*2)*scale,at=coachSurface(g,[side*(x+.5),b,c],[-side,0,0]),a=at?at.x+side*.006:side*x;
+  const b=y+(2-row)*scale,c=z-side*(i*4+col-text.length*2)*scale,at=coachSurface(g,[side*(x+.5),b,c],[-side,0,0]),a=at?at.x+side*.006:side*x;
   panel(g,'trim',color,side>0?[[a,b,c],[a,b+scale*.9,c],[a,b+scale*.9,c+scale*.9],[a,b,c+scale*.9]]:[[a,b,c+scale*.9],[a,b+scale*.9,c+scale*.9],[a,b+scale*.9,c],[a,b,c]],false);
  }
 }
@@ -165,7 +166,7 @@ function commercial(g,id,s,c,finish){
 function ape(g,s,c,finish){
  const l=s.length,w=s.width;
  const sections=[[.12,w*.79,.35,s.height*.94],[.80,w*.75,.36,s.height*.94],[l*.46,w*.50,.50,1.47]];loft(g,'ape/cab','paint',c,sections);
- panel(g,'glass',glass,[[-w*.24,1.12,l*.462],[w*.24,1.12,l*.462],[w*.21,1.72,1.025],[-w*.21,1.72,1.025]],false);
+ const wind=[[-w*.18,1.50],[w*.18,1.50],[w*.23,1.80],[-w*.23,1.80]].map(([x,y])=>{const hit=coachSurface(g,[x,y,l],[0,0,-1]);return [x,y,(hit?.z||l*.40)+.008];});panel(g,'glass',glass,wind,false);
  for(const side of [-1,1]){const x=side*w*.389,window=[[1.17,.20],[1.17,.77],[1.60,.73],[1.62,.20]].map(([y,z])=>[side*loftSide(sections,z,y),y,z]);panel(g,'glass',glass,side>0?window.reverse():window,false);box(g,'alloy',metal,x,1.04,.29,.014,.025,.11,false);rod(g,'alloy',metal,[side*loftSide(sections,.79,1.32),1.32,.79],[side*w*.455,1.32,.79],.016);box(g,'trim','#354447',side*w*.455,1.32,.79,.10,.10,.14,false);}
  bed(g,'ape',w,.53,.95,-l*.46,.07,c);wheel(g,0,s.wheelbase/2,.28,.17,finish.wheels);for(const side of [-1,1])wheel(g,side*w*.385,-s.wheelbase/2,.28,.18,finish.wheels);
  box(g,'trim','#354347',0,.45,l*.45,w*.61,.09,.12,false);lights(g,w,l,.73,true);g.userData.wheelCount=3;
@@ -183,7 +184,8 @@ export function createEmergencyCoachwork(s,kind){
  const fire=kind==='fire',color=fire?'#aa4237':'#e1e4dc',stripe=fire?'#d9c65e':'#b83e3b';
  const g=fire?createRoadFleet('truck',s,color):compactCoachwork(createCoachwork('officina',{...s,family:'van'},color));
  for(const side of [-1,1]){
-  box(g,'trim',stripe,side*s.width*(fire?.498:.473),s.height*.44,-s.length*.08,.014,.10,s.length*.70,false);
+  const cargoFront=s.length*.5-1.25-Math.min(2.40,s.length*.33)*.54,rear=-s.length*.48;
+  box(g,'trim',stripe,side*s.width*(fire?.498:.473),s.height*.44,fire?(rear+cargoFront)/2:-s.length*.08,.014,.10,fire?cargoFront-rear:s.length*.70,false);
   if(fire){box(g,'alloy','#a4b0b0',side*s.width*.495,s.height*.55,-s.length*.17,.018,s.height*.43,s.length*.39,false);for(let i=0;i<7;i++)box(g,'trim','#63757a',side*s.width*.502,s.height*.34+i*.15,-s.length*.17,.010,.012,s.length*.38,false);}
   else{box(g,'trim',stripe,side*s.width*.474,s.height*.60,-s.length*.18,.016,.28,.075,false);box(g,'trim',stripe,side*s.width*.475,s.height*.60,-s.length*.18,.017,.075,.28,false);}
  }
@@ -206,7 +208,9 @@ export function createTransitCoachwork(){
 function tank(g,s,c){
  loft(g,'tank/hull','paint',c,[[-2.8,2.75,.65,1.53],[-2.40,2.87,.52,1.65],[1.9,2.75,.57,1.62],[2.8,2.30,.77,1.16]]);
  for(const side of [-1,1]){
-  box(g,'trim','#303b32',side*1.34,.62,0,.47,.85,5.45,false);
+  // Open track frame: the road wheels remain visible between its upper/lower runs.
+  for(const y of [.26,1.0])box(g,'trim','#303b32',side*1.34,y,0,.47,.13,5.45,false);
+  for(const z of [-2.62,2.62])box(g,'trim','#303b32',side*1.34,.62,z,.47,.82,.20,false);
   for(let i=0;i<6;i++){const z=-2.12+i*.84,o=mesh(g,cylinder,'alloy','#596b4d',side*1.34,.66,z,.35,.39,.35,false);o.rotation.z=Math.PI/2;}
   for(let i=0;i<24;i++)for(const y of [.22,1.035])box(g,'alloy','#56624d',side*1.34,y,-2.6+i*.225,.52,.06,.085,false);
   box(g,'paint',c,side*1.40,1.19,0,.42,.10,5.65);

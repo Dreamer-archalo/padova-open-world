@@ -72,7 +72,7 @@ function model(id,finish='standard'){
  }
  function lamps(y=.64,roundLamp=false){
   const body=[];for(let i=0;i<paint.length;i+=3)if(paint[i]&&paint[i+1]&&paint[i+2])body.push(...p.slice(i*3,i*3+9));const geo=new THREE.BufferGeometry();geo.setAttribute('position',new THREE.Float32BufferAttribute(body,3));const mat=new THREE.MeshBasicMaterial({side:THREE.DoubleSide}),mesh=new THREE.Mesh(geo,mat),ray=new THREE.Raycaster();mesh.updateMatrixWorld(true);
-  const mounted=(x,height,direction)=>{for(let at=height;at>=.34;at-=.025){ray.set(new THREE.Vector3(x,at,direction*l),new THREE.Vector3(0,0,-direction));const hit=ray.intersectObject(mesh,false)[0];if(hit)return [at,hit.point.z+direction*.016];}return [height,direction*l*.46];};
+  const mounted=(x,height,direction)=>{let nearest=null;for(let at=height;at>=.34;at-=.025){ray.set(new THREE.Vector3(x,at,direction*l),new THREE.Vector3(0,0,-direction));const hit=ray.intersectObject(mesh,false)[0];if(hit){const point=[at,hit.point.z+direction*.016];if(!nearest||direction*point[1]>direction*nearest[1])nearest=point;if(direction*hit.point.z>=l*.28)return point;}}return nearest||[height,direction*l*.46];};
   for(const side of [-1,1]){
    const x=side*w*(roundLamp?.33:.32),[frontY,frontZ]=mounted(x,y,1),[rearY,rearZ]=mounted(side*w*.32,y,-1);
    if(roundLamp)part(cylinder,'#ffefd1',x,frontY,frontZ,.105,.04,.105,Math.PI/2);
@@ -125,7 +125,7 @@ function model(id,finish='standard'){
   box('#253642',0,1.22,-l*.27,w*.67,.06,l*.33);for(const side of [-1,1]){box(C,side*w*.4,1.35,-l*.24,.11,.49,l*.43,true);box(A,side*w*.425,1.12,0,.02,.11,l*.84);}
   box(A,0,1.12,l*.46,w*.72,.20,.05);wheels(.40,[-l*.31,-l*.10,l*.30],true);lamps(1.21);break;
  case 'bubble':
-  round(C,0,.75,-.06,w*.48,.74,l*.48,true);round('#2d4654',0,1.08,.03,w*.39,.43,l*.32);
+  round(C,0,.75,-.06,w*.48,.74,l*.48,true);round('#2d4654',0,1.18,.03,w*.43,.43,l*.32);
   round(C,0,h-.08,-.04,w*.40,.10,l*.3,true);box(A,0,.69,l*.46,w*.6,.06,.05);wheels(.27);lamps(.83,true);break;
  case 'deco':
   round(C,0,.67,-.05,w*.38,.40,l*.49,true);cabin(.95,l*.39,-l*.10);

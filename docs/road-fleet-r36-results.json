@@ -222,7 +222,7 @@
     },
     {
       "id": "tank",
-      "triangles": 1992,
+      "triangles": 2064,
       "draws": 3,
       "bounds": [
         3.2200000286102295,
