@@ -124,14 +124,14 @@ function createInBay(g,id,color){
  const s=VEHICLES[id];if(!s)return null;
  const p=bay(),yaw=VILLA.yaw-Math.PI/2;
  if(!unobstructed(g,p,s,yaw))return null;
- const micro=id==='bicycle'||id==='kick-scooter',c=g.addCar(p.x,p.z,yaw,false,true,micro?'motorcycle':id);
+ const micro=id==='bicycle'||id==='kick-scooter',c=g.addCar(p.x,p.z,yaw,false,true,micro?'motorcycle':id,micro?null:g.dealerships?.builds.get(id));
  if(micro||id.startsWith('airport-')){
   const old=c.mesh;g.scene.remove(old);c.mesh=micro?microModel(id,color):id==='airport-michelangelo'?createMichelangeloModel():airportModel(id,s,color);
   c.style=id;c.spec=s;c.name=s.name;c.rider=null;
   if(micro&&id==='bicycle'){c.rider=createRider();c.mesh.add(c.rider);}
   g.scene.add(c.mesh);installVehicleDamage(c);
  }
- c.style=id;c.spec=s;c.name=s.name;c.fixedSpawn=true; // Hold staged object; never recycle as ambient traffic.
+ c.style=id;c.spec=c.spec?.max?c.spec:s;c.name=g.dealerships?.builds.get(id)?.name||s.name;c.fixedSpawn=true; // Hold staged object; never recycle as ambient traffic.
  c.hangarInventory=true;c.parked=true;c.speed=0;c.health=100;c.y=g.terrain.height(p.x,p.z);
  paintHangarVehicle(c.mesh,color);g.pose(c);g.forget?.(c);g.mandriaHangar.staged=c;
  teleportFoot(g,s);return c;

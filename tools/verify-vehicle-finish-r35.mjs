@@ -33,6 +33,6 @@ for(const id of Object.keys(TRAFFIC_VEHICLES))assert(!TRAFFIC_VEHICLES[id].clubR
 for(const id of ['mito','cinquecento'])assert.equal(createVehicle(id,'#67776b').userData.modelRevision,35);
 for(const id of ['sedan','compact','wagon','utility','sport'])assert.equal(createCar('#67776b',false,id).userData.modelRevision,35);
 for(const id of Object.keys(DEALER_CATALOG)){
- const live=createDealerVehicle(id,'#67776b'),preview=hangarPreviewModel(id,'#67776b');assert.equal(preview.userData.modelRevision,35);const a=new THREE.Box3().setFromObject(live).getSize(new THREE.Vector3()),b=new THREE.Box3().setFromObject(preview).getSize(new THREE.Vector3());assert(a.distanceTo(b)<1e-5,'hangar/dealer share same model '+id);
+ const live=createDealerVehicle(id,'#67776b'),preview=hangarPreviewModel(id,'#67776b');assert(preview.userData.modelRevision>=35);const a=new THREE.Box3().setFromObject(live).getSize(new THREE.Vector3()),b=new THREE.Box3().setFromObject(preview).getSize(new THREE.Vector3());assert(a.distanceTo(b)<1e-5,'hangar/dealer share same model '+id);
 }
 fs.writeFileSync('docs/vehicle-finish-r35-results.json',JSON.stringify(report,null,2)+'\n');console.log('PASS R35 geometry, four surfaces, real texture, paint isolation, distant silhouettes, 200k weighted finishes, dealer/hangar parity and club gates',report.models.length,'models');

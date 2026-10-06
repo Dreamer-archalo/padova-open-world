@@ -1,3 +1,4 @@
+import {compactCoachwork} from './car-coachwork.js';
 import {pedestrianRoadAllowed} from './npc-spawn-policy.js';
 import {DEALER_SITES,reserveDealerBuildings,dealerWallParts} from './dealerships.js';
 // Region streaming runs alongside (not instead of) Padova's original CityWorld.
@@ -36,8 +37,8 @@ const cube=new THREE.BoxGeometry(1,1,1);
 const regionCarTemplates=new Map(),regionPeopleTemplates=new Map();
 function regionalCar(style){
  if(!regionCarTemplates.has(style))regionCarTemplates.set(style,
-  NPC_VEHICLES[style]?createNPCCar(style,
-   ['#a92731','#71858c','#e5ddc4','#566e5c'][regionCarTemplates.size%4]):
+  NPC_VEHICLES[style]?compactCoachwork(createNPCCar(style,
+   ['#a92731','#71858c','#e5ddc4','#566e5c'][regionCarTemplates.size%4])):
    createSpecialVehicle(style));
  const mesh=regionCarTemplates.get(style).clone(true);
  mesh.traverse(o=>{if(o.isMesh)o.userData.regionalAmbientShared=true;});

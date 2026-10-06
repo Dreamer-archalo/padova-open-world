@@ -7,6 +7,7 @@
     "albatros"
   ],
   "additionalCityVehicles": [
+    "ape",
     "cisterna",
     "camionrampa",
     "supersport",
@@ -35,32 +36,32 @@
     "medium": {
       "people": 80,
       "traffic": 64,
-      "actorCalls": 235,
-      "calls": 952,
-      "triangles": 341737
+      "actorCalls": 230,
+      "calls": 971,
+      "triangles": 437911
     },
     "hyper": {
       "people": 24,
       "traffic": 24,
-      "actorCalls": 61,
-      "calls": 774,
-      "triangles": 170089
+      "actorCalls": 72,
+      "calls": 797,
+      "triangles": 215527
     },
     "low": {
       "people": 40,
       "traffic": 42,
-      "actorCalls": 126,
-      "calls": 841,
-      "triangles": 217909
+      "actorCalls": 111,
+      "calls": 844,
+      "triangles": 276855
     }
   },
   "adaptivePixelRatioFloor": 0.45,
-  "updatePeople120TicksMs": 11.247198999997636,
-  "updateTraffic120TicksMs": 943.6672999999973,
-  "updateCamera120TicksMs": 21.269768999998632,
+  "updatePeople120TicksMs": 11.070838999999978,
+  "updateTraffic120TicksMs": 614.5559920000014,
+  "updateCamera120TicksMs": 20.5046390000025,
   "chunkStreaming": {
     "yieldPoints": 586,
-    "maxSliceMs": 1.5940260000024864
+    "maxSliceMs": 1.759883999999147
   },
   "browser": {
     "threeD": "not performed in this run",

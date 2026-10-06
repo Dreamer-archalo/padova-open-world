@@ -215,7 +215,7 @@ export function compactCoachwork(group){
   if(!buckets.has(kind))buckets.set(kind,{p:[],n:[],c:[],uv:[],mask:[]});const a=buckets.get(kind),m=new THREE.Matrix4().multiplyMatrices(inverse,o.matrixWorld),nm=new THREE.Matrix3().getNormalMatrix(m),ix=geo.index?.array,p=geo.attributes.position,normal=geo.attributes.normal,col=geo.attributes.color,mask=geo.attributes.collectorPaint;
   for(let j=0;j<(ix?.length||p.count);j++){
    const i=ix?ix[j]:j;v.fromBufferAttribute(p,i).applyMatrix4(m);n.fromBufferAttribute(normal,i).applyMatrix3(nm).normalize();a.p.push(v.x,v.y,v.z);a.n.push(n.x,n.y,n.z);
-   a.c.push(col?col.getX(i):o.material.color.r,col?col.getY(i):o.material.color.g,col?col.getZ(i):o.material.color.b);a.uv.push(geo.attributes.uv?.getX(i)||0,geo.attributes.uv?.getY(i)||0);a.mask.push(mask?mask.getX(i):kind==='paint'?1:0);
+   a.c.push(col?col.getX(i):o.material.color.r,col?col.getY(i):o.material.color.g,col?col.getZ(i):o.material.color.b);a.uv.push(geo.attributes.uv?.getX(i)||0,geo.attributes.uv?.getY(i)||0);a.mask.push(mask?mask.getX(i):kind==='paint'&&o.userData.coachPaint!==false?1:0);
   }remove.push(o);
  });
  for(const o of remove){o.parent?.remove(o);if(o.geometry.userData.coachTransient)o.geometry.dispose();}

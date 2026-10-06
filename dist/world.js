@@ -1,4 +1,5 @@
 import {createCoachwork} from './car-coachwork.js';
+import {createPoliceCoachwork} from './road-fleet-coachwork.js';
 import {CityStream} from './streaming.js';
 import {DEALER_SITES,reserveDealerBuildings,dealerWallParts} from './dealerships.js';
 import {createWedgeCar} from './sport-models.js';
@@ -192,6 +193,7 @@ export class CityWorld{
 
 }
 export function createCar(color='#e6c97f',police=false,style='sedan'){
+ if(police)return createPoliceCoachwork({width:1.92,length:4.22,height:1.7,wheelbase:2.54});
  if(!police){const ids={sedan:'argine',compact:'rondine',wagon:'viaggio',utility:'altavia',sport:'vortice'},dims={sedan:[1.92,4.22,1.7,2.54,'sedan'],compact:[1.8,3.72,1.7,2.24,'compact'],wagon:[1.92,4.22,1.75,2.54,'wagon'],utility:[2,4.64,1.95,2.8,'suv'],sport:[1.98,4.55,1.5,2.74,'sport']},d=dims[style]||dims.sedan;const model=createCoachwork('legacy-'+style,{width:d[0],length:d[1],height:d[2],wheelbase:d[3],family:d[4],name:style,variant:Object.keys(ids).indexOf(style)},color);model.userData.vehicleType=style;return model;}
  const g=new THREE.Group(),dark='#252f32',glass='#334f59',chrome='#aeb5b0';
  const wheel=(x,z,r=.35)=>{const tyre=primitive(g,cylinderGeo,'#20282a',x,r,z,r,.19,r);tyre.rotation.z=Math.PI/2;const hub=primitive(g,cylinderGeo,chrome,x+(x<0?-.105:.105),r,z,r*.53,.012,r*.53);hub.rotation.z=Math.PI/2;};

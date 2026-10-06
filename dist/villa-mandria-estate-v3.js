@@ -1,3 +1,4 @@
+import {createRoadFleet} from './road-fleet-coachwork.js';
 // Optional estate upgrade. Keep the real map, underlying road graph and existing
 // hangar/vehicle interactions authoritative; everything here is proximity-loaded.
 import * as THREE from './vendor/three.module.js';
@@ -105,11 +106,7 @@ function horseModel(){const root=new THREE.Group();mesh(root,sphere,'#815a37',0,
  mesh(root,cone,'#473020',0,1.56,-1.08,.21,.87,.24).rotation.x=-.35;
  const legs=[];for(const side of [-1,1])for(const z of [-.69,.67]){const pivot=new THREE.Group();pivot.position.set(side*.35,1.02,z);cube(pivot,'#765134',0,-.47,0,.18,.92,.19);cube(pivot,'#31271e',0,-.91,.09,.24,.14,.33);root.add(pivot);legs.push(pivot);}
  root.userData.horseLegs=legs;root.name='Mandria · cavallo da sella';return root;}
-function apeModel(){const root=new THREE.Group();cube(root,'#1a1d21',0,.39,0,1.3,.27,2.55);cube(root,'#11161b',0,1.17,.55,1.33,1.42,1.28);cube(root,'#334750',0,1.36,1.22,1.12,.65,.09);
- cube(root,'#15191c',0,.92,-.69,1.36,.69,1.24);cube(root,'#1f2427',0,1.31,-.60,1.38,.11,1.28);
- for(const [x,z] of [[0,1.03],[-.62,-.86],[.62,-.86]]){const w=mesh(root,wheel,'#202428',x,.31,z,.31,.16,.31);w.rotation.z=Math.PI/2;}
- for(const x of [-.43,.43])cube(root,'#e7d6a1',x,.66,1.31,.23,.13,.08);
- root.name='Mandria · Ape Car nera tre ruote';return root;}
+function apeModel(){const model=createRoadFleet('ape',{width:1.6,length:2.8,height:2.04,wheelbase:1.75},'#202c30');model.name='Mandria · Ape Car nera tre ruote';return model;}
 function spawnPatrol(g,root,type,route){
  const width=type==='mounted'?1.2:1.6;if(!safeRoute(g,route,width))return null;
  const p=world(...route[0]),vehicle=g.addCar(p.x,p.z,VILLA.yaw,false,true,type==='mounted'?'motorcycle':'mito');

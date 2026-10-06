@@ -1,6 +1,13 @@
 import * as THREE from './vendor/three.module.js';
 import {project,dist,pointInside,nearestOnSegment} from './core.js';
-import {VEHICLES} from './vehicles.js';
+import {VEHICLES,createVehicle,createRider} from './vehicles.js';
+import {createRoadFleet} from './road-fleet-coachwork.js';
+import {COLLECTOR_CARS,createCollectorCar} from './collector-cars.js';
+import {DEALER_OPTIONS,dealerCapabilities,normalizeDealerOptions,dealerBuildSpec,applyDealerUpgrades} from './dealer-customization.js';
+import {compactCoachwork} from './car-coachwork.js';
+import {installVehicleDamage} from './vehicle-damage.js';
+import {vehicleFootprint,polygonsOverlap} from './movement.js';
+export {DEALER_OPTIONS,dealerCapabilities,dealerBuildSpec};
 import {NPC_VEHICLES,createNPCCar} from './modern-vehicles.js';
 
 // Approximate game placements around real mainland dealers. The physical displays
@@ -52,11 +59,15 @@ const industrialExisting=[
  ['campo','Campo Pickup',2550,'#7d8b76'],['altavia','Altavia SUV',3450,'#404a54'],
  ['familia','Familia XL',2800,'#b4b9b2'],['doge','Doge Grand',5900,'#2b414b']
 ];
+const roadStock=[
+ ['scooter','scooter classico',950,'#9cb6a6'],['motorcycle','moto stradale',2400,'#54798b'],['naked','moto naked',4100,'#578d7d'],['supersport','moto sportiva',6900,'#ae394a'],['enduro','moto enduro',3700,'#c37d40'],['trail','moto trail',3300,'#a69c65'],['touring','moto touring',5700,'#456e8e'],['cruiser','moto cruiser',4800,'#3d4650'],['ape','tre ruote tradizionale',1800,'#587969'],
+ ['truck','camion furgonato',6500,'#637f8b'],['cisterna','camion cisterna',8400,'#72898f'],['cantiere','camion ribaltabile',7900,'#b08942'],['betoniera','betoniera',9300,'#b48942'],['soccorso','carro attrezzi',8200,'#b68b45'],['tir','autoarticolato',14900,'#587181'],['autotreno','autotreno',18900,'#758674'],['portavalori','furgone blindato',15900,'#627e78'],['taxi','taxi classico',3300,'#c5b576']
+];
 const industrialStock={
- 'zip-uruguay':['officina-e','fresco-xl','campo-4x4','officina','campo','nido','botanica','familia','meridiana','selva'],
- 'zip-nona':['pianale-6','corriere','officina','fresco-xl','campo-4x4','campo','viaggio','familia','altavia','argine'],
- 'zip-germania':['pianale-6','officina-e','corriere','fresco-xl','campo','officina','campo-4x4','familia','selva','altavia'],
- 'zip-stati-uniti':['salone_6','salone_7','salone_8','salone_3','salone_9','doge','altavia','campo-4x4','meridiana','salone_5']
+ 'zip-uruguay':['ape','scooter','officina-e','fresco-xl','campo-4x4','officina','campo','nido','botanica','familia','meridiana','selva','truck','soccorso'],
+ 'zip-nona':['truck','cisterna','pianale-6','corriere','officina','fresco-xl','campo-4x4','campo','viaggio','familia','altavia','argine','tir','autotreno','portavalori'],
+ 'zip-germania':['cantiere','betoniera','soccorso','ape','pianale-6','officina-e','corriere','fresco-xl','campo','officina','campo-4x4','familia','selva','altavia','truck','cisterna'],
+ 'zip-stati-uniti':['salone_6','salone_7','salone_8','supersport','naked','touring','cruiser','enduro','trail','salone_3','salone_9','doge','altavia','campo-4x4','meridiana','salone_5',...Object.keys(COLLECTOR_CARS)]
 };
 const detailCube=new THREE.BoxGeometry(),luxuryGold=new THREE.MeshStandardMaterial({color:'#d1b780',metalness:.82,roughness:.19}),luxuryDark=new THREE.MeshStandardMaterial({color:'#242b2e',metalness:.75,roughness:.22}),luxuryGlass=new THREE.MeshStandardMaterial({color:'#192934',metalness:.45,roughness:.16});
 export const DEALER_CATALOG=Object.fromEntries(luxury.map(([base,name,kind,trim,price,color],i)=>{
@@ -69,8 +80,15 @@ export const DEALER_CATALOG=Object.fromEntries(luxury.map(([base,name,kind,trim,
  industrialExisting.map(([base,name,price,color])=>[base,{id:base,base,name,kind:'mezzo da lavoro',price,color,luxury:false}]),
  industrialNew.map(([id,name,base,kind,price,color])=>{const s=NPC_VEHICLES[base];VEHICLES[id]={...s,name,accel:s.accel+1,boost:s.boost+2,npcOnly:true,family:'work'};return [id,{id,base,name,kind,price,color,custom:true,luxury:false}];})));
 
-export function createDealerVehicle(id,paint=null,wheels=null){
- const v=DEALER_CATALOG[id],g=createNPCCar(v.base,paint||v.color,wheels);
+for(const [id,kind,price,color] of roadStock)DEALER_CATALOG[id]={id,base:id,name:VEHICLES[id].name,kind,price,color,luxury:false,roadFleet:true};
+for(const [id,spec] of Object.entries(COLLECTOR_CARS))DEALER_CATALOG[id]={id,base:id,name:spec.name,kind:'auto da collezione',price:Math.round(16000+spec.max*170),color:spec.color,luxury:true,collector:true};
+
+export function createDealerVehicle(id,paint=null,wheels=null,build=null){
+ const v=DEALER_CATALOG[id],s=VEHICLES[id];if(!v)throw Error('Unknown dealer model '+id);
+ const finish=build?{wheels:build.wheels||'standard',livery:'plain',roof:build.roof==='black'?'#2b343b':build.roof==='ivory'?'#dcd5c1':build.livery==='two-tone'?'#dcd5c1':null}:wheels&&typeof wheels==='object'?wheels:{wheels:wheels||'standard'};
+ if(build){const base=createDealerVehicle(id,paint,finish);return applyDealerUpgrades(compactCoachwork(base),s,build);}
+ const g=v.collector?createCollectorCar(id,paint||v.color,finish.wheels):v.roadFleet?createRoadFleet(id,s,paint||v.color,finish):id==='pianale-6'||id==='fresco-xl'?createRoadFleet(id,s,paint||v.color,finish):createNPCCar(v.base,paint||v.color,finish);
+ if(v.collector||v.roadFleet||id==='pianale-6'||id==='fresco-xl')return g;
  if(v.custom){
   const s=VEHICLES[id],dark=luxuryDark,light=luxuryGlass;
   const block=(x,y,z,w,h,d,mat)=>{const m=new THREE.Mesh(detailCube,mat);m.position.set(x,y,z);m.scale.set(w,h,d);g.add(m);};
@@ -162,28 +180,37 @@ function showroom(site,b){
 export const DEALER_COLORS=[['Bianco','#e8e5dc'],['Nero','#252b31'],['Rosso','#aa3442'],['Blu','#315979'],['Verde','#527561'],['Oro','#a89162']];
 export const DEALER_SPEEDS=[['Di serie',0,0],['Sport',6,850],['Pista',12,2200]];
 export function dealerQuote(id,options={}){const c=DEALER_CATALOG[id];if(!c)return null;
- const speed=Math.max(0,Math.min(2,Number(options.speed)||0)),color=DEALER_COLORS.some(v=>v[1]===options.color)?options.color:c.color,wheels=options.wheels==='bronze'?'bronze':'standard',interior=options.interior==='premium'?'premium':'standard';
- const name=String(options.name||'').trim().replace(/[<>"'&]/g,'').slice(0,24),extras={verniciatura:color===c.color?0:220,velocita:DEALER_SPEEDS[speed][2],cerchi:wheels==='bronze'?340:0,interni:interior==='premium'?490:0,nome:name?120:0};
- return {id,color,wheels,interior,speed,name,extras,total:c.price+Object.values(extras).reduce((a,b)=>a+b,0),max:VEHICLES[id].max+DEALER_SPEEDS[speed][1]};
+ const s={...VEHICLES[id],vehicleType:id},speed=Math.max(0,Math.min(2,Math.floor(Number(options.speed)||0))),color=DEALER_COLORS.some(v=>v[1]===options.color)?options.color:c.color,{selected,prices}=normalizeDealerOptions(s,options);
+ const name=String(options.name||'').trim().replace(/[<>"'&]/g,'').slice(0,24),extras={verniciatura:color===c.color?0:220,velocita:DEALER_SPEEDS[speed][2],cerchi:prices.wheels||0,interni:prices.interior||0,nome:name?120:0};
+ for(const [key,price] of Object.entries(prices))if(!['wheels','interior'].includes(key))extras[key]=price;
+ return {id,color,...selected,speed,name,extras,total:c.price+Object.values(extras).reduce((a,b)=>a+b,0),max:VEHICLES[id].max+DEALER_SPEEDS[speed][1]};
 }
+export function dealerDisplayLayout(building,stock){
+ const layout=[],occupied=[];
+ for(const id of stock){if(layout.length>=building.dealerSlots.length)break;const s=VEHICLES[id];if(!s||s.height>(building.h||4)+.05)continue;
+  let selected=null;for(const slot of building.dealerSlots){for(const yaw of [0,Math.PI/2]){const footprint=vehicleFootprint(slot.x,slot.z,yaw,s.width+.7,s.length+.7);if(footprint.every(p=>pointInside(...p,building.p))&&!occupied.some(p=>polygonsOverlap(footprint,p))){selected={id,...slot,yaw,footprint};break;}}if(selected)break;}
+  if(selected){layout.push(selected);occupied.push(selected.footprint);}
+ }return layout;
+}
+
 const profiles={hyper:2,low:4,medium:7,high:10};
 export class Dealerships{
- constructor({scene,terrain,collision,addCar,cars,state,regionalWorld,roadAt,pose,buildings=[],createPerson=null}){
-  Object.assign(this,{scene,terrain,collision,addCar,cars,state,regionalWorld,roadAt,pose,createPerson});this.buildings=new Map(buildings.filter(b=>b.dealerSite).map(b=>[b.dealerSite,b]));this.active=new Map();this.employees=new Map();this.consumed=new Set();this.owned=new Set();this.purchased=new Set();this.builds=new Map();
+ constructor({scene,terrain,collision,addCar,cars,state,regionalWorld,roadAt,pose,buildings=[],createPerson=null,forget=null}){
+  Object.assign(this,{scene,terrain,collision,addCar,cars,state,regionalWorld,roadAt,pose,createPerson,forget});this.buildings=new Map(buildings.filter(b=>b.dealerSite).map(b=>[b.dealerSite,b]));this.active=new Map();this.employees=new Map();this.consumed=new Set();this.owned=new Set();this.purchased=new Set();this.builds=new Map();
   try{const saved=JSON.parse(localStorage.getItem('padova-dealer-owned-v1')||'{}');for(const id of (Array.isArray(saved)?saved:saved.owned)||[])if(DEALER_CATALOG[id])this.owned.add(id);for(const token of saved.purchased||[])this.purchased.add(token);for(const [id,build] of Object.entries(saved.builds||{}))if(DEALER_CATALOG[id])this.builds.set(id,build);}catch{}
  }
- stock(site){return industrialStock[site.id]||(site.tier==='lusso'?luxury.map((_,i)=>'salone_'+i):normal.map(row=>row[0]));}
+ stock(site){return industrialStock[site.id]||(site.tier==='lusso'?[...luxury.map((_,i)=>'salone_'+i),...Object.keys(COLLECTOR_CARS),'supersport','touring','cruiser']:[...normal.map(row=>row[0]),'scooter','motorcycle','naked','enduro','trail','ape','taxi']);}
  register(buildings){for(const b of buildings)if(b.dealerSite)this.buildings.set(b.dealerSite,b);}
  locate(site){return this.buildings.get(site.id)||null;}
  load(site,b){if(!b?.dealerSlots?.length)return;
   const structure=showroom(site,b),units=[];this.scene.add(structure);
   const person=this.employees.get(site.id)||this.createPerson?.('#c5a682');if(person){this.employees.set(site.id,person);person.position.set(b.dealerDoor.inside.x,b.minY,b.dealerDoor.inside.z);person.rotation.y=Math.atan2(b.dealerDoor.outside.x-b.dealerDoor.inside.x,b.dealerDoor.outside.z-b.dealerDoor.inside.z);this.scene.add(person);}
-  this.stock(site).slice(0,b.dealerSlots.length).forEach((id,i)=>{const token=site.id+':'+i;if(this.consumed.has(token)||this.purchased.has(token))return;
-   const p=b.dealerSlots[i],car=this.addCar(p.x,p.z,0,false,true,id);Object.assign(car,{dealershipStock:token,dealerPrice:DEALER_CATALOG[id].price,dealerSite:site.id,fixedSpawn:true,missionUnit:true});car.mesh.visible=i<(profiles[this.state.quality]||4);this.pose(car);units.push(car);
+  dealerDisplayLayout(b,this.stock(site)).forEach(({id,x,z,yaw},i)=>{const token=site.id+':'+i;if(this.consumed.has(token)||this.purchased.has(token))return;
+   const car=this.addCar(x,z,yaw,false,true,id);Object.assign(car,{dealershipStock:token,dealerPrice:DEALER_CATALOG[id].price,dealerSite:site.id,fixedSpawn:true,missionUnit:true});car.mesh.visible=i<(profiles[this.state.quality]||4);this.pose(car);units.push(car);
   });this.active.set(site.id,{site,at:{x:b.cx,z:b.cz},building:b,structure,person,units});
  }
  unload(entry){this.scene.remove(entry.structure);entry.structure.userData.signTexture.dispose();entry.structure.traverse(o=>{if(!o.isMesh)return;o.geometry.dispose();if(o.material!==floorMat&&o.material!==frameMat&&o.material!==windowMat)o.material.dispose();});if(entry.person)this.scene.remove(entry.person);
-  for(const car of entry.units)if(car.dealershipStock){this.scene.remove(car.mesh);car.mesh.traverse(o=>{if(o.isMesh&&o.geometry?.attributes?.color){o.geometry.dispose();o.material.dispose();}});const j=this.cars.indexOf(car);if(j>=0)this.cars.splice(j,1);}this.active.delete(entry.site.id);
+  for(const car of entry.units)if(car.dealershipStock){this.scene.remove(car.mesh);car.mesh.traverse(o=>{if(o.isMesh&&o.geometry?.attributes?.color){o.geometry.dispose();}});const j=this.cars.indexOf(car);if(j>=0)this.cars.splice(j,1);}this.active.delete(entry.site.id);
  }
  update(){if(!this.state.started)return;
   for(const site of DEALER_SITES){const entry=this.active.get(site.id),distance=dist(site,this.state);
@@ -198,12 +225,24 @@ export class Dealerships{
   return found;
  }
  persist(){try{localStorage.setItem('padova-dealer-owned-v1',JSON.stringify({owned:[...this.owned],purchased:[...this.purchased],builds:Object.fromEntries(this.builds)}));}catch{}}
+ quote(id,options={}){
+  const quote=dealerQuote(id,options);if(!quote)return null;let amountDue=quote.total;
+  if(this.owned.has(id)){const old=this.builds.get(id)||dealerQuote(id),same=(key)=>quote[key]===old[key];amountDue=0;
+   for(const [key,price] of Object.entries(quote.extras)){const field={verniciatura:'color',velocita:'speed',cerchi:'wheels',interni:'interior',nome:'name'}[key]||key;if(!same(field))amountDue+=field==='color'||field==='name'?price:Math.max(0,price-(old.extras?.[key]||0));}
+  }return {...quote,amountDue};
+ }
  purchase(site,id,options={}){if(!site||!this.active.has(site.id)||!this.stock(site).includes(id))return null;
-  const quote=dealerQuote(id,options);if(!quote||this.state.money<quote.total)return null;
-  this.state.money-=quote.total;this.owned.add(id);this.builds.set(id,quote);this.persist();return quote;
+  const quote=this.quote(id,options);if(!quote||this.state.money<quote.amountDue)return null;
+  this.state.money-=quote.amountDue;this.owned.add(id);this.builds.set(id,quote);this.persist();
+  for(const car of this.cars.filter(c=>c.style===id&&c.requestedByPlayer))this.applyBuild(car,quote);
+  return quote;
  }
  buy(car,options={}){if(!car?.dealershipStock)return false;const quote=dealerQuote(car.style,options);if(!quote||this.state.money<quote.total)return false;
-  this.state.money-=quote.total;this.owned.add(car.style);this.builds.set(car.style,quote);this.purchased.add(car.dealershipStock);this.consumed.add(car.dealershipStock);this.persist();car.dealershipStock=null;car.missionUnit=false;car.requestedByPlayer=true;return true;
+  this.state.money-=quote.total;this.owned.add(car.style);this.builds.set(car.style,quote);this.purchased.add(car.dealershipStock);this.consumed.add(car.dealershipStock);this.persist();this.applyBuild(car,quote);car.dealershipStock=null;car.missionUnit=false;car.requestedByPlayer=true;return true;
+ }
+ applyBuild(car,quote){
+  const old=car.mesh;this.scene.remove(old);this.forget?.(car);car.mesh=compactCoachwork(createDealerVehicle(car.style,quote.color,quote.wheels,quote));car.spec=dealerBuildSpec(VEHICLES[car.style],quote);car.name=quote.name||car.spec.name;car.damageVisual=null;car.rider=null;
+  if(car.spec.bike||['motorcycle','scooter'].includes(car.style)){car.rider=createRider();car.rider.visible=false;const seat=car.mesh.userData.riderSeat;if(seat){car.rider.position.y=seat.y-.86;car.rider.position.z=seat.z+.28;}car.mesh.add(car.rider);}this.scene.add(car.mesh);installVehicleDamage(car);this.pose(car);
  }
  steal(car){if(!car?.dealershipStock)return false;this.consumed.add(car.dealershipStock);car.dealershipStock=null;car.missionUnit=false;return true;}
 }

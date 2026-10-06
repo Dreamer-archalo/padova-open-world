@@ -1,3 +1,6 @@
+import {createPoliceCoachwork} from './road-fleet-coachwork.js';
+import {compactCoachwork} from './car-coachwork.js';
+import {installVehicleDamage} from './vehicle-damage.js';
 import * as THREE from './vendor/three.module.js';
 import {clamp,dist,angleDiff,roadRoute,nearestRoad} from './core.js';
 import {vehicleBlocked} from './movement.js';
@@ -30,7 +33,7 @@ export class ModernGameplay {
   const allowed=Math.min(5,this.wantedLevel+1);while(this.cops.length>allowed){const c=this.cops.at(-1);if(!c)break;this.remove(c);}
  }
  clearRoadblocks(){for(const c of [...this.roadblocks]){if(c===this.state.car){c.roadblock=false;c.routineCheck=false;c.missionUnit=false;continue;}this.retire(c);}this.roadblocks=[];}
- decorateRoadblock(c,index,routine=false){c.mesh.traverse(o=>{if(!o.isMesh||!o.material?.color)return;o.material=o.material.clone();if(o.material.color.getHexString()!=='202527')o.material.color.lerp(new THREE.Color(index?'#23394b':'#29465c'),.58);});const mat=new THREE.MeshBasicMaterial({color:index?'#ff4254':'#3a8dff'}),lamp=new THREE.Mesh(new THREE.BoxGeometry(.58,.14,.22),mat);lamp.position.set(0,c.spec.height+.12,-.05);lamp.userData.roadblockLamp=true;c.mesh.add(lamp);c.roadblockLamp=lamp;c.routineCheck=routine;}
+ decorateRoadblock(c,index,routine=false){const old=c.mesh;this.scene.remove(old);this.forget?.(c);c.mesh=compactCoachwork(createPoliceCoachwork(c.spec));c.damageVisual=null;installVehicleDamage(c);this.scene.add(c.mesh);const mat=new THREE.MeshBasicMaterial({color:'#3a8dff'}),lamp=new THREE.Mesh(new THREE.BoxGeometry(.58,.09,.18),mat);lamp.position.set(0,c.spec.height+.075,-.15);lamp.userData.roadblockLamp=true;c.mesh.add(lamp);c.roadblockLamp=lamp;c.routineCheck=routine;this.pose(c);}
  spawnRoadblock(routine=false){const p=this.findSpawn('sedan',routine?150:125,routine?330:275);if(!p)return false;const lateral=routine?2.75:1.45;for(const [i,side] of [-1,1].entries()){const x=p.x+Math.cos(p.yaw)*side*lateral,z=p.z-Math.sin(p.yaw)*side*lateral,y=this.terrain.height(x,z);if(!this.terrain.dry(x,z,VEHICLES.sedan.width/2,y))continue;const c=this.addCar(x,z,p.yaw,false,true,'sedan');Object.assign(c,{y,speed:0,parked:true,roadblock:true,routineCheck:routine,missionUnit:true,name:routine?'Polizia · Controllo stradale':'Polizia · Posto di blocco'});this.decorateRoadblock(c,i,routine);this.pose(c);this.roadblocks.push(c);}return this.roadblocks.length>0;}
  updateRoadblocks(){const s=this.state,pursuit=s.wanted>=3&&s.wanted<5&&s.elapsed>=this.graceUntil,routine=s.wanted===0&&s.elapsed>=this.graceUntil,mode=pursuit?'pursuit':routine?'routine':'none';this.roadblocks=this.roadblocks.filter(c=>c===s.car||this.cars.includes(c));for(const c of this.roadblocks)if(c.roadblockLamp)c.roadblockLamp.visible=Math.sin(s.elapsed*9+(c.x+c.z)*.01)>0;
   const lead=this.roadblocks.find(c=>c!==s.car),currentMode=lead?(lead.routineCheck?'routine':'pursuit'):'none';if(lead&&currentMode!==mode){this.clearRoadblocks();this.nextRoadblock=s.elapsed+(mode==='routine'?55:5);return;}if(mode==='none'){if(this.roadblocks.length)this.clearRoadblocks();return;}

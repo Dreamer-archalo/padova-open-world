@@ -1,4 +1,5 @@
 import {createCoachwork} from './car-coachwork.js';
+import {createRoadFleet} from './road-fleet-coachwork.js';
 import {vehicleFootprint,polygonsOverlap} from './movement.js';
 import * as THREE from './vendor/three.module.js';
 
@@ -8,7 +9,8 @@ export const VEHICLES={
   mito:{name:'Milano 955 · MiTo inspired',width:2.0,length:4.08,height:1.46,wheelbase:2.51,accel:10.2,brake:20,max:39,boost:48,reverse:8,steer:1.15},
   motorcycle:{name:'Euganea 650 · Motorcycle',width:.98,length:2.2,height:1.3,wheelbase:1.45,accel:14,brake:22,max:43,boost:53,reverse:3,steer:1.65},
   scooter:{name:'Portello 125 · Scooter',width:.82,length:1.9,height:1.3,wheelbase:1.3,accel:7,brake:16,max:24,boost:29,reverse:2,steer:1.85},
-  truck:{name:'Brenta Cargo · Truck',width:2.68,length:7.2,height:3.5,wheelbase:4.2,accel:4.3,brake:12,max:24,boost:29,reverse:5,steer:.62},
+  truck:{name:'Brenta Cargo · Truck',family:'work',width:2.68,length:7.2,height:3.5,wheelbase:4.2,accel:4.3,brake:12,max:24,boost:29,reverse:5,steer:.62},
+  ape:{name:'Ape Car · Tre Ruote',family:'work',width:1.6,length:2.8,height:2.04,wheelbase:1.75,accel:5,brake:13,max:13,boost:15,reverse:1.3,steer:1.2,mass:.65,npcOnly:true},
   sedan:{name:'Berlina 84',width:1.92,length:4.22,height:1.7,wheelbase:2.54,accel:9.5,brake:19,max:37,boost:47,reverse:9,steer:1.08},
   sport:{name:'Riviera GT',width:1.98,length:4.55,height:1.5,wheelbase:2.74,accel:12,brake:21,max:43,boost:53,reverse:9,steer:1.1},
   compact:{name:'Centro Compact',width:1.8,length:3.72,height:1.7,wheelbase:2.24,accel:8,brake:18,max:32,boost:40,reverse:8,steer:1.25},
@@ -26,7 +28,7 @@ function wheel(g,x,z,r=.31,y=r,width=.19){mesh(g,cylinder,'#202527',x,y,z,r,widt
 // panels inward; once cars were compacted into a single FrontSide mesh those faces
 // were culled, producing visible holes through the taxi/MiTo/Cinquecento bodywork.
 function body(g,color,sections){const p=[];for(let i=1;i<sections.length;i++){const [za,wa,ya,ha]=sections[i-1],[zb,wb,yb,hb]=sections[i],a=[[-wa,ya,za],[wa,ya,za],[wa*.88,ya+ha,za],[-wa*.88,ya+ha,za]],b=[[-wb,yb,zb],[wb,yb,zb],[wb*.88,yb+hb,zb],[-wb*.88,yb+hb,zb]];for(let j=0;j<4;j++){const k=(j+1)%4;p.push(...a[j],...b[k],...b[j],...a[j],...a[k],...b[k]);}if(i===1)p.push(...a[0],...a[2],...a[1],...a[0],...a[3],...a[2]);if(i===sections.length-1)p.push(...b[2],...b[0],...b[1],...b[3],...b[0],...b[2]);}const geometry=new THREE.BufferGeometry();geometry.setAttribute('position',new THREE.Float32BufferAttribute(p,3));geometry.computeVertexNormals();const m=new THREE.Mesh(geometry,material(color));g.add(m);}
-export function createVehicle(type,color){if(type==='mito'||type==='cinquecento')return createCoachwork(type,{...VEHICLES[type],family:'compact'},color);const g=new THREE.Group();
+export function createVehicle(type,color,finish=null){if(['motorcycle','scooter','truck','taxi','ape'].includes(type))return createRoadFleet(type,VEHICLES[type],color,finish);if(type==='mito'||type==='cinquecento')return createCoachwork(type,{...VEHICLES[type],family:'compact'},color,finish);const g=new THREE.Group();
  if(type==='mito'||type==='cinquecento'){
   body(g,color,[[-2.03,.68,.4,.43],[-1.65,.86,.39,.55],[.95,.86,.4,.52],[1.76,.76,.43,.37],[2.03,.60,.43,.30]]);
   body(g,color,[[-1.56,.70,.9,.13],[-1.1,.72,.92,.5],[.37,.68,.92,.52],[1.04,.68,.91,.03]]);

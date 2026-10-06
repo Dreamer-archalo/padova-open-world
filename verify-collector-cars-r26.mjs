@@ -20,19 +20,19 @@ for(const id of COLLECTOR_IDS){
  assert(hangarCatalogue().some(e=>e.id===id));
  for(const stat of ['width','length','height','wheelbase','max','boost','reverse','accel','brake','steer','mass'])assert(Number.isFinite(s[stat])&&s[stat]>0,id+': '+stat);
  const g=createSpecialVehicle(id),mesh=g.children[0],geo=mesh.geometry;
+ assert.equal(g.children.length,4,'Collector cars retain four real surface materials');
  const bounds=new THREE.Box3().setFromObject(g),size=bounds.getSize(new THREE.Vector3());
  assert(size.x<=s.width+.0001&&size.y<=s.height+.0001&&size.z<=s.length+.0001,id+': model contained in physics footprint');
  assert(bounds.min.y>=-.0001,id+': wheels rest on the ground');
  hashes.add(createHash('sha256').update(Buffer.from(geo.attributes.position.array.buffer)).digest('hex'));
- const triangles=geo.attributes.position.count/3;maxTriangles=Math.max(maxTriangles,triangles);assert(triangles<6000,id+': one-mesh traffic budget');
- assert.equal(g.children.length,1);assert.equal(hangarPreviewModel(id).userData.collectorCar,id);
- const before=geo.attributes.color.array.slice(),flags=geo.attributes.collectorPaint.array;
- paintHangarVehicle(g,'#214b88');const painted=mesh.geometry.attributes.color.array;
- let changed=0,protectedVertices=0;
- for(let i=0;i<before.length;i++)if(flags[Math.floor(i/3)])changed+=painted[i]!==before[i];else{assert.equal(painted[i],before[i],id+': trim, glass, lights and wheels retain signature');protectedVertices++;}
+ const triangles=g.children.reduce((n,o)=>n+o.geometry.attributes.position.count/3,0);maxTriangles=Math.max(maxTriangles,triangles);assert(triangles<9000,id+': detailed collector traffic budget');
+assert.equal(hangarPreviewModel(id).userData.collectorCar,id);
+ const before=g.children.map(o=>o.geometry.attributes.color.array.slice()),flags=g.children.map(o=>o.geometry.attributes.collectorPaint.array);
+ paintHangarVehicle(g,'#214b88');let changed=0,protectedVertices=0;
+ for(const [j,o] of g.children.entries())for(let i=0;i<before[j].length;i++)if(flags[j][Math.floor(i/3)])changed+=o.geometry.attributes.color.array[i]!==before[j][i];else{assert.equal(o.geometry.attributes.color.array[i],before[j][i],id+': trim, glass, lights and wheels retain signature');protectedVertices++;}
  assert(changed>100&&protectedVertices>100,id+': paint body without erasing details');
- assert.deepEqual(createSpecialVehicle(id).children[0].geometry.attributes.color.array,before,id+': paint isolated from template');
- paintHangarVehicle(g,null);assert.deepEqual(mesh.geometry.attributes.color.array,before,id+': restore original livery');
+ const fresh=createSpecialVehicle(id);for(const [j,o] of fresh.children.entries())assert.deepEqual(o.geometry.attributes.color.array,before[j],id+': paint isolated from template');
+ paintHangarVehicle(g,null);for(const [j,o] of g.children.entries())assert.deepEqual(o.geometry.attributes.color.array,before[j],id+': restore original livery');
  actorDetail({mesh:g,spec:s},true);assert(mesh.visible,id+': retain special silhouette in hyper performance');assert(!g.children.some(o=>o.userData.sharedRenderProxy));
  counts[id]=0;
 }
