@@ -71,11 +71,14 @@ function model(id,finish='standard'){
   }torus.dispose();ring.dispose();
  }
  function lamps(y=.64,roundLamp=false){
+  const body=[];for(let i=0;i<paint.length;i+=3)if(paint[i]&&paint[i+1]&&paint[i+2])body.push(...p.slice(i*3,i*3+9));const geo=new THREE.BufferGeometry();geo.setAttribute('position',new THREE.Float32BufferAttribute(body,3));const mat=new THREE.MeshBasicMaterial({side:THREE.DoubleSide}),mesh=new THREE.Mesh(geo,mat),ray=new THREE.Raycaster();mesh.updateMatrixWorld(true);
+  const mounted=(x,height,direction)=>{for(let at=height;at>=.34;at-=.025){ray.set(new THREE.Vector3(x,at,direction*l),new THREE.Vector3(0,0,-direction));const hit=ray.intersectObject(mesh,false)[0];if(hit)return [at,hit.point.z+direction*.016];}return [height,direction*l*.46];};
   for(const side of [-1,1]){
-   if(roundLamp)part(cylinder,'#ffefd1',side*w*.33,y,l*.478,.105,.04,.105,Math.PI/2);
-   else box('#e3f5ed',side*w*.32,y,l*.479,w*.2,.07,.035);
-   box('#da414d',side*w*.32,y,-l*.48,w*.17,.065,.04);
-  }
+   const x=side*w*(roundLamp?.33:.32),[frontY,frontZ]=mounted(x,y,1),[rearY,rearZ]=mounted(side*w*.32,y,-1);
+   if(roundLamp)part(cylinder,'#ffefd1',x,frontY,frontZ,.105,.04,.105,Math.PI/2);
+   else box('#e3f5ed',x,frontY,frontZ,w*.15,.07,.035);
+   box('#da414d',side*w*.32,rearY,rearZ,w*.14,.065,.04);
+  }geo.dispose();mat.dispose();
  }
  function cabin(y,roofLength=l*.46,z=-l*.09,open=false){
   shell('#263f50',[[-roofLength*.5+z,w*.37,y,.07],[-roofLength*.31+z,w*.35,y,h-y-.10],[roofLength*.28+z,w*.33,y,h-y-.14],[roofLength*.5+z,w*.35,y,.03]],false);
@@ -87,7 +90,7 @@ function model(id,finish='standard'){
  case 'wedge':
   shell(C,[[-l*.49,w*.4,.30,.46],[-l*.31,w*.48,.28,.5],[l*.34,w*.47,.28,.31],[l*.49,w*.30,.29,.17]]);cabin(.66,l*.5,-l*.10);
   for(const side of [-1,1]){box(A,side*w*.43,.53,-.16,.09,.07,l*.72);box('#17232d',side*w*.40,.63,-l*.24,.22,.13,.47);}
-  box(A,0,.82,-l*.41,w*.83,.09,.26);wheels(.29);lamps(.48);break;
+  box(A,0,.82,-l*.41,w*.83,.09,.26);for(const side of [-1,1])box('#414c56',side*w*.26,.72,-l*.41,.045,.20,.09);wheels(.29);lamps(.48);break;
  case 'hotrod':case 'rat':{
   const rat=s.shape==='rat';
   shell(C,[[-l*.46,w*.37,.32,.55],[-l*.28,w*.39,.32,.54],[l*.11,w*.26,.36,.35],[l*.40,w*.22,.36,.29]]);
@@ -112,7 +115,7 @@ function model(id,finish='standard'){
   shell(C,[[-l*.49,w*.36,.35,.49],[-l*.30,w*.47,.34,.57],[l*.3,w*.46,.35,.51],[l*.49,w*.38,.36,.30]]);cabin(.9,l*.51,-.07);
   for(const side of [-1,1]){box(A,side*w*.43,.55,0,.10,.15,l*.81);round(A,side*w*.442,1.04,-.2,.012,.21,.28);}
   for(const x of [-.46,-.15,.15,.46])part(cylinder,'#fff0ca',x,.86,l*.48,.11,.05,.11,Math.PI/2);
-  box('#222b33',0,h-.12,-l*.43,w*.9,.08,.26);wheels(.33);lamps(.75);break;
+  box('#222b33',0,h-.12,-l*.43,w*.9,.08,.26);for(const side of [-1,1])box('#414c56',side*w*.26,(h-.12+.85)/2,-l*.43,.045,h-.12-.85,.09);wheels(.33);lamps(.75);break;
  case 'barchetta':
   round(C,0,.51,0,w*.48,.33,l*.49,true);box('#252b30',0,.80,-.22,w*.68,.04,l*.43);
   for(const side of [-1,1]){box(A,side*w*.2,.91,-.25,.36,.28,.42);round(C,side*w*.19,.83,-l*.26,w*.2,.19,.52,true);}

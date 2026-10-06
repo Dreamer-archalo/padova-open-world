@@ -66,6 +66,12 @@ export function coachMaterial(kind,color){
 }
 function mesh(g,geo,kind,color,x,y,z,sx=1,sy=1,sz=1){const m=new THREE.Mesh(geo,coachMaterial(kind,color));m.position.set(x,y,z);m.scale.set(sx,sy,sz);m.userData.coachPaint=kind==='paint';m.castShadow=m.receiveShadow=true;g.add(m);return m;}
 function box(g,kind,c,x,y,z,w,h,d){return mesh(g,cube,kind,c,x,y,z,w,h,d);}
+// Locate real painted bodywork before mounting trim, lamps or aero supports.
+export function coachSurface(root,origin,direction){
+ root.updateMatrixWorld(true);const matrix=root.matrixWorld,ray=new THREE.Raycaster(new THREE.Vector3(...origin).applyMatrix4(matrix),new THREE.Vector3(...direction).transformDirection(matrix)),body=[];
+ root.traverse(o=>{if(o.isMesh&&(o.userData.coachPaint||o.material.userData.coachBucket==='paint'))body.push(o);});
+ const hit=ray.intersectObjects(body,false)[0];return hit?hit.point.applyMatrix4(new THREE.Matrix4().copy(matrix).invert()):null;
+}
 function polygon(g,kind,c,vertices){const a=[];for(let i=1;i<vertices.length-1;i++)a.push(...vertices[0],...vertices[i],...vertices[i+1]);const geo=new THREE.BufferGeometry();geo.setAttribute('position',new THREE.Float32BufferAttribute(a,3));geo.setAttribute('uv',new THREE.Float32BufferAttribute(a.flatMap((_,i)=>i%3===0?[a[i],a[i+2]]:[]),2));geo.computeVertexNormals();geo.userData.coachTransient=true;const o=mesh(g,geo,kind,c,0,0,0);return o;}
 function insetFace(g,kind,c,points,factor=.87){const center=points.reduce((v,p)=>v.map((n,i)=>n+p[i]/points.length),[0,0,0]);polygon(g,kind,c,points.map(p=>p.map((v,i)=>center[i]+(v-center[i])*factor)));}
 function mix(a,b,t){return a+(b-a)*t;}
@@ -150,7 +156,7 @@ function curvedCabin(g,s,p,paint,finish){
 }
 function lampsAndTrim(g,s,p,paint,finish){
  const w=s.width,l=s.length,b=p[4],front=p[5],classic=s.family==='classic',low=['sport','supercar','convertible'].includes(s.family),lamp=p[8],r=radius(s);
- const noseZ=l*.507,noseWidth=w*.36;
+ const noseZ=l*.5,noseWidth=w*.36;
  box(g,'trim',black,0,front-.17,noseZ,noseWidth,.12,.032);
  if(classic||s.family==='luxury')for(let i=-2;i<=2;i++)box(g,'alloy',chrome,i*w*.065,front-.15,noseZ+.019,.022,.14,.02);
  for(const side of [-1,1]){
@@ -177,7 +183,7 @@ function lampsAndTrim(g,s,p,paint,finish){
  }
  // License plate backing, bumper insert and realistic lower rocker line.
  for(const side of [-1,1])box(g,'trim','#30373b',side*w*.449,.30,-.01,.025,.043,l*.71);
- box(g,'trim','#d7dace',0,b-.23,-l*.501,.30,.072,.016);box(g,'glass','#4c638e',-.134,b-.23,-l*.512,.025,.065,.007);
+ box(g,'trim','#d7dace',0,b-.23,-l*.501,.30,.072,.016);box(g,'glass','#4c638e',-.134,b-.23,-l*.499-.01,.025,.065,.007);
  if(finish.livery==='coach-stripe')for(const side of [-1,1])box(g,'alloy','#c5c2ac',side*w*.467,b-.185,0,.01,.022,l*.67);
  if(finish.livery==='twin-stripe')for(const side of [-1,1]){
   const outline=p[7]>=.075?[[-.5,.65],[-.47,.84],[-.37,.96],[-.20,1],[.15,.99],[.32,.96],[.44,.87],[.5,.67]]:[[-.5,.77],[-.44,.94],[-.30,1],[-.07,.99],[.23,.98],[.39,.94],[.5,.75]],tops=[[-.5,b-.14],[-.43,b-.045],[-.20,b+.025],[.15,b+.02],[.32,b-.025],[.46,front+.035],[.5,front-.055]];

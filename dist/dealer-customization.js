@@ -1,5 +1,5 @@
 import * as THREE from './vendor/three.module.js';
-import {coachMaterial,compactCoachwork} from './car-coachwork.js';
+import {coachMaterial,compactCoachwork,coachSurface} from './car-coachwork.js';
 
 // A single catalogue drives compatibility, prices, saved builds and the UI.
 export const DEALER_OPTIONS={
@@ -51,13 +51,14 @@ function surfaceDecoration(root,s,livery){
 }
 export function applyDealerUpgrades(root,s,build={}){
  if(root.scale.x!==1||root.scale.y!==1||root.scale.z!==1){root.traverse(o=>{if(o.isMesh){o.geometry=o.geometry.clone();o.geometry.scale(root.scale.x,root.scale.y,root.scale.z);}});root.scale.set(1,1,1);}
- const selected=normalizeDealerOptions({...s,vehicleType:root.userData.vehicleType},build).selected,w=s.width,l=s.length,h=s.height,bike=!!s.bike||w<1.15;
+ const selected=normalizeDealerOptions({...s,vehicleType:root.userData.vehicleType},build).selected,w=s.width,l=s.length,h=s.height,bike=!!s.bike||w<1.15,work=['work','freight','van'].includes(s.family),ape=root.userData.vehicleType==='ape';
  if(selected.bodykit==='touring')for(const side of [-1,1])box(root,'alloy','#c8c3ad',side*w*.46,.47,0,.02,.035,l*.72);
  if(selected.bodykit==='sport'){
   box(root,'trim','#303a41',0,.31,l*.467,w*.83,.048,.16);
   for(const side of [-1,1])box(root,'trim','#303a41',side*w*.43,.32,0,.045,.055,l*.69);
-  box(root,'trim','#303a41',0,h*.65,-l*.41,w*.82,.056,.19);
-  for(const side of [-1,1])box(root,'alloy','#6e7e87',side*w*.30,h*.58,-l*.41,.025,h*.14,.035);
+  const deck=coachSurface(root,[0,h+1,-l*.41],[0,-1,0])?.y||h*.48,wing=deck+.14;
+  box(root,'trim','#303a41',0,wing,-l*.41,w*.82,.056,.19);
+  for(const side of [-1,1]){const mount=coachSurface(root,[side*w*.30,h+1,-l*.41],[0,-1,0])?.y||deck;box(root,'alloy','#6e7e87',side*w*.30,(mount+wing)/2,-l*.41,.025,wing-mount,.035);}
  }
  if(selected.exhaust&&selected.exhaust!=='standard')for(const side of selected.exhaust==='dual'?[-1,1]:[1]){
   const o=add(root,cylinder,'alloy','#aeb9bd',side*w*(bike?.25:.30),bike?.41:.30,-l*.44,.057,.18,.057);o.rotation.x=Math.PI/2;
@@ -66,16 +67,17 @@ export function applyDealerUpgrades(root,s,build={}){
  if(selected.interior==='premium'){
   // Open cars and motorcycles visibly show their upholstery. Closed cars keep
   // real seat geometry inside the cabin, with the same finish when viewed close.
-  for(const side of bike?[0]:[-1,1]){box(root,'trim','#9b6746',side*w*.20,bike?(root.userData.riderSeat?.y||.88)+.028:h*.51,-l*.07,bike?w*.50:w*.21,.055,l*(bike?.20:.13));if(!bike){const back=box(root,'trim','#9b6746',side*w*.20,h*.64,-l*.135,w*.22,h*.24,.095);back.rotation.x=-.14;}box(root,'trim','#d8b994',side*w*.20,bike?(root.userData.riderSeat?.y||.88)+.062:h*.54,-l*.07,bike?w*.38:w*.16,.008,l*(bike?.18:.11));}
+  const seatZ=ape?.61:work?l*.5-1.50:-l*.07,seatLength=work?.45:l*.13;
+  for(const side of bike?[0]:[-1,1]){box(root,'trim','#9b6746',side*w*.20,bike?(root.userData.riderSeat?.y||.88)+.028:h*.51,bike?-l*.07:seatZ,bike?w*.50:w*.21,.055,bike?l*.20:seatLength);if(!bike){const back=box(root,'trim','#9b6746',side*w*.20,h*.64,seatZ-seatLength*.5,w*.22,h*.24,.095);back.rotation.x=-.14;}box(root,'trim','#d8b994',side*w*.20,bike?(root.userData.riderSeat?.y||.88)+.062:h*.54,bike?-l*.07:seatZ,bike?w*.38:w*.16,.008,bike?l*.18:seatLength*.85);}
  }
  surfaceDecoration(root,s,selected.livery);
  if(selected.roof&&selected.roof!=='standard'||selected.livery==='two-tone'){
   const color=new THREE.Color(selected.roof==='black'?'#2b343b':'#dcd5c1');
   root.traverse(o=>{if(!o.isMesh)return;const p=o.geometry.attributes.position,mask=o.geometry.attributes.collectorPaint;if(!mask?.array.some(v=>v))return;o.geometry=o.geometry.clone();const c=o.geometry.attributes.color,m=o.geometry.attributes.collectorPaint;for(let i=0;i<p.count;i++)if(mask.getX(i)&&p.getY(i)>h*.9&&Math.abs(p.getX(i))<w*.39&&p.getZ(i)>-l*.35&&p.getZ(i)<l*.23){c.setXYZ(i,color.r,color.g,color.b);m.setX(i,0);}c.needsUpdate=true;});
  }
- if(selected.cargo==='rails'){for(const side of [-1,1])box(root,'alloy','#a0afb3',side*w*.31,h+.018,-l*.20,.035,.036,l*.42);for(let i=0;i<4;i++)box(root,'alloy','#a0afb3',w*.43,.85+i*.25,-l*.40,.04,.021,.20);}
+ if(selected.cargo==='rails'){const open=ape||s.family==='pickup',railY=open?(ape?1.02:h*.65):h-.005,railX=open?w*.46:w*.31;for(const side of [-1,1]){box(root,'alloy','#a0afb3',side*railX,railY,-l*.24,.035,.036,l*.38);for(const z of [-l*.39,-l*.09])box(root,'alloy','#a0afb3',side*railX,railY-.05,z,.04,.10,.04);}for(let i=0;i<4;i++)box(root,'alloy','#a0afb3',w*.48,(open?.53:.85)+i*(open?.12:.25),-l*.40,.04,.021,.20);}
  if(selected.cargo==='toolbox')for(const side of [-1,1]){box(root,'alloy','#838f92',side*w*.32,.71,-l*.12,w*.16,.24,l*.20);box(root,'trim','#39484e',side*w*.32,.85,-l*.12,w*.16,.02,l*.20);}
- if(selected.brakes&&selected.brakes!=='standard')for(const side of [-1,1])for(const z of [-s.wheelbase/2,s.wheelbase/2])box(root,'trim',selected.brakes==='race'?'#b44f36':'#a79d68',side*w*.443,.40,z+.12,.015,.10,.06);
+ if(selected.brakes&&selected.brakes!=='standard')for(const side of [-1,1])for(const z of [-s.wheelbase/2,s.wheelbase/2])box(root,'trim',selected.brakes==='race'?'#b44f36':'#a79d68',side*(bike?.101:w*.443),.40,z+.12,.015,.10,.06);
  if(selected.suspension&&selected.suspension!=='standard'){
   const amount=selected.suspension==='raised'?.05:-.035;
   // Shift body vertices only: tyres stay on the road and wheelbase is unchanged.

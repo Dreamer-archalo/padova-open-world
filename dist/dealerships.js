@@ -4,7 +4,7 @@ import {VEHICLES,createVehicle,createRider} from './vehicles.js';
 import {createRoadFleet} from './road-fleet-coachwork.js';
 import {COLLECTOR_CARS,createCollectorCar} from './collector-cars.js';
 import {DEALER_OPTIONS,dealerCapabilities,normalizeDealerOptions,dealerBuildSpec,applyDealerUpgrades} from './dealer-customization.js';
-import {compactCoachwork} from './car-coachwork.js';
+import {compactCoachwork,coachSurface,COACHWORK} from './car-coachwork.js';
 import {installVehicleDamage} from './vehicle-damage.js';
 import {vehicleFootprint,polygonsOverlap} from './movement.js';
 export {DEALER_OPTIONS,dealerCapabilities,dealerBuildSpec};
@@ -103,10 +103,11 @@ export function createDealerVehicle(id,paint=null,wheels=null,build=null){
  const gold=v.trim==='sport'?luxuryDark:luxuryGold,glass=luxuryGlass;
  const box=(x,y,z,w,h,d,mat)=>{const m=new THREE.Mesh(detailCube,mat);m.position.set(x,y,z);m.scale.set(w,h,d);g.add(m);};
  const w=base.width,l=base.length,h=base.height;
- box(0,.58,l*.495,w*.62,.085,.08,gold);box(0,.58,-l*.495,w*.68,.07,.08,gold);
+ const bumperY=Math.min(.58,(COACHWORK[v.base]?.[5]||.75)-.14),frontZ=coachSurface(g,[0,bumperY,l],[0,0,-1])?.z||l*.49,rearZ=coachSurface(g,[0,.51,-l],[0,0,1])?.z||-l*.49;
+ box(0,bumperY,frontZ+.018,w*.53,.055,.04,gold);box(0,.51,rearZ-.018,w*.60,.055,.04,gold);
  for(const side of [-1,1]){box(side*w*.43,.6,0,.04,.07,l*.73,gold);box(side*w*.34,h*.72,l*.16,.28,.08,.23,glass);}
  if(v.trim==='suv')box(0,h+.06,-l*.18,w*.62,.09,l*.43,glass);
- if(v.trim==='gt'||v.trim==='sport')box(0,h+.08,-l*.43,w*.83,.09,.28,gold);
+ if(v.trim==='gt'||v.trim==='sport'){const z=-l*.43,deck=coachSurface(g,[0,h+1,z],[0,-1,0])?.y||h*.50,wing=deck+.16;box(0,wing,z,w*.83,.065,.24,gold);for(const side of [-1,1]){const at=coachSurface(g,[side*w*.27,h+1,z],[0,-1,0])?.y||deck;box(side*w*.27,(at+wing)/2,z,.035,wing-at,.09,luxuryDark);}}
  if(v.trim==='limo')box(0,h+.035,-l*.10,w*.44,.035,l*.42,gold);
  if(v.trim==='ev')box(0,.73,l*.499,w*.45,.14,.04,glass);
  return g;

@@ -2,7 +2,7 @@
   "models": [
     {
       "id": "motorcycle",
-      "triangles": 3536,
+      "triangles": 3584,
       "draws": 4,
       "bounds": [
         0.9139999747276306,
@@ -12,7 +12,7 @@
     },
     {
       "id": "scooter",
-      "triangles": 3620,
+      "triangles": 3668,
       "draws": 4,
       "bounds": [
         0.7860000133514404,
@@ -37,12 +37,12 @@
       "bounds": [
         2.065934896469116,
         1.8266400477150455,
-        4.622999906539917
+        4.550999879837036
       ]
     },
     {
       "id": "ape",
-      "triangles": 2318,
+      "triangles": 2366,
       "draws": 4,
       "bounds": [
         1.555999994277954,
@@ -132,7 +132,7 @@
     },
     {
       "id": "supersport",
-      "triangles": 3510,
+      "triangles": 3558,
       "draws": 4,
       "bounds": [
         0.8339999914169312,
@@ -142,7 +142,7 @@
     },
     {
       "id": "enduro",
-      "triangles": 4476,
+      "triangles": 4524,
       "draws": 4,
       "bounds": [
         0.8579999804496765,
@@ -152,7 +152,7 @@
     },
     {
       "id": "naked",
-      "triangles": 3536,
+      "triangles": 3584,
       "draws": 4,
       "bounds": [
         0.8820000290870667,
@@ -162,17 +162,17 @@
     },
     {
       "id": "touring",
-      "triangles": 3606,
+      "triangles": 3654,
       "draws": 4,
       "bounds": [
         1.011199951171875,
         1.4800000190734863,
-        2.4259999990463257
+        2.4267669916152954
       ]
     },
     {
       "id": "trail",
-      "triangles": 4476,
+      "triangles": 4524,
       "draws": 4,
       "bounds": [
         0.8180000185966492,
@@ -182,7 +182,7 @@
     },
     {
       "id": "cruiser",
-      "triangles": 4040,
+      "triangles": 4088,
       "draws": 4,
       "bounds": [
         0.906000018119812,
@@ -192,7 +192,7 @@
     },
     {
       "id": "club_naked",
-      "triangles": 3560,
+      "triangles": 3608,
       "draws": 4,
       "bounds": [
         0.8820000290870667,
@@ -202,7 +202,7 @@
     },
     {
       "id": "club_enduro",
-      "triangles": 4500,
+      "triangles": 4548,
       "draws": 4,
       "bounds": [
         0.8579999804496765,
@@ -212,7 +212,7 @@
     },
     {
       "id": "club_supersport",
-      "triangles": 3534,
+      "triangles": 3582,
       "draws": 4,
       "bounds": [
         0.8339999914169312,
