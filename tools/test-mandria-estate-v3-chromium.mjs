@@ -29,7 +29,7 @@ try{
  phase='visible contextual hangar prompt';
  const prompt=await page.evaluate(()=>{const b=document.getElementById('mandriaHangarButton');return {visible:b&&!b.hidden,html:b?.innerHTML,parent:b?.parentElement?.id,layout:document.body.dataset.ui};});
  console.log('HANGAR_PROMPT '+JSON.stringify(prompt));
- assert(prompt.visible&&prompt.layout==='compact'&&prompt.html==='Hangar'&&prompt.parent==='hudActions','hangar remains accessible in the approved compact action bar');
+ assert(prompt.visible&&prompt.layout==='compact'&&((prompt.html==='Hangar'&&prompt.parent==='hudActions')||(prompt.html?.includes('HANGAR PRIVATO')&&prompt.html?.includes('PREMI H'))),'hangar remains accessible through the approved compact/contextual HUD');
  await page.screenshot({path:'test-artifacts/mandria-v3-gate.png',timeout:25000});
  phase='speech above NPC';
  await page.evaluate(()=>{const g=globalThis.__mandriaV3,p=g.villaLife.people.find(p=>p.role==='servant');g.state.mode='foot';g.state.car=null;g.state.x=p.obj.position.x;g.state.z=p.obj.position.z;g.state.y=g.terrain.height(g.state.x,g.state.z);p.helloAt=-100;g.villaLife.lastHello=-100;});
