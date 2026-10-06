@@ -9,6 +9,10 @@ function paint(){
 }
 toggle?.addEventListener('click',()=>{complete=!complete;try{localStorage.setItem('padova-hud-layout',complete?'complete':'compact');}catch{}paint();});
 paint();
+// Reuse the activities entry point, including race and mission extensions.
+globalThis.document?.getElementById?.('missionSelectBtn')?.addEventListener('click',()=>{
+ globalThis.document?.getElementById?.('activityBtn')?.click();
+});
 export function updateHUDState(state,water){
  const b=globalThis.document?.body;if(!b)return;b.dataset??={};b.dataset.playing=String(!!state.started);b.dataset.driving=String(state.mode==='car');
  b.dataset.aircraft=String(!!state.car?.spec.aircraft);b.dataset.missionActive=String(!!state.mission);
