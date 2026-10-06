@@ -1,6 +1,7 @@
 import * as THREE from './vendor/three.module.js';
 import {dist,angleDiff,clamp} from './core.js';
 import {vehicleBlocked} from './movement.js';
+import {groupBikeSpeed,updateWheelie} from './stunt-traffic.js';
 export class TrafficSignals{
  constructor(graph,mapped=[]){this.graph=graph;this.junctions=new Map();
   const incoming=new Map();for(const s of graph.segments){if(s.road.k==='pedestrian'||s.road.junction==='roundabout'||s.road.roundabout||/motorway|trunk/.test(s.road.k))continue;const direction=s.road.oneway??(s.road.one?1:0);for(const [from,to] of [[s.a,s.b],[s.b,s.a]]){if(direction===1&&to===s.a||direction===-1&&to===s.b)continue;const a=graph.nodes[from],n=graph.nodes[to];if(!incoming.has(to))incoming.set(to,[]);incoming.get(to).push({from,road:s.road,yaw:Math.atan2(n.x-a.x,n.z-a.z)});}}
@@ -30,6 +31,8 @@ export class TrafficSignals{
 export function laneCount(road){const w=road?.w||6;if(road?.oneway??road?.one){const base=Math.floor((w-.5)/3.2);return /motorway|trunk/.test(road?.k||'')&&w>=6.2?clamp(Math.max(2,base),1,3):clamp(base,1,3);}return clamp(Math.floor(w/6),1,3);}
 export function laneOffset(road,lane=0){
  const count=laneCount(road),i=clamp(Math.round(lane),0,count-1),w=road?.w||6;
+ // +yaw is the A/left turn in the game's X/Z coordinates. Negative
+ // lateral offsets are the driver's right; lane 0 is the outer right lane.
  if(road?.oneway??road?.one){const laneWidth=Math.min(3.4,(w-.8)/count);return (i-(count-1)/2)*laneWidth;}
  const laneWidth=Math.min(3.3,(w/2-.5)/count);return -w/2+.5+laneWidth*(i+.5);
 }
@@ -39,13 +42,20 @@ export function laneClearance(car,road,lane,actors,yaw=car.yaw){
  for(const other of actors){if(other===car||!other.mesh?.visible||Math.abs((other.y||0)-(car.y||0))>3)continue;const dx=other.x-car.x,dz=other.z-car.z,ahead=dx*Math.sin(yaw)+dz*Math.cos(yaw),side=dx*Math.cos(yaw)-dz*Math.sin(yaw)+currentOffset,girth=(car.spec.width+(other.spec?.width||1))/2+.55;if(Math.abs(side-targetOffset)>girth)continue;const gap=Math.abs(ahead)-(car.spec.length+(other.spec?.length||1))/2;if(ahead>=0&&gap<front){front=gap;frontActor=other;}else if(ahead<0)rear=Math.min(rear,gap);
  }return {front,rear,frontActor};
 }
-function scooterMood(car){if(!['scooter','motorcycle'].includes(car.style))return null;if(car.scooterMood)return car.scooterMood;const seed=(car.mesh?.id||Math.round((car.x+car.z)*3))%12;car.scooterSeed=Math.abs(seed);car.scooterMood=['group','group','wheelie','zigzag','zigzag','normal','group','wheelie','normal','zigzag','normal','group'][Math.abs(seed)]||'normal';return car.scooterMood;}
-function scooterVisual(car,time,mood){if(!mood||!car.mesh)return;if(!car.scooterVisualBase)car.scooterVisualBase=[...car.mesh.children].map(o=>({o,rx:o.rotation.x,y:o.position.y}));const phase=(time+(car.scooterSeed||0)*1.7)%10,wheelie=mood==='wheelie'&&car.speed>7&&phase>2.2&&phase<5.4,blend=wheelie?Math.min(1,(phase-2.2)*2,(5.4-phase)*2):0,angle=-.30*Math.max(0,blend),lift=.22*Math.max(0,blend);for(const v of car.scooterVisualBase){if(!v.o.parent)continue;v.o.rotation.x=v.rx+angle;v.o.position.y=v.y+lift;}car.mesh.userData.npcScooterMood=mood;}
+function scooterMood(car){if(!car.spec?.bike&&!['scooter','motorcycle'].includes(car.style))return null;if(car.bikerGroup)return 'group';if(car.scooterMood)return car.scooterMood;const seed=(car.mesh?.id||Math.round((car.x+car.z)*3))%12;car.scooterSeed=Math.abs(seed);car.scooterMood=['group','group','wheelie','zigzag','zigzag','normal','group','wheelie','normal','zigzag','normal','group'][Math.abs(seed)]||'normal';return car.scooterMood;}
+function scooterVisual(car,time,mood){
+ if(!mood||!car.mesh)return;
+ const phase=(time+(car.bikerGroup?car.bikerOrder*.4:car.scooterSeed||0)*1.7)%12;
+ const held=!!mood&&(mood==='wheelie'||!!car.bikerGroup)&&phase>3&&phase<6;
+ const dt=Math.min(.15,Math.max(0,time-(car.wheelieAt??time)));car.wheelieAt=time;
+ updateWheelie(car,held,dt);if(car.mesh.userData)car.mesh.userData.npcScooterMood=mood;
+}
 export function trafficLane(car,target,actors,player,time,nextYaw=null){
  const count=laneCount(car.road);car.lane=clamp(car.lane||0,0,count-1);let desired=clamp(car.desiredLane??car.lane,0,count-1),yaw=Math.atan2(target.x-car.x,target.z-car.z),remaining=dist(car,target),mood=scooterMood(car);
  scooterVisual(car,time,mood);
  const safe=lane=>{const q=laneClearance(car,car.road,lane,actors,yaw);return q.front>Math.max(10,car.speed*.8)&&q.rear>Math.max(9,car.speed*.45);};
- if(nextYaw!==null&&remaining<75){const turn=angleDiff(nextYaw,yaw);desired=turn>.3?count-1:0;car.laneReason='svincolo';}
+ const junctionTurn=nextYaw!==null&&remaining<75?angleDiff(nextYaw,yaw):0;
+ if(Math.abs(junctionTurn)>.3){const lane=junctionTurn>0?count-1:0;if(lane===desired||safe(lane)){desired=lane;car.laneReason='svincolo';}}
  else if(time>=(car.laneDecisionAt||0)){
   const here=laneClearance(car,car.road,desired,actors,yaw),dx=(player?.x??Infinity)-car.x,dz=(player?.z??Infinity)-car.z,behind=dx*Math.sin(yaw)+dz*Math.cos(yaw),side=dx*Math.cos(yaw)-dz*Math.sin(yaw),fastPlayer=player&&behind<0&&behind>-55&&Math.abs(side)<2.2&&Math.abs(player.speed||0)>car.speed+8;
   if(mood==='zigzag'&&count>1){const options=[desired-1,desired+1].filter(l=>l>=0&&l<count&&safe(l));if(options.length){desired=options[(Math.floor(time*1.7)+(car.scooterSeed||0))%options.length];car.laneReason='scooter zigzag';car.scooterSlalom=true;}}
@@ -64,8 +74,8 @@ export function advanceTrafficSpeed(car,desired,dt){const wanted=clamp((desired-
 export function curbParkingTarget(car,node,terrain,collision,actors=[]){
  const road=car.road;if(!node||!road||road.w<6.5||road.w>15||!/^(residential|tertiary|secondary|unclassified|service)$/.test(road.k||''))return null;
  const ahead=dist(car,node);if(ahead<18)return null;
- const yaw=Math.atan2(node.x-car.x,node.z-car.z),along=Math.min(20,ahead-8),cx=car.x+Math.sin(yaw)*along,cz=car.z+Math.cos(yaw)*along;
- for(const side of [1,-1]){const offset=road.w/2+car.spec.width/2+.5,x=cx+Math.cos(yaw)*side*offset,z=cz-Math.sin(yaw)*side*offset,y=terrain.height(x,z,car.y);
+ const yaw=car.yaw,along=Math.min(20,ahead-8),cx=car.x+Math.sin(yaw)*along,cz=car.z+Math.cos(yaw)*along;
+ for(const side of [-1]){const offset=road.w/2+car.spec.width/2+.5-side*(car.laneOffset??laneOffset(road,car.lane||0)),x=cx+Math.cos(yaw)*side*offset,z=cz-Math.sin(yaw)*side*offset,y=terrain.height(x,z,car.y);
   const exit={x:x+Math.cos(yaw)*side*(car.spec.width/2+1),z:z-Math.sin(yaw)*side*(car.spec.width/2+1)};
   if(!terrain.dry(x,z,car.spec.width/2,y)||!terrain.dry(exit.x,exit.z,.4,y)||vehicleBlocked(x,z,yaw,collision,car.spec,y))continue;
   if(actors.some(a=>a!==car&&a.mesh?.visible&&Math.abs((a.y||0)-y)<3&&dist(a,{x,z})<(a.spec.length+car.spec.length)/2+2))continue;
@@ -81,5 +91,5 @@ export function trafficSpeed(car,target,actors,signals,time,{nextYaw=null}={}){c
  const j=signals.junctions?.get(car.target),remaining=dist(car,target)-(j?.radius||3)-car.spec.length/2;
  if(!signals.allowed(car.target,time,yaw)&&remaining> -car.spec.length)speed=Math.min(speed,remaining<.25?0:Math.sqrt(2*car.spec.brake*.65*Math.max(0,remaining)));
  if(!signals.allowed(car.target,time,yaw)&&dist(car,target)<7)speed=0;
- for(const other of actors){if(other===car||!other.mesh?.visible||Math.abs((other.y||0)-(car.y||0))>3)continue;const dx=other.x-car.x,dz=other.z-car.z,ahead=dx*Math.sin(car.yaw)+dz*Math.cos(car.yaw),side=Math.abs(dx*Math.cos(car.yaw)-dz*Math.sin(car.yaw)),gap=ahead-(car.spec.length+(other.spec?.length||1))/2;if(ahead>0&&side<(car.spec.width+(other.spec?.width||1))/2+.35&&gap<Math.max(4,car.speed*1.3))speed=Math.min(speed,Math.max(0,(gap-2)*.6));}return speed;
+ for(const other of actors){if(other===car||!other.mesh?.visible||Math.abs((other.y||0)-(car.y||0))>3)continue;const dx=other.x-car.x,dz=other.z-car.z,ahead=dx*Math.sin(car.yaw)+dz*Math.cos(car.yaw),side=Math.abs(dx*Math.cos(car.yaw)-dz*Math.sin(car.yaw)),gap=ahead-(car.spec.length+(other.spec?.length||1))/2;if(ahead>0&&side<(car.spec.width+(other.spec?.width||1))/2+.35&&gap<Math.max(4,car.speed*1.3))speed=Math.min(speed,Math.max(0,(gap-2)*.6));}return Math.min(speed,groupBikeSpeed(car,actors,speed));
 }

@@ -46,7 +46,7 @@
     "militaryCount": 2,
     "militaryPursuit": true,
     "actualEnemyProjectileDefeat": true,
-    "respawnAtTreves": true,
+    "respawnNearDefeat": true,
     "healthReset": true,
     "characterRetained": true,
     "enemiesAndShellsCleared": true,
@@ -64,11 +64,11 @@
   "performance": {
     "interpolation120Frames": {
       "before": {
-        "milliseconds": 287.8787090000005,
+        "milliseconds": 149.19315500000084,
         "terrainQueries": 11400
       },
       "after": {
-        "milliseconds": 4.834524000001693,
+        "milliseconds": 1.7054270000007818,
         "terrainQueries": 0
       }
     },

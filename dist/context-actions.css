@@ -1,0 +1,11 @@
+#contextActions{position:fixed;left:50%;bottom:110px;transform:translateX(-50%);z-index:60;display:flex;flex-direction:column;gap:6px;width:min(380px,calc(100vw - 28px));max-height:min(240px,calc(100dvh - 170px));overflow:auto;overscroll-behavior:contain}
+#contextActions[hidden],#contextActions .context-action[hidden]{display:none!important}
+body.mandria-sniper #contextActions{display:none!important}
+#contextActions .context-action{display:flex;align-items:center;gap:8px;border:1px solid #ffc56a80;border-radius:7px;background:#10222cec;box-shadow:0 5px 18px #0005;padding:6px 8px}
+#contextActions .context-action>[data-hud-action]{position:static!important;inset:auto!important;transform:none!important;box-shadow:none!important;border:0!important;border-radius:3px!important;background:transparent!important;color:#f6f3e9!important;padding:8px!important;margin:0!important;min-width:0!important;width:auto!important;max-width:none!important;flex:1;text-align:left;font:600 12px/1.4 system-ui!important;overflow-wrap:anywhere}
+#contextActions .context-action>button[data-hud-action]{cursor:pointer;min-height:36px}
+#contextActions .context-action>button[data-hud-action]:hover{background:#ffc56a1c!important;color:#ffd596!important}
+#contextActions .context-dismiss{flex:none;width:30px;height:32px;padding:0;border-radius:5px;color:#cbd7dc;font-size:22px;line-height:1}
+@media(pointer:coarse){#contextActions{bottom:265px}.context-action .context-dismiss{width:36px;height:36px}}
+@media(max-height:500px){#contextActions{bottom:110px;max-height:calc(100dvh - 180px);width:min(360px,calc(100vw - 300px))}}
+@media(max-height:500px) and (pointer:coarse){#contextActions{bottom:156px;max-height:calc(100dvh - 230px)}}

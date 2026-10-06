@@ -80,6 +80,7 @@ export class MissionSystem{
  clearGuides(){if(this.guideRoot&&this.game){this.game.scene.remove(this.guideRoot);this.guideRoot.traverse(o=>{if(o.isMesh){o.geometry?.dispose?.();o.material?.dispose?.();}});}this.guideRoot=null;}
  update(game){
   this.game=game;const p=this.pending;if(!p)return;
+  if(game.state.mission?.type==='bikerclub'){this.clearGuides();this.pending=null;this.taxiTransaction=null;return;}
   if(p.mode==='taxi'&&game.state.elapsed>=p.arriveAt){
    this.transfer(game,p.target);const action=p.action,ready=requirementMet(game.state,p.requires);this.pending=null;this.taxiTransaction=null;
    if(ready){this.pending={bypass:false};this.invoke(action);this.pending=null;}else game.toast('Arrivato alla missione. Preparati con il veicolo richiesto e selezionala di nuovo.',5);

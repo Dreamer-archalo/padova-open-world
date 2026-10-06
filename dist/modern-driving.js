@@ -60,12 +60,8 @@ export function pedestrianIntent(p,time,actors,player,signals,graph){
  let speed=profile==='runner'?2.8:profile==='stroll'?.7:profile==='idle'||profile==='poi'?0:1.25;
  const cycle=(time+p.seed*2.1)%20;if(profile==='wait'&&cycle<9||profile==='group'&&cycle<4)speed=0;
  let yaw=p.yaw,crossing=false;if((profile==='destination'||profile==='poi')&&p.destination){const d=dist(p,p.destination);if(d>1.5){yaw=Math.atan2(p.destination.x-p.x,p.destination.z-p.z);speed=1.2;}else speed=0;}
- if(profile==='cross'&&p.road&&p.road.w<13){
-  if(!p.crossGoal&&cycle<3)p.crossGoal={x:p.anchor.x-Math.cos(p.roadYaw)*p.side*(p.road.w+2.5),z:p.anchor.z+Math.sin(p.roadYaw)*p.side*(p.road.w+2.5)};
-  if(p.crossGoal){const busy=actors.some(c=>c.mesh.visible&&Math.abs(c.speed)>1&&dist(c,p)<Math.max(12,Math.abs(c.speed)*2));if(busy)speed=0;else{crossing=true;yaw=Math.atan2(p.crossGoal.x-p.x,p.crossGoal.z-p.z);speed=1.4;}
-   if(dist(p,p.crossGoal)<.6){p.anchor={...p.crossGoal};p.crossGoal=null;p.side*=-1;p.at=time+12;}
-  }
- }
+ // Crossings are assigned only by the director at marked zebra stripes.
+ if(profile==='cross'){speed=1.1;yaw=p.roadYaw;p.crossGoal=null;}
  const nearby=actors.filter(c=>c.mesh?.visible&&Math.abs((c.y||0)-(p.y||0))<3).sort((a,b)=>dist(a,p)-dist(b,p)),threat=nearby.find(c=>Math.abs(c.speed)>3&&dist(c,p)<Math.max(8,Math.abs(c.speed)*1.25));
  const wantedPanic=(player.wanted||0)>=3&&dist(p,player)<16;
  if(threat){const d=Math.max(.01,dist(threat,p)),side=(p.seed%2?1:-1)*.42;speed=3.65;yaw=Math.atan2((p.x-threat.x)/d+Math.cos(threat.yaw||0)*side,(p.z-threat.z)/d-Math.sin(threat.yaw||0)*side);crossing=false;}

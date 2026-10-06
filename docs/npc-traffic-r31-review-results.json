@@ -1,0 +1,15 @@
+{
+  "rightSteeringAlignment": true,
+  "straightLane": true,
+  "safeTurnMerge": true,
+  "curbOffset": true,
+  "regionalBlast": {
+    "health": 22.022400174047775,
+    "blasts": 1
+  },
+  "regionalRespawn": true,
+  "regionalRampAscent": true,
+  "sidewalkContinuity": true,
+  "regionalRestrictions": true,
+  "crosswalkCompletion": true
+}

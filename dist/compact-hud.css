@@ -1,5 +1,5 @@
 body[data-playing="false"] .topbar,body[data-playing="false"] #hudActions{display:none}
-/* Compact is the default. HUD + restores the complete original information. */
+/* The game always uses the compact HUD. */
 body[data-ui="compact"][data-playing="true"] .topbar{padding:18px 24px;background:linear-gradient(#0c1a2566,transparent)}
 body[data-ui="compact"][data-playing="true"] .wordmark,
 body[data-ui="compact"] .location .eyebrow,
@@ -45,11 +45,9 @@ body[data-ui="compact"] .cruise-control[data-active="false"] [data-cruise="up"],
 body[data-ui="compact"] .cruise-control[data-active="false"] [data-cruise="down"]{display:none}
 body[data-ui="compact"] .cruise-control>div{justify-content:flex-end}
 body[data-ui="compact"] .health-row{margin-top:7px}
-#hudDetailsBtn{font-size:10px!important;width:54px!important;border-radius:6px!important;font-weight:700;white-space:nowrap}
 #hudActions{position:fixed;z-index:3;bottom:24px;left:24px;display:flex;gap:8px}
 #hudActions button{padding:8px 10px;font-size:11px;background:#10222cda;border-radius:5px}
 #hudActions kbd{font-size:9px;margin:0 0 0 5px;padding:1px 3px}
-body[data-ui="complete"] #hudActions{left:295px;bottom:90px}
 body[data-ui="compact"] .interaction{bottom:105px;padding:10px 15px;font-size:12px;max-width:calc(100vw - 32px)}
 body[data-ui="compact"] #credits{left:auto;right:24px;bottom:5px;font-size:8px;gap:8px}
 body[data-ui="compact"] #credits span,body[data-ui="compact"] #credits a:nth-child(2){display:none}
@@ -70,13 +68,11 @@ body[data-ui="compact"] #mandriaHangarButton:not([hidden]),body[data-ui="compact
  body[data-ui="compact"] .driving{right:14px;width:174px;padding:10px}
  body[data-ui="compact"] .driving .speed>span{font-size:48px}
  #hudActions{left:14px;gap:5px;width:172px;display:grid;grid-template-columns:repeat(2,minmax(0,1fr))}#hudActions button{padding:8px;font-size:10px}#hudActions kbd{display:none}
- body[data-ui="complete"] #hudActions{left:14px;bottom:90px}
  body[data-ui="compact"] .mission{left:14px;width:220px}
 }
 @media(pointer:coarse){
  body[data-ui="compact"] .minimap{bottom:196px}
  body[data-ui="compact"] .driving{bottom:196px}
- #hudActions,body[data-ui="complete"] #hudActions{bottom:156px}
  body[data-ui="compact"] .interaction{bottom:265px}
  body[data-ui="compact"] #touchControls{left:14px;right:14px;bottom:24px;align-items:flex-end}
  body[data-ui="compact"] #touchControls>div{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px;max-width:none}
