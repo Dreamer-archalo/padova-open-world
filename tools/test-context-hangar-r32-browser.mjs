@@ -3,7 +3,7 @@ import fs from 'node:fs';
 import {chromium} from 'playwright';
 
 fs.mkdirSync('test-artifacts/hud-r32',{recursive:true});
-const browser=await chromium.launch({headless:true,args:['--enable-webgl','--use-gl=angle','--use-angle=swiftshader','--disable-dev-shm-usage','--js-flags=--max-old-space-size=3072']});
+const browser=await chromium.launch({headless:true,executablePath:process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH,args:['--enable-webgl','--use-gl=angle','--use-angle=swiftshader','--disable-dev-shm-usage','--js-flags=--max-old-space-size=3072']});
 const page=await browser.newPage({viewport:{width:1280,height:800}});
 const errors=[];page.on('pageerror',e=>errors.push(e.message));
 try{
@@ -37,18 +37,21 @@ try{
  assert(!await page.locator('#contextActions').isVisible());
  await page.locator('#hangarClose').click();
  await hangar.waitFor({state:'visible'});
- await page.locator('#hudDetailsBtn').click();
- assert.equal(await page.evaluate(()=>document.body.dataset.ui),'complete');
+ assert.equal(await page.locator('#hudDetailsBtn').count(),0);
+ assert(await page.locator('#commandGuide').isVisible());
  await hangar.click();
  await page.waitForFunction(()=>document.getElementById('mandriaHangarDialog')?.open);
  await page.locator('#hangarClose').click();
- await page.locator('#hudDetailsBtn').click();
  await hangar.locator('..').getByRole('button',{name:'Chiudi avviso'}).click();
  assert(!await hangar.isVisible());
  await page.keyboard.press('h');
  await page.waitForFunction(()=>document.getElementById('mandriaHangarDialog')?.open);
  assert(await page.locator('#hangarGrid [data-hangar-id]').count()>0,'dismissal does not disable the H shortcut');
  await page.locator('#hangarClose').click();
+ await page.keyboard.press('x');
+ await page.waitForFunction(()=>document.getElementById('menu')?.open);
+ await page.keyboard.press('x');
+ await page.waitForFunction(()=>!document.getElementById('menu')?.open);
  assert.deepEqual(errors,[],'no real-world JavaScript errors');
- console.log('PASS real game: compact default despite saved complete preference; contextual hangar, H catalogue, complete HUD click, and H after dismissing the alert.');
+ console.log('PASS real game: compact default despite saved complete preference; contextual hangar, H catalogue, compact HUD click and X pause/resume, and H after dismissing the alert.');
 }finally{await browser.close();}

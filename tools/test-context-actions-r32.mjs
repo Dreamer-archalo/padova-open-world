@@ -31,10 +31,9 @@ try{
   assert(!await page.locator('#contextActions').isVisible(),'no alerts before gameplay');
   await page.evaluate(()=>{state.started=true;hud.updateHUDState(state,{active:false});});
   assert.equal(await page.evaluate(()=>document.body.dataset.ui),'compact','stored complete preference cannot enable extra HUD at entry');
-  assert.equal(await page.locator('#hudDetailsBtn').textContent(),'HUD +');
+  assert.equal(await page.locator('#hudDetailsBtn').count(),0,'HUD expansion option removed');
   assert(await page.locator('#interact').isVisible(),'vehicle E hint appears in compact HUD');
-  for(const ui of ['compact','complete']){
-   if(ui==='complete')await page.locator('#hudDetailsBtn').click();
+  for(const ui of ['compact']){
    assert.equal(await page.evaluate(()=>document.body.dataset.ui),ui);
    for(const id of ['mandriaHangarButton','mandriaWorkerPrompt','dealerBtnFixturePrompt']){
     await page.evaluate(id=>{
@@ -44,7 +43,7 @@ try{
     const action=page.locator('#'+id);assert(await action.isVisible(),id+' must be visible with '+ui);
     const geometry=await action.evaluate(el=>{const r=el.getBoundingClientRect();return {inside:r.x>=0&&r.y>=0&&r.right<=innerWidth&&r.bottom<=innerHeight,clickable:el.contains(document.elementFromPoint(r.x+r.width/2,r.y+r.height/2))};});
     assert(geometry.inside&&geometry.clickable,'context action reachable '+JSON.stringify({hasTouch,width,height,ui,id,geometry}));
-    await action.click();assert.equal(await page.evaluate(id=>calls[id],id),ui==='compact'?1:2,'original action handler is preserved');
+    await action.click();assert.equal(await page.evaluate(id=>calls[id],id),1,'original action handler is preserved');
     await action.locator('..').getByRole('button',{name:'Chiudi avviso'}).click();
     assert(!await action.isVisible(),'X hides the current hint');
     assert(!await action.evaluate(el=>el.hidden),'X does not disable the real gameplay action');
@@ -76,13 +75,13 @@ try{
   assert(!await page.locator('#contextActions').isVisible());
   await page.evaluate(()=>{state.started=true;hud.updateHUDState(state,{active:false});});
   assert.equal(await page.evaluate(()=>document.body.dataset.ui),'compact','new session resets HUD without reload');
-  await page.locator('#hudDetailsBtn').click();
-  assert.equal(await page.evaluate(()=>document.body.dataset.ui),'complete');
+  await page.evaluate(()=>{document.body.dataset.ui='complete';hud.updateHUDState(state,{active:false});});
+  assert.equal(await page.evaluate(()=>document.body.dataset.ui),'compact');
   await page.reload();
   await page.evaluate(async()=>{await import('./compact-hud.js');});
   assert.equal(await page.evaluate(()=>document.body.dataset.ui),'compact','page reload always starts compact');
   assert.deepEqual(errors,[]);
   await page.close();
  }
- console.log(`PASS ${layouts} contextual action layouts: mouse/touch, compact/complete, original callbacks, dismissal and re-entry, future controls, dialogs, fresh session and reload defaults.`);
+ console.log(`PASS ${layouts} contextual action layouts: mouse/touch, compact only, original callbacks, dismissal and re-entry, future controls, dialogs, fresh session and reload defaults.`);
 }finally{await browser.close();server.kill();}

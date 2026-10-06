@@ -1,4 +1,4 @@
-name: Compact HUD and contextual actions R32
+name: Compact HUD and contextual commands R34
 on:
   push:
     branches: [fix/compact-hud-actions-r32]
@@ -7,6 +7,11 @@ on:
       - dist/compact-hud.js
       - dist/context-actions.js
       - dist/context-actions.css
+      - dist/command-guide.js
+      - dist/command-guide.css
+      - dist/game.js
+      - dist/cruise-control.js
+      - tools/test-command-guide-r34.mjs
       - dist/index.html
       - tools/test-context-actions-r32.mjs
       - tools/test-context-hangar-r32-browser.mjs
@@ -27,3 +32,4 @@ jobs:
       - run: node --check dist/compact-hud.js && node --check dist/context-actions.js
       - run: node tools/test-context-actions-r32.mjs
       - run: node tools/test-mission-selector-r31.mjs
+      - run: node tools/test-command-guide-r34.mjs
