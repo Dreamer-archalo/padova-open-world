@@ -22,7 +22,7 @@ jobs:
     steps:
       - uses: actions/checkout@v6
         with:
-          ref: 333236c052bc3db2b79b63fb161ae068590bfb71
+          ref: 85f520e4f7b93288a6a2c634825f03abb5c6fb13
           persist-credentials: false
       - uses: actions/setup-node@v4
         with:
@@ -87,7 +87,7 @@ jobs:
         run: |
           set -euo pipefail
           cd .published
-          find . -type f -print0 | sort -z | xargs -0 sha256sum > "$RUNNER_TEMP/hud-r32-retained.sha256"
+          find . -path './preview/hud-commands-r34' -prune -o -type f -print0 | sort -z | xargs -0 sha256sum > "$RUNNER_TEMP/hud-r32-retained.sha256"
           cd ..
           mkdir -p .published/preview/hud-commands-r34
           rsync -a --exclude=preview dist/ .published/preview/hud-commands-r34/
