@@ -18,7 +18,10 @@ const catalogue=[
  ['saetta','Saetta S','sport',1.9,4.15,1.22,52],['vortice','Vortice GT','sport',1.98,4.65,1.3,57],
  ['fulmine','Fulmine R','supercar',2.04,4.5,1.1,65],['zenit','Zenit V','supercar',2.1,4.85,1.16,68],
  ['doge','Doge Grand','luxury',2.02,5.35,1.56,49],['aurora','Aurora Royale','luxury',2.08,5.65,1.65,51],
- ['lido','Lido Spider','convertible',1.85,4.1,1.25,45],['sestante','Sestante Executive','luxury',1.99,5.1,1.48,48]
+ ['lido','Lido Spider','convertible',1.85,4.1,1.25,45],['sestante','Sestante Executive','luxury',1.99,5.1,1.48,48],
+ ['goccia','Goccia 2+2','city',1.68,3.35,1.55,31],['cortile','Cortile 3P','compact',1.79,3.72,1.43,34],
+ ['linea','Linea Fastback','sedan',1.92,4.78,1.43,41],['brina','Brina Shooting Brake','wagon',1.9,4.62,1.49,39],
+ ['roccia','Roccia Coupé','suv',2.0,4.63,1.72,38],['targa','Targa Aperta','convertible',1.88,4.22,1.22,46]
 ];
 export const NPC_VEHICLES=Object.fromEntries(catalogue.map(([id,name,family,width,length,height,max],i)=>[id,{name,family,width,length,height,max,boost:max*1.13,reverse:7,accel:family==='supercar'?15:family==='van'?5:8+i%5,brake:20,wheelbase:length*.61,steer:Math.min(1.3,4.7/length),npcOnly:true,variant:i}]));
 Object.assign(VEHICLES,NPC_VEHICLES);
@@ -56,7 +59,25 @@ export function createNPCCar(type,color='#76828c',wheelColor='standard'){
  if(type==='ambra'||type==='vortice'||type==='zenit'||type==='lido')return roundedCar(type,color,wheelColor);
  if(['saetta','fulmine'].includes(type))return createWedgeCar(color,w,l,h,type==='fulmine');
 
- if(type==='nido'){
+ if(type==='goccia'){
+  ellipsoid(g,color,0,.57,.05,w*.49,.40,l*.49);ellipsoid(g,glass,0,1.07,-.05,w*.39,.42,l*.34);ellipsoid(g,color,0,1.39,-.08,w*.37,.08,l*.30);
+  for(const side of [-1,1])box(g,'#d8dfd9',side*w*.29,.66,l*.485,w*.15,.12,.035);finishRoadCar(g,s,wheelColor);
+ }else if(type==='cortile'){
+  box(g,color,0,.56,.06,w*.92,.43,l*.94);ellipsoid(g,glass,0,1.03,-.12,w*.40,.33,l*.31);const rear=box(g,glass,0,1.00,-l*.42,w*.70,.42,.04);rear.rotation.x=-.30;
+  box(g,color,0,1.30,-.30,w*.76,.10,l*.39);for(const side of [-1,1])box(g,dark,side*w*.45,.72,-.04,.03,.07,l*.70);finishRoadCar(g,s,wheelColor);
+ }else if(type==='linea'){
+  ellipsoid(g,color,0,.55,.06,w*.50,.36,l*.49);ellipsoid(g,glass,0,1.02,-.08,w*.40,.32,l*.37);const fastback=ellipsoid(g,color,0,1.26,-l*.13,w*.40,.08,l*.38);fastback.rotation.x=-.05;
+  box(g,dark,0,.52,-l*.49,w*.61,.11,.04);finishRoadCar(g,s,wheelColor);
+ }else if(type==='brina'){
+  box(g,color,0,.56,.02,w*.92,.45,l*.96);ellipsoid(g,glass,0,1.08,-.18,w*.39,.36,l*.38);box(g,color,0,1.38,-.23,w*.78,.11,l*.58);const hatch=box(g,glass,0,1.10,-l*.44,w*.70,.46,.04);hatch.rotation.x=-.10;
+  box(g,color,0,.84,l*.34,w*.84,.28,l*.23);finishRoadCar(g,s,wheelColor);
+ }else if(type==='roccia'){
+  box(g,dark,0,.40,0,w*.96,.17,l*.84);ellipsoid(g,color,0,.66,.05,w*.50,.45,l*.49);ellipsoid(g,glass,0,1.23,-.11,w*.40,.42,l*.34);ellipsoid(g,color,0,h-.08,-.15,w*.39,.09,l*.34);
+  box(g,dark,0,.68,l*.49,w*.56,.18,.045);finishRoadCar(g,s,wheelColor);
+ }else if(type==='targa'){
+  ellipsoid(g,color,0,.50,.06,w*.50,.33,l*.49);box(g,dark,0,.78,-.16,w*.69,.16,l*.25);const wind=box(g,glass,0,1.02,.56,w*.70,.38,.035);wind.rotation.x=.25;
+  for(const side of [-1,1])box(g,'#aeb4ad',side*w*.31,1.16,-.28,.055,.38,.055);box(g,'#aeb4ad',0,1.32,-.28,w*.63,.055,.055);finishRoadCar(g,s,wheelColor);
+ }else if(type==='nido'){
   ellipsoid(g,color,0,.58,.02,w*.48,.42,l*.48);ellipsoid(g,glass,0,1.05,-.12,w*.38,.43,l*.31);ellipsoid(g,color,0,1.34,-.18,w*.36,.12,l*.28);
   box(g,'#2f383a',0,.43,l*.475,w*.62,.12,.08);finishRoadCar(g,s,wheelColor);
  }else if(type==='tessera'){
