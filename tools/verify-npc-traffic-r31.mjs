@@ -1,7 +1,6 @@
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import * as THREE from '../dist/vendor/three.module.js';
-import {t,ctx} from './controller-harness.mjs';
 import vm from 'node:vm';
 import {safePedestrianSpot,pedestrianCapacity} from '../dist/npc-spawn-policy.js';
 import {mobileRamp,updateWheelie,wheeliePose,fuelImpact,explodeFuelTruck} from '../dist/stunt-traffic.js';
@@ -13,6 +12,8 @@ import {SpatialIndex,dist} from '../dist/core.js';
 import {Districts} from '../dist/districts.js';
 
 let seed=31006;const random=Math.random;Math.random=()=>{seed=(Math.imul(seed,1664525)+1013904223)>>>0;return seed/4294967296;};
+// Seed before constructing the controller population as well as the simulation.
+const {t,ctx}=await import('./controller-harness.mjs');
 const context={terrain:t.terrain,graph:t.graph,collision:t.world.collision},populations=[];
 try{
  for(const [name,x,z] of [['villa',t.state.x,t.state.z],['center',0,100],['portello',1210,-430],['industrial',4000,0]]){
