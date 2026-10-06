@@ -1,0 +1,108 @@
+name: Isolated compact HUD and contextual actions R32
+on:
+  push:
+    branches: [main]
+    paths: ['.github/workflows/context-actions-r32-preview.yml']
+permissions:
+  contents: read
+  actions: read
+  pages: write
+  id-token: write
+concurrency:
+  group: pages
+  cancel-in-progress: false
+jobs:
+  preview:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    environment:
+      name: github-pages
+      url: https://dreamer-archalo.github.io/padova-open-world/preview/hud-actions-r32/
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: 1343b43c34e323aca07656e212eddfd8eacde497
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Find the latest successful published Pages artifact
+        id: published
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const runs = await github.rest.actions.listWorkflowRunsForRepo({...context.repo,status:'success',per_page:100});
+            for (const run of runs.data.workflow_runs) {
+              const artifacts = await github.rest.actions.listWorkflowRunArtifacts({...context.repo,run_id:run.id});
+              if (!artifacts.data.artifacts.some(a=>a.name==='github-pages'&&!a.expired)) continue;
+              core.setOutput('run',String(run.id));
+              core.info('Retaining published Pages from successful run '+run.id);
+              return;
+            }
+            core.setFailed('No complete published Pages artifact available.');
+      - uses: actions/download-artifact@v4
+        with:
+          name: github-pages
+          run-id: ${{ steps.published.outputs.run }}
+          github-token: ${{ github.token }}
+          path: .published-archive
+      - name: Recover exact published site and regional data
+        run: |
+          set -euo pipefail
+          mkdir .published
+          tar -xf .published-archive/artifact.tar -C .published
+          test -s .published/index.html
+          for name in venice.json region-padova-venice.json world-padova-venice.json world-terrain.json map-hd-extras.json; do
+            if test -s ".published/data/$name"; then
+              cp ".published/data/$name" "dist/data/$name"
+            elif test "$name" != map-hd-extras.json; then exit 1; fi
+          done
+      - name: Verify syntax and install Chromium
+        run: |
+          node --check dist/compact-hud.js
+          node --check dist/context-actions.js
+          npm install --no-save playwright
+          npx playwright install --with-deps chromium
+      - name: Test 48 contextual action layouts and 32 mission selector layouts
+        run: |
+          node tools/test-context-actions-r32.mjs
+          node tools/test-mission-selector-r31.mjs
+      - name: Check the hangar in the real WebGL game
+        run: |
+          node tools/serve.mjs --host 127.0.0.1 --port 4173 > /tmp/hud-r32-server.log 2>&1 &
+          server_pid=$!
+          trap 'kill "$server_pid" || true' EXIT
+          node tools/test-context-hangar-r32-browser.mjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: context-hud-r32-webgl
+          path: test-artifacts/hud-r32
+          if-no-files-found: ignore
+      - name: Add only the isolated HUD preview and verify every retained file
+        run: |
+          set -euo pipefail
+          cd .published
+          find . -type f -print0 | sort -z | xargs -0 sha256sum > "$RUNNER_TEMP/hud-r32-retained.sha256"
+          cd ..
+          mkdir -p .published/preview/hud-actions-r32
+          rsync -a --exclude=preview dist/ .published/preview/hud-actions-r32/
+          cd .published
+          sha256sum --quiet -c "$RUNNER_TEMP/hud-r32-retained.sha256"
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v4
+        with:
+          path: .published
+      - uses: actions/deploy-pages@v4
+      - name: Verify the live preview and the unchanged production files
+        run: |
+          set -euo pipefail
+          base='https://dreamer-archalo.github.io/padova-open-world'
+          for name in index.html compact-hud.js compact-hud.css context-actions.js context-actions.css game.js; do
+            curl --retry 5 --retry-delay 5 --fail --silent --show-error --location "$base/preview/hud-actions-r32/$name?v=$GITHUB_SHA" -o "$RUNNER_TEMP/hud-r32-preview-file"
+            cmp "dist/$name" "$RUNNER_TEMP/hud-r32-preview-file"
+          done
+          for name in index.html game.js compact-hud.js compact-hud.css; do
+            curl --retry 5 --retry-delay 5 --fail --silent --show-error --location "$base/$name?v=$GITHUB_SHA" -o "$RUNNER_TEMP/hud-r32-root-file"
+            cmp ".published/$name" "$RUNNER_TEMP/hud-r32-root-file"
+          done
