@@ -1,4 +1,5 @@
 name: Isolated compact HUD and contextual actions R32
+# Preview queue is independent of the skipped definitive release workflow.
 on:
   push:
     branches: [main]
