@@ -1,0 +1,37 @@
+name: Vehicle silhouettes R33
+
+on:
+  push:
+    branches: [feat/vehicle-silhouettes-r33]
+    paths:
+      - 'dist/modern-vehicles.js'
+      - 'dist/world.js'
+      - 'dist/villa-mandria-hangar.js'
+      - 'tools/verify-vehicle-silhouettes-r33.mjs'
+      - '.github/workflows/vehicle-silhouettes-r33.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Syntax
+        run: |
+          node --check dist/modern-vehicles.js
+          node --check dist/world.js
+          node --check dist/villa-mandria-hangar.js
+      - name: Vehicle variety
+        run: node tools/verify-vehicle-silhouettes-r33.mjs
+      - name: Existing vehicle regressions
+        run: |
+          node verify-collector-cars-r26.mjs
+          node verify-dealerships.mjs
+          node tools/verify-mandria-hangar.mjs
