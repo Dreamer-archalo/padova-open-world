@@ -1,0 +1,61 @@
+{
+  "populations": [
+    {
+      "name": "villa",
+      "count": 2
+    },
+    {
+      "name": "center",
+      "count": 37
+    }
+  ],
+  "models": [
+    {
+      "style": "cisterna",
+      "meshes": 2
+    },
+    {
+      "style": "camionrampa",
+      "meshes": 4
+    },
+    {
+      "style": "supersport",
+      "meshes": 3
+    },
+    {
+      "style": "naked",
+      "meshes": 3
+    },
+    {
+      "style": "enduro",
+      "meshes": 3
+    },
+    {
+      "style": "touring",
+      "meshes": 3
+    }
+  ],
+  "wheelie": {
+    "angle": 0.4706024147256417,
+    "pitch": -0.47988826070686175,
+    "speed": 7.781595332001084,
+    "health": 100,
+    "keys": [
+      "KeyB"
+    ],
+    "paused": false,
+    "airborne": false
+  },
+  "fall": {
+    "freefall": true,
+    "chute": false,
+    "visible": false,
+    "y": 108.07440093970736
+  },
+  "fuel": {
+    "exploded": true,
+    "visible": false,
+    "health": 28.7499999999999
+  },
+  "errors": []
+}

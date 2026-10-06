@@ -1,0 +1,68 @@
+{
+  "populations": [
+    {
+      "name": "villa",
+      "max": 2,
+      "checked": 2360,
+      "replacements": 0
+    },
+    {
+      "name": "center",
+      "max": 37,
+      "checked": 39616,
+      "replacements": 0
+    },
+    {
+      "name": "portello",
+      "max": 37,
+      "checked": 39535,
+      "replacements": 0
+    },
+    {
+      "name": "industrial",
+      "max": 2,
+      "checked": 2400,
+      "replacements": 0
+    }
+  ],
+  "jumps": [
+    {
+      "hz": 30,
+      "moving": false,
+      "peak": 5.907307692307698
+    },
+    {
+      "hz": 30,
+      "moving": true,
+      "peak": 4.628076923076924
+    },
+    {
+      "hz": 60,
+      "moving": false,
+      "peak": 5.907307692307694
+    },
+    {
+      "hz": 60,
+      "moving": true,
+      "peak": 4.759551282051268
+    }
+  ],
+  "models": [
+    "cisterna",
+    "camionrampa",
+    "supersport",
+    "naked",
+    "enduro",
+    "touring"
+  ],
+  "wheelie": "B",
+  "parachute": "0",
+  "blasts": 1,
+  "group": {
+    "groupSamples": 400,
+    "wheelieSamples": 251,
+    "maxSpread": 45.670133223853526
+  },
+  "roadSamples": 684,
+  "parkedSlots": 10
+}

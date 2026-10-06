@@ -3,7 +3,7 @@
 import * as THREE from './vendor/three.module.js';
 import {ModernGameplay} from './modern-gameplay.js';
 import {VEHICLES} from './vehicles.js';
-import {SPECIAL_VEHICLES} from './special-vehicles.js';
+import {SPECIAL_VEHICLES,registerSpecialModel} from './special-vehicles.js';
 import {vehicleBlocked} from './movement.js';
 import {staticHit} from './combat.js';
 import {AIRPORT,areaPoint} from './gameplay-areas.js';
@@ -41,6 +41,7 @@ function civilModel(spec){
  }
  g.name=spec.name;return g;
 }
+for(const spec of civil)registerSpecialModel(spec.style,()=>civilModel(spec));
 function parkCivil(g){
  const ops=g.interactiveAirport;if(!ops||ops.civilReady||Math.hypot(g.state.x-AIRPORT.x,g.state.z-AIRPORT.z)>1050)return;
  ops.civilReady=true;ops.civil=[];

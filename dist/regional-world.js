@@ -1,12 +1,13 @@
+import {pedestrianRoadAllowed} from './npc-spawn-policy.js';
 import {DEALER_SITES,reserveDealerBuildings,dealerWallParts} from './dealerships.js';
 // Region streaming runs alongside (not instead of) Padova's original CityWorld.
 // Padova keeps its existing meshes/physics/traffic; only its eastern border
 // gains access to the OSM corridor and high-detail destination zones.
 import * as THREE from './vendor/three.module.js';
-import {pointInside} from './core.js';
+import {pointInside,nearestOnSegment} from './core.js';
 import {NPC_VEHICLES,createNPCCar} from './modern-vehicles.js';
 import {VEHICLES} from './vehicles.js';
-import {installVehicleDamage} from './vehicle-damage.js';
+import {installVehicleDamage,updateVehicleDamage} from './vehicle-damage.js';
 import {laneCount,laneOffset} from './traffic.js';
 import {regionalNpcStep,regionalRoadEligible,regionalOneWay,reviveRegionalCar} from './regional-traffic-physics.js';
 import {createSpecialVehicle} from './special-vehicles.js';
@@ -127,7 +128,7 @@ export class RegionalWorld{
   for(let i=1;i<cuts.length;i++){
    const f=cuts[i-1],g=cuts[i],p=[a[0]+(b[0]-a[0])*f,a[1]+(b[1]-a[1])*f],q=[a[0]+(b[0]-a[0])*g,a[1]+(b[1]-a[1])*g];
    if(max(p[0],q[0])<PADOVA_EAST-180)continue;
-   const m=[(p[0]+q[0])/2,(p[1]+q[1])/2],item={a:p,b:q,w:source.w||4,k:source.k||'',oneway:source.oneway||source.one||false,lanes:Number(source.lanes)||0,chain:(this.roadLengths.get(source)||0)*(t0+(t1-t0)*(f+g)*.5),bri:!!(source.b||source.bridge),tMid:t0+(t1-t0)*(f+g)*.5,yA:type==='roads'?this.roadY(source,...p,t0+(t1-t0)*f):this.raw(...p),yB:type==='roads'?this.roadY(source,...q,t0+(t1-t0)*g):this.raw(...q)};
+   const m=[(p[0]+q[0])/2,(p[1]+q[1])/2],item={a:p,b:q,w:source.w||4,k:source.k||'',access:source.access,junction:source.junction,roundabout:source.roundabout,j:source.j,oneway:source.oneway||source.one||false,lanes:Number(source.lanes)||0,chain:(this.roadLengths.get(source)||0)*(t0+(t1-t0)*(f+g)*.5),bri:!!(source.b||source.bridge),tMid:t0+(t1-t0)*(f+g)*.5,yA:type==='roads'?this.roadY(source,...p,t0+(t1-t0)*f):this.raw(...p),yB:type==='roads'?this.roadY(source,...q,t0+(t1-t0)*g):this.raw(...q)};
    this.bucket(...m)[type].push(item);
    if(type==='roads'){
     this.insertSpatial(this.roads,item,p,q,item.w*.5+3);
@@ -462,6 +463,11 @@ export class RegionalWorld{
     if(car!==actor&&distance(car.x,car.z,actor.x,actor.z)<90)out.push(car);
   return out;
  }
+ disableRegionalCar(actor,time){
+  if(actor.spec.fuelTank){this.regionalExplosion(actor,time);return;}
+  actor.speed=0;actor.parked=true;actor.crashDisabled=true;
+  updateVehicleDamage(actor,0,time);
+ }
  regionalExplosion(actor,time){
   if(actor.exploded)return;
   actor.exploded=true;actor.parked=true;actor.speed=0;
@@ -514,7 +520,7 @@ export class RegionalWorld{
    reviveRegionalCar(actor,x,z,Math.atan2((r.b[0]-r.a[0])*actor.dir,(r.b[1]-r.a[1])*actor.dir),terrain);
    actor.destroyedUntil=0;actor.exploded=false;
   }
-  if(actor.health<=0){this.regionalExplosion(actor,time);return;}
+  if(actor.health<=0){this.disableRegionalCar(actor,time);return;}
   if(actor.parked)return;
   const r=actor.r,vx=r.b[0]-r.a[0],vz=r.b[1]-r.a[1],
    len2=Math.max(.01,vx*vx+vz*vz),
@@ -540,7 +546,18 @@ export class RegionalWorld{
   }
   const nearby=this.nearbyTraffic(actor);
   regionalNpcStep(actor,nearby,player,Math.max(.001,Math.min(.075,dt)),terrain,collision,time);
-  if(actor.health<=0)this.regionalExplosion(actor,time);
+  if(actor.health<=0)this.disableRegionalCar(actor,time);
+ }
+ safeWalk(x,z,y){
+  if(this.sim&&(this.sim.terrain.dry?.(x,z,.5,y)===false))return false;
+  for(const r of this.near(this.roads,x,z)){
+   const q=nearestOnSegment(x,z,r.a,r.b),d=distance(x,z,q.x,q.z);
+   if(d>r.w/2+4||Math.abs((r.yA+(r.yB-r.yA)*q.t)-y)>2.3)continue;
+   if(!pedestrianRoadAllowed(r))return false;
+   if(!/^(footway|path|pedestrian|living_street)$/.test(r.k)&&d<r.w/2+.55)return false;
+  }
+  if(this.sim?.collision)for(const b of this.sim.collision.near(x,z,.5))if(pointInside(x,z,b.p)&&y<(b.minY||0)+b.h&&y+1.7>(b.minY||0))return false;
+  return true;
  }
  ambient(group,chunk){
   // Padova vehicle and pedestrian models at EVERY quality; LOD controls how
@@ -550,8 +567,8 @@ export class RegionalWorld{
   const within=roads.filter(r=>this.focus&&distance((r.a[0]+r.b[0])*.5,(r.a[1]+r.b[1])*.5,this.focus.x,this.focus.z)<620);
   const available=within.length?within:roads,actors=[],
    industrial=roads.some(r=>r.a[0]>26500&&r.a[0]<33700),
-   townFleet=['nido','rondine','botanica','argine','viaggio','selva','saetta','meridiana','doge','vortice','campo','comitiva'],
-   industryFleet=['corriere','officina','cantiere','tir','campo','autotreno','selva','argine'];
+   townFleet=['nido','rondine','botanica','argine','viaggio','selva','saetta','meridiana','doge','vortice','campo','comitiva','naked','enduro','supersport','touring','cisterna','camionrampa'],
+   industryFleet=['corriere','officina','cantiere','tir','cisterna','camionrampa','campo','autotreno','selva','argine'];
   const profile=this.streamProfile(this.focus?.x||0,this.focus?.z||0);
   const count=available.length?Math.min(profile.cars,
    Math.max(1,Math.ceil(available.length/(this.quality==='hyper'?27:17)))):0;
@@ -573,24 +590,23 @@ export class RegionalWorld{
     car={mesh,r,road:r,t,dir,style,spec,name:spec.name,x,z,
      y:this.height(x,z),yaw,speed:2.3,health:100,driver:.82+(i%5)*.05,
      parked:false,regionManaged:true,regionalTraffic:true,chunkGroup:group,
-     lane:0,desiredLane:0,laneOffset:laneOffset(r,0),priority:i,
+     lane:i%laneCount(r),desiredLane:i%laneCount(r),laneOffset:laneOffset(r,i%laneCount(r)),priority:i,
      longAccel:0,lastCollision:0,nextYaw:null,registered:false,knockX:0,knockZ:0,spin:0};
    installVehicleDamage(car);
    mesh.traverse(o=>{if(o.isMesh||o.isLineSegments)o.userData.regionalAmbientShared=true;});
-   mesh.position.set(x,car.y,z);mesh.rotation.y=yaw;group.add(mesh);actors.push(car);
+   car.x+=Math.cos(yaw)*car.laneOffset;car.z-=Math.sin(yaw)*car.laneOffset;mesh.position.set(car.x,car.y,car.z);mesh.rotation.y=yaw;group.add(mesh);actors.push(car);
    if(this.sim){this.sim.cars.push(car);car.registered=true;}
   }
-  const walkways=chunk.roads.filter(r=>/footway|pedestrian|path|residential|living_street|service/.test(r.k)&&
-   !/motorway|trunk/.test(r.k));
+  const walkways=chunk.roads.filter(r=>/^(footway|pedestrian|path|residential|living_street|service)$/.test(r.k)&&pedestrianRoadAllowed(r));
   const peopleCount=Math.min(profile.people,Math.ceil(walkways.length/8));
   for(let i=0;i<peopleCount;i++){
    const r=walkways[(i*13+walkways.length*5)%walkways.length];if(!r)continue;
-   const t=(i*.29+.17)%1,side=/residential|living_street|service/.test(r.k)?(i%2?1:-1)*(r.w*.5+.4):0,
+   const t=(i*.29+.17)%1,side=/residential|living_street|service/.test(r.k)?(i%2?1:-1)*(r.w*.5+1.25):0,
     dx=r.b[0]-r.a[0],dz=r.b[1]-r.a[1],len=Math.hypot(dx,dz)||1,
     x=r.a[0]+dx*t-dz/len*side,z=r.a[1]+dz*t+dx/len*side,
     mesh=regionalPerson(Math.abs(Math.floor(r.a[0]+r.a[1])+i)%6),
     person={mesh,r,t,dir:i%2?1:-1,person:true,detail:true,priority:i,side,x,z,y:this.height(x,z),speed:1.3,health:100};
-   mesh.position.set(x,person.y+.08,z);group.add(mesh);actors.push(person);
+   if(!this.safeWalk(x,z,person.y))continue;mesh.position.set(x,person.y+.08,z);group.add(mesh);actors.push(person);
   }
   group.userData.ambient=actors;
  }
@@ -1010,7 +1026,7 @@ export class RegionalWorld{
    if(interval&&actor._regionalAccum<interval)continue;
    const actorDt=interval?Math.min(.075,actor._regionalAccum):dt;actor._regionalAccum=0;
    if(actor.regionalTraffic){this.updateRegionalCar(actor,actorDt,state.elapsed||0);continue;}
-   const r=actor.r,roadLength=Math.max(1,distance(...r.a,...r.b));
+   const r=actor.r,roadLength=Math.max(1,distance(...r.a,...r.b)),before={r,t:actor.t,dir:actor.dir,side:actor.side,previous:actor.previous};
    actor.t+=actor.dir*Math.min(.075,actorDt)*(actor.person?1.3:actor.bus?5.5:8.3)/roadLength;
    // Reverse at a segment endpoint rather than visibly teleporting back to
    // its start. Real multi-town A-to-B navigation remains a later phase.
@@ -1021,7 +1037,7 @@ export class RegionalWorld{
      dx=(r.b[0]-r.a[0])*(atEnd?1:-1),
      dz=(r.b[1]-r.a[1])*(atEnd?1:-1),len=Math.hypot(dx,dz)||1;
     const eligible=actor.person?
-     q=>/footway|pedestrian|path|residential|living_street|service/.test(q.k):
+     q=>/^(footway|pedestrian|path|residential|living_street|service)$/.test(q.k)&&pedestrianRoadAllowed(q):
      q=>q.w>=3&&!/footway|path|steps|cycleway|pedestrian/.test(q.k);
     let next=null,best=-Infinity;
     for(const q of new Set(this.near(this.roads,p[0],p[1]))){
@@ -1034,13 +1050,21 @@ export class RegionalWorld{
       if(score>best&&score>-.45){best=score;next={r:q,dir};}
      }
     }
-    if(next){actor.previous=r;actor.r=next.r;actor.dir=next.dir;actor.t=next.dir===1?0:1;}
+    if(next){actor.previous=r;actor.r=next.r;actor.side=(actor.side||0)*actor.dir*next.dir;actor.dir=next.dir;actor.t=next.dir===1?0:1;}
     else{actor.t=atEnd?1:0;actor.dir*=-1;}
    }
+   if(actor.person)actor.side=/residential|living_street|service/.test(actor.r.k)?Math.sign(actor.side||1)*(actor.r.w/2+1.25):0;
    const current=actor.r,t=actor.t,dx=current.b[0]-current.a[0],
     dz=current.b[1]-current.a[1],len=Math.hypot(dx,dz)||1;
-   actor.mesh.position.set(current.a[0]+dx*t-dz/len*(actor.side||0),
-    current.yA+(current.yB-current.yA)*t+(actor.detail?.07:actor.person?.85:actor.bus?1.14:.66),
+   const walkX=current.a[0]+dx*t-dz/len*(actor.side||0),walkZ=current.a[1]+dz*t+dx/len*(actor.side||0),walkY=this.height(walkX,walkZ,actor.y);
+   // Offset sidewalks do not necessarily join at an OSM road node. Retain
+   // the last safe segment instead of teleporting across the carriageway.
+   if(actor.person&&(!this.safeWalk(walkX,walkZ,walkY)||distance(walkX,walkZ,actor.x,actor.z)>Math.min(.075,actorDt)*1.3+.15)){
+    Object.assign(actor,before);actor.dir=-before.dir;continue;
+   }
+   actor.x=walkX;actor.z=walkZ;actor.y=walkY;
+   actor.mesh.position.set(walkX,
+    (actor.person?walkY:current.yA+(current.yB-current.yA)*t)+(actor.detail?.07:actor.person?.85:actor.bus?1.14:.66),
     current.a[1]+dz*t+dx/len*(actor.side||0));
    actor.mesh.rotation.y=Math.atan2(dx*actor.dir,dz*actor.dir);
    if(actor.detail&&actor.person&&actor.mesh.userData.hips){

@@ -1,0 +1,286 @@
+{
+  "boats": [
+    {
+      "id": "boat-electric",
+      "width": 2.0563199520111084,
+      "length": 6.199999809265137,
+      "height": 1.6404999792575836,
+      "triangles": 2924,
+      "drawCalls": 2,
+      "maxKmh": 13
+    },
+    {
+      "id": "boat-gondola",
+      "width": 1.3432052731513977,
+      "length": 10.419891357421875,
+      "height": 1.3790000081062317,
+      "triangles": 780,
+      "drawCalls": 2,
+      "maxKmh": 6
+    },
+    {
+      "id": "boat-bragozzo",
+      "width": 3.329279899597168,
+      "length": 10.5,
+      "height": 3.0320000052452087,
+      "triangles": 1124,
+      "drawCalls": 3,
+      "maxKmh": 19
+    },
+    {
+      "id": "boat-water-taxi",
+      "width": 2.447999954223633,
+      "length": 9.199999809265137,
+      "height": 1.9220000505447388,
+      "triangles": 1540,
+      "drawCalls": 3,
+      "maxKmh": 40
+    },
+    {
+      "id": "boat-rib",
+      "width": 2.6438400745391846,
+      "length": 7.5,
+      "height": 1.9020698070526123,
+      "triangles": 2112,
+      "drawCalls": 3,
+      "maxKmh": 63
+    },
+    {
+      "id": "boat-patrol",
+      "width": 2.8886399269104004,
+      "length": 8.699999809265137,
+      "height": 2.6750000715255737,
+      "triangles": 1024,
+      "drawCalls": 3,
+      "maxKmh": 56
+    },
+    {
+      "id": "boat-sport",
+      "width": 2.447999954223633,
+      "length": 7.800000190734863,
+      "height": 1.7050000429153442,
+      "triangles": 1648,
+      "drawCalls": 3,
+      "maxKmh": 80
+    },
+    {
+      "id": "boat-jetski",
+      "width": 1.1750400066375732,
+      "length": 3.0999999046325684,
+      "height": 1.12518909573555,
+      "triangles": 796,
+      "drawCalls": 3,
+      "maxKmh": 92
+    },
+    {
+      "id": "boat-speedster",
+      "width": 2.5948801040649414,
+      "length": 9.199999809265137,
+      "height": 1.7050000429153442,
+      "triangles": 1864,
+      "drawCalls": 3,
+      "maxKmh": 110
+    },
+    {
+      "id": "boat-catamaran",
+      "width": 3.440880060195923,
+      "length": 11,
+      "height": 1.7050000429153442,
+      "triangles": 2040,
+      "drawCalls": 3,
+      "maxKmh": 145
+    },
+    {
+      "id": "boat-jetski-race",
+      "width": 1.2239999771118164,
+      "length": 3.3499999046325684,
+      "height": 1.12518909573555,
+      "triangles": 796,
+      "drawCalls": 3,
+      "maxKmh": 120
+    },
+    {
+      "id": "boat-vaporetto",
+      "width": 4.210559844970703,
+      "length": 23,
+      "height": 4.026000022888184,
+      "triangles": 2400,
+      "drawCalls": 3,
+      "maxKmh": 24
+    },
+    {
+      "id": "boat-yacht",
+      "width": 4.406400203704834,
+      "length": 16,
+      "height": 4.600000023841858,
+      "triangles": 2212,
+      "drawCalls": 3,
+      "maxKmh": 31
+    }
+  ],
+  "aircraft": [
+    {
+      "id": "airport-cargo",
+      "width": 33,
+      "length": 25.3
+    },
+    {
+      "id": "airport-jet",
+      "width": 11,
+      "length": 15.149999999999999
+    },
+    {
+      "id": "airport-interceptor",
+      "width": 14,
+      "length": 15.25
+    },
+    {
+      "id": "airport-strike",
+      "width": 17,
+      "length": 16.25
+    },
+    {
+      "id": "airport-airliner",
+      "width": 29,
+      "length": 26.5
+    },
+    {
+      "id": "airport-trainer",
+      "width": 9,
+      "length": 6.800000048428774
+    },
+    {
+      "id": "airport-regional",
+      "width": 20,
+      "length": 18.32
+    },
+    {
+      "id": "airport-business",
+      "width": 13,
+      "length": 16.560000000000002
+    },
+    {
+      "id": "airport-commuter",
+      "width": 11,
+      "length": 12.16
+    },
+    {
+      "id": "airport-blackbird",
+      "width": 15.2,
+      "length": 38.5
+    }
+  ],
+  "velocities": [
+    {
+      "id": "boat-speedster",
+      "hz": 30,
+      "kmh": 110
+    },
+    {
+      "id": "boat-catamaran",
+      "hz": 30,
+      "kmh": 145
+    },
+    {
+      "id": "boat-jetski-race",
+      "hz": 30,
+      "kmh": 120.00000000000001
+    },
+    {
+      "id": "boat-speedster",
+      "hz": 60,
+      "kmh": 110
+    },
+    {
+      "id": "boat-catamaran",
+      "hz": 60,
+      "kmh": 145
+    },
+    {
+      "id": "boat-jetski-race",
+      "hz": 60,
+      "kmh": 120.00000000000001
+    }
+  ],
+  "impacts": [
+    {
+      "hz": 30,
+      "kind": "front",
+      "normal": 35,
+      "finalSpeed": -6.3,
+      "x": -12.369875555338558,
+      "z": 3.55137102165595e-16
+    },
+    {
+      "hz": 30,
+      "kind": "glance",
+      "normal": 2.9950024994048445,
+      "finalSpeed": 28.51764056910216,
+      "x": 0.8341470649187109,
+      "z": 58.66267618711969
+    },
+    {
+      "hz": 30,
+      "kind": "reverse",
+      "normal": 35,
+      "finalSpeed": 6.3,
+      "x": -12.369875555338558,
+      "z": -3.55137102165595e-16
+    },
+    {
+      "hz": 60,
+      "kind": "front",
+      "normal": 35,
+      "finalSpeed": -6.3,
+      "x": -12.369875555338574,
+      "z": 3.755214724079782e-16
+    },
+    {
+      "hz": 60,
+      "kind": "glance",
+      "normal": 2.9950024994048445,
+      "finalSpeed": 28.48213982767009,
+      "x": 0.8341472727438505,
+      "z": 58.631259516184485
+    },
+    {
+      "hz": 60,
+      "kind": "reverse",
+      "normal": 35,
+      "finalSpeed": 6.3,
+      "x": -12.369875555338574,
+      "z": -3.755214724079782e-16
+    },
+    {
+      "hz": 120,
+      "kind": "front",
+      "normal": 35,
+      "finalSpeed": -6.3,
+      "x": -12.369841138671916,
+      "z": 3.6712021674250317e-16
+    },
+    {
+      "hz": 120,
+      "kind": "glance",
+      "normal": 2.9950024994048445,
+      "finalSpeed": 28.46983202058157,
+      "x": 0.8341474328855677,
+      "z": 58.62554364770391
+    },
+    {
+      "hz": 120,
+      "kind": "reverse",
+      "normal": 35,
+      "finalSpeed": 6.3,
+      "x": -12.369841138671916,
+      "z": -3.6712021674250317e-16
+    }
+  ],
+  "pair": {
+    "impact": 44,
+    "speedA": -4.399999999999999,
+    "speedB": -4.399999999999999
+  },
+  "sweep": true,
+  "underpass": true
+}

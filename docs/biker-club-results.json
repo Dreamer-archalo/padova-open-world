@@ -1,0 +1,77 @@
+{
+  "course": {
+    "name": "Via Austria",
+    "start": {
+      "x": 5407.085823576876,
+      "z": 3034.4445741188315
+    },
+    "length": 360,
+    "roadWidth": 14
+  },
+  "runs": [
+    {
+      "hz": 30,
+      "id": "formation",
+      "airborne": 0,
+      "maxHeight": 0.11899986779360372,
+      "crewWheelies": 0,
+      "record": 18.400000000000226
+    },
+    {
+      "hz": 30,
+      "id": "wheelie",
+      "airborne": 0,
+      "maxHeight": 0.04499655816000292,
+      "crewWheelies": 304,
+      "record": 6.600000000000328
+    },
+    {
+      "hz": 30,
+      "id": "jumps",
+      "airborne": 36,
+      "maxHeight": 1.9763940851702966,
+      "crewWheelies": 0,
+      "record": 15.799999999999102
+    },
+    {
+      "hz": 60,
+      "id": "formation",
+      "airborne": 0,
+      "maxHeight": 0.11866312807782808,
+      "crewWheelies": 0,
+      "record": 18.39999999999896
+    },
+    {
+      "hz": 60,
+      "id": "wheelie",
+      "airborne": 0,
+      "maxHeight": 0.04530599755681397,
+      "crewWheelies": 613,
+      "record": 6.600000000000328
+    },
+    {
+      "hz": 60,
+      "id": "jumps",
+      "airborne": 74,
+      "maxHeight": 2.0090296407129102,
+      "crewWheelies": 0,
+      "record": 15.799999999999102
+    }
+  ],
+  "freeRide": {
+    "largestStep": 0.2013346172459725,
+    "spread": 56.7584203163271,
+    "truckGap": 7.005831875144568
+  },
+  "checks": [
+    "real-controller 30/60Hz",
+    "gated rewards",
+    "first-completion cash only",
+    "persistent unlocks",
+    "failure conditions",
+    "actor and ramp cleanup",
+    "bounded crew",
+    "no teleports",
+    "corrupt storage"
+  ]
+}

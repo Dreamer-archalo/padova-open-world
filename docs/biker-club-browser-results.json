@@ -1,0 +1,63 @@
+{
+  "runs": [
+    {
+      "id": "formation",
+      "completed": true,
+      "air": 0,
+      "maxHeight": 0.11866312807782808,
+      "ramps": 0,
+      "remaining": 0,
+      "mission": null,
+      "health": 100,
+      "toast": "Prova superata · sbloccata Prato 800 · Club Oro +€250"
+    },
+    {
+      "id": "wheelie",
+      "completed": true,
+      "air": 0,
+      "maxHeight": 0.04530599755681397,
+      "ramps": 0,
+      "remaining": 0,
+      "mission": null,
+      "health": 100,
+      "toast": "Prova superata · sbloccata Argine 450 · Club Petrolio +€350"
+    },
+    {
+      "id": "jumps",
+      "completed": true,
+      "air": 74,
+      "maxHeight": 2.0090296407129102,
+      "ramps": 2,
+      "remaining": 0,
+      "mission": null,
+      "health": 100,
+      "toast": "Prova superata · sbloccata Saetta 1000 · Club Viola +€500"
+    }
+  ],
+  "rewards": [
+    "club_enduro",
+    "club_naked",
+    "club_supersport"
+  ],
+  "geometry": 6,
+  "persisted": {
+    "progress": {
+      "completed": [
+        "formation",
+        "wheelie",
+        "jumps"
+      ],
+      "best": {
+        "formation": 18.400000000000055,
+        "wheelie": 6.633333333332956,
+        "jumps": 15.849999999999099
+      }
+    },
+    "rewards": [
+      "club_enduro",
+      "club_naked",
+      "club_supersport"
+    ]
+  },
+  "errors": []
+}

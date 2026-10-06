@@ -1,3 +1,6 @@
+import {boatLaunchPoint} from './nautical-catalog.js';
+import {createSpecialVehicle} from './special-vehicles.js';
+import {clubVehicleUnlocked} from './biker-club-progress.js';
 // In-world vehicle showroom for the ONLY fictional villa (Mandria).
 // Deliberately leaves public Parco Treves, city traffic and existing missions alone.
 import * as THREE from './vendor/three.module.js';
@@ -27,7 +30,7 @@ export function hangarCategory(id,s){
  if(['freight','work','van','pickup'].includes(s.family)||s.length>=7&&!s.aircraft)return 'freight';return 'car';
 }
 export function hangarCatalogue(){return Object.entries(VEHICLES).filter(([id,s])=>
- s&&typeof s.name==='string'&&Number.isFinite(s.width)&&Number.isFinite(s.length)&&s.width>0&&s.length>0)
+ clubVehicleUnlocked(id)&&s&&typeof s.name==='string'&&Number.isFinite(s.width)&&Number.isFinite(s.length)&&s.width>0&&s.length>0)
  .map(([id,s])=>({id,name:s.name,spec:s,category:hangarCategory(id,s)}))
  .sort((a,b)=>Object.keys(CAT).indexOf(a.category)-Object.keys(CAT).indexOf(b.category)||a.name.localeCompare(b.name,'it'));
 }
@@ -72,8 +75,8 @@ export function paintHangarVehicle(root,hex){
  const paint=new THREE.Color(hex);
  root.traverse(o=>{
   if(!o.isMesh)return;
-  if(!savedMesh.has(o)){o.geometry=o.geometry.clone();o.material=o.material.clone();savedMesh.add(o);if(o.geometry.attributes.color)baseVerts.set(o,o.geometry.attributes.color.array.slice());baseMaterial.set(o,o.material.color?.clone());}
-  const colors=o.geometry.attributes.color,baseline=baseVerts.get(o),mask=o.geometry.attributes.collectorPaint;
+  if(!savedMesh.has(o)){o.geometry=o.geometry.clone();o.material=o.material.clone();o.userData.hangarPaintOwned=true;savedMesh.add(o);if(o.geometry.attributes.color)baseVerts.set(o,o.geometry.attributes.color.array.slice());baseMaterial.set(o,o.material.color?.clone());}
+  const colors=o.geometry.attributes.color,baseline=baseVerts.get(o),mask=o.geometry.attributes.collectorPaint||o.geometry.attributes.boatPaint;
   if(colors&&baseline){for(let i=0;i<baseline.length;i+=3){const r=baseline[i],g=baseline[i+1],b=baseline[i+2],v=(r+g+b)/3;
    if(mask){if(mask.array[i/3]){colors.array[i]=paint.r;colors.array[i+1]=paint.g;colors.array[i+2]=paint.b;}else{colors.array[i]=r;colors.array[i+1]=g;colors.array[i+2]=b;}continue;}
    const glass=b>r*1.2&&b>g*1.04;
@@ -138,7 +141,7 @@ function deliverAirOnRoof(g,id,color){
  const c=g.addCar(p.x,p.z,p.yaw,false,!spec.plane,id);
  if(id.startsWith('airport-')){
   const old=c.mesh;g.scene.remove(old);
-  c.mesh=id==='airport-michelangelo'?createMichelangeloModel():airportModel(id,spec,color);
+  c.mesh=id==='airport-michelangelo'?createMichelangeloModel():createSpecialVehicle(id);
   g.scene.add(c.mesh);installVehicleDamage(c);
  }
  Object.assign(c,{x:p.x,z:p.z,y:p.y,yaw:p.yaw,speed:p.speed,health:100,style:id,spec,name:spec.name,
@@ -199,7 +202,7 @@ async function choose(g,id,color){
  if(s.watercraft){
   // Watercraft are launched at real mapped docks, never on the villa lawn.
   const eligible=g.nautical?.docks?.filter(d=>d.width>=s.minChannel+1&&
-   (d.region?s.places.includes('venice')||s.places.includes('padova'):s.places.includes('padova')))||[];
+   (d.region?s.places.includes('venice')||s.places.includes('padova'):s.places.includes('padova'))&&boatLaunchPoint(s,g.terrain,d))||[];
   const d=eligible.sort((a,b)=>Math.hypot(a.x-g.state.x,a.z-g.state.z)-Math.hypot(b.x-g.state.x,b.z-g.state.z))[0];
   closeDialog(g);
   if(!d){g.toast?.('Nessuna darsena compatibile; prova il menu B.',4);return;}

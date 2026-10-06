@@ -17,7 +17,7 @@ export function actorDetail(actor,simple,visible=true){
  const root=actor.mesh;let entry=proxies.get(root);
  if(!entry){entry={children:[...root.children],materials:[],mode:null};root.traverse(o=>{if(o.isMesh)entry.materials.push([o,o.material]);});proxies.set(root,entry);}
  const mode=visible?(simple?'simple':'detail'):'hidden';if(entry.mode===mode)return;entry.mode=mode;
- const proxyAllowed=!actor.spec?.aircraft&&!actor.spec?.tracked&&!actor.spec?.collector;
+ const proxyAllowed=!actor.spec?.aircraft&&!actor.spec?.tracked&&!actor.spec?.collector&&!actor.spec?.bike&&!actor.spec?.fuelTank&&!actor.spec?.rampTruck;
  if(simple&&proxyAllowed&&!entry.proxy){const color=actor.spec?'#879394':'#729181',m=new THREE.Mesh(simpleBody,new THREE.MeshBasicMaterial({color}));if(actor.spec){m.geometry=cube;m.scale.set(actor.spec.width*.9,actor.spec.height*.8,actor.spec.length*.95);m.position.y=actor.spec.height*.45;}else m.userData.clothing=true;m.userData.sharedRenderProxy=true;entry.proxy=m;root.add(m);}
  for(const child of entry.children)child.visible=visible&&(!simple||!proxyAllowed)&&!child.userData.roleHidden;
  if(entry.proxy)entry.proxy.visible=visible&&simple&&proxyAllowed;

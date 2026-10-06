@@ -2,7 +2,7 @@
 // No global controller, collision, city traffic or terrain monkey patches.
 import * as THREE from './vendor/three.module.js';
 import {ModernGameplay} from './modern-gameplay.js';
-import {SPECIAL_VEHICLES,createSpecialVehicle} from './special-vehicles.js';
+import {SPECIAL_VEHICLES,createSpecialVehicle,registerSpecialModel} from './special-vehicles.js';
 import {VEHICLES} from './vehicles.js';
 import {AIRPORT,areaPoint} from './gameplay-areas.js';
 import {vehicleBlocked} from './movement.js';
@@ -55,6 +55,7 @@ function aircraftModel(style){
  }
  g.name=SPECS[style].name;return g;
 }
+for(const id of ['airport-interceptor','airport-strike','airport-airliner','airport-trainer'])registerSpecialModel(id,()=>aircraftModel(id));
 const EXTRA=[
  ['airport-interceptor',143,-185],['airport-strike',143,-365],
  ['airport-airliner',103,485],['airport-trainer',126,285]
