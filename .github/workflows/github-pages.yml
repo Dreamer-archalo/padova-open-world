@@ -11,7 +11,8 @@ permissions:
   id-token: write
 
 concurrency:
-  group: pages
+  group: >
+    ${{ github.event_name == 'push' && startsWith(github.event.head_commit.message, 'Preview only:') && 'preview-config-only' || 'pages' }}
   cancel-in-progress: false
 
 jobs:
