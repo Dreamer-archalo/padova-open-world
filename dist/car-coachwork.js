@@ -142,13 +142,13 @@ function lampsAndTrim(g,s,p,paint,finish){
  box(g,'trim',black,0,front-.17,noseZ,noseWidth,.12,.032);
  if(classic||s.family==='luxury')for(let i=-2;i<=2;i++)box(g,'alloy',chrome,i*w*.065,front-.15,noseZ+.019,.022,.14,.02);
  for(const side of [-1,1]){
-  const x=side*w*.255,y=front-.035;
+  const x=side*w*(lamp==='round'?.255:.23),y=front-.035;
   if(lamp==='round'){
    const bezel=mesh(g,disk,'alloy',chrome,x,y,noseZ,.10,.032,.10);bezel.rotation.x=Math.PI/2;
    const light=mesh(g,disk,'glass','#eee9d5',x,y,noseZ+.022,.079,.020,.079);light.rotation.x=Math.PI/2;
   }else{
-   box(g,'trim',black,x,y,noseZ,w*.20,.12,.035);
-   box(g,'glass','#e4edef',x,y+.018,noseZ+.022,w*(lamp==='blade'?.19:.15),lamp==='blade'?.026:.052,.02);
+   box(g,'trim',black,x,y,noseZ,w*.18,.12,.035);
+   box(g,'glass','#e4edef',x,y+.018,noseZ+.022,w*(lamp==='blade'?.17:.15),lamp==='blade'?.026:.052,.02);
    if(lamp==='split')box(g,'glass','#eee7d3',x,y-.041,noseZ+.025,w*.16,.025,.018);
   }
   box(g,'trim',black,side*w*.27,b-.08,-l*.493,w*.19,.105,.04);
@@ -168,10 +168,12 @@ function lampsAndTrim(g,s,p,paint,finish){
  box(g,'trim','#d7dace',0,b-.23,-l*.501,.30,.072,.016);box(g,'glass','#4c638e',-.134,b-.23,-l*.512,.025,.065,.007);
  if(finish.livery==='coach-stripe')for(const side of [-1,1])box(g,'alloy','#c5c2ac',side*w*.467,b-.185,0,.01,.022,l*.67);
  if(finish.livery==='twin-stripe')for(const side of [-1,1]){
-  // Stripes sit on the authored bonnet surface, with a matching slope.
-  const rear=p[3]*l,start=Math.max(rear,.28*l),end=.44*l,z=(start+end)/2,y=mix(b,front,(z/l-.32)/.18)+p[6]+.018;
-  const o=box(g,'trim',paint==='#ece9df'?'#29353d':'#e4dcc5',side*w*.085,y,z,w*.055,.006,end-start);o.rotation.x=Math.atan2(b-front,l*.18);
+  const outline=p[7]>=.075?[[-.5,.65],[-.47,.84],[-.37,.96],[-.20,1],[.15,.99],[.32,.96],[.44,.87],[.5,.67]]:[[-.5,.77],[-.44,.94],[-.30,1],[-.07,.99],[.23,.98],[.39,.94],[.5,.75]],tops=[[-.5,b-.14],[-.43,b-.045],[-.20,b+.025],[.15,b+.02],[.32,b-.025],[.46,front+.035],[.5,front-.055]];
+  const y=(t,x)=>sample(tops,t)+p[6]+(.015-p[6])*Math.abs(x)/(w*.47*sample(outline,t)*(1-p[7]*1.4))+.007;
+  const xs=[side*w*.07,side*w*.115].sort((a,b)=>a-b),ts=[Math.max(p[3]+.018,.30),.32,.40,.46].sort((a,b)=>a-b);
+  for(let i=1;i<ts.length;i++){const a=ts[i-1],c=ts[i];if(c-a<.0001)continue;polygon(g,'trim',paint==='#ece9df'?'#29353d':'#e4dcc5',[[xs[0],y(a,xs[0]),a*l],[xs[0],y(c,xs[0]),c*l],[xs[1],y(c,xs[1]),c*l],[xs[1],y(a,xs[1]),a*l]]);}
  }
+
 }
 export function createCoachwork(type,s,paint='#738493',requested=null){
  const p=COACHWORK[type]||COACHWORK[{ 'legacy-sedan':'argine','legacy-compact':'rondine','legacy-wagon':'viaggio','legacy-utility':'altavia','legacy-sport':'vortice'}[type]]||COACHWORK.argine,finish=normalFinish(s,requested),g=new THREE.Group();

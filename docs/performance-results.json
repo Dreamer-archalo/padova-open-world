@@ -7,13 +7,22 @@
     "albatros"
   ],
   "additionalCityVehicles": [
+    "cisterna",
+    "camionrampa",
+    "supersport",
+    "enduro",
+    "naked",
+    "touring",
     "tir",
     "autotreno",
     "cantiere",
     "betoniera",
     "soccorso",
     "trail",
-    "cruiser"
+    "cruiser",
+    "club_naked",
+    "club_enduro",
+    "club_supersport"
   ],
   "characters": [
     "Fede",
@@ -25,30 +34,33 @@
   "quality": {
     "medium": {
       "people": 80,
-      "traffic": 52,
-      "calls": 1052,
-      "triangles": 264101
+      "traffic": 64,
+      "actorCalls": 235,
+      "calls": 952,
+      "triangles": 341737
     },
     "hyper": {
       "people": 24,
       "traffic": 24,
-      "calls": 122,
-      "triangles": 195821
+      "actorCalls": 61,
+      "calls": 774,
+      "triangles": 170089
     },
     "low": {
       "people": 40,
-      "traffic": 36,
-      "calls": 172,
-      "triangles": 201310
+      "traffic": 42,
+      "actorCalls": 126,
+      "calls": 841,
+      "triangles": 217909
     }
   },
   "adaptivePixelRatioFloor": 0.45,
-  "updatePeople120TicksMs": 82.79460900000413,
-  "updateTraffic120TicksMs": 45.15240400000039,
-  "updateCamera120TicksMs": 24.84947000000102,
+  "updatePeople120TicksMs": 11.247198999997636,
+  "updateTraffic120TicksMs": 943.6672999999973,
+  "updateCamera120TicksMs": 21.269768999998632,
   "chunkStreaming": {
-    "yieldPoints": 3701,
-    "maxSliceMs": 220.75752899999497
+    "yieldPoints": 586,
+    "maxSliceMs": 1.5940260000024864
   },
   "browser": {
     "threeD": "not performed in this run",

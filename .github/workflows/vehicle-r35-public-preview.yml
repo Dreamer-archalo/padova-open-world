@@ -52,6 +52,8 @@ jobs:
           node --check dist/villa-mandria-hangar.js
           node tools/verify-vehicle-silhouettes-r33.mjs
           node tools/verify-vehicle-finish-r35.mjs
+          npm run test:npc-traffic
+          npm run test:performance
           node verify-collector-cars-r26.mjs
           node verify-dealerships.mjs
           node tools/verify-mandria-hangar.mjs
