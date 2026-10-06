@@ -12,7 +12,9 @@
   <link rel="stylesheet" href="./initial-loader.css">
   <link rel="stylesheet" href="./unified-main.css?v=carto-r10">
   <link rel="stylesheet" href="./unified-water.css?v=shore-r7">
-  <link rel="stylesheet" href="./compact-hud.css?v=mission-selector-r31">
+  <link rel="stylesheet" href="./compact-hud.css?v=commands-r34">
+  <link rel="stylesheet" href="./command-guide.css?v=commands-r34">
+  <link rel="stylesheet" href="./context-actions.css?v=commands-r34">
 </head>
 <body>
   <div id="initialLoader" role="status" aria-live="polite" aria-label="Caricamento iniziale città">
@@ -74,7 +76,7 @@
   <header class="hud topbar">
     <div class="wordmark">PADOVA<span>OPEN WORLD</span></div>
     <div class="location"><span class="eyebrow">ITALIA / VENETO</span><strong id="location">Piazza delle Erbe</strong></div>
-    <div class="topright"><div id="wanted" aria-label="Wanted level">☆☆☆☆☆</div><div class="money">€ <span id="money">0</span></div><button id="hudDetailsBtn" type="button" hidden aria-pressed="false">HUD +</button><button id="pauseBtn" aria-label="Pause game">Ⅱ</button></div>
+    <div class="topright"><div id="wanted" aria-label="Wanted level">☆☆☆☆☆</div><div class="money">€ <span id="money">0</span></div><button id="pauseBtn" aria-label="Pause game">Ⅱ</button></div>
   </header>
   <section id="intro" class="intro">
     <div class="edition"><span></span> A CITY YOU KNOW. YOUR STREETS.</div>
@@ -135,6 +137,7 @@
   <div id="taxiLoading" class="taxi-loading" hidden role="status" aria-live="polite"><div id="taxiMeme" class="taxi-meme"><div><span>TAXI ABUSIVO IN TRANSITO…</span><strong>Caricamento destinazione</strong><p id="taxiFact"></p><small id="taxiLoadingStatus">Preparazione di terreno e strade</small><button id="taxiNext" type="button">CLICCA / TOCCA · PROSSIMA CURIOSITÀ</button></div></div></div>
   <footer id="credits"><a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">© OpenStreetMap contributors</a><a href="https://github.com/tilezen/joerd/blob/master/docs/attribution.md" target="_blank" rel="noopener">Terrain: Copernicus EU-DEM / USGS via Mapzen</a><span id="modelCredits"></span><span id="scaleCredit">Real-world scale · stylised reconstruction</span></footer>
   <script type="module" src="./initial-loader.js?v=venice-perf-r15"></script>
+  <script type="module" src="./context-actions.js"></script>
   <script type="module" src="./game.js?v=race-two-r30"></script>
   <script type="module" src="./taxi-facts-extra.js"></script>
   <script type="module" src="./zone-indicator.js"></script>

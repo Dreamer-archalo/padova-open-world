@@ -25,7 +25,7 @@ function adjust(delta){if(!carEligible())return;if(!enabled){const current=kmh()
 control.querySelector('[data-cruise="down"]')?.addEventListener('click',()=>adjust(-5));
 control.querySelector('[data-cruise="up"]')?.addEventListener('click',()=>adjust(5));
 main?.addEventListener('click',toggle);
-window.addEventListener('keydown',e=>{if(!e.isTrusted||e.repeat)return;if(e.code==='KeyK'){e.preventDefault();toggle();return;}if(enabled&&['KeyW','KeyS','Space','Escape'].includes(e.code))disable(e.code==='Escape'?'':'Controllo manuale · cruise disattivato.');});
+window.addEventListener('keydown',e=>{if(!e.isTrusted||e.repeat)return;if(e.code==='KeyK'){e.preventDefault();toggle();return;}if(enabled&&['KeyW','KeyS','Space','Escape','KeyX'].includes(e.code))disable(e.code==='Escape'?'':'Controllo manuale · cruise disattivato.');});
 window.addEventListener('blur',()=>disable());
 document.addEventListener('visibilitychange',()=>{if(document.hidden)disable();});
 
