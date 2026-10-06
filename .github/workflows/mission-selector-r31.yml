@@ -1,0 +1,26 @@
+name: Mission selector HUD R31
+on:
+  push:
+    branches: [fix/mission-selector-hud-r31]
+  pull_request:
+    paths:
+      - dist/compact-hud.css
+      - dist/compact-hud.js
+      - dist/index.html
+      - tools/test-mission-selector-r31.mjs
+      - .github/workflows/mission-selector-r31.yml
+permissions:
+  contents: read
+jobs:
+  browser-layout:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm install --no-save playwright
+      - run: npx playwright install --with-deps chromium
+      - run: node --check dist/compact-hud.js
+      - run: node tools/test-mission-selector-r31.mjs

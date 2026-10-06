@@ -12,7 +12,7 @@
   <link rel="stylesheet" href="./initial-loader.css">
   <link rel="stylesheet" href="./unified-main.css?v=carto-r10">
   <link rel="stylesheet" href="./unified-water.css?v=shore-r7">
-  <link rel="stylesheet" href="./compact-hud.css?v=solo-cars-r26-hud2">
+  <link rel="stylesheet" href="./compact-hud.css?v=mission-selector-r31">
 </head>
 <body>
   <div id="initialLoader" role="status" aria-live="polite" aria-label="Caricamento iniziale città">
@@ -103,7 +103,7 @@
     <div class="character-panel"><div id="characterChoices" class="character-choices" aria-label="Personaggi"></div><p id="characterOutfit" aria-live="polite"></p><button id="confirmCharacter" class="primary">Entra nella villa →</button></div>
   </section>
   <div id="playingUI" hidden>
-    <aside class="hud mission"><div class="eyebrow" id="missionType">FREE ROAM</div><h2 id="missionTitle">The city is yours.</h2><p id="missionDesc">Explore, borrow a car, or pick an activity.</p><div id="missionTimer"></div></aside>
+    <aside class="hud mission" aria-label="Missioni"><div class="eyebrow" id="missionType">FREE ROAM</div><h2 id="missionTitle">The city is yours.</h2><p id="missionDesc">Explore, borrow a car, or pick an activity.</p><div id="missionTimer"></div><button id="missionSelectBtn" type="button" aria-controls="menu" aria-haspopup="dialog">Seleziona missioni <kbd>J</kbd></button></aside>
     <div class="hud minimap"><canvas id="minimap" width="660" height="510" aria-label="Nearby streets and objective"></canvas><a class="minimap-osm-credit" href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">© OpenStreetMap contributors</a><div class="map-footer"><span id="district">CENTRO STORICO</span><small id="minimapStatus" hidden style="display:none"></small><small id="regionalLoadStatus">REGIONE: CARICAMENTO</small><button id="mapBtn">MAP <kbd>M</kbd></button></div></div>
     <div class="hud driving">
       <div class="vehicle-heading"><div><span class="eyebrow">VEHICLE</span><div id="vehicleName">ON FOOT</div></div><span id="gear" class="gear">N</span></div>

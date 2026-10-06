@@ -14,10 +14,18 @@ body[data-ui="compact"] .location strong{font-size:14px;overflow:hidden;text-ove
 body[data-ui="compact"] .topright{gap:16px}
 body[data-wanted-active="false"] #wanted{display:none}
 body[data-driving="false"] .driving{display:none}
-body[data-ui="compact"][data-mission-active="false"] .mission{display:none}
+/* Mission selection remains available while freely exploring. */
+body[data-ui="compact"][data-mission-active="false"] .mission h2,
+body[data-ui="compact"][data-mission-active="false"] .mission p,
+body[data-ui="compact"][data-mission-active="false"] #missionType,
+body[data-ui="compact"][data-mission-active="false"] #missionTimer{display:none}
 body[data-ui="compact"] .mission{top:80px;left:24px;width:260px;padding:12px 15px}
 body[data-ui="compact"] .mission h2{font-size:16px;margin:5px 0}
 body[data-ui="compact"] .mission p{font-size:12px;margin:0}
+#missionSelectBtn{min-height:44px;padding:10px 0;display:flex;align-items:center;justify-content:space-between;gap:10px}
+#missionSelectBtn kbd{margin:0}
+body[data-mission-active="false"] #missionSelectBtn{border-top:0}
+body[data-ui="compact"][data-mission-active="true"] #missionSelectBtn{margin-top:10px}
 body[data-ui="compact"] .minimap{left:24px;bottom:60px}
 body[data-ui="compact"] .driving{right:24px;bottom:24px;width:216px;padding:12px 14px;background:linear-gradient(145deg,#0a151bd9,#122731b3);border-color:#ffffff20}
 body[data-ui="compact"] #vehicleName{font-size:11px;letter-spacing:.5px}
@@ -53,6 +61,9 @@ body[data-ui="compact"] #mandriaHangarButton:not([hidden]),body[data-ui="compact
  border-radius:5px!important;box-shadow:none!important;background:#10222cda!important;font:500 11px system-ui!important;color:#f6f3e9!important;
 }
 @media(max-width:800px){
+ .mission{top:80px;left:14px;width:220px;padding:12px 15px}
+ body[data-mission-active="false"] .mission h2,body[data-mission-active="false"] .mission p,
+ body[data-mission-active="false"] #missionType,body[data-mission-active="false"] #missionTimer{display:none}
  body[data-ui="compact"][data-playing="true"] .topbar{padding:12px 14px}
  body[data-ui="compact"] .topright{gap:10px}
  body[data-ui="compact"] .minimap{left:14px;bottom:104px}
@@ -82,4 +93,10 @@ body[data-ui="compact"] #mandriaHangarButton:not([hidden]),body[data-ui="compact
 /* Short touch screens need the same canvas adjustment in both HUD layouts. */
 @media(max-height:500px) and (pointer:coarse){
  .hud.minimap #minimap{height:clamp(96px,calc(100dvh - 294px),200px)}
+}
+/* Keep the selector between the map and vehicle HUD in landscape. */
+@media(min-width:700px) and (max-height:500px){
+ .mission,body[data-ui="compact"] .mission{left:50%;top:76px;width:220px;transform:translateX(-50%);max-height:calc(100dvh - 190px);overflow:auto}
+ body[data-mission-active="false"] .mission h2,body[data-mission-active="false"] .mission p,
+ body[data-mission-active="false"] #missionType,body[data-mission-active="false"] #missionTimer{display:none}
 }
