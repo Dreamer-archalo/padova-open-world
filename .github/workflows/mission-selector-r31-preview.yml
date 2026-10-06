@@ -1,0 +1,95 @@
+name: Isolated mission selector HUD preview R31
+
+on:
+  push:
+    branches: [fix/mission-selector-preview-r31]
+
+permissions:
+  actions: read
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  preview:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    environment:
+      name: github-pages
+      url: https://dreamer-archalo.github.io/padova-open-world/preview/mission-selector-r31/
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Verify the mission selector on desktop and touch
+        run: |
+          npm install --no-save playwright
+          npx playwright install --with-deps chromium
+          node --check dist/compact-hud.js
+          node tools/test-mission-selector-r31.mjs
+      - name: Recover the exact currently published game and all previews
+        uses: actions/download-artifact@v4
+        with:
+          name: github-pages
+          run-id: 37423219201
+          github-token: ${{ github.token }}
+          path: .published-artifact
+      - name: Add only the separate mission HUD preview
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          test "$(gh api "repos/$GITHUB_REPOSITORY/git/ref/heads/main" --jq .object.sha)" = 099213270751e3b5c63949314bca761c5b04ceee
+          mkdir .published-site
+          tar -xf .published-artifact/artifact.tar -C .published-site
+          cd .published-site
+          find . -type f -print0 | sort -z | xargs -0 sha256sum > "$RUNNER_TEMP/retained-site.sha256"
+          cd ..
+          mkdir -p .published-site/preview/mission-selector-r31
+          cp -a dist/. .published-site/preview/mission-selector-r31/
+          for name in venice.json region-padova-venice.json world-padova-venice.json world-terrain.json map-hd-extras.json; do
+            if test -s ".published-site/data/$name"; then
+              cp ".published-site/data/$name" ".published-site/preview/mission-selector-r31/data/$name"
+            elif test "$name" != map-hd-extras.json; then
+              exit 1
+            fi
+          done
+          for name in index.html compact-hud.css compact-hud.js; do
+            cmp "dist/$name" ".published-site/preview/mission-selector-r31/$name"
+          done
+          cd .published-site
+          sha256sum --quiet -c "$RUNNER_TEMP/retained-site.sha256"
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v4
+        with:
+          path: .published-site
+      - name: Ensure production has not changed before deploying the additive preview
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          test "$(gh api "repos/$GITHUB_REPOSITORY/git/ref/heads/main" --jq .object.sha)" = 099213270751e3b5c63949314bca761c5b04ceee
+      - uses: actions/deploy-pages@v4
+      - name: Check preview files and preserve the public game
+        run: |
+          set -euo pipefail
+          base='https://dreamer-archalo.github.io/padova-open-world'
+          for attempt in 1 2 3 4 5; do
+            valid=true
+            for name in index.html compact-hud.css compact-hud.js game.js version.json; do
+              if ! curl --fail --silent --show-error --location --max-time 30 "$base/preview/mission-selector-r31/$name?v=$GITHUB_SHA" -o "$RUNNER_TEMP/preview-$name" ||
+                 ! cmp "dist/$name" "$RUNNER_TEMP/preview-$name" ||
+                 ! curl --fail --silent --show-error --location --max-time 30 "$base/$name?v=$GITHUB_SHA" -o "$RUNNER_TEMP/production-$name" ||
+                 ! cmp ".published-site/$name" "$RUNNER_TEMP/production-$name"; then
+                valid=false
+                break
+              fi
+            done
+            if test "$valid" = true; then exit 0; fi
+            sleep 5
+          done
+          exit 1
