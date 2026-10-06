@@ -62,7 +62,7 @@ function radius(s){return ['suv','pickup'].includes(s.family)?.37:['van','mpv'].
 function bodyGeometry(type,s,p){
  const key='body/'+type;if(geometryCache.has(key))return geometryCache.get(key);
  const w=s.width,l=s.length,r=radius(s),belt=p[4],nose=p[5],round=p[7];
- const outline=[[-.5,.77],[-.44,.90],[-.30,1],[-.07,.99],[.23,.98],[.39,.91],[.5,.71]],tops=[[-.5,belt-.12],[-.39,belt],[-.20,belt+.025],[.15,belt+.02],[.32,belt-.025],[.5,nose]];
+ const curved=p[7]>=.075,outline=curved?[[-.5,.65],[-.47,.84],[-.37,.96],[-.20,1],[.15,.99],[.32,.96],[.44,.87],[.5,.67]]:[[-.5,.77],[-.44,.94],[-.30,1],[-.07,.99],[.23,.98],[.39,.94],[.5,.75]],tops=[[-.5,belt-.14],[-.43,belt-.045],[-.20,belt+.025],[.15,belt+.02],[.32,belt-.025],[.46,nose+.035],[.5,nose-.055]];
  const ts=new Set(Array.from({length:25},(_,i)=>i/24-.5));
  for(const z of [-s.wheelbase/2,s.wheelbase/2])for(let i=0;i<=10;i++){const a=Math.PI*i/10;ts.add((z+Math.cos(a)*(r+.055))/l);}
  const list=[...ts].filter(t=>t>=-.5&&t<=.5).sort((a,b)=>a-b),pos=[],uv=[],index=[];
@@ -70,7 +70,7 @@ function bodyGeometry(type,s,p){
   const half=w*.47*sample(outline,t),top=sample(tops,t),bottom=.22;
   let low=bottom;for(const z of [-s.wheelbase/2,s.wheelbase/2]){const d=t*l-z,R=r+.048;if(Math.abs(d)<R)low=Math.max(low,Math.min(top-.075,r+Math.sqrt(R*R-d*d)));}
   const ring=[[0,top+p[6]],[half*(1-round*1.4),top+.015],[half,top-.07],[half,Math.max(low,top-.24)],[half*.99,low],[half*.71,bottom],[0,bottom],[-half*.71,bottom],[-half*.99,low],[-half,Math.max(low,top-.24)],[-half,top-.07],[-half*(1-round*1.4),top+.015]];
-  for(const [x,y] of ring){pos.push(x,y,t*l);uv.push(x/w+.5,t+.5);}
+  ring.forEach(([x,y],j)=>{pos.push(x,y,t*l);uv.push(j/12,t+.5);});
  }
  // Ring order is clockwise as seen from +Z. Adjacent strips face outwards.
  for(let i=1;i<list.length;i++)for(let j=0;j<12;j++){const a=(i-1)*12+j,b=(i-1)*12+(j+1)%12,c=i*12+j,d=i*12+(j+1)%12;index.push(a,c,d,a,d,b);}
@@ -118,9 +118,27 @@ function cabin(g,s,p,paint,finish){
  polygon(g,'paint',paint,wind);insetFace(g,'glass',glass,wind.map(v=>[v[0],v[1]+.007,v[2]+.008]),.9);
  if(open&&s.name.includes('Targa')){box(g,'alloy',chrome,0,h-.07,p[1]*l,w*.72,.065,.10);for(const side of [-1,1])box(g,'alloy',chrome,side*w*.35,(b+h)/2,p[1]*l,.045,h-b,.06);}
 }
+function curvedCabin(g,s,p,paint,finish){
+ const w=s.width,l=s.length,b=p[4],h=s.height,start=p[0],end=p[3],rearRoof=p[1],frontRoof=p[2];
+ const ts=[start,...Array.from({length:15},(_,i)=>mix(start,end,(i+1)/16)),rearRoof,frontRoof,end].sort((a,b)=>a-b);
+ function ring(t){
+  const climb=t<rearRoof?Math.sin(Math.max(0,(t-start)/(rearRoof-start))*Math.PI/2):t>frontRoof?Math.cos(Math.min(1,(t-frontRoof)/(end-frontRoof))*Math.PI/2):1;
+  const rise=(h-b-.06)*climb+.025,width=w*(.403-.043*climb),v=b+rise;
+  return [[-width,b+.015,t*l],[-width*.98,b+rise*.40,t*l],[-width*.85,b+rise*.79,t*l],[-width*.57,b+rise*.965,t*l],[0,v,t*l],[width*.57,b+rise*.965,t*l],[width*.85,b+rise*.79,t*l],[width*.98,b+rise*.40,t*l],[width,b+.015,t*l]];
+ }
+ const rings=ts.map(ring);
+ for(let i=1;i<rings.length;i++)for(let j=0;j<8;j++){
+  const a=rings[i-1],c=rings[i];polygon(g,'glass',glass,[a[j],c[j],c[j+1],a[j+1]]);
+  if(ts[i-1]>=rearRoof&&ts[i]<=frontRoof&&j>=2&&j<=5)polygon(g,finish.roof?'trim':'paint',finish.roof||paint,[a[j],c[j],c[j+1],a[j+1]].map(v=>[v[0],v[1]+.009,v[2]]));
+ }
+ const pillars=[rearRoof,frontRoof];if(!['sport','supercar','city'].includes(s.family))pillars.push(mix(rearRoof,frontRoof,.55));
+ for(const t of pillars){const a=ring(t-.007),c=ring(t+.007);for(let j=0;j<8;j++)polygon(g,'paint',paint,[a[j],c[j],c[j+1],a[j+1]].map(v=>[v[0]*1.014,v[1]+.012,v[2]]));}
+ // Sills close the glazing along the body shoulder; no floating window blocks.
+ for(const side of [-1,1])box(g,'trim',black,side*w*.409,b+.015,(start+end)*l/2,.018,.022,(end-start)*l);
+}
 function lampsAndTrim(g,s,p,paint,finish){
  const w=s.width,l=s.length,b=p[4],front=p[5],classic=s.family==='classic',low=['sport','supercar','convertible'].includes(s.family),lamp=p[8],r=radius(s);
- const noseZ=l*.492,noseWidth=w*.36;
+ const noseZ=l*.507,noseWidth=w*.36;
  box(g,'trim',black,0,front-.17,noseZ,noseWidth,.12,.032);
  if(classic||s.family==='luxury')for(let i=-2;i<=2;i++)box(g,'alloy',chrome,i*w*.065,front-.15,noseZ+.019,.022,.14,.02);
  for(const side of [-1,1]){
@@ -142,7 +160,7 @@ function lampsAndTrim(g,s,p,paint,finish){
   const doors=['sport','supercar','convertible','classic','city'].includes(s.family)?1:2;
   for(let i=0;i<doors;i++){const z=mix(p[1]*l,p[3]*l,(i+.5)/doors);box(g,'alloy',classic?chrome:'#858e91',side*w*.465,b-.11,z,.015,.025,.125);}
   if(['suv','pickup'].includes(s.family))for(const z of [-s.wheelbase/2,s.wheelbase/2]){const arch=mesh(g,new THREE.TorusGeometry(r+.055,.025,4,16,Math.PI),'trim',black,side*w*.465,r,z);arch.rotation.y=Math.PI/2;}
-  if(['wagon','suv'].includes(s.family)){box(g,'alloy','#899499',side*w*.30,s.height+.009,-l*.07,.026,.032,l*(s.family==='wagon'?.50:.43));}
+  if(['wagon','suv'].includes(s.family)){box(g,'alloy','#899499',side*w*.30,s.height-.045,-l*.07,.026,.032,l*(s.family==='wagon'?.50:.43));for(const z of [-l*.24,l*.12])box(g,'trim',black,side*w*.30,s.height-.072,z,.04,.065,.09);}
   if(low){box(g,'trim',black,side*w*.335,.31,-l*.482,w*.115,.06,.045);}
  }
  // License plate backing, bumper insert and realistic lower rocker line.
@@ -157,7 +175,7 @@ function lampsAndTrim(g,s,p,paint,finish){
 }
 export function createCoachwork(type,s,paint='#738493',requested=null){
  const p=COACHWORK[type]||COACHWORK[{ 'legacy-sedan':'argine','legacy-compact':'rondine','legacy-wagon':'viaggio','legacy-utility':'altavia','legacy-sport':'vortice'}[type]]||COACHWORK.argine,finish=normalFinish(s,requested),g=new THREE.Group();
- mesh(g,bodyGeometry(type,s,p),'paint',paint,0,0,0);cabin(g,s,p,paint,finish);
+ mesh(g,bodyGeometry(type,s,p),'paint',paint,0,0,0);if(p[7]>=.075&&!['convertible','van'].includes(s.family))curvedCabin(g,s,p,paint,finish);else cabin(g,s,p,paint,finish);
  if(s.family==='van'){
   const bottom=p[4],rear=-s.length*.47,front=s.length*.25;
   box(g,'paint',paint,0,(bottom+s.height-.08)/2,(rear+front)/2,s.width*.88,s.height-bottom-.08,front-rear);

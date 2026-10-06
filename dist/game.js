@@ -448,7 +448,7 @@ const pedestrianSpawnBudget=new PedestrianSpawnBudget();
 const trafficModels=new Map();
 function restyleTraffic(c,zone){if(c.police||c.parked||c.encounterStyle)return;const legacy=DISTRICTS[zone].vehicles,style=Math.random()<.2?legacy[Math.floor(Math.random()*legacy.length)]:chooseTrafficStyle(zone,Math.random,c.road);
  const finish=NPC_VEHICLES[style]?chooseRoadFinish(VEHICLES[style]):null,paintIndex=Math.floor(Math.random()*ROAD_PALETTE.length);let key=NPC_VEHICLES[style]?style+'/'+paintIndex+'/'+finish.wheels+'/'+finish.livery:style;
- if(trafficModels.size>=160&&!trafficModels.has(key)){const existing=[...trafficModels.keys()].find(k=>k===style||k.startsWith(style+'/'));if(existing)key=existing;}
+ if(trafficModels.size>=80&&!trafficModels.has(key)){key=style+'/standard';if(finish){finish.wheels='standard';finish.livery='plain';finish.roof=null;}}
  if(style===c.style&&key===c.visualKey)return;
  if(!trafficModels.has(key)){const color=ROAD_PALETTE[paintIndex],m=SPECIAL_VEHICLES[style]?createSpecialVehicle(style):compactCar(NPC_VEHICLES[style]?createNPCCar(style,color,finish):['mito','cinquecento','scooter','motorcycle','truck'].includes(style)?createVehicle(style,color):createCar(color,false,style));trafficModels.set(key,m);}
  const old=c.mesh;scene.remove(old);previousActors.delete(old);c.mesh=trafficModels.get(key).clone(true);c.visualKey=key;scene.add(c.mesh);c.style=style;c.spec=VEHICLES[style];c.name=c.spec.name;c.rider=null;c.damageVisual=null;installVehicleDamage(c);if(isBike(style)||VEHICLES[style]?.bike){c.rider=createRider();c.mesh.add(c.rider);}

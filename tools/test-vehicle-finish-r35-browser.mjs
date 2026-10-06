@@ -9,7 +9,7 @@ try{
  await page.goto('http://127.0.0.1:4185/');
  const result=await page.evaluate(async()=>{
   const THREE=await import('./vendor/three.module.js'),{NPC_VEHICLES,createNPCCar}=await import('./modern-vehicles.js'),{compactCoachwork,coachworkLOD}=await import('./car-coachwork.js');
-  document.body.innerHTML='<style>body{margin:0;background:#e4e7eb;color:#24333d;font:16px Arial}h1{margin:20px}#grid{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;padding:12px}figure{background:#d5dbe0;margin:0;padding:4px}img{width:100%}figcaption{padding:6px}</style><h1>Auto R35 · carrozzerie e finiture</h1><main id="grid"></main>';
+  document.querySelectorAll('link[rel=stylesheet],style').forEach(o=>o.remove());document.body.innerHTML='<style>body{margin:0;background:#e4e7eb;color:#24333d;font:16px Arial}h1{margin:20px}#grid{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;padding:12px}figure{background:#d5dbe0;margin:0;padding:4px}img{width:100%}figcaption{padding:6px}</style><h1>Auto R35 · carrozzerie e finiture</h1><main id="grid"></main>';
   const renderer=new THREE.WebGLRenderer({antialias:true,preserveDrawingBuffer:true});renderer.setSize(280,200);renderer.setClearColor('#d5dbe0');const scene=new THREE.Scene(),camera=new THREE.PerspectiveCamera(32,1.4,.1,100);scene.add(new THREE.HemisphereLight('#ffffff','#73808f',2.3));const sun=new THREE.DirectionalLight('#fff3dd',3);sun.position.set(4,7,8);scene.add(sun);
   const rows=[];
   const palette=['#496c84','#b47b46','#904a46','#718574','#c9c8bd','#394753'];
