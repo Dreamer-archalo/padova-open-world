@@ -32,14 +32,25 @@ export function hangarCatalogue(){return Object.entries(VEHICLES).filter(([id,s]
  .sort((a,b)=>Object.keys(CAT).indexOf(a.category)-Object.keys(CAT).indexOf(b.category)||a.name.localeCompare(b.name,'it'));
 }
 // All thumbnails are locally generated SVG images, not external/stock photos.
-export function hangarThumbnail(category,color){
- const ink='#172532',stroke='#91a3af';let silhouette='';
+export function hangarThumbnail(category,color,spec={}){
+ const ink='#172532',stroke='#91a3af',family=spec.family||'',shape=spec.shape||'';let silhouette='';
  if(category==='aircraft')silhouette='<path d="M105 10 L117 62 L190 90 L190 103 L121 94 L119 135 L145 154 L145 162 L111 153 L77 162 L77 154 L103 135 L101 94 L32 103 L32 90 L105 62 Z"/>';
  else if(category==='helicopter')silhouette='<path d="M22 86h180v5H22zM107 33h8v50h-8zM60 95q3-29 39-31h27q33 2 38 29l-15 20H83zM160 95h41v7h-42zM73 121h82v5H73z"/>';
  else if(category==='bicycle'||category==='motorcycle')silhouette='<circle cx="57" cy="116" r="28" fill="none" stroke="'+color+'" stroke-width="7"/><circle cx="163" cy="116" r="28" fill="none" stroke="'+color+'" stroke-width="7"/><path d="M57 116L90 75l36 41H57l32-41h34l40 41M124 75l-10-17h-19M161 116l-20-55" fill="none" stroke="'+color+'" stroke-width="7"/>';
  else if(category==='tracked')silhouette='<rect x="23" y="96" width="174" height="34" rx="16"/><path d="M48 95L69 68h91l19 27zM108 68V45h11v23M115 49l85-11v7l-85 14z"/>';
  else if(category==='freight')silhouette='<path d="M19 65h115v52H19zM134 82h38l28 24v11h-66z"/><circle cx="52" cy="120" r="12" fill="'+ink+'"/><circle cx="169" cy="120" r="12" fill="'+ink+'"/>';
- else silhouette='<path d="M19 98l18-29h44l20-19h67l25 48v26H19z"/><path d="M79 70l16-17h68l18 26H70z" fill="'+ink+'"/><circle cx="54" cy="124" r="15" fill="'+ink+'"/><circle cx="169" cy="124" r="15" fill="'+ink+'"/>';
+ else{
+  const sport=['sport','supercar'].includes(family)||['wedge','mono','drag','canopy'].includes(shape),suv=family==='suv'||shape==='safari',pickup=family==='pickup'||shape==='sixwheel',city=family==='city'||shape==='bubble',wagon=family==='wagon'||shape==='woody',open=family==='convertible'||shape==='barchetta',classic=family==='classic'||['hotrod','rat','deco'].includes(shape),long=family==='luxury'||shape==='limo';
+  if(sport)silhouette='<path d="M18 107l31-16 30-30h68l54 39-8 24H22z"/><path d="M82 63h62l31 28H61z" fill="'+ink+'"/><circle cx="57" cy="123" r="14" fill="'+ink+'"/><circle cx="166" cy="123" r="14" fill="'+ink+'"/>';
+  else if(suv)silhouette='<path d="M20 92l20-35h109l45 35v31H20z"/><path d="M55 60h86l34 30H43z" fill="'+ink+'"/><circle cx="55" cy="124" r="16" fill="'+ink+'"/><circle cx="169" cy="124" r="16" fill="'+ink+'"/>';
+  else if(pickup)silhouette='<path d="M18 93l18-29h70l20 23h72v36H18z"/><path d="M51 66h48l20 22H38z" fill="'+ink+'"/><path d="M130 91h64v9h-64z" fill="'+ink+'"/><circle cx="55" cy="124" r="15" fill="'+ink+'"/><circle cx="170" cy="124" r="15" fill="'+ink+'"/>';
+  else if(city)silhouette='<path d="M30 101q10-52 60-52h30q45 2 67 45l7 29H28z"/><path d="M73 60h48q29 4 45 34H56q4-21 17-34z" fill="'+ink+'"/><circle cx="61" cy="123" r="14" fill="'+ink+'"/><circle cx="161" cy="123" r="14" fill="'+ink+'"/>';
+  else if(wagon)silhouette='<path d="M18 96l22-31h98l42 16 20 42H18z"/><path d="M57 67h77l39 17 13 17H43z" fill="'+ink+'"/><circle cx="55" cy="124" r="15" fill="'+ink+'"/><circle cx="170" cy="124" r="15" fill="'+ink+'"/>';
+  else if(open)silhouette='<path d="M18 105l30-19h37l15-18h48l48 28v27H18z"/><path d="M104 71h35l25 16h-70z" fill="'+ink+'"/><circle cx="55" cy="124" r="15" fill="'+ink+'"/><circle cx="169" cy="124" r="15" fill="'+ink+'"/>';
+  else if(classic)silhouette='<path d="M14 101l21-23h49l16-25h70l29 40v30H14z"/><path d="M106 57h59l21 34H93z" fill="'+ink+'"/><path d="M21 111h171v7H21z" fill="'+ink+'"/><circle cx="52" cy="124" r="15" fill="'+ink+'"/><circle cx="171" cy="124" r="15" fill="'+ink+'"/>';
+  else if(long)silhouette='<path d="M9 101l25-25h50l20-24h69l38 41v30H9z"/><path d="M109 55h59l29 36H92z" fill="'+ink+'"/><circle cx="49" cy="124" r="14" fill="'+ink+'"/><circle cx="178" cy="124" r="14" fill="'+ink+'"/>';
+  else silhouette='<path d="M19 98l18-29h44l20-19h67l25 48v26H19z"/><path d="M79 70l16-17h68l18 26H70z" fill="'+ink+'"/><circle cx="54" cy="124" r="15" fill="'+ink+'"/><circle cx="169" cy="124" r="15" fill="'+ink+'"/>';
+ }
  const svg=`<svg xmlns="http://www.w3.org/2000/svg" width="222" height="174" viewBox="0 0 222 174"><rect width="222" height="174" rx="17" fill="${ink}"/><path d="M16 142h190" stroke="${stroke}" opacity=".7"/> <g fill="${color}" stroke-linejoin="round">${silhouette}</g></svg>`;
  return 'data:image/svg+xml;charset=utf-8,'+encodeURIComponent(svg);
 }
@@ -189,7 +200,7 @@ function renderCatalogue(g){
  const entries=hangarCatalogue(),selectedColor=$('hangarPaint')?.value||COLORS[0],text=($('hangarSearch')?.value||'').trim().toLocaleLowerCase('it'),cat=$('hangarFilter')?.value||'all';
  const filtered=entries.filter(v=>(cat==='all'||cat===v.category)&&(!text||(v.name+' '+v.id).toLocaleLowerCase('it').includes(text)));
  const grid=$('hangarGrid');if(!grid)return;
- grid.innerHTML=filtered.length?filtered.map(v=>`<button type="button" class="hangar-card" data-hangar-id="${escapeHTML(v.id)}"><img alt="Sagoma indicativa di ${escapeHTML(v.name)}" src="${hangarThumbnail(v.category,v.spec.collector&&hangarPaintFor(v.id)===null?v.spec.color:selectedColor)}"><strong>${escapeHTML(v.name)}</strong><small>${escapeHTML(v.spec.description||CAT[v.category])} · ${Math.round(v.spec.max*3.6)} km/h</small></button>`).join(''):'<p>Nessun mezzo corrispondente alla ricerca.</p>';
+ grid.innerHTML=filtered.length?filtered.map(v=>`<button type="button" class="hangar-card" data-hangar-id="${escapeHTML(v.id)}"><img alt="Sagoma indicativa di ${escapeHTML(v.name)}" src="${hangarThumbnail(v.category,v.spec.collector&&hangarPaintFor(v.id)===null?v.spec.color:selectedColor,v.spec)}"><strong>${escapeHTML(v.name)}</strong><small>${escapeHTML(v.spec.description||CAT[v.category])} · ${Math.round(v.spec.max*3.6)} km/h</small></button>`).join(''):'<p>Nessun mezzo corrispondente alla ricerca.</p>';
  grid.querySelectorAll('[data-hangar-id]').forEach(b=>b.onclick=()=>void choose(g,b.dataset.hangarId,hangarPaintFor(b.dataset.hangarId)));
  $('hangarCount').textContent=`${filtered.length} mezzi · ${entries.length} nel catalogo`;
 }
