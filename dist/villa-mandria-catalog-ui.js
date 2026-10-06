@@ -1,3 +1,6 @@
+import {compactCoachwork} from './car-coachwork.js';
+import {createCar} from './world.js';
+import {DEALER_CATALOG,createDealerVehicle} from './dealerships.js';
 // Category-first presentation only; the original Mandria hangar still owns
 // spawning, shutters, paint controls, replacement and delivery.
 import * as THREE from './vendor/three.module.js';
@@ -75,8 +78,11 @@ export function hangarPreviewModel(id,color='#b52f3d',game=null){
  }
  if(MILITARY_FLEET[id])return militaryFleetModel(id);
  if(id==='bicycle'||id==='kick-scooter')return urbanModel(id,color);
- if(NPC_VEHICLES[id])return createNPCCar(id,color);
- if(['mito','cinquecento','motorcycle','scooter','truck','taxi'].includes(id))return createVehicle(id,color);
+ if(DEALER_CATALOG[id])return compactCoachwork(createDealerVehicle(id,color));
+ if(NPC_VEHICLES[id])return compactCoachwork(createNPCCar(id,color));
+ if(['sedan','compact','wagon','utility','sport'].includes(id))return compactCoachwork(createCar(color,false,id));
+ if(['mito','cinquecento'].includes(id))return compactCoachwork(createVehicle(id,color));
+ if(['motorcycle','scooter','truck','taxi'].includes(id))return createVehicle(id,color);
  if(SPECIAL_VEHICLES[id])return createSpecialVehicle(id);
  const live=game?.cars?.find(c=>c.style===id&&c.mesh);
  if(live){const copy=live.mesh.clone(true);copy.position.set(0,0,0);copy.rotation.set(0,0,0);copy.visible=true;copy.traverse(o=>{o.visible=true;});return copy;}

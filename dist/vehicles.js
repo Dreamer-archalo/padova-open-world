@@ -1,3 +1,4 @@
+import {createCoachwork} from './car-coachwork.js';
 import {vehicleFootprint,polygonsOverlap} from './movement.js';
 import * as THREE from './vendor/three.module.js';
 
@@ -25,7 +26,7 @@ function wheel(g,x,z,r=.31,y=r,width=.19){mesh(g,cylinder,'#202527',x,y,z,r,widt
 // panels inward; once cars were compacted into a single FrontSide mesh those faces
 // were culled, producing visible holes through the taxi/MiTo/Cinquecento bodywork.
 function body(g,color,sections){const p=[];for(let i=1;i<sections.length;i++){const [za,wa,ya,ha]=sections[i-1],[zb,wb,yb,hb]=sections[i],a=[[-wa,ya,za],[wa,ya,za],[wa*.88,ya+ha,za],[-wa*.88,ya+ha,za]],b=[[-wb,yb,zb],[wb,yb,zb],[wb*.88,yb+hb,zb],[-wb*.88,yb+hb,zb]];for(let j=0;j<4;j++){const k=(j+1)%4;p.push(...a[j],...b[k],...b[j],...a[j],...a[k],...b[k]);}if(i===1)p.push(...a[0],...a[2],...a[1],...a[0],...a[3],...a[2]);if(i===sections.length-1)p.push(...b[2],...b[0],...b[1],...b[3],...b[0],...b[2]);}const geometry=new THREE.BufferGeometry();geometry.setAttribute('position',new THREE.Float32BufferAttribute(p,3));geometry.computeVertexNormals();const m=new THREE.Mesh(geometry,material(color));g.add(m);}
-export function createVehicle(type,color){const g=new THREE.Group();
+export function createVehicle(type,color){if(type==='mito'||type==='cinquecento')return createCoachwork(type,{...VEHICLES[type],family:'compact'},color);const g=new THREE.Group();
  if(type==='mito'||type==='cinquecento'){
   body(g,color,[[-2.03,.68,.4,.43],[-1.65,.86,.39,.55],[.95,.86,.4,.52],[1.76,.76,.43,.37],[2.03,.60,.43,.30]]);
   body(g,color,[[-1.56,.70,.9,.13],[-1.1,.72,.92,.5],[.37,.68,.92,.52],[1.04,.68,.91,.03]]);
