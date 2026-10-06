@@ -16,6 +16,7 @@ concurrency:
 
 jobs:
   verify-integrated-game:
+    if: ${{ github.event_name != 'push' || !startsWith(github.event.head_commit.message, 'Preview only:') }}
     uses: ./.github/workflows/integrated-city-checks.yml
   deploy:
     needs: verify-integrated-game
