@@ -11,7 +11,7 @@ export function commandSet(state,water={}){
   name=spec.plane?'Aereo':'Elicottero';
   if(military.has(car.style)||car.style==='airport-michelangelo'){
    add('TAB','Accelera');add('CTRL','Frena');add('↑ / ↓','Sali / scendi');add('A / D','Sterza');
-   if(military.has(car.style)){add('G','Missile');add('Q','Contromisure');}
+   if(military.has(car.style)){add('G','Missile');add('Q','Mega missile');}
   }else{add('W / S','Velocità');add('A / D','Sterza');add('SPAZIO','Sali / decolla');add('SHIFT','Scendi');}
   add('F','Paracadute');add('E','Esci a terra');
  }else if(car){
