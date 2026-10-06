@@ -48,14 +48,18 @@ export function installVehicleDamage(actor){
 
  const smoke=new THREE.Group();smoke.name='damage-smoke';for(let i=0;i<3;i++){const puff=new THREE.Mesh(smokeGeometry,smokeMaterials[i]);puff.position.set((i-1)*spec.width*.08,i*spec.height*.11,0);puff.scale.setScalar(spec.height*(.07+i*.02));smoke.add(puff);}smoke.position.set(0,spec.height*(bike?.62:.56),spec.length*(bike?.28:.31));root.add(smoke);
  for(const object of [crack,dent,hood,smoke])object.visible=false;
- mesh.add(root);actor.damageVisual={root,crack,dent,hood,smoke,stage:-1};return actor.damageVisual;
+ const scuff=new THREE.Group();scuff.name='side-scuff';for(let i=0;i<3;i++){const mark=new THREE.Mesh(panelGeometry,bumperMaterial);mark.position.set(0,spec.height*(.34+i*.025),spec.length*(.07-i*.055));mark.scale.set(.012,.018,spec.length*(.22+i*.025));mark.rotation.x=.04;scuff.add(mark);}scuff.visible=false;crack.add(scuff);
+ mesh.add(root);actor.damageVisual={root,crack,dent,hood,smoke,scuff,glass,lamp,stage:-1};return actor.damageVisual;
 }
 
 export function updateVehicleDamage(actor,health=actor.health,time=0){
  const visual=actor.damageVisual||installVehicleDamage(actor);if(!visual)return 0;
- const stage=damageStage(health),detail=!actor.simple;
- if(stage!==visual.stage||detail!==visual.detail){visual.stage=stage;visual.detail=detail;visual.crack.visible=detail&&stage>=1;visual.dent.visible=detail&&stage>=2;visual.hood.visible=detail&&stage>=2;visual.smoke.visible=detail&&stage>=3;}
+ if(health>=100)actor.contactScuff=null;
+ const stage=damageStage(health),detail=!actor.simple,scuffSide=actor.contactScuff?.side||0;
+ if(stage!==visual.stage||detail!==visual.detail||scuffSide!==visual.scuffSide){visual.stage=stage;visual.detail=detail;visual.scuffSide=scuffSide;visual.crack.visible=detail&&(stage>=1||!!scuffSide);visual.glass.visible=visual.lamp.visible=stage>=1;visual.scuff.visible=detail&&!!scuffSide;visual.scuff.position.x=scuffSide*actor.spec.width*.478;visual.dent.visible=detail&&stage>=2;visual.hood.visible=detail&&stage>=2;visual.smoke.visible=detail&&stage>=3;}
  if(visual.hood.visible)visual.hood.rotation.x=-.16+Math.sin(time*5+(actor.mesh.id||0))*.012;
  if(visual.smoke.visible){visual.smoke.position.y=actor.spec.height*.56+Math.sin(time*2.2+(actor.mesh.id||0))*.035;visual.smoke.rotation.y=time*.18;}
  return stage;
 }
+
+export function recordVehicleScrape(car,normal,yaw=car.yaw){if(!normal||!car.spec||car.spec.aircraft||car.spec.watercraft)return;const side=-Math.sign(normal.x*Math.cos(yaw)-normal.z*Math.sin(yaw));if(side)car.contactScuff={side};}

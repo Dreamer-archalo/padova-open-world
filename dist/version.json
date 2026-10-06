@@ -1,8 +1,8 @@
 {
   "game": "Padova After Hours",
   "version": "1.2.1",
-  "releaseName": "R26 · Gioco tradizionale, strade e auto speciali",
-  "baselineSourceCommit": "08872df934e5118b3efa7b69811de9aa3843925c",
+  "releaseName": "R31 \u00b7 NPC, corsie, cisterna, camion rampa e moto",
+  "baselineSourceCommit": "76fb1f37e1e69a2ba391f8aff5d259434f7cafdf",
   "repository": "Dreamer-archalo/padova-open-world",
   "productionBranch": "main",
   "publishDirectory": "dist",

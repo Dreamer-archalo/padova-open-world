@@ -80,11 +80,12 @@ export class PadovaUrbanDirector {
   }
  }
  alarm(source,radius=30,seconds=3){const g=this.game,now=g.state.elapsed;if(g.state.x>=7350)return;for(const p of g.people){if(!p.mesh?.visible||dist(p,source)>radius||p.cityTask?.state==='flee')continue;
+  if(p.cityTask?.state==='crosswalk'&&p.cityCross?.committed)continue;
   const old=p.cityTask;if(p.citySeat&&this.occupied.get(p.citySeat.id)===p)this.occupied.delete(p.citySeat.id);p.citySeat=null;
   p.cityThreat={x:source.x,z:source.z,until:now+seconds,previous:old};this.start(p,'flee',null,now+seconds);
  }}
- react(p,near){if(p.cityTask?.state==='flee'||!p.mesh?.visible)return;const threat=near.find(c=>Math.abs(c.speed||0)>3&&dist(c,p)<Math.max(6,Math.abs(c.speed)*1.1));if(threat){this.clear(p);this.alarmOne(p,threat,2.5);}}
- alarmOne(p,source,seconds){const now=this.game.state.elapsed;if(p.citySeat&&this.occupied.get(p.citySeat.id)===p)this.occupied.delete(p.citySeat.id);p.citySeat=null;p.cityThreat={x:source.x,z:source.z,until:now+seconds};this.start(p,'flee',null,now+seconds);}
+ react(p,near){if(p.cityTask?.state==='flee'||p.cityTask?.state==='crosswalk'&&p.cityCross?.committed||!p.mesh?.visible)return;const threat=near.find(c=>Math.abs(c.speed||0)>3&&dist(c,p)<Math.max(6,Math.abs(c.speed)*1.1));if(threat){this.clear(p);this.alarmOne(p,threat,2.5);}}
+ alarmOne(p,source,seconds){if(p.cityTask?.state==='crosswalk'&&p.cityCross?.committed)return;const now=this.game.state.elapsed;if(p.citySeat&&this.occupied.get(p.citySeat.id)===p)this.occupied.delete(p.citySeat.id);p.citySeat=null;p.cityThreat={x:source.x,z:source.z,until:now+seconds};this.start(p,'flee',null,now+seconds);}
  greet(){const g=this.game,now=g.state.elapsed;if(g.state.mode!=='foot'||g.state.x>=7350||now<this.lastGreeting+2)return false;
   const p=g.people.find(p=>p.mesh?.visible&&dist(p,g.state)<3.7&&p.cityTask?.state!=='flee');if(!p)return false;
   this.lastGreeting=now;p.cityGreetUntil=now+2;p.yaw=Math.atan2(g.state.x-p.x,g.state.z-p.z);g.toast?.(['Ciao!','Buona giornata!','Tutto bene?'][p.seed%3],2);return true;
@@ -93,14 +94,19 @@ export class PadovaUrbanDirector {
  // terrain checks. The road crossing still uses the existing pedestrian intent.
  intent(p,base,now,near=[]){const task=p.cityTask;if(!task)return base;
   if(task.state==='talk'||task.state==='seated'||task.state==='at-bar')return {yaw:p.cityGreetUntil>now?Math.atan2(this.game.state.x-p.x,this.game.state.z-p.z):p.yaw,speed:0,crossing:false};
-  if(task.state==='flee'){const threat=p.cityThreat||this.game.state,dx=p.x-threat.x,dz=p.z-threat.z;return {yaw:Math.atan2(dx,dz),speed:3.2,crossing:true};}
+  if(task.state==='flee'){const threat=p.cityThreat||this.game.state,dx=p.x-threat.x,dz=p.z-threat.z;return {yaw:Math.atan2(dx,dz),speed:3.2,crossing:false};}
   if(task.state==='recover')return {...base,speed:Math.min(.8,base.speed)};
   const goal=task.goal;if(!goal)return base;
-  if(task.state==='crosswalk'&&(this.game.signals?.allowed(p.cityCross?.id,now,p.cityCross?.yaw)||near.some(c=>c.mesh?.visible&&c.speed>2&&dist(c,p)<9)))return {yaw:p.yaw,speed:0,crossing:false};
+  if(task.state==='crosswalk'&&!p.cityCross?.committed){
+   const busy=near.some(c=>c.mesh?.visible&&Math.abs((c.y||0)-(p.y||0))<3&&c.speed>1&&dist(c,p)<Math.max(12,c.speed*2));
+   if(this.game.signals?.allowed(p.cityCross?.id,now,p.cityCross?.yaw)||busy)return {yaw:p.yaw,speed:0,crossing:false};
+   p.cityCross.committed=true;
+   task.started=now;
+  }
   return {yaw:Math.atan2(goal.x-p.x,goal.z-p.z),speed:(task.state==='enter-bar'||task.state==='exit-bar')?.75:1.25,crossing:task.state==='enter-bar'||task.state==='exit-bar'||task.state==='crosswalk'};
 }
  afterMove(p,now,blocked=false,step=.08){const t=p.cityTask;if(!t)return;t.blocked=blocked?t.blocked+step:0;
-  if(t.blocked>2.3||now-t.started>28){this.clear(p);p.at=now+12;return;}
+  if((t.blocked>2.3||now-t.started>28)&&!(t.state==='crosswalk'&&p.cityCross?.committed)){this.clear(p);p.at=now+12;return;}
   if(t.state==='flee'&&now>=t.until){this.start(p,'recover',null,now+1.3);return;}
   if(t.state==='recover'&&now>=t.until){this.clear(p);p.at=now+15;return;}
   if((t.state==='talk'||t.state==='seated'||t.state==='at-bar')&&now>=t.until){

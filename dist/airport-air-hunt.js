@@ -164,7 +164,7 @@ function updateMarkers(g){if(typeof document==='undefined')return;
   if(showMission)banner.textContent=`CACCIA AEREA · ${run.kills}/10 JET · €${airHuntPayout(run.kills)} / €1.500`;
   else if(showNotice)banner.textContent=notice.message;
  }
- if(visible){const instructions=document.getElementById('fcControls'),text='A/D STERZA · ↑ SALI · ↓ SCENDI · TAB ACCELERA · CTRL FRENA · G MISSILE · Q MEGA MISSILE · X FLARE · F PARACADUTE';
+ if(visible){const instructions=document.getElementById('fcControls'),text='A/D STERZA · ↑ SALI · ↓ SCENDI · TAB ACCELERA · CTRL FRENA · G MISSILE · Q MEGA MISSILE · X FLARE · 0 PARACADUTE';
   if(instructions&&instructions.textContent!==text)instructions.textContent=text;
   const touch=document.getElementById('flightMissileTouch');if(touch&&touch.textContent!=='G · MISSILE')touch.textContent='G · MISSILE';
   const brake=document.getElementById('touchDescend');if(brake&&brake.textContent!=='CTRL · FRENA')brake.textContent='CTRL · FRENA';

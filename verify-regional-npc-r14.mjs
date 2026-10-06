@@ -66,8 +66,12 @@ npc.health=35;
 region.updateRegionalCar(npc,.04,7);
 assert(npc.damageVisual.stage>=2,'Same Padova damaged-body model must activate after collision');
 npc.health=0;region.updateRegionalCar(npc,.05,8);
+assert(region.explosions.length===0&&npc.mesh.visible&&npc.crashDisabled&&npc.speed===0&&npc.damageVisual.stage===3,
+ 'An ordinary regional car must remain as a disabled, visible wreck without exploding');
+const ordinarySpec=npc.spec;npc.spec={...npc.spec,fuelTank:true};npc.parked=false;region.updateRegionalCar(npc,.05,8.1);
 assert(region.explosions.length===1&&!npc.mesh.visible&&npc.destroyedUntil>8,
- 'A destroyed regional car must explode and leave the road temporarily');
+ 'Fuel vehicles retain their explicit explosion behavior');
+npc.spec=ordinarySpec;
 region.updateExplosions(11);
 assert(region.explosions.length===0,'Explosion particles must be disposed after their lifetime');
 npc.health=100;npc.mesh.visible=true;region.claimCar(npc);
@@ -75,4 +79,4 @@ assert(npc.mesh.parent===scene&&!npc.regionalTraffic&&cars.includes(npc),
  'Taking an NPC car must detach its complete driving entity before sector removal');
 region.removeGroup(group);
 assert(cars.includes(npc),'The stolen real car must remain drivable when its original sector streams out');
-console.log('PASS R14: full Padova car and pedestrian visuals even on hyper, one-way motorway routing, live gravity/AI, staged damage and explosion, player takeover with chunk-safe persistence.');
+console.log('PASS R14: full Padova car and pedestrian visuals even on hyper, one-way motorway routing, live gravity/AI, staged damage, disabled wrecks and fuel explosions, player takeover with chunk-safe persistence.');
