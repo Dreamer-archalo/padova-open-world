@@ -46,10 +46,22 @@ function grainTexture(){
  const t=new THREE.DataTexture(data,size,size);t.wrapS=t.wrapT=THREE.RepeatWrapping;t.repeat.set(3,3);t.needsUpdate=true;t.colorSpace=THREE.SRGBColorSpace;return t;
 }
 const paintGrain=grainTexture();
+function skyReflection(){
+ const size=32,faces=[];
+ for(let face=0;face<6;face++){const data=new Uint8Array(size*size*4);
+  for(let y=0;y<size;y++)for(let x=0;x<size;x++){
+   const u=2*(x+.5)/size-1,v=2*(y+.5)/size-1,d=[[1,-v,-u],[-1,-v,u],[u,1,v],[u,-1,-v],[u,-v,1],[-u,-v,-1]][face],length=Math.hypot(...d),up=d[1]/length;
+   const low=up<0?[92,91,83]:[202,213,219],high=up<0?[54,59,62]:[107,147,176],t=Math.pow(Math.abs(up),.6),sun=Math.max(0,(d[0]*.5+d[1]*.70+d[2]*.50)/length-.93)*450;
+   data.set(low.map((c,i)=>Math.min(255,Math.round(mix(c,high[i],t)+sun))).concat(255),(y*size+x)*4);
+  }const t=new THREE.DataTexture(data,size,size);t.needsUpdate=true;faces.push(t);
+ }
+ const reflection=new THREE.CubeTexture(faces);reflection.colorSpace=THREE.SRGBColorSpace;reflection.needsUpdate=true;return reflection;
+}
+const sky=skyReflection();
 export function coachMaterial(kind,color){
  const key=kind+'/'+color;if(!mats.has(key)){
   const p=kind==='paint'?{roughness:.31,metalness:.42,map:paintGrain}:kind==='glass'?{roughness:.19,metalness:.42}:kind==='alloy'?{roughness:.27,metalness:.78}:{roughness:.82,metalness:.03};
-  const m=new THREE.MeshStandardMaterial({color,...p});m.userData.coachBucket=kind;mats.set(key,m);
+  const m=new THREE.MeshStandardMaterial({color,...p,...(kind==='trim'?{}:{envMap:sky,envMapIntensity:kind==='glass'?.65:kind==='alloy'?.5:.28})});m.userData.coachBucket=kind;mats.set(key,m);
  }return mats.get(key);
 }
 function mesh(g,geo,kind,color,x,y,z,sx=1,sy=1,sz=1){const m=new THREE.Mesh(geo,coachMaterial(kind,color));m.position.set(x,y,z);m.scale.set(sx,sy,sz);m.userData.coachPaint=kind==='paint';m.castShadow=m.receiveShadow=true;g.add(m);return m;}
