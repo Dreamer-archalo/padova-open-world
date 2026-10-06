@@ -1,0 +1,35 @@
+name: Compact HUD and contextual commands R34
+on:
+  push:
+    branches: [fix/compact-hud-actions-r32]
+  pull_request:
+    paths:
+      - dist/compact-hud.js
+      - dist/context-actions.js
+      - dist/context-actions.css
+      - dist/command-guide.js
+      - dist/command-guide.css
+      - dist/game.js
+      - dist/cruise-control.js
+      - tools/test-command-guide-r34.mjs
+      - dist/index.html
+      - tools/test-context-actions-r32.mjs
+      - tools/test-context-hangar-r32-browser.mjs
+      - .github/workflows/context-actions-r32-checks.yml
+permissions:
+  contents: read
+jobs:
+  browser-layout:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm install --no-save playwright
+      - run: npx playwright install --with-deps chromium
+      - run: node --check dist/compact-hud.js && node --check dist/context-actions.js
+      - run: node tools/test-context-actions-r32.mjs
+      - run: node tools/test-mission-selector-r31.mjs
+      - run: node tools/test-command-guide-r34.mjs

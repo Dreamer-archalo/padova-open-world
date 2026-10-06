@@ -2,7 +2,7 @@
 import * as THREE from './vendor/three.module.js';
 import {ModernGameplay} from './modern-gameplay.js';
 import {AIRPORT,areaPoint} from './gameplay-areas.js';
-import {createSpecialVehicle} from './special-vehicles.js';
+import {createSpecialVehicle,registerSpecialModel} from './special-vehicles.js';
 import {createPerson} from './world.js';
 import {createAirportTraffic,tickAirportTraffic,destroyAirportAircraft} from './airport-air-traffic.js';
 
@@ -30,6 +30,8 @@ function aircraftModel(type){
  }
  g.userData.airportAmbient=true;g.name=cargo?'Aeroporto · grande aereo da trasporto':'Aeroporto · jet militare';return g;
 }
+registerSpecialModel('airport-cargo',()=>aircraftModel('cargo'));
+registerSpecialModel('airport-jet',()=>aircraftModel('jet'));
 function golfCart(){
  const g=new THREE.Group();part(g,0,.65,0,1.45,.22,2.3,'#e6e4d0');
  part(g,0,1.09,-.47,1.1,.75,.83,'#c8ceb9');part(g,0,1.02,.57,1.12,.14,.85,'#39434a');

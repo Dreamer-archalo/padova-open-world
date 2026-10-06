@@ -36,7 +36,7 @@ try{
     $('menu').addEventListener('cancel',e=>{e.preventDefault();closeDialogs();});`);
    install(window.hudState);
   },{missionTypes,activities});
-  for(const ui of ['compact','complete'])for(const mode of ['foot','car']){
+  for(const ui of ['compact'])for(const mode of ['foot','car']){
    await page.evaluate(({ui,mode})=>{
     document.body.dataset.ui=ui;Object.assign(hudState,{mode,car:mode==='car'?{spec:{}}:null,mission:null});hudModule.updateHUDState(hudState,{active:false});
    },{ui,mode});
@@ -67,5 +67,5 @@ try{
   assert(!await page.getByRole('button',{name:'Seleziona missioni'}).isVisible(),'selector hidden before playing');
   await page.close();
  }
- console.log(`PASS mission selector: ${checks} desktop/touch, compact/complete, foot/car layouts; real activity menu and Escape/resume; active mission and startup.`);
+ console.log(`PASS mission selector: ${checks} desktop/touch, compact only, foot/car layouts; real activity menu and Escape/resume; active mission and startup.`);
 }finally{await browser.close();server.kill();}

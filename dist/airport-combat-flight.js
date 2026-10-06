@@ -2,7 +2,7 @@
 import * as THREE from './vendor/three.module.js';
 import {ModernGameplay} from './modern-gameplay.js';
 import {CameraRig} from './camera-rig.js';
-import {SPECIAL_VEHICLES,createSpecialVehicle} from './special-vehicles.js';
+import {SPECIAL_VEHICLES,registerSpecialModel,createSpecialVehicle} from './special-vehicles.js';
 import {VEHICLES} from './vehicles.js';
 import {AIRPORT,areaPoint} from './gameplay-areas.js';
 import {vehicleBlocked} from './movement.js';
@@ -39,6 +39,7 @@ function blackbirdModel(){
  const trails=[];for(const side of [-1,1]){const trail=new THREE.Mesh(new THREE.ConeGeometry(.55,8,8),new THREE.MeshBasicMaterial({color:'#8bc8ef',transparent:true,opacity:.33,depthWrite:false}));trail.rotation.x=Math.PI/2;trail.position.set(side*2.7,2.1,-19);trail.visible=false;g.add(trail);trails.push(trail);}g.userData.flightTrails=trails;return g;
 }
 function shockwave(g,car){const ring=new THREE.Mesh(new THREE.TorusGeometry(1,.095,7,40),new THREE.MeshBasicMaterial({color:'#ccf3ff',transparent:true,opacity:.8,depthWrite:false}));ring.position.set(car.x,car.y+2,car.z);ring.rotation.y=car.yaw;g.scene.add(ring);(g.flightShockwaves??=[]).push({mesh:ring,age:0});g.toast?.('MERLO NERO · ONDA VISIVA 560 KM/H',2);}
+registerSpecialModel(BLACKBIRD,blackbirdModel);
 function spawnBlackbird(g){const s=g.state,ops=g.interactiveAirport;if(!ops||g.flightBlackbird||s.elapsed<(g.flightBlackbirdRetry||0)||Math.hypot(s.x-AIRPORT.x,s.z-AIRPORT.z)>1050)return;
  g.flightBlackbirdRetry=s.elapsed+5;
  for(const [u,v] of [[121,-439],[149,-442],[109,-416],[173,-430],[110,-395]]){
@@ -178,7 +179,7 @@ if(!ModernGameplay.prototype.__airportCombatFlight){ModernGameplay.prototype.__a
   if(airborne)handleAbandoned(this,dt);
   advanceThreats(this,Math.min(dt,.12));
   for(const effect of [...this.flightShockwaves]){effect.age+=dt;effect.mesh.scale.setScalar(1+effect.age*11);effect.mesh.material.opacity=Math.max(0,.8*(1-effect.age/.95));if(effect.age>.95){this.scene.remove(effect.mesh);effect.mesh.geometry.dispose();effect.mesh.material.dispose();this.flightShockwaves.splice(this.flightShockwaves.indexOf(effect),1);}}
-  const panel=document.getElementById('flightPanel'),aim=document.getElementById('flightAim'),button=document.getElementById('flightTurboButton');if(panel){panel.hidden=!airborne;if(airborne)panel.textContent=plane?'W/S VELOCITÀ · A/D CURVA · SPACE SALI · CTRL PICCHIATA · SHIFT TURBO · F PARACADUTE'+(missileJet(c.style)?' · TAB MISSILE':''):'W/S AVANTI · A/D RUOTA · SPACE SALI · CTRL SCENDI · SHIFT TURBO · F PARACADUTE';}
+  const panel=document.getElementById('flightPanel'),aim=document.getElementById('flightAim'),button=document.getElementById('flightTurboButton');if(panel){panel.hidden=!airborne;if(airborne)panel.textContent=plane?'W/S VELOCITÀ · A/D CURVA · SPACE SALI · CTRL PICCHIATA · SHIFT TURBO · 0 PARACADUTE'+(missileJet(c.style)?' · TAB MISSILE':''):'W/S AVANTI · A/D RUOTA · SPACE SALI · CTRL SCENDI · SHIFT TURBO · 0 PARACADUTE';}
   if(aim)aim.hidden=!(plane&&isJet(c));if(button)button.hidden=!airborne;
  };
 }

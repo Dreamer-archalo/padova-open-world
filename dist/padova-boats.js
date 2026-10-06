@@ -3,7 +3,7 @@
 import * as THREE from './vendor/three.module.js';
 import {ModernGameplay} from './modern-gameplay.js';
 import {project} from './core.js';
-import {BOAT_SPECS,createBoatModel} from './nautical-catalog.js';
+import {BOAT_SPECS,createBoatModel,boatLaunchPoint} from './nautical-catalog.js';
 const DOCK_CANDIDATES=[
  {name:'Portello · Piovego',lat:45.4095,lon:11.8929},
  {name:'Ponte Molino · centro',lat:45.4117,lon:11.8738},
@@ -81,12 +81,14 @@ function character(g){return g.scene.children.find(o=>o.userData?.character===g.
 export function launchPadovaBoat(g,id,dock,color='#f2dfc1'){
  const s=BOAT_SPECS[id],d=g.nautical?.docks?.[dock];if(!s||!d||!(d.region?s.places.includes('venice')||s.places.includes('padova'):s.places.includes('padova')))return false;
  if(d.width<s.minChannel+1){g.toast?.('Canale troppo stretto per '+s.name+'. Cambia darsena o barca.',4);return false;}
+ const point=boatLaunchPoint(s,g.terrain,d);if(!point){g.toast?.('Spazio insufficiente o ponte troppo basso: scegli un’altra darsena.',4);return false;}
  const old=g.nautical.playerBoat;if(old&&old!==g.state.car){g.remove(old);}
- const car=g.addCar(d.x,d.z,d.yaw,false,true,id),former=car.mesh,mesh=createBoatModel(id,color);
+ const car=g.addCar(point.x,point.z,point.yaw,false,true,id),former=car.mesh,mesh=createBoatModel(id,color);
  g.scene.remove(former);g.scene.add(mesh);
- Object.assign(car,{mesh,name:s.name,style:id,spec:{...car.spec},x:d.x,z:d.z,y:d.y+.10,yaw:d.yaw,speed:0,health:100,damageVisual:null,missionUnit:true,fixedSpawn:true,budgetSleeping:false,parked:false,waterDock:d.id,waterColor:color});
+ Object.assign(car,{mesh,name:s.name,style:id,spec:{...car.spec},x:point.x,z:point.z,y:g.terrain.waterHeight(point.x,point.z)+.10,yaw:point.yaw,speed:0,health:100,damageVisual:null,missionUnit:true,fixedSpawn:true,budgetSleeping:false,parked:false,waterDock:d.id,waterColor:color});
  if(g.state.car&&g.state.car!==car){g.state.car.speed=0;g.state.car.parked=true;}
- const st=g.state;Object.assign(st,{mode:'car',car,x:car.x,z:car.z,y:car.y,yaw:car.yaw,speed:0,health:100,vy:0,parachuting:false,waypoint:null,route:[]});
+ const st=g.state;Object.assign(st,{mode:'car',car,x:car.x,z:car.z,y:car.y,yaw:car.yaw,speed:0,health:100,vy:0,parachuting:false,freefall:false,waypoint:null,route:[]});
+ mesh.position.set(car.x,car.y,car.z);mesh.rotation.y=car.yaw;
  const p=character(g);if(p)p.visible=false;g.nautical.playerBoat=car;g.nautical.activeDock=d.id;g.nautical.lastWarning=0;
  g.toast?.(s.name+' · '+d.name+' · W/S motore · A/D timone · SHIFT velocità.',5);
  return true;
@@ -133,7 +135,7 @@ function setup(){
  menu.querySelector('#nauticalLaunch').onclick=()=>{const id=menu.querySelector('#nauticalCraft').value,d=+menu.querySelector('#nauticalDock').value,color=menu.querySelector('#nauticalColor').value;close();if(!launchPadovaBoat(live,id,d,color))live?.toast?.('Imbarcazione non compatibile con questa darsena.',4);};
  menu.querySelector('#nauticalClose').onclick=close;menu.addEventListener('close',()=>{if(live)live.state.paused=false;});
  document.addEventListener('keydown',event=>{
-  if(event.code==='KeyB'&&!event.repeat&&live?.state.started&&!document.querySelector('dialog[open]')){event.preventDefault();event.stopImmediatePropagation();show(live);}
+  if(event.code==='KeyB'&&!live?.state.car?.spec.bike&&!['scooter','motorcycle'].includes(live?.state.car?.style)&&!event.repeat&&live?.state.started&&!document.querySelector('dialog[open]')){event.preventDefault();event.stopImmediatePropagation();show(live);}
  },true);
 }
 const populate=ModernGameplay.prototype.populate,update=ModernGameplay.prototype.update;

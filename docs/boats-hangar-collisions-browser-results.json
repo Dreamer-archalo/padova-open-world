@@ -1,0 +1,220 @@
+{
+  "aircraft": [
+    {
+      "id": "airport-trainer",
+      "name": "Addestratore civile · Ala"
+    },
+    {
+      "id": "airport-commuter",
+      "name": "Aereo civile · pendolare"
+    },
+    {
+      "id": "airport-airliner",
+      "name": "Aereo passeggeri · Turbina"
+    },
+    {
+      "id": "airport-regional",
+      "name": "Aereo regionale · turboelica"
+    },
+    {
+      "id": "albatros",
+      "name": "Albatros · bimotore"
+    },
+    {
+      "id": "airport-business",
+      "name": "Business jet · executive"
+    },
+    {
+      "id": "airport-strike",
+      "name": "Jet militare · attacco bimotore"
+    },
+    {
+      "id": "airport-jet",
+      "name": "Jet militare · caccia"
+    },
+    {
+      "id": "airport-interceptor",
+      "name": "Jet militare · intercettore"
+    },
+    {
+      "id": "libellula",
+      "name": "Libellula · aereo leggero"
+    },
+    {
+      "id": "airport-blackbird",
+      "name": "Merlo Nero · ricognitore ispirato al Blackbird"
+    },
+    {
+      "id": "airport-michelangelo",
+      "name": "MICHELANGELO · Venezia 1000"
+    },
+    {
+      "id": "rondone",
+      "name": "Rondone · sportivo ad ala bassa"
+    },
+    {
+      "id": "airport-cargo",
+      "name": "Trasporto pesante · cargo"
+    },
+    {
+      "id": "airone",
+      "name": "Airone H2"
+    },
+    {
+      "id": "falco",
+      "name": "Falco · elicottero scout"
+    },
+    {
+      "id": "levante",
+      "name": "Levante · elicottero utility"
+    }
+  ],
+  "boats": [
+    {
+      "id": "boat-bragozzo",
+      "name": "Bragozzo · tradizionale"
+    },
+    {
+      "id": "boat-catamaran",
+      "name": "Dardo 145 · catamarano sportivo"
+    },
+    {
+      "id": "boat-rib",
+      "name": "Gommone RIB · 7.5"
+    },
+    {
+      "id": "boat-gondola",
+      "name": "Gondola veneziana"
+    },
+    {
+      "id": "boat-jetski-race",
+      "name": "Jet R · moto d’acqua racing"
+    },
+    {
+      "id": "boat-jetski",
+      "name": "Moto d’acqua · Jet"
+    },
+    {
+      "id": "boat-sport",
+      "name": "Motoscafo sportivo · 80"
+    },
+    {
+      "id": "boat-patrol",
+      "name": "Motovedetta fluviale"
+    },
+    {
+      "id": "boat-electric",
+      "name": "Piovego Elettrica · 8 posti"
+    },
+    {
+      "id": "boat-speedster",
+      "name": "Scia 110 · motoscafo offshore"
+    },
+    {
+      "id": "boat-water-taxi",
+      "name": "Taxi acqueo lagunare"
+    },
+    {
+      "id": "boat-vaporetto",
+      "name": "Vaporetto · linea lagunare"
+    },
+    {
+      "id": "boat-yacht",
+      "name": "Yacht Laguna · 16 metri"
+    }
+  ],
+  "delivered": {
+    "id": "airport-airliner",
+    "width": 29,
+    "length": 26.5,
+    "previewWidth": 29,
+    "previewLength": 26.5,
+    "roof": true,
+    "paused": false
+  },
+  "launches": [
+    {
+      "id": "boat-speedster",
+      "water": 13.51872693617019,
+      "maxKmh": 110,
+      "revision": 33,
+      "dock": 2,
+      "navigation": {
+        "distance": 18.553333333333384,
+        "speed": 18.399999999999938,
+        "water": 13.517275872585351
+      }
+    },
+    {
+      "id": "boat-catamaran",
+      "water": 6.7283203373147815,
+      "maxKmh": 145,
+      "revision": 33,
+      "dock": 3,
+      "navigation": {
+        "distance": 22.586666666664435,
+        "speed": 22.400000000000052,
+        "water": 6.705785772086396
+      }
+    },
+    {
+      "id": "boat-jetski-race",
+      "water": 6.7341398117041384,
+      "maxKmh": 120.00000000000001,
+      "revision": 33,
+      "dock": 3,
+      "navigation": {
+        "distance": 23.191666666665597,
+        "speed": 22.999999999999975,
+        "water": 6.711258461892431
+      }
+    }
+  ],
+  "impacts": {
+    "front": {
+      "health": 76.00100988772729,
+      "speed": -5.653169153693989,
+      "visible": true,
+      "recovery": false
+    },
+    "glance": {
+      "health": 99.85,
+      "speed": 36.984805102393544,
+      "distance": 52.28323143721184,
+      "scuff": true,
+      "scuffVisible": true,
+      "brokenGlass": false,
+      "yaw": 0.1
+    },
+    "pair": {
+      "health": 68.98677474048505,
+      "otherHealth": 68.98677474048505,
+      "speed": -4.494818804142689,
+      "otherSpeed": -4.257771793785963,
+      "visible": true,
+      "recovery": false,
+      "cooldownPhysical": true
+    },
+    "disabled": {
+      "health": 0,
+      "hits": 5,
+      "visible": true,
+      "recovery": false,
+      "flag": true
+    },
+    "exit": {
+      "mode": "foot",
+      "health": 100,
+      "recovery": false
+    },
+    "repair": {
+      "repaired": true,
+      "health": 100,
+      "carHealth": 100,
+      "visible": true,
+      "scuff": false
+    }
+  },
+  "errors": [],
+  "warnings": []
+}

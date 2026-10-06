@@ -30,7 +30,7 @@ function build(g){const roof=g.villaRoof,root=new THREE.Group();root.name='Mandr
 }
 function setupButton(){if(button)return;const css=document.createElement('style');css.textContent='#mandriaV6StairButton:not([hidden]){position:fixed;left:50%;top:38%;transform:translateX(-50%);z-index:79;background:#193932f5;color:#ffebc0;border:2px solid #f1cb79;border-radius:12px;font:800 15px system-ui;padding:12px 21px;cursor:pointer}';document.head.appendChild(css);
  button=document.createElement('button');button.id='mandriaV6StairButton';button.type='button';button.textContent='E · SALI LA SCALA ESTERNA';button.hidden=true;button.onclick=()=>begin(active);document.body.appendChild(button);}
-function nearBottom(g){const e=g.villaV6Stairs,s=g.state;return !!e&&s.started&&!s.paused&&s.mode==='foot'&&!e.travel&&Math.abs(s.y-e.base)<3&&Math.hypot(s.x-e.bottom.x,s.z-e.bottom.z)<4.3;}
+function nearBottom(g){const e=g?.villaV6Stairs,s=g?.state;return !!e&&!!s&&s.started&&!s.paused&&s.mode==='foot'&&!e.travel&&Math.abs(s.y-e.base)<3&&Math.hypot(s.x-e.bottom.x,s.z-e.bottom.z)<4.3;}
 function begin(g){if(!nearBottom(g)||document.querySelector('dialog[open]'))return false;const e=g.villaV6Stairs;e.travel={start:g.state.elapsed};g.state.speed=0;g.state.vy=0;g.toast?.('Eliporto · scala esterna. Il ritorno è segnalato sul tetto.',3);return true;}
 function step(g,dt){if(!g.state?.started||!g.villaRoof||!g.villaV4||!Number.isFinite(dt)||dt<=0)return;
  if(!g.villaV6Stairs)g.villaV6Stairs=build(g);const e=g.villaV6Stairs;

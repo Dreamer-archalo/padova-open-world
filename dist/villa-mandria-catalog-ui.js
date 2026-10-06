@@ -98,11 +98,14 @@ function picture(id,color){
    const sun=new THREE.DirectionalLight(0xffffff,2.1);sun.position.set(20,30,25);scene.add(sun);
   }
   root=hangarPreviewModel(id,color,game);if(!root)throw new Error('Model unavailable '+id);
-  root.visible=true;paintHangarVehicle(root,color);root.updateMatrixWorld(true);
-  const bounds=new THREE.Box3().setFromObject(root);if(bounds.isEmpty())throw new Error('Empty model '+id);
-  const centre=bounds.getCenter(new THREE.Vector3()),radius=Math.max(.75,bounds.getSize(new THREE.Vector3()).length()*.5);
-  const distance=radius/Math.sin(34*Math.PI/360)*1.18;
-  camera.position.copy(centre).add(new THREE.Vector3(distance*.72,distance*.43,distance*.69));
+  root.visible=true;root.traverse(o=>{if(o.userData.damageDetail||o.name==='vehicle-damage')o.visible=false;});paintHangarVehicle(root,color);root.updateMatrixWorld(true);
+  // Exclude hidden effects (for example the Blackbird's exhaust trails) and
+  // frame the visible model against both camera axes, including wide wings.
+  const bounds=new THREE.Box3();root.traverseVisible(o=>{if(o.isMesh){o.geometry.computeBoundingBox();bounds.union(o.geometry.boundingBox.clone().applyMatrix4(o.matrixWorld));}});if(bounds.isEmpty())throw new Error('Empty model '+id);
+  const centre=bounds.getCenter(new THREE.Vector3()),direction=new THREE.Vector3(.72,.43,.69).normalize(),right=new THREE.Vector3().crossVectors(camera.up,direction).normalize(),up=new THREE.Vector3().crossVectors(direction,right),tanV=Math.tan(34*Math.PI/360),tanH=tanV*256/176;
+  let distance=.75;
+  for(const x of [bounds.min.x,bounds.max.x])for(const y of [bounds.min.y,bounds.max.y])for(const z of [bounds.min.z,bounds.max.z]){const p=new THREE.Vector3(x,y,z).sub(centre),toward=p.dot(direction);distance=Math.max(distance,toward+Math.abs(p.dot(right))/tanH,toward+Math.abs(p.dot(up))/tanV);}
+  distance*=1.14;camera.position.copy(centre).addScaledVector(direction,distance);
   camera.lookAt(centre);camera.near=Math.max(.01,distance*.004);camera.far=distance*5;camera.updateProjectionMatrix();
   scene.add(root);renderer.render(scene,camera);url=renderer.domElement.toDataURL('image/webp',.84);scene.remove(root);
   // A valid WEBP data URL can still contain nothing but background if a
@@ -110,7 +113,7 @@ function picture(id,color){
   const gl=renderer.getContext(),pixels=new Uint8Array(256*176*4);
   gl.readPixels(0,0,256,176,gl.RGBA,gl.UNSIGNED_BYTE,pixels);
   let occupied=0;
-  for(let i=0;i<pixels.length;i+=16){if(Math.abs(pixels[i]-23)+Math.abs(pixels[i+1]-37)+Math.abs(pixels[i+2]-50)>40)occupied++;}
+  for(let i=0;i<pixels.length;i+=16){if(Math.abs(pixels[i]-pixels[0])+Math.abs(pixels[i+1]-pixels[1])+Math.abs(pixels[i+2]-pixels[2])>10)occupied++;}
   if(occupied<100)throw new Error('Blank GPU thumbnail: '+id);
  }catch(error){
   if(root?.parent)root.parent.remove(root);
@@ -123,8 +126,9 @@ function picture(id,color){
   const svg=`<svg xmlns="http://www.w3.org/2000/svg" width="256" height="176"><rect width="256" height="176" rx="12" fill="#172532"/><g fill="${color||s?.color||'#b52f3d'}">${silhouette}</g><text x="128" y="160" fill="#fff" font-family="Arial" font-size="11" text-anchor="middle">${esc(s?.name||id).slice(0,29)}</text></svg>`;
   url='data:image/svg+xml;charset=utf-8,'+encodeURIComponent(svg);
  }
- // Factory models may share cached geometry and materials with live vehicles.
- // Disposing shared resources here corrupts later previews and game objects.
+ // Painting makes private copies. Release those GPU resources after the image
+ // is captured, preserving the factory resources shared with live vehicles.
+ root?.traverse(o=>{if(o.isMesh&&o.userData.hangarPaintOwned){o.geometry.dispose();o.material.dispose();}});
  if(cached.size>=MAX_CACHE)cached.delete(cached.keys().next().value);cached.set(key,url);return url;
 }
 function enqueue(img,id,color){
