@@ -1,4 +1,4 @@
-name: Isolated compact HUD and contextual actions R32
+name: Isolated compact HUD and contextual commands R34
 # Preview queue is independent of the skipped definitive release workflow.
 on:
   push:
@@ -18,11 +18,11 @@ jobs:
     timeout-minutes: 20
     environment:
       name: github-pages
-      url: https://dreamer-archalo.github.io/padova-open-world/preview/hud-actions-r32/
+      url: https://dreamer-archalo.github.io/padova-open-world/preview/hud-commands-r34/
     steps:
       - uses: actions/checkout@v6
         with:
-          ref: 1343b43c34e323aca07656e212eddfd8eacde497
+          ref: 333236c052bc3db2b79b63fb161ae068590bfb71
           persist-credentials: false
       - uses: actions/setup-node@v4
         with:
@@ -62,12 +62,15 @@ jobs:
         run: |
           node --check dist/compact-hud.js
           node --check dist/context-actions.js
+          node --check dist/command-guide.js
+          node --check dist/game.js
           npm install --no-save playwright
           npx playwright install --with-deps chromium
-      - name: Test 48 contextual action layouts and 32 mission selector layouts
+      - name: Test compact actions, mission selection and contextual command layouts
         run: |
           node tools/test-context-actions-r32.mjs
           node tools/test-mission-selector-r31.mjs
+          node tools/test-command-guide-r34.mjs
       - name: Check the hangar in the real WebGL game
         run: |
           node tools/serve.mjs --host 127.0.0.1 --port 4173 > /tmp/hud-r32-server.log 2>&1 &
@@ -86,8 +89,8 @@ jobs:
           cd .published
           find . -type f -print0 | sort -z | xargs -0 sha256sum > "$RUNNER_TEMP/hud-r32-retained.sha256"
           cd ..
-          mkdir -p .published/preview/hud-actions-r32
-          rsync -a --exclude=preview dist/ .published/preview/hud-actions-r32/
+          mkdir -p .published/preview/hud-commands-r34
+          rsync -a --exclude=preview dist/ .published/preview/hud-commands-r34/
           cd .published
           sha256sum --quiet -c "$RUNNER_TEMP/hud-r32-retained.sha256"
       - uses: actions/configure-pages@v5
@@ -99,11 +102,12 @@ jobs:
         run: |
           set -euo pipefail
           base='https://dreamer-archalo.github.io/padova-open-world'
-          for name in index.html compact-hud.js compact-hud.css context-actions.js context-actions.css game.js; do
-            curl --retry 5 --retry-delay 5 --fail --silent --show-error --location "$base/preview/hud-actions-r32/$name?v=$GITHUB_SHA" -o "$RUNNER_TEMP/hud-r32-preview-file"
+          for name in index.html compact-hud.js compact-hud.css context-actions.js context-actions.css command-guide.js command-guide.css cruise-control.js game.js; do
+            curl --retry 5 --retry-delay 5 --fail --silent --show-error --location "$base/preview/hud-commands-r34/$name?v=$GITHUB_SHA" -o "$RUNNER_TEMP/hud-r32-preview-file"
             cmp "dist/$name" "$RUNNER_TEMP/hud-r32-preview-file"
           done
           for name in index.html game.js compact-hud.js compact-hud.css; do
             curl --retry 5 --retry-delay 5 --fail --silent --show-error --location "$base/$name?v=$GITHUB_SHA" -o "$RUNNER_TEMP/hud-r32-root-file"
             cmp ".published/$name" "$RUNNER_TEMP/hud-r32-root-file"
           done
+
