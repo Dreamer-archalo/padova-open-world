@@ -218,7 +218,7 @@ const lodCache=new WeakMap();
 export function coachworkLOD(root){
  const first=root.children.find(o=>o.isMesh)?.geometry;if(first&&lodCache.has(first))return lodCache.get(first).clone();
  const p=[],c=[];root.updateMatrixWorld(true);const inv=root.matrixWorld.clone().invert(),v=new THREE.Vector3();
- root.traverse(o=>{if(!o.isMesh)return;const g=o.geometry,ix=g.index?.array,m=new THREE.Matrix4().multiplyMatrices(inv,o.matrixWorld);for(let j=0;j<(ix?.length||g.attributes.position.count);j++){const i=ix?ix[j]:j;v.fromBufferAttribute(g.attributes.position,i).applyMatrix4(m);p.push(v.x,v.y,v.z);const col=g.attributes.color;c.push(col?col.getX(i):o.material.color.r,col?col.getY(i):o.material.color.g,col?col.getZ(i):o.material.color.b);}});
+ root.traverse(o=>{if(!o.isMesh)return;for(let a=o;a&&a!==root;a=a.parent)if(a.userData.damageDetail||a.userData.sharedRenderProxy)return;const g=o.geometry,ix=g.index?.array,m=new THREE.Matrix4().multiplyMatrices(inv,o.matrixWorld);for(let j=0;j<(ix?.length||g.attributes.position.count);j++){const i=ix?ix[j]:j;v.fromBufferAttribute(g.attributes.position,i).applyMatrix4(m);p.push(v.x,v.y,v.z);const col=g.attributes.color;c.push(col?col.getX(i):o.material.color.r,col?col.getY(i):o.material.color.g,col?col.getZ(i):o.material.color.b);}});
  const geometry=new THREE.BufferGeometry();geometry.setAttribute('position',new THREE.Float32BufferAttribute(p,3));geometry.setAttribute('color',new THREE.Float32BufferAttribute(c,3));
  const mesh=new THREE.Mesh(geometry,new THREE.MeshBasicMaterial({vertexColors:true}));mesh.userData.sharedRenderProxy=true;if(first)lodCache.set(first,mesh);return mesh.clone();
 }

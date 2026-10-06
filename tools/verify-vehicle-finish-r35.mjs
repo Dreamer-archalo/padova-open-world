@@ -1,3 +1,4 @@
+import {installVehicleDamage} from '../dist/vehicle-damage.js';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import * as THREE from '../dist/vendor/three.module.js';
@@ -17,8 +18,8 @@ for(const [id,s] of Object.entries(NPC_VEHICLES)){
  assert(triangles<5000,id+' triangle budget '+triangles);
  assert(g.children.find(o=>o.name==='coachwork-paint').material.map?.isDataTexture);assert(g.children.find(o=>o.name==='coachwork-trim').material.roughness>.7);
  const size=new THREE.Box3().setFromObject(g).getSize(new THREE.Vector3());assert(size.x<=s.width*1.03&&size.z<=s.length*1.035,id+' stays within its declared collision footprint '+size.toArray());
- const lod=coachworkLOD(g),ls=new THREE.Box3().setFromObject(lod).getSize(new THREE.Vector3());assert(Math.abs(ls.x-size.x)<1e-5&&Math.abs(ls.z-size.z)<1e-5,id+' distant silhouette preserved');
- const actor={mesh:g,spec:s};actorDetail(actor,true);assert(g.children.filter(o=>o.visible).length===1&&g.children.find(o=>o.visible).geometry!==undefined);actorDetail(actor,false);assert(g.children.filter(o=>o.visible).length===4);
+ installVehicleDamage({mesh:g,spec:s});const lod=coachworkLOD(g),ls=new THREE.Box3().setFromObject(lod).getSize(new THREE.Vector3());assert(Math.abs(ls.x-size.x)<1e-5&&Math.abs(ls.z-size.z)<1e-5,id+' distant silhouette preserved');
+ const actor={mesh:g,spec:s};actorDetail(actor,true);assert(g.children.filter(o=>o.visible).length===1&&g.children.find(o=>o.visible).geometry!==undefined);actorDetail(actor,false);assert(g.children.filter(o=>o.visible&&!o.userData.damageDetail).length===4);
  const paint=g.children.find(o=>o.name==='coachwork-paint'),trim=g.children.find(o=>o.name==='coachwork-trim'),original=trim.geometry.attributes.color.array.slice();paintHangarVehicle(g,'#944237');assert.deepEqual(trim.geometry.attributes.color.array,original,'paint keeps roof, tyre and trim colours');assert(Math.abs(paint.geometry.attributes.color.getX(0)-new THREE.Color('#944237').r)<1e-5);
  report.models.push({id,triangles,width:size.x,length:size.z,draws:4,lodDraws:1});
 }
