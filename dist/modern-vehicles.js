@@ -42,27 +42,78 @@ function roundedCar(type,color,wheelColor){
  }
  g.userData.vehicleType=type;return g;
 }
+const smoothGeo=new THREE.SphereGeometry(1,16,9);
+function ellipsoid(g,c,x,y,z,w,h,d){const m=new THREE.Mesh(smoothGeo,mat(c));m.position.set(x,y,z);m.scale.set(w,h,d);g.add(m);return m;}
+function carWheel(g,x,z,r=.32,width=.2,wheelColor='standard'){const m=new THREE.Mesh(wheelGeo,mat(wheelColor==='bronze'?'#a47b49':'#22282c'));m.position.set(x,r,z);m.scale.set(r,width,r);m.rotation.z=Math.PI/2;g.add(m);const hub=new THREE.Mesh(wheelGeo,mat(wheelColor==='bronze'?'#d0aa6d':'#929b9b'));hub.position.set(x+(x<0?-.015:.015),r,z);hub.scale.set(r*.53,width+.015,r*.53);hub.rotation.z=Math.PI/2;g.add(hub);}
+function finishRoadCar(g,s,wheelColor,head='#eef4df',tail='#c13d37'){
+ for(const side of [-1,1]){for(const z of [-s.wheelbase/2,s.wheelbase/2])carWheel(g,side*s.width*.445,z,['suv','van','mpv','pickup'].includes(s.family)?.37:['sport','supercar','convertible'].includes(s.family)?.28:.32,.2,wheelColor);box(g,head,side*s.width*.31,.62,s.length*.49,s.width*.18,.13,.045);box(g,tail,side*s.width*.32,.61,-s.length*.49,s.width*.17,.12,.045);}
+}
+function roofRails(g,w,l,h){for(const side of [-1,1])box(g,'#343d40',side*w*.31,h+.035,-l*.06,.035,.055,l*.55);}
+function formalGrille(g,w,l,y,accent='#c3c6bc'){box(g,accent,0,y,l*.495,w*.5,.25,.045);for(let x=-w*.19;x<=w*.2;x+=w*.095)box(g,'#343d3d',x,y,l*.502,.025,.19,.025);}
 export function createNPCCar(type,color='#76828c',wheelColor='standard'){
- const s=NPC_VEHICLES[type],g=new THREE.Group(),{width:w,length:l,height:h,family:f,variant:v}=s;
- if(['zenit','vortice','saetta','ambra','lido'].includes(type))return roundedCar(type,color,wheelColor);
- if(['sport','supercar'].includes(f))return createWedgeCar(color,w,l,h,f==='supercar'||type==='vortice');
- const low=['sport','supercar','convertible'].includes(f),tall=['van','mpv','suv'].includes(f),bodyY=low?.43:.63,trim=['classic','luxury'].includes(f)?'#c2c3b4':'#30393e';
- box(g,color,0,bodyY,0,w*.89,low?.43:.58,l*.97);
- const roofLength=l*(f==='van'?.72:f==='wagon'?.65:f==='pickup'?.36:tall?.57:.45),roofZ=f==='pickup'?l*.13:-l*.08;
- box(g,'#304955',0,(h+bodyY)/2,roofZ,w*.77,h-bodyY-.15,roofLength);
- if(f!=='convertible')box(g,color,0,h-.07,roofZ,w*.8,.14,roofLength*.94);
- for(const side of [-1,1]){
-  for(let j=0;j<(tall?3:2);j++)box(g,color,side*w*.397,(h+bodyY)/2,roofZ-roofLength/2+j*roofLength/(tall?2:1),.07,h-bodyY,.075);
-  box(g,trim,side*w*.454,bodyY-.17,0,.025,.06,l*.88);
-  box(g,color,side*w*.485,bodyY+.35,l*.17,.1,.12,.24);
-  for(const z of [-s.wheelbase/2,s.wheelbase/2]){const m=new THREE.Mesh(wheelGeo,mat(wheelColor==='bronze'?'#a47b49':'#22282c'));m.position.set(side*w*.42,low?.26:.34,z);m.scale.set(low?.27:.34,.2,low?.27:.34);m.rotation.z=Math.PI/2;g.add(m);}
-  box(g,v%2?'#f1eace':'#d5eef0',side*w*.32,bodyY+.1,l*.491,w*(v%3===0?.14:.25),low?.09:.15,.035);
-  box(g,'#bd3e35',side*w*.32,bodyY+.06,-l*.491,w*.23,.12,.035);
+ const s=NPC_VEHICLES[type],g=new THREE.Group(),{width:w,length:l,height:h,family:f}=s,glass='#294752',dark='#283235',trim=['classic','luxury'].includes(f)?'#c7c2ad':'#30393e';
+ const low=['sport','supercar','convertible'].includes(f),tall=['suv','van','mpv'].includes(f);
+ if(type==='ambra'||type==='vortice'||type==='zenit'||type==='lido')return roundedCar(type,color,wheelColor);
+ if(['saetta','fulmine'].includes(type))return createWedgeCar(color,w,l,h,type==='fulmine');
+
+ if(type==='nido'){
+  ellipsoid(g,color,0,.58,.02,w*.48,.42,l*.48);ellipsoid(g,glass,0,1.05,-.12,w*.38,.43,l*.31);ellipsoid(g,color,0,1.34,-.18,w*.36,.12,l*.28);
+  box(g,'#2f383a',0,.43,l*.475,w*.62,.12,.08);finishRoadCar(g,s,wheelColor);
+ }else if(type==='tessera'){
+  ellipsoid(g,color,0,.62,.04,w*.49,.46,l*.48);box(g,glass,0,1.13,-.18,w*.72,.68,l*.48);ellipsoid(g,color,0,h-.08,-.22,w*.4,.11,l*.34);
+  box(g,color,0,.92,l*.34,w*.82,.52,l*.18);box(g,dark,0,.59,-l*.49,w*.62,.16,.06);finishRoadCar(g,s,wheelColor);
+ }else if(type==='rondine'){
+  ellipsoid(g,color,0,.56,.04,w*.49,.36,l*.48);ellipsoid(g,glass,0,1.01,-.18,w*.39,.34,l*.31);box(g,color,0,1.27,-.42,w*.76,.11,l*.34);
+  const hatch=box(g,glass,0,1.02,-l*.39,w*.67,.42,.04);hatch.rotation.x=-.22;finishRoadCar(g,s,wheelColor);
+ }else if(type==='botanica'){
+  ellipsoid(g,color,0,.55,.08,w*.49,.36,l*.49);ellipsoid(g,glass,0,1.02,-.08,w*.40,.34,l*.34);ellipsoid(g,color,0,1.29,-.12,w*.39,.09,l*.31);
+  box(g,'#48645a',0,.57,-l*.495,w*.52,.12,.04);finishRoadCar(g,s,wheelColor);
+ }else if(type==='porto'){
+  box(g,color,0,.58,.05,w*.91,.48,l*.94);box(g,color,0,.92,l*.24,w*.84,.33,l*.34);box(g,color,0,.92,-l*.32,w*.84,.30,l*.25);box(g,glass,0,1.18,-.03,w*.72,.50,l*.34);box(g,color,0,h-.08,-.03,w*.76,.11,l*.34);
+  formalGrille(g,w,l,.64,'#c9c1a8');box(g,'#c9c1a8',0,.43,-l*.5,w*.82,.08,.08);finishRoadCar(g,s,wheelColor,'#fff0bd','#b13d35');
+ }else if(type==='argine'){
+  box(g,color,0,.56,.03,w*.94,.44,l*.96);box(g,color,0,.86,l*.31,w*.86,.24,l*.28);box(g,glass,0,1.16,-.05,w*.74,.54,l*.38);box(g,color,0,h-.08,-.08,w*.77,.12,l*.38);box(g,color,0,.83,-l*.35,w*.87,.26,l*.25);
+  formalGrille(g,w,l,.63);finishRoadCar(g,s,wheelColor);
+ }else if(type==='meridiana'){
+  ellipsoid(g,color,0,.55,.02,w*.5,.38,l*.49);ellipsoid(g,glass,0,1.04,-.08,w*.40,.34,l*.35);ellipsoid(g,color,0,1.31,-.11,w*.4,.08,l*.34);
+  box(g,'#1d3036',0,.65,l*.493,w*.54,.12,.035);box(g,'#8dd7d8',0,.70,l*.497,w*.28,.055,.02);finishRoadCar(g,s,wheelColor,'#dff5ef','#b83d3d');
+ }else if(type==='viaggio'){
+  box(g,color,0,.57,0,w*.92,.48,l*.96);box(g,glass,0,1.18,-l*.12,w*.74,.70,l*.58);box(g,color,0,h-.08,-l*.14,w*.78,.12,l*.61);const rear=box(g,glass,0,1.17,-l*.43,w*.7,.58,.04);rear.rotation.x=-.08;
+  box(g,color,0,.91,l*.33,w*.84,.28,l*.24);roofRails(g,w,l,h);finishRoadCar(g,s,wheelColor);
+ }else if(type==='familia'){
+  box(g,color,0,.6,0,w*.93,.52,l*.96);box(g,glass,0,1.28,-l*.1,w*.75,.79,l*.62);box(g,color,0,h-.07,-l*.12,w*.79,.13,l*.65);box(g,color,0,.96,l*.34,w*.86,.35,l*.25);box(g,dark,0,.71,-l*.495,w*.56,.2,.04);
+  roofRails(g,w,l,h);finishRoadCar(g,s,wheelColor);
+ }else if(type==='selva'){
+  ellipsoid(g,color,0,.67,.03,w*.5,.48,l*.48);box(g,dark,0,.39,0,w*.95,.18,l*.86);ellipsoid(g,glass,0,1.33,-.12,w*.40,.48,l*.33);box(g,color,0,h-.09,-.14,w*.78,.12,l*.55);box(g,dark,0,.74,l*.49,w*.58,.20,.05);
+  roofRails(g,w,l,h);finishRoadCar(g,s,wheelColor);
+ }else if(type==='altavia'){
+  box(g,dark,0,.42,0,w*.96,.19,l*.86);box(g,color,0,.76,0,w*.91,.62,l*.94);box(g,glass,0,1.43,-.11,w*.73,.92,l*.55);box(g,color,0,h-.08,-.12,w*.8,.15,l*.61);box(g,color,0,1.02,l*.34,w*.84,.44,l*.24);
+  roofRails(g,w,l,h);finishRoadCar(g,s,wheelColor);
+ }else if(type==='officina'){
+  box(g,color,0,.87,-.12,w*.92,1.35,l*.86);box(g,color,0,1.13,l*.34,w*.9,.94,l*.2);const wind=box(g,glass,0,1.59,l*.445,w*.75,.62,.045);wind.rotation.x=.13;
+  for(const side of [-1,1]){box(g,glass,side*w*.455,1.58,l*.27,.035,.55,l*.22);box(g,dark,side*w*.465,1.20,-l*.14,.035,.09,l*.43);}box(g,dark,0,.67,-l*.485,w*.62,.18,.05);finishRoadCar(g,s,wheelColor);
+ }else if(type==='corriere'){
+  box(g,color,0,1.25,-.13,w*.94,2.15,l*.86);box(g,color,0,1.27,l*.36,w*.92,1.85,l*.18);const wind=box(g,glass,0,1.92,l*.448,w*.77,.72,.045);wind.rotation.x=.12;
+  for(const side of [-1,1]){box(g,glass,side*w*.465,1.88,l*.29,.035,.62,l*.18);box(g,dark,side*w*.474,1.38,-l*.13,.03,.08,l*.48);}box(g,dark,0,.74,-l*.49,w*.66,.2,.05);finishRoadCar(g,s,wheelColor);
+ }else if(type==='comitiva'){
+  ellipsoid(g,color,0,.65,.06,w*.49,.45,l*.49);ellipsoid(g,glass,0,1.34,-.02,w*.40,.56,l*.38);ellipsoid(g,color,0,h-.11,-.07,w*.41,.11,l*.38);box(g,color,0,.91,l*.37,w*.83,.50,l*.19);
+  for(const side of [-1,1])box(g,dark,side*w*.465,1.22,-l*.16,.035,.07,l*.45);finishRoadCar(g,s,wheelColor);
+ }else if(type==='campo'){
+  box(g,dark,0,.43,0,w*.96,.18,l*.87);box(g,color,0,.72,l*.18,w*.91,.58,l*.56);box(g,glass,0,1.28,l*.18,w*.73,.68,l*.27);box(g,color,0,h-.08,l*.13,w*.78,.12,l*.32);
+  box(g,'#3b4545',0,.77,-l*.31,w*.72,.09,l*.31);for(const side of [-1,1])box(g,color,side*w*.405,.98,-l*.31,.12,.50,l*.32);box(g,color,0,.99,-l*.47,w*.82,.50,.10);finishRoadCar(g,s,wheelColor);
+ }else if(type==='doge'){
+  box(g,color,0,.55,.02,w*.95,.43,l*.97);box(g,color,0,.82,l*.34,w*.88,.25,l*.27);box(g,glass,0,1.17,-.03,w*.74,.53,l*.39);box(g,color,0,h-.08,-.05,w*.79,.11,l*.42);box(g,color,0,.82,-l*.38,w*.88,.25,l*.23);
+  formalGrille(g,w,l,.63,'#d2bd86');for(const side of [-1,1])box(g,'#d2bd86',side*w*.46,.60,0,.025,.055,l*.78);finishRoadCar(g,s,wheelColor);
+ }else if(type==='aurora'){
+  box(g,color,0,.57,0,w*.96,.46,l*.98);box(g,glass,0,1.24,-.12,w*.74,.62,l*.52);box(g,color,0,h-.08,-.15,w*.8,.12,l*.55);box(g,color,0,.84,l*.38,w*.88,.28,l*.20);box(g,color,0,.84,-l*.43,w*.9,.28,l*.13);
+  formalGrille(g,w,l,.66,'#d4bc7f');for(const side of [-1,1])box(g,'#d4bc7f',side*w*.47,.61,-.03,.025,.06,l*.82);finishRoadCar(g,s,wheelColor);
+ }else if(type==='sestante'){
+  ellipsoid(g,color,0,.55,.04,w*.50,.37,l*.50);ellipsoid(g,glass,0,1.08,-.08,w*.39,.36,l*.36);ellipsoid(g,color,0,1.36,-.12,w*.39,.08,l*.34);box(g,'#c8b37d',0,.61,l*.495,w*.43,.18,.04);box(g,dark,0,.52,-l*.495,w*.64,.12,.04);
+  finishRoadCar(g,s,wheelColor);
+ }else{
+  box(g,color,0,low?.48:.63,0,w*.91,low?.42:.56,l*.96);box(g,glass,0,tall?1.3:1.08,-l*.08,w*.75,Math.max(.34,h-.86),l*(tall?.54:.43));box(g,color,0,h-.08,-l*.1,w*.79,.12,l*(tall?.56:.45));
+  finishRoadCar(g,s,wheelColor);
  }
- if(f==='pickup'){box(g,'#424a49',0,bodyY+.31,-l*.28,w*.68,.05,l*.32);for(const side of [-1,1])box(g,color,side*w*.4,bodyY+.5,-l*.29,.12,.45,l*.34);}
- if(f==='supercar'){box(g,'#252c32',0,h+.05,-l*.36,w*.91,.07,.32);for(const side of [-1,1])box(g,'#252c32',side*w*.32,h-.12,-l*.36,.07,.35,.1);}
- if(f==='luxury')box(g,trim,0,bodyY+.07,l*.494,w*.43,.3,.04);
- if(f==='van')for(const side of [-1,1])box(g,color,side*w*.39,(h+bodyY)/2,-l*.21,.07,h-bodyY-.1,l*.42);
  g.userData.vehicleType=type;return g;
 }
 export function createHelicopter(){const g=new THREE.Group();
