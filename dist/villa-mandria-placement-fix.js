@@ -1,3 +1,4 @@
+import {createRoadFleet} from './road-fleet-coachwork.js';
 // Complete the v3 estate using narrow-phase geometry checks. SpatialIndex.near()
 // returns candidates from whole 60 m cells, NOT objects intersecting the query.
 // Do not remove map buildings, terrain, street collisions or existing vehicles.
@@ -97,11 +98,7 @@ function horse(){const model=new THREE.Group();item(model,'sphere','#815a37',0,1
  const legs=[];for(const side of [-1,1])for(const z of [-.69,.67]){const leg=new THREE.Group();leg.position.set(side*.35,1.02,z);box(leg,'#765134',0,-.47,0,.18,.92,.19);box(leg,'#31271e',0,-.91,.09,.24,.14,.33);model.add(leg);legs.push(leg);}
  model.userData.horseLegs=legs;model.name='Mandria · cavallo da sella';return model;
 }
-function ape(){const model=new THREE.Group();box(model,'#1a1d21',0,.39,0,1.3,.27,2.55);box(model,'#11161b',0,1.17,.55,1.33,1.42,1.28);box(model,'#334750',0,1.36,1.22,1.12,.65,.09);box(model,'#15191c',0,.92,-.69,1.36,.69,1.24);box(model,'#1f2427',0,1.31,-.60,1.38,.11,1.28);
- for(const [x,z] of [[0,1.03],[-.62,-.86],[.62,-.86]])item(model,'wheel','#202428',x,.31,z,.31,.16,.31).rotation.z=Math.PI/2;
- for(const x of [-.43,.43])box(model,'#e7d6a1',x,.66,1.31,.23,.13,.08);
- model.name='Mandria · Ape Car nera tre ruote';return model;
-}
+function ape(){const model=createRoadFleet('ape',{width:1.6,length:2.8,height:2.04,wheelbase:1.75},'#202c30');model.name='Mandria · Ape Car nera tre ruote';return model;}
 function guard(model,mounted){const person=new THREE.Group();person.position.y=mounted?1.7:.6;
  box(person,'#22252a',0,.56,0,.55,.7,.38);box(person,'#eae3d8',0,.67,.19,.18,.33,.03);box(person,'#25252a',0,.67,.22,.07,.3,.03);box(person,'#c9a381',0,1.12,0,.29,.31,.28);box(person,'#151a1e',0,1.33,0,.39,.1,.33);
  for(const side of [-1,1]){box(person,'#22252a',side*.18,.12,.04,.2,.55,.22);box(person,'#22252a',side*.37,.56,0,.18,.6,.2);}

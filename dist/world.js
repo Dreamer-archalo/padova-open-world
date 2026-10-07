@@ -1,3 +1,5 @@
+import {createCoachwork} from './car-coachwork.js';
+import {createPoliceCoachwork} from './road-fleet-coachwork.js';
 import {CityStream} from './streaming.js';
 import {DEALER_SITES,reserveDealerBuildings,dealerWallParts} from './dealerships.js';
 import {createWedgeCar} from './sport-models.js';
@@ -190,9 +192,30 @@ export class CityWorld{
  setQuality(q){if(!this.terrain?.modern){this.radius=q==='low'?680:q==='high'?1450:1050;this.lastKey='';return;}this.quality=q;this.profile=qualityFor(q);this.radius=this.profile.radius;this.lastKey='';for(const g of this.loaded.values())this.applyChunkQuality(g);}
 
 }
-export function createCar(color='#e6c97f',police=false,style='sedan'){if(style==='sport'&&!police)return createWedgeCar(color,1.98,4.55,1.2,true);const g=new THREE.Group();box(g,'#222f32',0,.45,0,1.8,.35,4.05);box(g,color,0,.85,0,1.85,.62,3.95);box(g,color,0,1.33,-.25,1.65,.64,2.18);box(g,'#334e59',0,1.38,.88,1.48,.49,.035).rotation.x=.2;box(g,'#344e59',0,1.38,-1.37,1.45,.44,.035).rotation.x=-.18;for(const side of [-1,1]){box(g,'#3c5860',side*.835,1.38,-.25,.03,.44,1.98);box(g,color,side*.86,1.37,-.23,.05,.58,.085);for(const z of [-1.29,1.25]){const wheel=primitive(g,cylinderGeo,'#20282a',side*.94,.43,z,.37,.19,.37);wheel.rotation.z=Math.PI/2;const hub=primitive(g,cylinderGeo,'#a7b2b0',side*1.045,.43,z,.2,.012,.2);hub.rotation.z=Math.PI/2;}}
- for(const x of [-.59,.59]){box(g,'#fff6c8',x,.9,1.99,.48,.2,.025);box(g,'#c34436',x,.9,-1.99,.45,.18,.025);}box(g,'#bfc0a8',0,.65,2.01,.54,.18,.025);box(g,'#8a9692',0,.53,2.02,1.65,.12,.05);box(g,'#8a9692',0,.53,-2.02,1.65,.12,.05);
- if(style==='sport'){g.scale.set(1.03,.88,1.08);box(g,color,0,1.15,-2.02,1.6,.08,.3);box(g,'#252d30',0,1.28,-2.02,1.25,.08,.12);}else if(style==='compact'){g.scale.set(.93,1.02,.88);}else if(style==='wagon'){box(g,color,0,1.36,-1.05,1.64,.68,1.25);box(g,'#344e59',0,1.42,-1.69,1.45,.5,.035).rotation.x=-.08;}else if(style==='utility'){g.scale.set(1.04,1.06,1.1);box(g,color,0,1.42,-.85,1.7,.88,1.5);box(g,'#2e454d',0,1.46,-1.62,1.48,.62,.035);}
- if(police){box(g,'#e1e6e3',0,.89,0,1.89,.28,3.3);box(g,'#163946',0,.96,0,1.92,.13,3.35);box(g,'#29383e',0,1.71,-.15,1.1,.1,.3);const blue=box(g,'#348dff',-.36,1.84,-.15,.35,.19,.3),red=box(g,'#e96b54',.36,1.84,-.15,.35,.19,.3);g.userData.lights=[blue,red];}
- const shadow=new THREE.Mesh(new THREE.PlaneGeometry(2.6,4.6),new THREE.MeshBasicMaterial({color:'#172022',transparent:true,opacity:.21,depthWrite:false}));shadow.rotation.x=-Math.PI/2;shadow.position.y=.075;g.add(shadow);return g;}
+export function createCar(color='#e6c97f',police=false,style='sedan'){
+ if(police)return createPoliceCoachwork({width:1.92,length:4.22,height:1.7,wheelbase:2.54});
+ if(!police){const ids={sedan:'argine',compact:'rondine',wagon:'viaggio',utility:'altavia',sport:'vortice'},dims={sedan:[1.92,4.22,1.7,2.54,'sedan'],compact:[1.8,3.72,1.7,2.24,'compact'],wagon:[1.92,4.22,1.75,2.54,'wagon'],utility:[2,4.64,1.95,2.8,'suv'],sport:[1.98,4.55,1.5,2.74,'sport']},d=dims[style]||dims.sedan;const model=createCoachwork('legacy-'+style,{width:d[0],length:d[1],height:d[2],wheelbase:d[3],family:d[4],name:style,variant:Object.keys(ids).indexOf(style)},color);model.userData.vehicleType=style;return model;}
+ const g=new THREE.Group(),dark='#252f32',glass='#334f59',chrome='#aeb5b0';
+ const wheel=(x,z,r=.35)=>{const tyre=primitive(g,cylinderGeo,'#20282a',x,r,z,r,.19,r);tyre.rotation.z=Math.PI/2;const hub=primitive(g,cylinderGeo,chrome,x+(x<0?-.105:.105),r,z,r*.53,.012,r*.53);hub.rotation.z=Math.PI/2;};
+ const lights=(front=1.98,rear=-1.98)=>{for(const x of [-.58,.58]){box(g,'#fff6c8',x,.88,front,.43,.18,.025);box(g,'#c34436',x,.87,rear,.40,.16,.025);}};
+ if(style==='compact'){
+  primitive(g,sphereGeo,color,0,.67,.02,.91,.48,1.76);primitive(g,sphereGeo,glass,0,1.18,-.18,.72,.45,1.08);box(g,color,0,1.47,-.22,1.43,.10,1.56);
+  const hatch=box(g,glass,0,1.15,-1.55,1.35,.48,.035);hatch.rotation.x=-.24;for(const side of [-1,1])for(const z of [-1.03,1.02])wheel(side*.86,z,.33);lights(1.78,-1.78);
+ }else if(style==='wagon'){
+  box(g,color,0,.68,0,1.88,.56,4.18);box(g,glass,0,1.33,-.36,1.48,.78,2.68);box(g,color,0,1.69,-.4,1.58,.12,2.92);box(g,color,0,.98,1.47,1.72,.34,.86);
+  const rear=box(g,glass,0,1.32,-2.03,1.42,.58,.035);rear.rotation.x=-.07;for(const side of [-1,1]){box(g,dark,side*.84,1.30,-.38,.035,.08,2.75);box(g,dark,side*.50,1.79,-.38,.035,.05,2.35);for(const z of [-1.35,1.28])wheel(side*.94,z,.36);}lights(2.08,-2.09);
+ }else if(style==='utility'){
+  box(g,dark,0,.42,0,1.96,.18,4.16);primitive(g,sphereGeo,color,0,.78,.05,1.00,.54,2.12);box(g,glass,0,1.45,-.22,1.50,.94,2.26);box(g,color,0,1.91,-.25,1.62,.13,2.52);box(g,color,0,1.12,1.42,1.75,.43,.88);
+  for(const side of [-1,1]){box(g,dark,side*.93,.74,0,.055,.12,3.34);box(g,dark,side*.55,2.02,-.2,.035,.06,2.22);for(const z of [-1.43,1.37])wheel(side*.99,z,.40);}lights(2.25,-2.28);
+ }else{
+  box(g,color,0,.62,.02,1.90,.48,4.18);box(g,color,0,.90,1.35,1.78,.30,.92);box(g,glass,0,1.35,-.04,1.49,.62,1.92);box(g,color,0,1.69,-.08,1.58,.12,2.06);box(g,color,0,.91,-1.56,1.78,.29,.68);
+  const wind=box(g,glass,0,1.36,.94,1.46,.50,.035);wind.rotation.x=.22;const rear=box(g,glass,0,1.35,-1.08,1.43,.46,.035);rear.rotation.x=-.18;
+  for(const side of [-1,1]){box(g,glass,side*.805,1.36,-.05,.03,.44,1.76);box(g,color,side*.84,1.34,-.06,.05,.55,.08);for(const z of [-1.31,1.27])wheel(side*.95,z,.36);}lights(2.11,-2.11);box(g,chrome,0,.58,2.12,1.48,.12,.05);
+ }
+ if(police){
+  box(g,'#e1e6e3',0,.91,0,1.91,.25,3.25);box(g,'#163946',0,.98,0,1.94,.12,3.31);box(g,'#29383e',0,1.82,-.12,1.05,.10,.29);
+  const blue=box(g,'#348dff',-.34,1.91,-.12,.32,.18,.28),red=box(g,'#e96b54',.34,1.91,-.12,.32,.18,.28);g.userData.lights=[blue,red];
+ }
+ const shadow=new THREE.Mesh(new THREE.PlaneGeometry(style==='utility'?2.8:2.55,style==='compact'?4.0:style==='wagon'||style==='utility'?5.0:4.7),new THREE.MeshBasicMaterial({color:'#172022',transparent:true,opacity:.21,depthWrite:false}));shadow.rotation.x=-Math.PI/2;shadow.position.y=.075;g.add(shadow);g.userData.vehicleType=style;return g;
+}
 export function createPerson(color='#c6ad82',variant=0){const g=new THREE.Group(),skins=['#ceaa87','#a8785e','#e0b99a','#805944'],hair=['#403d31','#6b4c32','#242a2b','#9b8059'],pants=['#394749','#3d4965','#564a43','#26383c'],skin=skins[variant%4];g.scale.setScalar(.92+(variant%5)*.035);const hips=new THREE.Group();for(const side of [-1,1]){const leg=new THREE.Group();leg.position.set(side*.16,.82,0);box(leg,pants[variant%4],0,-.34,0,.22,.68,.25);box(leg,'#273033',0,-.72,.065,.24,.12,.4);hips.add(leg);}g.add(hips);const shirt=box(g,color,0,1.12,0,.55,.62,.34);shirt.material=shirt.material.clone();shirt.userData.clothing=true;primitive(g,sphereGeo,skin,0,1.64,0,.19,.23,.2);primitive(g,sphereGeo,hair[variant%4],0,1.8,-.015,.2,.10,.2);const arms=new THREE.Group();for(const side of [-1,1]){const arm=new THREE.Group();arm.position.set(side*.36,1.36,0);const sleeve=box(arm,color,0,-.25,0,.17,.49,.2);sleeve.material=sleeve.material.clone();sleeve.userData.clothing=true;primitive(arm,sphereGeo,skin,0,-.56,0,.09,.12,.1);arms.add(arm);}g.add(arms);if(variant%4===0)box(g,'#5b4035',0,1.12,-.24,.36,.43,.16);if(variant%7===0)primitive(g,cylinderGeo,'#38464c',0,1.91,0,.24,.08,.24);g.userData.hips=hips;g.userData.arms=arms;return g;}

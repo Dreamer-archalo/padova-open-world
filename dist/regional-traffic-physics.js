@@ -86,6 +86,7 @@ export function regionalNpcStep(car,nearby,player,dt,terrain,collision,time){
  return hit;
 }
 export function reviveRegionalCar(car,x,z,yaw,terrain){
+ if(car.claimedByPlayer||car.garageToken)return false;car.burning=false;car.permanentlyDestroyed=false;car.wreckBorn=null;if(car.wreckFire)car.wreckFire.visible=false;
  const offset=laneOffset(car.r,0);x+=Math.cos(yaw)*offset;z-=Math.sin(yaw)*offset;
  Object.assign(car,{x,z,y:terrain.height(x,z),yaw,speed:0,health:100,parked:false,
   crashAt:0,lastCollision:0,nextYaw:null,longAccel:0,lane:0,desiredLane:0,laneOffset:laneOffset(car.r,0),fuelExploded:false});

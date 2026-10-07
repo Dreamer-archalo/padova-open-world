@@ -25,7 +25,7 @@ export function commandSet(state,water={}){
  add('C','Telecamera');add(race?'ESC':'X / ESC','Pausa');
  if(race)add('X','Abbandona gara');
  else{add('M','Mappa');add('J','Attività');add('V','Veicoli');add('B','Barche');}
- add('R','Recupera');
+ if(!car||car.testingVehicle||car.raceOneRules||spec.aircraft||spec.watercraft)add('R',car?.testingVehicle?'Ripara · testing':'Recupera personaggio');
  return {name,commands};
 }
 function ensureGuide(){

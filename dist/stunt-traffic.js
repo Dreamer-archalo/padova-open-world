@@ -1,3 +1,4 @@
+import {markVehicleWreck} from './vehicle-damage.js';
 import {clamp,dist,angleDiff} from './core.js';
 
 export function updateWheelie(car,held,dt){
@@ -28,14 +29,14 @@ export function fuelImpact(a,b){
  if(!a?.spec||!b?.spec||!(a.spec.fuelTank||b.spec.fuelTank)||a.health<=0||b.health<=0)return null;
  const relative=Math.hypot(Math.sin(a.yaw)*(a.speed||0)-Math.sin(b.yaw)*(b.speed||0),
   Math.cos(a.yaw)*(a.speed||0)-Math.cos(b.yaw)*(b.speed||0));
- return relative>=2?(a.spec.fuelTank?a:b):null;
+ return relative>=12?(a.spec.fuelTank?a:b):null;
 }
 export function explodeFuelTruck(truck,{cars,state,time,blast}){
  if(truck.fuelExploded)return false;truck.fuelExploded=true;if(truck.regionalTraffic)truck.exploded=true;truck.health=0;truck.speed=0;
- truck.mesh.visible=false;truck.destroyedUntil=time+35;blast?.(truck,time);
+ markVehicleWreck(truck,time,true);truck.destroyedUntil=0;blast?.(truck,time);
  for(const c of cars){if(c===truck||!c.mesh?.visible||!c.spec||Math.abs((c.y||0)-(truck.y||0))>7)continue;
-  const d=dist(c,truck);if(d>16)continue;c.health=Math.max(0,c.health-(1-d/16)*95*(c.spec.armor||1));
-  if(c===state?.car)state.health=c.health;
+  const d=dist(c,truck);if(d>16)continue;c.health=Math.max(0,c.health-(1-d/16)*180*(c.spec.armor||1));
+  if(c.health<=0)markVehicleWreck(c,time,true);if(c===state?.car)state.health=c.health;
  }
  if(state?.mode==='foot'&&Math.abs(state.y-(truck.y||0))<7&&dist(state,truck)<16)
   state.health=Math.max(0,state.health-(1-dist(state,truck)/16)*95);

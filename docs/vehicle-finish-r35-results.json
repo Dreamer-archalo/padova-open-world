@@ -1,0 +1,295 @@
+{
+  "models": [
+    {
+      "id": "nido",
+      "triangles": 4496,
+      "width": 1.6859347820281982,
+      "length": 3.1476000547409058,
+      "draws": 4,
+      "lodDraws": 1
+    },
+    {
+      "id": "tessera",
+      "triangles": 3928,
+      "width": 1.7524348497390747,
+      "length": 3.497949957847595,
+      "draws": 4,
+      "lodDraws": 1
+    },
+    {
+      "id": "rondine",
+      "triangles": 3952,
+      "width": 1.8284348249435425,
+      "length": 3.8483000993728638,
+      "draws": 4,
+      "lodDraws": 1
+    },
+    {
+      "id": "botanica",
+      "triangles": 4320,
+      "width": 1.8569347858428955,
+      "length": 4.048500061035156,
+      "draws": 4,
+      "lodDraws": 1
+    },
+    {
+      "id": "porto",
+      "triangles": 4196,
+      "width": 1.7809348106384277,
+      "length": 4.198650121688843,
+      "draws": 4,
+      "lodDraws": 1
+    },
+    {
+      "id": "ambra",
+      "triangles": 4564,
+      "width": 1.8474347591400146,
+      "length": 4.44890022277832,
+      "draws": 4,
+      "lodDraws": 1
+    },
+    {
+      "id": "argine",
+      "triangles": 3976,
+      "width": 1.923434853553772,
+      "length": 4.751199960708618,
+      "draws": 4,
+      "lodDraws": 1
+    },
+    {
+      "id": "meridiana",
+      "triangles": 4312,
+      "width": 1.9614348411560059,
+      "length": 4.949400186538696,
+      "draws": 4,
+      "lodDraws": 1
+    },
+    {
+      "id": "viaggio",
+      "triangles": 4072,
+      "width": 1.9139348268508911,
+      "length": 4.801249980926514,
+      "draws": 4,
+      "lodDraws": 1
+    },
+    {
+      "id": "familia",
+      "triangles": 4072,
+      "width": 1.980434775352478,
+      "length": 5.051499843597412,
+      "draws": 4,
+      "lodDraws": 1
+    },
+    {
+      "id": "selva",
+      "triangles": 4936,
+      "width": 1.980434775352478,
+      "length": 4.601049900054932,
+      "draws": 4,
+      "lodDraws": 1
+    },
+    {
+      "id": "altavia",
+      "triangles": 4584,
+      "width": 2.0564348697662354,
+      "length": 5.001450061798096,
+      "draws": 4,
+      "lodDraws": 1
+    },
+    {
+      "id": "officina",
+      "triangles": 4048,
+      "width": 2.0374348163604736,
+      "length": 5.051499843597412,
+      "draws": 4,
+      "lodDraws": 1
+    },
+    {
+      "id": "corriere",
+      "triangles": 4048,
+      "width": 2.151434898376465,
+      "length": 5.852299928665161,
+      "draws": 4,
+      "lodDraws": 1
+    },
+    {
+      "id": "comitiva",
+      "triangles": 4344,
+      "width": 1.9709348678588867,
+      "length": 4.849299907684326,
+      "draws": 4,
+      "lodDraws": 1
+    },
+    {
+      "id": "campo",
+      "triangles": 4536,
+      "width": 2.0469348430633545,
+      "length": 5.30174994468689,
+      "draws": 4,
+      "lodDraws": 1
+    },
+    {
+      "id": "saetta",
+      "triangles": 4160,
+      "width": 1.923434853553772,
+      "length": 4.198650121688843,
+      "draws": 4,
+      "lodDraws": 1
+    },
+    {
+      "id": "vortice",
+      "triangles": 4288,
+      "width": 1.9994348287582397,
+      "length": 4.699150085449219,
+      "draws": 4,
+      "lodDraws": 1
+    },
+    {
+      "id": "fulmine",
+      "triangles": 3952,
+      "width": 2.0564348697662354,
+      "length": 4.549000024795532,
+      "draws": 4,
+      "lodDraws": 1
+    },
+    {
+      "id": "zenit",
+      "triangles": 4304,
+      "width": 2.1134347915649414,
+      "length": 4.899349927902222,
+      "draws": 4,
+      "lodDraws": 1
+    },
+    {
+      "id": "doge",
+      "triangles": 4036,
+      "width": 2.0374348163604736,
+      "length": 5.40185022354126,
+      "draws": 4,
+      "lodDraws": 1
+    },
+    {
+      "id": "aurora",
+      "triangles": 4220,
+      "width": 2.0944347381591797,
+      "length": 5.700150012969971,
+      "draws": 4,
+      "lodDraws": 1
+    },
+    {
+      "id": "lido",
+      "triangles": 4168,
+      "width": 1.8759348392486572,
+      "length": 4.148600101470947,
+      "draws": 4,
+      "lodDraws": 1
+    },
+    {
+      "id": "sestante",
+      "triangles": 4380,
+      "width": 2.008934736251831,
+      "length": 5.149600028991699,
+      "draws": 4,
+      "lodDraws": 1
+    },
+    {
+      "id": "goccia",
+      "triangles": 4488,
+      "width": 1.7144348621368408,
+      "length": 3.3978500366210938,
+      "draws": 4,
+      "lodDraws": 1
+    },
+    {
+      "id": "cortile",
+      "triangles": 3952,
+      "width": 1.8189347982406616,
+      "length": 3.7682199478149414,
+      "draws": 4,
+      "lodDraws": 1
+    },
+    {
+      "id": "linea",
+      "triangles": 4312,
+      "width": 1.9424347877502441,
+      "length": 4.829279899597168,
+      "draws": 4,
+      "lodDraws": 1
+    },
+    {
+      "id": "brina",
+      "triangles": 4392,
+      "width": 1.923434853553772,
+      "length": 4.6691200733184814,
+      "draws": 4,
+      "lodDraws": 1
+    },
+    {
+      "id": "roccia",
+      "triangles": 4896,
+      "width": 2.018434762954712,
+      "length": 4.6791298389434814,
+      "draws": 4,
+      "lodDraws": 1
+    },
+    {
+      "id": "targa",
+      "triangles": 3996,
+      "width": 1.9044348001480103,
+      "length": 4.268719911575317,
+      "draws": 4,
+      "lodDraws": 1
+    }
+  ],
+  "finishes": {
+    "compact": {
+      "standard": 35115,
+      "graphite": 10882,
+      "black": 2765,
+      "bronze": 939,
+      "white": 199,
+      "gold": 100,
+      "plain": 47189,
+      "two-tone": 2811,
+      "coach-stripe": 0,
+      "twin-stripe": 0
+    },
+    "classic": {
+      "standard": 34968,
+      "graphite": 11050,
+      "black": 2765,
+      "bronze": 916,
+      "white": 201,
+      "gold": 100,
+      "plain": 47131,
+      "two-tone": 2869,
+      "coach-stripe": 0,
+      "twin-stripe": 0
+    },
+    "sport": {
+      "standard": 34842,
+      "graphite": 11099,
+      "black": 2759,
+      "bronze": 993,
+      "white": 194,
+      "gold": 113,
+      "plain": 45425,
+      "two-tone": 0,
+      "coach-stripe": 4096,
+      "twin-stripe": 479
+    },
+    "van": {
+      "standard": 35002,
+      "graphite": 11000,
+      "black": 2739,
+      "bronze": 961,
+      "white": 190,
+      "gold": 108,
+      "plain": 50000,
+      "two-tone": 0,
+      "coach-stripe": 0,
+      "twin-stripe": 0
+    }
+  },
+  "errors": []
+}

@@ -1,3 +1,7 @@
+import {applyDealerUpgrades} from './dealer-customization.js';
+import {compactCoachwork} from './car-coachwork.js';
+import {createCar} from './world.js';
+import {DEALER_CATALOG,createDealerVehicle} from './dealerships.js';
 // Category-first presentation only; the original Mandria hangar still owns
 // spawning, shutters, paint controls, replacement and delivery.
 import * as THREE from './vendor/three.module.js';
@@ -11,7 +15,7 @@ import {createBoatModel} from './nautical-catalog.js';
 import {createMichelangeloModel} from './unified-michelangelo.js';
 
 export const HANGAR_SECTIONS=Object.freeze([
- {id:'collector',title:'Auto speciali',subtitle:'15 modelli unici · incontri rari nella mappa',symbol:'◇',enabled:true},
+ {id:'collector',title:'Auto speciali',subtitle:'16 modelli unici · incontri rari nella mappa',symbol:'◇',enabled:true},
  {id:'air',title:'Aerei e velivoli',subtitle:'Aerei, jet ed elicotteri',symbol:'✈',enabled:true},
  {id:'land',title:'Terrestri',subtitle:'Auto, moto, camion, blindati e carri',symbol:'▰',enabled:true},
  {id:'urban',title:'Mobilità urbana',subtitle:'Biciclette e monopattini',symbol:'♢',enabled:true},
@@ -75,19 +79,23 @@ export function hangarPreviewModel(id,color='#b52f3d',game=null){
  }
  if(MILITARY_FLEET[id])return militaryFleetModel(id);
  if(id==='bicycle'||id==='kick-scooter')return urbanModel(id,color);
- if(NPC_VEHICLES[id])return createNPCCar(id,color);
- if(['mito','cinquecento','motorcycle','scooter','truck','taxi'].includes(id))return createVehicle(id,color);
- if(SPECIAL_VEHICLES[id])return createSpecialVehicle(id);
+ if(DEALER_CATALOG[id])return compactCoachwork(createDealerVehicle(id,color,null,game?.vehicleGarage?.list().find(r=>r.style===id)?.build||game?.dealerships?.builds.get(id)));
+ const saved=game?.vehicleGarage?.list().find(r=>r.style===id)?.build;if(saved){const model=SPECIAL_VEHICLES[id]?createSpecialVehicle(id):NPC_VEHICLES[id]?createNPCCar(id,color):createVehicle(id,color);return applyDealerUpgrades(compactCoachwork(model),spec,saved);}
+ if(NPC_VEHICLES[id])return compactCoachwork(createNPCCar(id,color));
+ if(['sedan','compact','wagon','utility','sport'].includes(id))return compactCoachwork(createCar(color,false,id));
+ if(['mito','cinquecento'].includes(id))return compactCoachwork(createVehicle(id,color));
+ if(['motorcycle','scooter','truck','taxi'].includes(id))return createVehicle(id,color);
+ if(SPECIAL_VEHICLES[id])return createSpecialVehicle(id,color);
  const live=game?.cars?.find(c=>c.style===id&&c.mesh);
  if(live){const copy=live.mesh.clone(true);copy.position.set(0,0,0);copy.rotation.set(0,0,0);copy.visible=true;copy.traverse(o=>{o.visible=true;});return copy;}
  return groundModel(id,spec,color);
 }
 const $=id=>document.getElementById(id);
 let dialog=null,home=null,nav=null,mode='home',game=null,renderer=null,scene=null,camera=null,observer=null;
-let lastColor='',queue=[],working=false;
-const cached=new Map(),MAX_CACHE=120;
+let lastColor='',lastBuildSignature='',queue=[],working=false;
+const cached=new Map(),buildSignatures=new Map(),MAX_CACHE=120;
 function picture(id,color){
- const key=id+'/'+color;if(cached.has(key))return cached.get(key);
+ const key=id+'/'+color;const build=game?.vehicleGarage?.list().find(r=>r.style===id)?.build||game?.dealerships?.builds.get(id);const signature=JSON.stringify(build);if(buildSignatures.get(key)!==signature)cached.delete(key);if(cached.has(key))return cached.get(key);
  let root=null,url=null;
  try{
   if(!renderer){
@@ -129,7 +137,7 @@ function picture(id,color){
  // Painting makes private copies. Release those GPU resources after the image
  // is captured, preserving the factory resources shared with live vehicles.
  root?.traverse(o=>{if(o.isMesh&&o.userData.hangarPaintOwned){o.geometry.dispose();o.material.dispose();}});
- if(cached.size>=MAX_CACHE)cached.delete(cached.keys().next().value);cached.set(key,url);return url;
+ if(cached.size>=MAX_CACHE)cached.delete(cached.keys().next().value);cached.set(key,url);buildSignatures.set(key,signature);return url;
 }
 function enqueue(img,id,color){
  const key=id+'/'+color;if(img.dataset.previewReady===key||img.dataset.previewPending===key)return;
@@ -151,7 +159,7 @@ function refresh(){
  if(isHome){observer?.disconnect();queue.length=0;return;}
  nav.querySelector('strong').textContent=HANGAR_SECTIONS.find(s=>s.id===mode).title;
  const color=$('hangarPaint').value+'/'+($('hangarLivery')?.value||'original');
- if(color!==lastColor){lastColor=color;cached.clear();queue.length=0;observer?.disconnect();}
+ const buildSignature=JSON.stringify(game?.vehicleGarage?.list().map(r=>[r.style,r.build])||[]);if(color!==lastColor||buildSignature!==lastBuildSignature){lastBuildSignature=buildSignature;lastColor=color;cached.clear();queue.length=0;observer?.disconnect();}
  const category=hangarCatalogue().filter(e=>hangarSection(e.id,e.spec)===mode),ids=new Set(category.map(e=>e.id));
  let matches=0;
  for(const card of grid.querySelectorAll('[data-hangar-id]')){

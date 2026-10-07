@@ -1,0 +1,37 @@
+import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import {spawn} from 'node:child_process';
+import {chromium} from 'playwright';
+const server=spawn(process.execPath,['tools/serve.mjs','--host','127.0.0.1','--port','4185']);await new Promise((resolve,reject)=>{server.stdout.once('data',resolve);server.once('error',reject);});
+const browser=await chromium.launch({headless:true,executablePath:process.env.PADOVA_CHROMIUM_EXECUTABLE||undefined,args:['--no-sandbox','--enable-webgl','--use-gl=angle','--use-angle=swiftshader','--disable-dev-shm-usage']});
+const page=await browser.newPage({viewport:{width:1400,height:1000}}),errors=[];page.on('pageerror',e=>errors.push(e.message));fs.mkdirSync('test-artifacts/r35',{recursive:true});
+try{
+ await page.goto('http://127.0.0.1:4185/');
+ const result=await page.evaluate(async()=>{
+  const THREE=await import('./vendor/three.module.js'),{NPC_VEHICLES,createNPCCar}=await import('./modern-vehicles.js'),{compactCoachwork,coachworkLOD}=await import('./car-coachwork.js');
+  document.querySelectorAll('link[rel=stylesheet],style').forEach(o=>o.remove());document.body.innerHTML='<style>body{margin:0;background:#e4e7eb;color:#24333d;font:16px Arial}h1{margin:20px}#grid{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;padding:12px}figure{background:#d5dbe0;margin:0;padding:4px}img{width:100%}figcaption{padding:6px}</style><h1>Auto R35 · carrozzerie e finiture</h1><main id="grid"></main>';
+  const renderer=new THREE.WebGLRenderer({antialias:true,preserveDrawingBuffer:true});renderer.setSize(280,200);renderer.setClearColor('#d5dbe0');const scene=new THREE.Scene(),camera=new THREE.PerspectiveCamera(32,1.4,.1,100);scene.add(new THREE.HemisphereLight('#ffffff','#73808f',2.3));const sun=new THREE.DirectionalLight('#fff3dd',3);sun.position.set(4,7,8);scene.add(sun);
+  const rows=[];
+  const palette=['#496c84','#b47b46','#904a46','#718574','#c9c8bd','#394753'];
+  for(const [i,id] of Object.keys(NPC_VEHICLES).entries()){
+   const g=compactCoachwork(createNPCCar(id,palette[i%6],{wheels:i%5===0?'bronze':'standard',livery:i%7===0?'two-tone':'plain',roof:i%7===0?'#e0dccb':null}));const bounds=new THREE.Box3().setFromObject(g),c=bounds.getCenter(new THREE.Vector3()),size=bounds.getSize(new THREE.Vector3()),distance=Math.max(size.z*1.42,size.y*3.4);camera.position.copy(c).add(new THREE.Vector3(distance*.63,distance*.34,distance*.70));camera.lookAt(c);scene.add(g);renderer.render(scene,camera);
+   const gl=renderer.getContext(),data=new Uint8Array(280*200*4);gl.readPixels(0,0,280,200,gl.RGBA,gl.UNSIGNED_BYTE,data);let occupied=0;for(let j=0;j<data.length;j+=16)if(Math.abs(data[j]-data[0])+Math.abs(data[j+1]-data[1])+Math.abs(data[j+2]-data[2])>20)occupied++;if(occupied<100)throw Error('Blank car '+id);
+   const image=renderer.domElement.toDataURL('image/png'),figure=document.createElement('figure');figure.innerHTML='<img src="'+image+'"><figcaption>'+NPC_VEHICLES[id].name+'</figcaption>';document.querySelector('#grid').append(figure);rows.push({id,occupied,triangles:renderer.info.render.triangles,calls:renderer.info.render.calls});scene.remove(g);
+  }
+  return rows;
+ });assert(result.length===30);await page.screenshot({path:'test-artifacts/r35/vehicle-lineup.png',fullPage:true});
+ // Render at driver camera distance, both sides, standard and rare trim.
+ await page.evaluate(async()=>{
+  const THREE=await import('./vendor/three.module.js'),{NPC_VEHICLES,createNPCCar}=await import('./modern-vehicles.js'),{compactCoachwork}=await import('./car-coachwork.js');document.querySelector('#grid').style.gridTemplateColumns='repeat(3,1fr)';document.querySelector('#grid').innerHTML='';document.querySelector('h1').textContent='Auto R35 · dettagli';
+  const renderer=new THREE.WebGLRenderer({antialias:true,preserveDrawingBuffer:true});renderer.setSize(480,330);renderer.setClearColor('#d5dbe0');const scene=new THREE.Scene(),camera=new THREE.PerspectiveCamera(35,480/330,.1,100);scene.add(new THREE.HemisphereLight('#fff','#637385',2.3));const sun=new THREE.DirectionalLight('#fff1db',3);sun.position.set(5,9,6);scene.add(sun);
+  for(const [id,finish] of [['nido',{wheels:'white',livery:'two-tone',roof:'#e7ddcb'}],['ambra',{wheels:'bronze',livery:'coach-stripe'}],['viaggio',{wheels:'graphite'}],['roccia',{wheels:'black'}],['targa',{wheels:'silver'}],['fulmine',{wheels:'gold',livery:'twin-stripe'}]])for(const side of [1,-1]){
+   const g=compactCoachwork(createNPCCar(id,'#375e57',finish)),bounds=new THREE.Box3().setFromObject(g),c=bounds.getCenter(new THREE.Vector3()),size=bounds.getSize(new THREE.Vector3());camera.position.copy(c).add(new THREE.Vector3(size.z*.85,.95,side*size.z*.9));camera.lookAt(c);scene.add(g);renderer.render(scene,camera);const figure=document.createElement('figure');figure.innerHTML='<img src="'+renderer.domElement.toDataURL('image/png')+'"><figcaption>'+NPC_VEHICLES[id].name+' · '+finish.wheels+'</figcaption>';document.querySelector('#grid').append(figure);scene.remove(g);
+  }
+ });await page.screenshot({path:'test-artifacts/r35/vehicle-details.png',fullPage:true});
+ // Boot the complete production controller and render the revised cars in its scene.
+ await page.route('**/game.js*',async route=>{const response=await route.fetch();await route.fulfill({response,body:await response.text()+`\n globalThis.__r35={state,cars,addCar,poseVehicle,updateUI,get scene(){return scene},get terrain(){return terrain}};`});});
+ await page.goto('http://127.0.0.1:4185/',{waitUntil:'domcontentloaded'});await page.locator('#initialQuality').selectOption('low');await page.locator('#playBtn').click();await page.waitForFunction(()=>document.documentElement.dataset.initialWorldReady==='true',null,{timeout:240000});await page.locator('#confirmCharacter').click({timeout:30000});await page.waitForFunction(()=>!!globalThis.__r35&&__r35.state.started);await page.evaluate(()=>{__r35.state.paused=true;});
+ const runtime=await page.evaluate(()=>{const q=__r35,rows=[];for(const [i,id] of ['nido','meridiana','roccia','comitiva','fulmine','officina'].entries()){const c=q.addCar(q.state.x+8+(i%3)*5,q.state.z+8+Math.floor(i/3)*8,0,false,true,id);rows.push({id,revision:c.mesh.userData.modelRevision,draws:c.mesh.children.filter(o=>o.isMesh&&!o.userData.damageDetail).length,finite:c.mesh.position.toArray().every(Number.isFinite)});}q.updateUI();return rows;});assert(runtime.every(r=>r.revision===35&&r.finite));await page.screenshot({path:'test-artifacts/r35/in-game-start.png'});
+ await page.evaluate(()=>{__r35.state.paused=false;});await page.locator('#mandriaHangarButton').click();await page.locator('#hangarSections [data-section="land"]').click();await page.locator('#hangarSearch').fill('Nido');await page.waitForFunction(()=>{const img=document.querySelector('[data-hangar-id="nido"] img');return img?.dataset.previewReady?.startsWith('nido/')&&img.src.startsWith('data:image/webp');},null,{timeout:30000});await page.screenshot({path:'test-artifacts/r35/hangar-nido.png'});
+ assert.deepEqual(errors,[]);fs.writeFileSync('test-artifacts/r35/browser-results.json',JSON.stringify({result,runtime,errors},null,2));console.log('PASS R35 Chromium WebGL:',result.length,'models; four draw calls each; both views and rare wheel/livery detail screenshots.');
+}catch(e){console.error(e.stack);process.exitCode=1;await page.screenshot({path:'test-artifacts/r35/failure.png'}).catch(()=>{});}finally{await browser.close();server.kill();}
