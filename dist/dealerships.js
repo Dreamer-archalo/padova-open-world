@@ -258,7 +258,7 @@ export class Dealerships{
   const plan=existing?null:this.deliveryPlan(site,id);if(!existing&&!plan)return null;
   const quote=this.purchase(site,id,options);if(!quote)return null;let car=existing;
   if(plan){const {entry,replace,reuse}=plan;
-   if(replace){this.scene.remove(replace.mesh);this.forget?.(replace);replace.mesh.traverse(o=>{if(o.isMesh&&o.geometry?.attributes?.color)o.geometry.dispose();if(o.material?.userData.privateFinish)o.material.dispose();});const index=this.cars.indexOf(replace);if(index>=0)this.cars.splice(index,1);entry.units=entry.units.filter(c=>c!==replace);}
+   if(replace){this.purchased.add(replace.dealershipStock);this.consumed.add(replace.dealershipStock);this.scene.remove(replace.mesh);this.forget?.(replace);replace.mesh.traverse(o=>{if(o.isMesh&&o.geometry?.attributes?.color)o.geometry.dispose();if(o.material?.userData.privateFinish)o.material.dispose();});const index=this.cars.indexOf(replace);if(index>=0)this.cars.splice(index,1);entry.units=entry.units.filter(c=>c!==replace);}
    car=reuse||this.addCar(plan.x,plan.z,plan.yaw,false,true,id,quote);
    if(reuse){this.purchased.add(car.dealershipStock);this.consumed.add(car.dealershipStock);this.applyBuild(car,quote);}
    Object.assign(car,{dealershipStock:null,missionUnit:false,requestedByPlayer:true,fixedSpawn:true,parked:true,budgetSleeping:false,speed:0,x:plan.x,z:plan.z,y:entry.building.minY+.08,yaw:plan.yaw});car.mesh.visible=true;this.pose(car);car.y=entry.building.minY+.08;car.mesh.position.y=car.y;

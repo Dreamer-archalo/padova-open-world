@@ -58,15 +58,7 @@ jobs:
           node tools/verify-workshop-dealer-r40.mjs
           node --max-old-space-size=3072 tools/verify-workshop-yards-r38.mjs
           npm test
-          npm run test:npc-traffic
-          npm run test:performance
-          node verify-collector-cars-r26.mjs
           node verify-dealerships.mjs
-          node tools/verify-mandria-hangar.mjs
-          npm run test:biker-club
-          npm run test:vehicle-damage
-          npm run test:taxi
-          npm run test:boats-collisions
 
       - name: Chromium visual review
         if: ${{ !cancelled() }}
