@@ -76,7 +76,7 @@ export const DEALER_CATALOG=Object.fromEntries(luxury.map(([base,name,kind,trim,
  const id='salone_'+i,s=NPC_VEHICLES[base];
  // Each catalogue entry has its own silhouette, trim, dimensions and handling.
  const scale=Math.max(1,5.05/s.length)*(base==='aurora'?1.03:1);
- VEHICLES[id]={...s,name,width:s.width*scale,length:s.length*scale,height:s.height*scale,wheelbase:s.wheelbase*scale,accel:s.accel+1,boost:s.boost+4,npcOnly:true,family:'luxury'};
+ VEHICLES[id]={...s,name,width:s.width*scale,length:s.length*scale,height:s.height*scale,wheelbase:s.wheelbase*scale,accel:s.accel+1,boost:s.boost+4,npcOnly:true,openCabin:s.family==='convertible',family:'luxury'};
  return [id,{id,base,name,kind,trim,price,color,luxury:true}];
 }).concat(normal.map(([base,name,price,color])=>[base,{id:base,base,name,kind:'auto',price,color,luxury:false}]),
  industrialExisting.map(([base,name,price,color])=>[base,{id:base,base,name,kind:'mezzo da lavoro',price,color,luxury:false}]),

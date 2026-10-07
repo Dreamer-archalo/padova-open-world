@@ -25,7 +25,7 @@ for(const id of ['nido','collector-nebula','collector-stradale33','naked','ape',
  const toggle=workshopQuote(car,{protectionVisibility:'visible'});assert.equal(toggle.amountDue,0);assert.equal(toggle.capacity,hidden.capacity);
 }
 for(const id of ['nido','salone_6','truck','collector-stradale33']){const caps=dealerCapabilities({...VEHICLES[id],vehicleType:id});assert(!caps.interior&&!caps.upholstery&&!caps.steering);assert.equal(dealerQuote(id,{interior:'premium',upholstery:'red'}).total,dealerQuote(id).total);}
-for(const id of ['collector-nebula','naked','scooter'])assert(dealerCapabilities({...VEHICLES[id],vehicleType:id}).interior);
+for(const id of ['collector-nebula','collector-azzurra','salone_10','naked','scooter'])assert(dealerCapabilities({...VEHICLES[id],vehicleType:id}).interior);
 globalThis.document={createElement:()=>({width:0,height:0,getContext:()=>({fillRect(){},fillText(){},clearRect(){}})})};globalThis.localStorage={getItem:()=>null,setItem(){}};
 const map=JSON.parse(fs.readFileSync(new URL('../dist/data/padova.json',import.meta.url))),sites=DEALER_SITES.filter(s=>s.city.startsWith('Padova'));reserveDealerBuildings(map.buildings,sites);for(const b of map.buildings)if(b.dealerSite)b.minY=7;
 const cars=[],scene=new T.Scene(),state={started:true,mode:'foot',quality:'high',money:600000,elapsed:0},shops=new Dealerships({scene,state,cars,createPerson,buildings:map.buildings,terrain:{},regionalWorld:()=>null,pose:c=>c.mesh.position.set(c.x,c.y||7,c.z),addCar(x,z,yaw,police,parked,id,build){const car={x,z,yaw,style:id,spec:dealerBuildSpec(VEHICLES[id],build),health:100,mesh:createDealerVehicle(id,build?.color,build?.wheels,build),parked};cars.push(car);scene.add(car.mesh);return car;}});
