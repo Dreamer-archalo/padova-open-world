@@ -1020,10 +1020,10 @@ function updatePeople(dt){const interval=(world.streaming?.metrics.pressure?3:1)
  const step=Math.min(.15,age),thinkInterval=dist(p,state)>160?interval*3:interval;p.simulatedAt=state.elapsed;p.nextThink=state.elapsed+thinkInterval;p.lodFrom={x:p.x,z:p.z,y:p.y,yaw:p.yaw};p.lodSpan=thinkInterval;p.lodAt=state.elapsed;
  if(state.mode==='car'&&!state.car.spec.aircraft&&dist(p,state)<1.7&&Math.abs(state.speed)>4&&collisionCooldown<=0){raiseWanted(Math.min(5,state.wanted+1));collisionCooldown=1;toast('Dangerous driving. Police alerted.');}
  const near=[];const gx=Math.floor(p.x/32),gz=Math.floor(p.z/32);for(let ix=gx-1;ix<=gx+1;ix++)for(let iz=gz-1;iz<=gz+1;iz++)near.push(...(grid.get(ix+','+iz)||[]));gameplay?.padovaUrban?.react(p,near);const base=pedestrianIntent(p,state.elapsed,near,state,signals,graph),intent=gameplay?.padovaUrban?.intent(p,base,state.elapsed,near)||base;if(p.behavior==='group'&&!p.cityTask){const leader=people.find(q=>q!==p&&q.behavior==='group'&&q.seed<p.seed&&q.mesh.visible&&dist(q,p)<30);if(leader){intent.yaw=Math.atan2(leader.x-p.x,leader.z-p.z);intent.speed=dist(p,leader)>2?1.4:0;}}p.yaw+=angleDiff(intent.yaw,p.yaw)*(1-Math.exp(-7*step));
- const nx=p.x+Math.sin(p.yaw)*intent.speed*step,nz=p.z+Math.cos(p.yaw)*intent.speed*step,road=districts?.nearRoad(nx,nz,.1);
- const markedCrossing=p.cityTask?.state==='crosswalk'&&p.cityCross?.committed;const allowed=safePedestrianSpot({terrain,graph,collision:world.collision},{x:nx,z:nz,y:p.y},{crosswalk:markedCrossing})&&dist({x:nx,z:nz},p.anchor||p)<(p.cityTask?120:45);
+ const nx=p.x+Math.sin(p.yaw)*intent.speed*step,nz=p.z+Math.cos(p.yaw)*intent.speed*step,nextY=terrain.height(nx,nz,p.y),road=districts?.nearRoad(nx,nz,.1);
+ const markedCrossing=p.cityTask?.state==='crosswalk'&&p.cityCross?.committed;const allowed=safePedestrianSpot({terrain,graph,collision:world.collision},{x:nx,z:nz,y:nextY},{crosswalk:markedCrossing})&&dist({x:nx,z:nz},p.anchor||p)<(p.cityTask?120:45);
  if(allowed){p.x=nx;p.z=nz;p.blocked=0;}else{p.blocked=(p.blocked||0)+step;if(p.blocked>.5){p.yaw+=Math.PI;p.roadYaw=p.yaw;p.blocked=0;p.crossGoal=null;}}
- gameplay?.padovaUrban?.afterMove(p,state.elapsed,!allowed,step);p.speed=allowed?intent.speed:0;p.y=terrain.height(p.x,p.z,p.y);p.mesh.position.set(p.x,p.y,p.z);p.mesh.rotation.y=p.yaw;
+ gameplay?.padovaUrban?.afterMove(p,state.elapsed,!allowed,step);p.speed=allowed?intent.speed:0;p.y=allowed?nextY:terrain.height(p.x,p.z,p.y);p.mesh.position.set(p.x,p.y,p.z);p.mesh.rotation.y=p.yaw;
  if(!p.simple){const a=p.speed>.1?Math.sin(state.elapsed*(p.speed>2?10:5)+p.seed)*.3:0;p.mesh.userData.hips.children[0].rotation.x=a;p.mesh.userData.hips.children[1].rotation.x=-a;animateUrbanActor(p,state.elapsed);}
 }}
 
