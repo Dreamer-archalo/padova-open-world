@@ -27,7 +27,12 @@ export function createShowroomLife(entry,createPerson,scene){
  let clock=0,last=null;
  const setRoute=(a,p)=>{a.path=nav.route(a,p).slice(1);};
  const refresh=()=>{const updated=showroomPaths(b,entry.units);Object.assign(nav,updated);for(const a of actors){const safe=nav.nearest(a);if(safe&&!showroomWalkable(b,entry.units,a.x,a.z)){a.x=safe.x;a.z=safe.z;}a.path=[];a.wait=1;}};
- const greet=(car,time)=>{refresh();const staff=actors.find(a=>a.role==='staff');if(!staff)return;const beside=nav.nearest({x:car.x+Math.cos(car.yaw)*(car.spec.width/2+1.3),z:car.z-Math.sin(car.yaw)*(car.spec.width/2+1.3)});staff.deliveryUntil=time+16;staff.deliveryCar=car;staff.wait=0;if(beside)setRoute(staff,beside);};
+ const greet=(car,time)=>{refresh();const beside={x:car.x+Math.cos(car.yaw)*(car.spec.width/2+1.3),z:car.z-Math.sin(car.yaw)*(car.spec.width/2+1.3)},staff=actors.filter(a=>a.role==='staff').sort((a,b)=>distance(a,beside)-distance(b,beside))[0];if(!staff)return;
+  const position=nav.nodes.filter(n=>!actors.some(other=>other!==staff&&distance(other,n)<1)).sort((a,b)=>distance(a,beside)-distance(b,beside))[0];
+  // The sale is confirmed while the menu covers the world: the seller is
+  // waiting at the handover bay when play resumes, rather than speaking far away.
+  if(position){staff.x=position.x;staff.z=position.z;staff.mesh.position.set(staff.x,b.minY+.07,staff.z);}staff.path=[];staff.deliveryUntil=time+16;staff.deliveryCar=car;staff.wait=0;staff.dialogue.set('Ottimo acquisto signore');
+ };
  const animate=(time,player)=>{const dt=last===null?0:Math.min(.08,Math.max(0,time-last));last=time;clock=time;
   for(const a of actors){let moving=false;if(a.path.length){const goal=a.path[0],d=distance(a,goal),step=Math.min(d,dt*.85),nx=a.x+(goal.x-a.x)/Math.max(.001,d)*step,nz=a.z+(goal.z-a.z)/Math.max(.001,d)*step;
    if(!actors.some(other=>other!==a&&Math.hypot(other.x-nx,other.z-nz)<.65)&&showroomWalkable(b,entry.units,nx,nz)){a.mesh.rotation.y=Math.atan2(goal.x-a.x,goal.z-a.z);a.x=nx;a.z=nz;moving=step>.001;if(d<.08){a.path.shift();if(!a.path.length)a.wait=9+a.seed;}}else{a.wait+=dt;if(a.wait>2){a.path=[];a.wait=1;}}
