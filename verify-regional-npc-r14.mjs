@@ -69,7 +69,7 @@ npc.health=0;region.updateRegionalCar(npc,.05,8);
 assert(region.explosions.length===0&&npc.mesh.visible&&npc.crashDisabled&&npc.speed===0&&npc.damageVisual.stage===3,
  'An ordinary regional car must remain as a disabled, visible wreck without exploding');
 const ordinarySpec=npc.spec;npc.spec={...npc.spec,fuelTank:true};npc.parked=false;region.updateRegionalCar(npc,.05,8.1);
-assert(region.explosions.length===1&&!npc.mesh.visible&&npc.destroyedUntil>8,
+assert(region.explosions.length===1&&npc.mesh.visible&&npc.burning&&npc.destroyedUntil>8,
  'Fuel vehicles retain their explicit explosion behavior');
 npc.spec=ordinarySpec;
 region.updateExplosions(11);

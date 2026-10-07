@@ -59,7 +59,22 @@ export function updateVehicleDamage(actor,health=actor.health,time=0){
  if(stage!==visual.stage||detail!==visual.detail||scuffSide!==visual.scuffSide){visual.stage=stage;visual.detail=detail;visual.scuffSide=scuffSide;visual.crack.visible=detail&&(stage>=1||!!scuffSide);visual.glass.visible=visual.lamp.visible=stage>=1;visual.scuff.visible=detail&&!!scuffSide;visual.scuff.position.x=scuffSide*actor.spec.width*.478;visual.dent.visible=detail&&stage>=2;visual.hood.visible=detail&&stage>=2;visual.smoke.visible=detail&&stage>=3;}
  if(visual.hood.visible)visual.hood.rotation.x=-.16+Math.sin(time*5+(actor.mesh.id||0))*.012;
  if(visual.smoke.visible){visual.smoke.position.y=actor.spec.height*.56+Math.sin(time*2.2+(actor.mesh.id||0))*.035;visual.smoke.rotation.y=time*.18;}
+ if(actor.wreckFire){for(const [i,flame] of actor.wreckFire.children.entries()){flame.scale.y=.75+Math.sin(time*8+i*2)*.22;flame.rotation.z=Math.sin(time*5+i)*.10;}actor.wreckFire.visible=actor.burning&&(time-(actor.wreckBorn||0)<75);}
  return stage;
 }
 
 export function recordVehicleScrape(car,normal,yaw=car.yaw){if(!normal||!car.spec||car.spec.aircraft||car.spec.watercraft)return;const side=-Math.sign(normal.x*Math.cos(yaw)-normal.z*Math.sin(yaw));if(side)car.contactScuff={side};}
+
+// The shell remains in the world. Fire is reserved for a catastrophic crash,
+// a fuel explosion or a weapon; reaching zero through small impacts is a wreck.
+export function markVehicleWreck(actor,time=0,burning=false){
+ if(!actor?.mesh)return false;actor.health=0;actor.speed=0;actor.parked=true;actor.crashDisabled=true;
+ if(!actor.testingVehicle&&!actor.raceOneRules)actor.permanentlyDestroyed=true;
+ actor.mesh.visible=true;actor.burning=!!(actor.burning||burning);actor.wreckBorn??=time;
+ updateVehicleDamage(actor,0,time);
+ if(actor.burning&&!actor.wreckFire){const fire=new THREE.Group();fire.name='wreck-fire';fire.userData.damageDetail=true;
+  for(let i=0;i<5;i++){const material=new THREE.MeshBasicMaterial({color:i%2?'#ffbb3f':'#e94e16',transparent:true,opacity:.82,depthWrite:false}),flame=new THREE.Mesh(new THREE.ConeGeometry(.13,.6,5),material);flame.position.set((i-2)*actor.spec.width*.10,actor.spec.height*.65,actor.spec.length*.25+(i%2)*.10);fire.add(flame);}actor.mesh.add(fire);actor.wreckFire=fire;
+  for(const mesh of actor.mesh.children)if(mesh.isMesh&&mesh.geometry?.attributes.collectorPaint){mesh.geometry=mesh.geometry.clone();const colors=mesh.geometry.attributes.color,mask=mesh.geometry.attributes.collectorPaint;for(let i=0;i<mask.count;i++)if(mask.getX(i))colors.setXYZ(i,.07,.075,.08);colors.needsUpdate=true;}
+ }
+ return true;
+}

@@ -96,3 +96,6 @@ body[data-ui="compact"] #mandriaHangarButton:not([hidden]),body[data-ui="compact
  body[data-mission-active="false"] .mission h2,body[data-mission-active="false"] .mission p,
  body[data-mission-active="false"] #missionType,body[data-mission-active="false"] #missionTimer{display:none}
 }
+
+.workshop-prompt:not([hidden]){position:fixed;left:50%;top:25%;transform:translateX(-50%);z-index:65;max-width:92vw;padding:13px 20px;border:2px solid #f0bc60;border-radius:14px;background:#163442f5;color:#fff;font:700 14px system-ui;cursor:pointer}
+.configuration-tabs{display:flex;gap:8px;flex-wrap:wrap;margin:14px 0}.configuration-tabs button{flex:1;min-width:110px;padding:10px;border:1px solid #557b8d;border-radius:9px;color:#e9f3f7;background:#1b3542}.configuration-tabs button[aria-pressed="true"]{border-color:#efbf69;color:#efbf69}.dealer-options label[hidden]{display:none!important}.dealer-notice{border-left:3px solid #e8bb6c;padding:10px 12px;background:#233944;margin:12px 0;font-size:13px;line-height:1.55}

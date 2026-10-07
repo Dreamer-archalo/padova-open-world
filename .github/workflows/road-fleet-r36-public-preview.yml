@@ -1,4 +1,4 @@
-name: Road fleet R36 and dealership playtest
+name: Road fleet R36 · R37 workshops and physical garage
 
 on:
   push:
@@ -53,6 +53,7 @@ jobs:
           node tools/verify-vehicle-silhouettes-r33.mjs
           node tools/verify-vehicle-finish-r35.mjs
           node tools/verify-road-fleet-r36.mjs
+          node tools/verify-workshop-ownership-r37.mjs
           npm test
           npm run test:npc-traffic
           npm run test:performance
@@ -68,12 +69,12 @@ jobs:
         run: |
           npm install --no-save playwright@1.55.1
           npx playwright install --with-deps chromium
-          node tools/test-road-fleet-r36-browser.mjs
+          node tools/test-workshop-ownership-r37-browser.mjs
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: vehicle-r36-visual-review
-          path: test-artifacts/r36
+          name: vehicle-r37-workshop-review
+          path: test-artifacts/r37
       - name: Download currently published Pages artifact
         env:
           GH_TOKEN: ${{ github.token }}

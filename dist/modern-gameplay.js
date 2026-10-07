@@ -1,3 +1,4 @@
+import {markVehicleWreck} from './vehicle-damage.js';
 import {createPoliceCoachwork} from './road-fleet-coachwork.js';
 import {compactCoachwork} from './car-coachwork.js';
 import {installVehicleDamage} from './vehicle-damage.js';
@@ -56,7 +57,7 @@ export class ModernGameplay {
  hit(target,owner,enemy){
   const state=this.state;if(target===state){if(state.elapsed<this.graceUntil||state.elapsed<this.playerHitAt)return;this.playerHitAt=state.elapsed+1.25;const damage=36*(state.car?.spec.armor||1);state.health=Math.max(0,state.health-damage);if(state.car)state.car.health=state.health;if(state.health<=0)this.defeat('Colpito dal carro armato');else this.toast('Impatto pesante · '+Math.ceil(state.health)+'% integrità. Muoviti!',2.5);return;}
   if(!target.spec){target.health=0;target.koUntil=state.elapsed+22;target.mesh.visible=false;target.speed=0;}
-  else{target.health=Math.max(0,target.health-125*(target.spec.armor||1));if(target.health<=0){target.speed=0;target.parked=true;target.mesh.visible=false;target.destroyedUntil=state.elapsed+15;if(target.hostile||target.police)this.retire(target);}}
+  else{target.health=Math.max(0,target.health-125*(target.spec.armor||1));if(target.health<=0){if(!target.spec.aircraft){markVehicleWreck(target,state.elapsed,true);this.vehicleGarage?.destroy(target);}else{target.speed=0;target.parked=true;target.mesh.visible=false;target.destroyedUntil=state.elapsed+15;if(target.hostile||target.police)this.retire(target);}}}
   if(!enemy&&owner===state.car)this.raiseWanted(Math.min(5,state.wanted+1));
  }
  startArmored(){const p=this.findSpawn('portavalori',140,450);if(!p)return null;const route=escapeRoute(p,this.state,this.graph);if(route.length<3)return null;const c=this.addCar(p.x,p.z,p.yaw,false,false,'portavalori');

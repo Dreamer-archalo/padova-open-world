@@ -49,9 +49,9 @@ t.toggleVehicle();assert.equal(t.state.mode,'car');assert.equal(t.state.y,t.terr
 assert(!movement.vehicleBlocked(t.state.x,t.state.z,t.state.yaw,t.world.collision),'initial whole car must fit');
 t.updateUI();assert.match(els.get('rpm').style.width,/%$/);assert(els.get('rpmValue').textContent);
 for(const type of ['delivery','race','escape']){t.beginMission(type);assert.equal(t.state.mission.type,type);t.cancelMission(false);t.clearPolice();}
-t.beginMission('delivery');let mission=t.state.mission;
+const moneyBeforeDelivery=t.state.money;t.beginMission('delivery');let mission=t.state.mission;
 t.state.x=mission.target.x;t.state.z=mission.target.z;t.state.speed=0;t.updateMission(1/60);assert.equal(mission.phase,'drop');
-t.state.x=mission.target.x;t.state.z=mission.target.z;t.updateMission(1/60);assert.equal(t.state.mission,null);assert.equal(t.state.money,350);
+t.state.x=mission.target.x;t.state.z=mission.target.z;t.updateMission(1/60);assert.equal(t.state.mission,null);assert.equal(t.state.money-moneyBeforeDelivery,350);
 t.state.x=t.cars[0].x;t.state.z=t.cars[0].z;t.state.speed=0;t.toggleVehicle();assert.equal(t.state.mode,'foot');
 // Exercise the real controller in the centre across frame rates.
 const start={x:t.state.x,z:t.state.z,yaw:t.state.yaw};let reference;

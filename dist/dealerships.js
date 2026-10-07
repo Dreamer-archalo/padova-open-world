@@ -1,3 +1,4 @@
+import {SPECIAL_VEHICLES,createSpecialVehicle} from './special-vehicles.js';
 import * as THREE from './vendor/three.module.js';
 import {project,dist,pointInside,nearestOnSegment} from './core.js';
 import {VEHICLES,createVehicle,createRider} from './vehicles.js';
@@ -179,12 +180,12 @@ function showroom(site,b){
  const texture=new THREE.CanvasTexture(canvas),sign=new THREE.Mesh(new THREE.PlaneGeometry(6,1.2),new THREE.MeshBasicMaterial({map:texture,side:THREE.DoubleSide}));sign.position.set(b.dealerDoor.x-b.cx,Math.min(4,wallHeight-.85),b.dealerDoor.z-b.cz);sign.rotation.y=Math.atan2(b.dealerDoor.dx,b.dealerDoor.dz)+Math.PI/2;g.add(sign);g.userData.signTexture=texture;g.position.set(b.cx,y,b.cz);return g;
 }
 export const DEALER_COLORS=[['Bianco','#e8e5dc'],['Nero','#252b31'],['Rosso','#aa3442'],['Blu','#315979'],['Verde','#527561'],['Oro','#a89162']];
-export const DEALER_SPEEDS=[['Di serie',0,0],['Sport',6,850],['Pista',12,2200]];
+export const DEALER_SPEEDS=[['Di serie',0,0],['Sport',6,850],['Pista',12,2200],['Preparazione estrema',null,4400]];
 export function dealerQuote(id,options={}){const c=DEALER_CATALOG[id];if(!c)return null;
- const s={...VEHICLES[id],vehicleType:id},speed=Math.max(0,Math.min(2,Math.floor(Number(options.speed)||0))),color=DEALER_COLORS.some(v=>v[1]===options.color)?options.color:c.color,{selected,prices}=normalizeDealerOptions(s,options);
+ const s={...VEHICLES[id],vehicleType:id},speed=Math.max(0,Math.min(3,Math.floor(Number(options.speed)||0))),color=DEALER_COLORS.some(v=>v[1]===options.color)?options.color:c.color,{selected,prices}=normalizeDealerOptions(s,options,false);
  const name=String(options.name||'').trim().replace(/[<>"'&]/g,'').slice(0,24),extras={verniciatura:color===c.color?0:220,velocita:DEALER_SPEEDS[speed][2],cerchi:prices.wheels||0,interni:prices.interior||0,nome:name?120:0};
  for(const [key,price] of Object.entries(prices))if(!['wheels','interior'].includes(key))extras[key]=price;
- return {id,color,...selected,speed,name,extras,total:c.price+Object.values(extras).reduce((a,b)=>a+b,0),max:VEHICLES[id].max+DEALER_SPEEDS[speed][1]};
+ return {id,color,...selected,speed,name,extras,total:c.price+Object.values(extras).reduce((a,b)=>a+b,0),max:speed===3?(VEHICLES[id].max+12)*1.12:VEHICLES[id].max+DEALER_SPEEDS[speed][1]};
 }
 export function dealerDisplayLayout(building,stock){
  const layout=[],occupied=[];
@@ -235,15 +236,15 @@ export class Dealerships{
  purchase(site,id,options={}){if(!site||!this.active.has(site.id)||!this.stock(site).includes(id))return null;
   const quote=this.quote(id,options);if(!quote||this.state.money<quote.amountDue)return null;
   this.state.money-=quote.amountDue;this.owned.add(id);this.builds.set(id,quote);this.persist();
-  for(const car of this.cars.filter(c=>c.style===id&&c.requestedByPlayer))this.applyBuild(car,quote);
+  for(const car of this.cars.filter(c=>c.style===id&&c.requestedByPlayer))this.applyBuild(car,{...car.mesh.userData.dealerBuild,...quote});
   return quote;
  }
  buy(car,options={}){if(!car?.dealershipStock)return false;const quote=dealerQuote(car.style,options);if(!quote||this.state.money<quote.total)return false;
   this.state.money-=quote.total;this.owned.add(car.style);this.builds.set(car.style,quote);this.purchased.add(car.dealershipStock);this.consumed.add(car.dealershipStock);this.persist();this.applyBuild(car,quote);car.dealershipStock=null;car.missionUnit=false;car.requestedByPlayer=true;return true;
  }
  applyBuild(car,quote){
-  const old=car.mesh;this.scene.remove(old);this.forget?.(car);car.mesh=compactCoachwork(createDealerVehicle(car.style,quote.color,quote.wheels,quote));car.spec=dealerBuildSpec(VEHICLES[car.style],quote);car.name=quote.name||car.spec.name;car.damageVisual=null;car.rider=null;
-  if(car.spec.bike||['motorcycle','scooter'].includes(car.style)){car.rider=createRider();car.rider.visible=false;const seat=car.mesh.userData.riderSeat;if(seat){car.rider.position.y=seat.y-.86;car.rider.position.z=seat.z+.28;}car.mesh.add(car.rider);}this.scene.add(car.mesh);installVehicleDamage(car);this.pose(car);
+  const old=car.mesh;this.scene.remove(old);this.forget?.(car);car.mesh=DEALER_CATALOG[car.style]?compactCoachwork(createDealerVehicle(car.style,quote.color,quote.wheels,quote)):applyDealerUpgrades(compactCoachwork(SPECIAL_VEHICLES[car.style]?createSpecialVehicle(car.style):NPC_VEHICLES[car.style]?createNPCCar(car.style,quote.color):createVehicle(car.style,quote.color)),VEHICLES[car.style],quote);car.spec=dealerBuildSpec(VEHICLES[car.style],quote);car.name=quote.name||car.spec.name;car.damageVisual=null;car.rider=null;
+  if(car.spec.bike||['motorcycle','scooter'].includes(car.style)){car.rider=createRider();car.rider.visible=false;const seat=car.mesh.userData.riderSeat;if(seat){car.rider.position.y=seat.y-.86;car.rider.position.z=seat.z+.28;}car.mesh.add(car.rider);}this.scene.add(car.mesh);installVehicleDamage(car);this.pose(car);if(this.state.car===car)this.state.health=car.health;this.garage?.sync();
  }
  steal(car){if(!car?.dealershipStock)return false;this.consumed.add(car.dealershipStock);car.dealershipStock=null;car.missionUnit=false;return true;}
 }

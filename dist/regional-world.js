@@ -1,3 +1,4 @@
+import {markVehicleWreck} from './vehicle-damage.js';
 import {compactCoachwork} from './car-coachwork.js';
 import {pedestrianRoadAllowed} from './npc-spawn-policy.js';
 import {DEALER_SITES,reserveDealerBuildings,dealerWallParts} from './dealerships.js';
@@ -234,9 +235,10 @@ export class RegionalWorld{
   }
   this.dataReady=true;
  }
- nearestRoad(x,z,maxDist=24,referenceY=null){
+ nearestRoad(x,z,maxDist=24,referenceY=null,eligible=null){
   let best=null,score=Infinity;
   for(const r of new Set(this.near(this.roads,x,z))){
+   if(eligible&&!eligible(r))continue;
    const vx=r.b[0]-r.a[0],vz=r.b[1]-r.a[1],den=vx*vx+vz*vz;
    const t=den?Math.max(0,Math.min(1,((x-r.a[0])*vx+(z-r.a[1])*vz)/den)):0;
    const px=r.a[0]+vx*t,pz=r.a[1]+vz*t,d=distance(x,z,px,pz);
@@ -473,7 +475,7 @@ export class RegionalWorld{
   if(actor.exploded)return;
   actor.exploded=true;actor.parked=true;actor.speed=0;
   actor.destroyedUntil=time+17;
-  actor.mesh.visible=false;
+  markVehicleWreck(actor,time,true);
   const mesh=new THREE.InstancedMesh(
    new THREE.SphereGeometry(1,6,4),
    new THREE.MeshBasicMaterial({color:'#ff893c',transparent:true,opacity:.85,depthWrite:false}),12);

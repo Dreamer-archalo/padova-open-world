@@ -229,6 +229,7 @@ export function compactCoachwork(group){
   const geo=new THREE.BufferGeometry();for(const [key,data,size] of [['position',a.p,3],['normal',a.n,3],['color',a.c,3],['uv',a.uv,2],['collectorPaint',a.mask,1]])geo.setAttribute(key,new THREE.Float32BufferAttribute(data,size));
   if(!batchMaterials.has(kind)){const m=coachMaterial(kind,'#ffffff').clone();m.vertexColors=true;batchMaterials.set(kind,m);}const out=new THREE.Mesh(geo,batchMaterials.get(kind));out.castShadow=out.receiveShadow=true;out.name='coachwork-'+kind;group.add(out);
  }
+ const finish=group.userData.paintFinish;if(finish&&finish!=='standard')for(const mesh of group.children)if(mesh.isMesh&&mesh.material.userData.coachBucket==='paint'){mesh.material=mesh.material.clone();mesh.material.roughness=finish==='matte'?.9:finish==='pearl'?.18:.25;mesh.material.metalness=finish==='matte'?.06:finish==='pearl'?.65:.7;mesh.material.userData.privateFinish=true;}
  return group;
 }
 

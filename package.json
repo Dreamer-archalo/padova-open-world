@@ -49,6 +49,7 @@
     "test:boats-collisions": "node tools/verify-boats-collisions-r33.mjs",
     "test:vehicle-finish": "node tools/verify-vehicle-silhouettes-r33.mjs && node tools/verify-vehicle-finish-r35.mjs",
     "test:boats-hangar-browser": "node tools/test-boats-hangar-collisions-browser.mjs",
-    "test:road-fleet": "node tools/verify-road-fleet-r36.mjs"
+    "test:road-fleet": "node tools/verify-road-fleet-r36.mjs",
+    "test:workshops": "node tools/verify-workshop-ownership-r37.mjs"
   }
 }
