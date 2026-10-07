@@ -50,7 +50,9 @@ for(const [id,entry] of Object.entries(DEALER_CATALOG)){
  const invalid=dealerQuote(id,{...options,wheels:'free-gold',roof:'invalid',speed:-100,brakes:'invalid'});assert.equal(invalid.wheels,'standard');assert.equal(invalid.speed,0);assert.equal(invalid.brakes,'standard');
  if(entry.roadFleet&&['truck','cisterna','betoniera','ape'].includes(id)){assert(!defs.bodykit&&!defs.exhaust);assert(!defs.livery.values.some(v=>v[0]==='twin-stripe'));}
 }
-assert.equal(Object.values(DEALER_CATALOG).filter(v=>v.collector).length,15);assert.equal(Object.keys(COLLECTOR_CARS).length,15);
+assert.equal(Object.values(DEALER_CATALOG).filter(v=>v.collector).length,16);assert.equal(Object.keys(COLLECTOR_CARS).length,16);
+assert.equal(DEALER_CATALOG['collector-nebula'].name,'Riviera Spider');assert.equal(COLLECTOR_CARS['collector-nebula'].shape,'spider');
+assert(DEALER_CATALOG['collector-stradale'].price>Math.max(...Object.entries(DEALER_CATALOG).filter(([id])=>id!=='collector-stradale').map(([,v])=>v.price)),'Trentatré Stradale is the most expensive dealership model');
 const buildings=JSON.parse(fs.readFileSync('dist/data/padova.json')).buildings;reserveDealerBuildings(buildings,DEALER_SITES.filter(s=>s.city.startsWith('Padova')));
 const storage=new Map();globalThis.localStorage={getItem:k=>storage.get(k)||null,setItem:(k,v)=>storage.set(k,v)};
 const scene=new THREE.Scene(),cars=[],state={money:100000,started:true},env={scene,cars,state,terrain:{},collision:{},pose(){},addCar(){},regionalWorld(){},roadAt(){},buildings};
@@ -64,4 +66,4 @@ const upgraded=shops.quote('nido',{...options,brakes:'race',wheels:'gold'});asse
 const restarted=new Dealerships(env);assert.equal(restarted.builds.get('nido').wheels,'gold');assert.equal(restarted.builds.get('nido').brakes,'race');
 const poor=state.money;state.money=0;assert.equal(shops.purchase(site,'nido',{...options,speed:2,response:'sport'}),null);assert.equal(state.money,0);state.money=poor;
 report.purchase={initial:q.total,repeat:again.amountDue,upgrade:upgraded.amountDue,saved:true};
-fs.writeFileSync('docs/road-fleet-r36-results.json',JSON.stringify(report,null,2)+'\n');console.log('PASS R36',report.models.length,'road vehicles, distinct motorcycles, police/emergencies/tram, 15 collectors, compatible upgrades, prices, real stats, persistence and safe showroom footprints.');
+fs.writeFileSync('docs/road-fleet-r36-results.json',JSON.stringify(report,null,2)+'\n');console.log('PASS R36',report.models.length,'road vehicles, distinct motorcycles, police/emergencies/tram, 16 collectors, compatible upgrades, prices, real stats, persistence and safe showroom footprints.');

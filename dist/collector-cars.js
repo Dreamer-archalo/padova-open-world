@@ -5,7 +5,8 @@ import {coachMaterial} from './car-coachwork.js';
 const catalogue=[
  ['ametista','Ametista 01','Coupé a cuneo · viola e ciano','wedge',2.08,4.65,1.22,2.74,72,'#8246cc','#3ce8dd'],
  ['ruggine','Ruggine 32','Hot rod · rame, motore a vista','hotrod',1.91,4.32,1.56,2.72,53,'#bd6435','#ead7aa'],
- ['nebula','Nebula','Canopy panoramico · fucsia e blu notte','canopy',2.16,4.92,1.3,2.89,77,'#e24c9a','#172346'],
+ ['nebula','Riviera Spider','Spider classica aperta · rosso e cuoio','spider',1.72,4.15,1.26,2.38,54,'#ad2634','#bb9b71'],
+ ['stradale','Trentatré Stradale','Sportiva italiana anni Sessanta · rosso e argento','stradale',1.73,3.97,.99,2.35,82,'#a8202d','#e5d7b5'],
  ['zebra','Zebra Safari','Fuoristrada rialzato · bianco e nero','safari',2.23,4.68,2.16,2.8,43,'#e8e5d8','#24272d'],
  ['mandarino','Mandarino R','Rally largo · arancio, fari supplementari','rally',2.12,4.12,1.61,2.48,59,'#f58a21','#f5edda'],
  ['azzurra','Azzurra Barchetta','Spider aperta · turchese e avorio','barchetta',1.88,4.18,1.18,2.53,61,'#32bdb9','#f5e0b4'],
@@ -105,6 +106,19 @@ function model(id,finish='standard'){
   round(C,0,.52,0,w*.48,.38,l*.48,true);round('#213b52',0,.86,-l*.09,w*.36,.40,l*.31);
   box(A,0,.90,l*.31,.11,.04,l*.24);for(const side of [-1,1])box(A,side*w*.47,.39,0,.05,.075,l*.7);
   box(A,0,.46,-l*.47,w*.80,.07,.17);wheels(.3);lamps(.52);break;
+ case 'spider':
+  shell(C,[[-l*.49,w*.33,.35,.43],[-l*.32,w*.43,.34,.48],[l*.12,w*.43,.34,.43],[l*.47,w*.30,.36,.35]]);
+  box('#273036',0,.82,-l*.13,w*.72,.035,l*.31);for(const side of [-1,1]){round(A,side*w*.19,.81,-l*.14,w*.17,.18,l*.16);box(C,side*w*.43,.56,-l*.02,.06,.11,l*.68,true);round(C,side*w*.34,.60,l*.37,.18,.15,.27,true);}
+  box('#7290a0',0,1.06,l*.10,w*.71,.36,.025,false,.19);box(A,0,.58,l*.48,w*.43,.20,.045);box(A,0,.58,-l*.49,w*.52,.09,.045);
+  wheels(.31);lamps(.69,true);break;
+ case 'stradale':
+  shell(C,[[-l*.49,w*.37,.26,.36],[-l*.30,w*.47,.25,.45],[l*.18,w*.45,.25,.43],[l*.47,w*.31,.27,.31]]);
+  // Low rounded cockpit, separate windshield and metal roof; the glass never
+  // shares the roof's paintable surface.
+  round('#263b47',0,.73,-l*.08,w*.35,.32,l*.25);box(C,0,h-.055,-l*.13,w*.58,.085,l*.25,true);
+  for(const side of [-1,1]){round(C,side*w*.41,.49,l*.30,w*.105,.16,l*.18,true);box(A,side*w*.43,.39,0,.026,.035,l*.68);round('#f7ead4',side*w*.33,.61,l*.445,.14,.11,.045);box('#b7393b',side*w*.35,.53,-l*.48,.17,.075,.035);}
+  box(A,0,.37,l*.485,w*.61,.055,.06);box(A,0,.37,-l*.485,w*.62,.055,.06);
+  wheels(.29);break;
  case 'safari':
   shell(C,[[-l*.47,w*.39,.61,.59],[-l*.40,w*.43,.61,.61],[l*.38,w*.43,.61,.59],[l*.47,w*.35,.67,.46]]);cabin(1.16,l*.55,-.18);
   for(const side of [-1,1]){for(let j=0;j<5;j++)box(A,side*w*.433,1.02,-l*.34+j*l*.16,.04,.62,.18,false,0,0,j%2?.25:-.25);box(A,side*w*.38,h-.20,-.2,.05,.07,l*.48);}

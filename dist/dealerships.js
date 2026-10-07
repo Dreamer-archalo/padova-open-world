@@ -82,7 +82,7 @@ export const DEALER_CATALOG=Object.fromEntries(luxury.map(([base,name,kind,trim,
  industrialNew.map(([id,name,base,kind,price,color])=>{const s=NPC_VEHICLES[base];VEHICLES[id]={...s,name,accel:s.accel+1,boost:s.boost+2,npcOnly:true,family:'work'};return [id,{id,base,name,kind,price,color,custom:true,luxury:false}];})));
 
 for(const [id,kind,price,color] of roadStock)DEALER_CATALOG[id]={id,base:id,name:VEHICLES[id].name,kind,price,color,luxury:false,roadFleet:true};
-for(const [id,spec] of Object.entries(COLLECTOR_CARS))DEALER_CATALOG[id]={id,base:id,name:spec.name,kind:'auto da collezione',price:Math.round(16000+spec.max*170),color:spec.color,luxury:true,collector:true};
+for(const [id,spec] of Object.entries(COLLECTOR_CARS))DEALER_CATALOG[id]={id,base:id,name:spec.name,kind:id==='collector-stradale'?'sportiva classica da collezione':'auto da collezione',price:id==='collector-stradale'?120000:Math.round(16000+spec.max*170),color:spec.color,luxury:true,collector:true};
 
 export function createDealerVehicle(id,paint=null,wheels=null,build=null){
  const v=DEALER_CATALOG[id],s=VEHICLES[id];if(!v)throw Error('Unknown dealer model '+id);

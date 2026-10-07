@@ -15,7 +15,7 @@ import {createBoatModel} from './nautical-catalog.js';
 import {createMichelangeloModel} from './unified-michelangelo.js';
 
 export const HANGAR_SECTIONS=Object.freeze([
- {id:'collector',title:'Auto speciali',subtitle:'15 modelli unici · incontri rari nella mappa',symbol:'◇',enabled:true},
+ {id:'collector',title:'Auto speciali',subtitle:'16 modelli unici · incontri rari nella mappa',symbol:'◇',enabled:true},
  {id:'air',title:'Aerei e velivoli',subtitle:'Aerei, jet ed elicotteri',symbol:'✈',enabled:true},
  {id:'land',title:'Terrestri',subtitle:'Auto, moto, camion, blindati e carri',symbol:'▰',enabled:true},
  {id:'urban',title:'Mobilità urbana',subtitle:'Biciclette e monopattini',symbol:'♢',enabled:true},

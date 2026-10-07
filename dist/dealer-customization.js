@@ -29,8 +29,8 @@ export const WORKSHOP_OPTIONS={
 const CHROME_VALUES=[['standard','Di serie',0],['polished','Cromo lucido',280],['satin','Cromo satinato',320],['black','Cromo nero',400],['bronze','Bronzo',470]];
 Object.assign(DEALER_OPTIONS,{
  paintFinish:{label:'Finitura vernice',values:[['standard','Di serie',0],['metallic','Metallizzata',450],['pearl','Perlata',850],['matte','Opaca',650]]},
- chromeMirrors:{label:'Cromatura specchietti',values:CHROME_VALUES},chromeGrille:{label:'Cromatura griglia',values:CHROME_VALUES},chromeExhaust:{label:'Cromatura scarico',values:CHROME_VALUES},
- wheelDesign:{label:'Disegno cerchi',values:[['standard','Di serie',0],['mesh','Multirazza',450],['sport','Sport',650]]},
+ chromeMirrors:{label:'Finitura specchietti laterali',values:CHROME_VALUES},chromeGrille:{label:'Finitura griglia anteriore',values:CHROME_VALUES},chromeExhaust:{label:'Finitura terminale di scarico',values:CHROME_VALUES},
+ wheelDesign:{label:'Disegno dei cerchi',values:[['standard','Di serie',0],['mesh','Multirazza',450],['sport','Cinque razze Sport',650]]},
  tyres:{label:'Pneumatici',values:[['standard','Stradali',0],['sport','Sportivi',650],['offroad','Fuoristrada',800]]},
  upholstery:{label:'Colore selleria',values:[['standard','Di serie',0],['tan','Cuoio',350],['red','Rosso',400],['cream','Avorio',450]]},
  steering:{label:'Volante',values:[['standard','Di serie',0],['sport','Sportivo',450]]},
@@ -91,8 +91,10 @@ export function applyDealerUpgrades(root,s,build={}){
   for(const side of [-1,1]){const mount=coachSurface(root,[side*w*.30,h+1,-l*.41],[0,-1,0])?.y||deck;box(root,'alloy','#6e7e87',side*w*.30,(mount+wing)/2,-l*.41,.025,wing-mount,.035);}
  }
  if(selected.exhaust&&selected.exhaust!=='standard')for(const side of selected.exhaust==='dual'?[-1,1]:[1]){
-  const o=add(root,cylinder,'alloy','#aeb9bd',side*w*(bike?.25:.30),bike?.41:.30,-l*.44,.057,.18,.057);o.rotation.x=Math.PI/2;
-  const cap=add(root,cylinder,'trim','#273039',side*w*(bike?.25:.30),bike?.41:.30,-l*.476,.043,.012,.043);cap.rotation.x=Math.PI/2;
+  const x=side*w*(bike?.25:.30),y=bike?.41:.30,rear=coachSurface(root,[x,y,-l],[0,0,1])?.z??-l*.47,z=Math.max(-l*.51,rear-.045);
+  const finish={polished:'#dbe4e8',satin:'#9ca9ad',black:'#28333b',bronze:'#aa8555'}[selected.chromeExhaust]||'#aeb9bd';
+  const o=add(root,cylinder,'alloy',finish,x,y,z,.057,.13,.057);o.rotation.x=Math.PI/2;
+  const cap=add(root,cylinder,'trim','#273039',x,y,z-.055,.043,.012,.043);cap.rotation.x=Math.PI/2;
  }
  if(selected.interior==='premium'){
   // Open cars and motorcycles visibly show their upholstery. Closed cars keep
@@ -121,10 +123,15 @@ export function applyDealerUpgrades(root,s,build={}){
 
 function applyExtraEquipment(g,s,b){
  const w=s.width,l=s.length,h=s.height,bike=!!s.bike||w<1.15,work=['work','freight','van'].includes(s.family)||l>7,c={polished:'#dbe4e8',satin:'#9ca9ad',black:'#28333b',bronze:'#aa8555'};
- if(b.chromeMirrors!=='standard')for(const side of [-1,1])box(g,'alloy',c[b.chromeMirrors],side*w*.47,h*.7,l*.1,.08,.07,.13);
- if(b.chromeGrille&&b.chromeGrille!=='standard')for(let i=-2;i<=2;i++)box(g,'alloy',c[b.chromeGrille],i*w*.09,h*.36,l*.482,.025,.12,.022);
- if(b.chromeExhaust!=='standard'){const o=add(g,cylinder,'alloy',c[b.chromeExhaust],w*.26,.3,-l*.474,.06,.16,.06);o.rotation.x=Math.PI/2;}
- if(b.wheelDesign!=='standard')for(const side of bike?[0]:[-1,1])for(const z of [-s.wheelbase/2,s.wheelbase/2])for(let n=0;n<(b.wheelDesign==='mesh'?10:5);n++){const a=n*Math.PI*2/(b.wheelDesign==='mesh'?10:5),o=box(g,'alloy','#b8c4c8',side*(bike?.10:w*.46),.33+Math.sin(a)*.10,z+Math.cos(a)*.10,.014,.018,.19);o.rotation.x=-a;}
+ if(b.chromeMirrors!=='standard')for(const side of [-1,1]){const x=side*w*.44,y=h*.7,z=l*.10;box(g,'alloy',c[b.chromeMirrors],x,y,z,.11,.065,.14);}
+ if(b.chromeGrille&&b.chromeGrille!=='standard')for(let i=-2;i<=2;i++){const x=i*w*.09,y=h*.36,z=(coachSurface(g,[x,y,l],[0,0,-1])?.z??l*.47)+.013;box(g,'alloy',c[b.chromeGrille],x,y,z,.025,.12,.018);}
+ if(b.chromeExhaust!=='standard'&&b.exhaust==='standard'){const x=w*.26,y=.3,rear=coachSurface(g,[x,y,-l],[0,0,1])?.z??-l*.47,z=Math.max(-l*.51,rear-.045);const o=add(g,cylinder,'alloy',c[b.chromeExhaust],x,y,z,.06,.10,.06);o.rotation.x=Math.PI/2;}
+ if(b.wheelDesign!=='standard')for(const side of bike?[-1,1]:[-1,1])for(const z of [-s.wheelbase/2,s.wheelbase/2]){
+  const r=bike?.30:work?.40:.32,face=side*(bike?.12:w*.46),count=b.wheelDesign==='mesh'?10:5;
+  const disc=add(g,cylinder,'trim','#27323a',face,r,z,r*.69,.028,r*.69);disc.rotation.z=Math.PI/2;
+  for(let n=0;n<count;n++){const a=n*Math.PI*2/count,o=box(g,'alloy','#b8c4c8',face+side*.023,r+Math.cos(a)*r*.33,z+Math.sin(a)*r*.33,.022,r*.55,b.wheelDesign==='mesh'?.022:.046);o.rotation.x=-a;}
+  const hub=add(g,cylinder,'alloy','#d7e0e1',face+side*.032,r,z,r*.15,.035,r*.15);hub.rotation.z=Math.PI/2;
+ }
  if(b.tyres==='offroad')for(const side of bike?[0]:[-1,1])for(const z of [-s.wheelbase/2,s.wheelbase/2])for(let n=0;n<14;n++){const a=n*Math.PI*2/14,o=box(g,'trim','#263039',side*(bike?0:w*.46),.34+Math.sin(a)*.32,z+Math.cos(a)*.32,bike?.13:.20,.065,.05);o.rotation.x=-a;}
  if(b.upholstery!=='standard')for(const side of bike?[0]:[-1,1])box(g,'trim',{tan:'#a76e49',red:'#8e3540',cream:'#e3d3b7'}[b.upholstery],side*w*.20,bike?(g.userData.riderSeat?.y||.88)+.04:h*.53,work?l*.5-1.50:-l*.07,bike?w*.44:w*.22,.055,l*.16);
  if(b.steering==='sport'){const o=add(g,new THREE.TorusGeometry(.13,.023,6,12),'trim','#35424b',-w*.20,h*.65,l*.06,1,1,1);o.rotation.x=-.45;}
