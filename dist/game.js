@@ -1013,7 +1013,7 @@ function updateTraffic(dt){for(const c of cars){
 function updatePeople(dt){const interval=(world.streaming?.metrics.pressure?3:1)/qualityFor(state.quality).peopleHz,grid=new Map(),cell=(x,z)=>Math.floor(x/32)+','+Math.floor(z/32);for(const c of [...cars,...cops])if(c.mesh?.visible){const key=cell(c.x,c.z);if(!grid.has(key))grid.set(key,[]);grid.get(key).push(c);}for(const p of people){
  if(p.budgetSleeping||p.koUntil>state.elapsed)continue;
  if(p.driverPool&&!p.driverCar)continue;
- if(!p.driverCar&&(!p.mesh.visible||dist(p,state)>350)&&state.elapsed>=(p.retryAt||0))placePerson(p);
+ if(!p.driverCar&&(!p.mesh.visible||dist(p.anchor||p,state)>350)&&state.elapsed>=(p.retryAt||0))placePerson(p);
  if(!p.mesh.visible)continue;
  const age=state.elapsed-(p.simulatedAt??state.elapsed-interval);if(state.elapsed+1e-8<(p.nextThink||0))continue;
  const step=Math.min(.15,age),thinkInterval=dist(p,state)>160?interval*3:interval;p.simulatedAt=state.elapsed;p.nextThink=state.elapsed+thinkInterval;p.lodFrom={x:p.x,z:p.z,y:p.y,yaw:p.yaw};p.lodSpan=thinkInterval;p.lodAt=state.elapsed;
