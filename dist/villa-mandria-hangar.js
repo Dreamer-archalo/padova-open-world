@@ -228,7 +228,7 @@ async function choose(g,id,color){
   if(g.state.car&&g.state.car!==g.mandriaHangar.staged){g.toast?.('Scendi prima dal mezzo attuale.',4);return;}
   if(!roofDeparturePoint(g,s)){g.toast?.('Tetto occupato: libera la piazzola e riprova.',5);return;}
   g.mandriaHangar.busy=true;closeDialog(g);g.state.paused=true;
-  try{removeOccupant(g);deliverAirOnRoof(g,id,color);}
+  try{if(removeOccupant(g)!==false)deliverAirOnRoof(g,id,color);}
   finally{g.mandriaHangar.busy=false;g.state.paused=false;}
   return;
  }

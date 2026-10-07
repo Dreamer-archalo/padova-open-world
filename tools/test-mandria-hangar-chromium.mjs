@@ -70,13 +70,16 @@ try{
  await page.waitForFunction(()=>globalThis.__hangarTest?.mandriaHangar?.staged?.style==='kick-scooter'&&!globalThis.__hangarTest.mandriaHangar.busy,null,{timeout:30000});
  const retained=await state();console.log('RETAINED_BICYCLE '+JSON.stringify(retained));
  assert(retained.styles.includes('bicycle')&&retained.styles.includes('kick-scooter'),'departed bicycle got deleted or scooter failed');
+ // Clear the departure lane. A saved staged scooter is relocated, never
+ // deleted to make room as the old unrestricted catalogue used to do.
+ await page.evaluate(()=>{const g=globalThis.__hangarTest,c=g.cars.find(c=>c.style==='bicycle'&&c.garageToken==='browser-stored-bicycle');c.x+=80;c.z+=80;c.y=g.terrain.height(c.x,c.z);g.pose(c);});
  phase='launch aircraft above hangar';await page.locator('#mandriaHangarButton').click();
  await enterSection('air');
  await page.locator('#hangarSearch').fill('libellula');await page.locator('[data-hangar-id="libellula"]').click();
  await page.waitForFunction(()=>globalThis.__hangarTest?.state.car?.style==='libellula'&&!globalThis.__hangarTest.mandriaHangar.busy,null,{timeout:30000});
  await page.screenshot({path:'test-artifacts/mandria-hangar-aircraft.png',timeout:25000});
  const flight=await page.evaluate(async()=>{const g=globalThis.__hangarTest,{VILLA}=await import('./gameplay-areas.js'),{VILLA_GARAGE}=await import('./villa-treves-layout.js');return {
- mode:g.state.mode,style:g.state.car?.style,staged:g.mandriaHangar.staged,
+ mode:g.state.mode,style:g.state.car?.style,staged:g.mandriaHangar.staged?.style||null,
  fromVilla:Math.hypot(g.state.x-VILLA.x,g.state.z-VILLA.z),heightOverRoof:g.state.y-g.terrain.height(g.state.x,g.state.z)-VILLA_GARAGE.roofHeight,
  retainedBike:g.cars.some(c=>c.style==='bicycle'),paused:g.state.paused};});
  console.log('AIRCRAFT_DELIVERED '+JSON.stringify(flight));
