@@ -20,7 +20,7 @@ for(const b of data.buildings){const xs=b.p.map(p=>p[0]),zs=b.p.map(p=>p[1]);Obj
 const regional=new RegionalWorld(new THREE.Scene(),region,regionalGrid,collision);regional.installTerrainHooks(terrain);
 const graph=makeRoadGraph(data.roads,{separateLevels:true});
 const safeRoad=p=>{if(!regional.contains(p.x,p.z))return safeDryRoad(p,graph,collision,terrain,VEHICLES.mito);
- return regional.nearestRoad(p.x,p.z,300,null,r=>r.w>=4.5&&/^(primary|secondary|tertiary|residential|unclassified|living_street)$/.test(r.k))||regional.nearestRoad(p.x,p.z,650,null,r=>r.w>=3.5&&!/steps|footway|path|cycleway|pedestrian|motorway|trunk|service/.test(r.k));};
+ return regional.nearestRoad(p.x,p.z,300,null,r=>r.w>=4.5&&/^(primary|secondary|tertiary)$/.test(r.k))||regional.nearestRoad(p.x,p.z,300,null,r=>r.w>=4.5&&/^(residential|unclassified|living_street)$/.test(r.k))||regional.nearestRoad(p.x,p.z,650,null,r=>r.w>=3.5&&!/steps|footway|path|cycleway|pedestrian|motorway|trunk|service/.test(r.k));};
 const result=[];
 for(const site of WORKSHOP_SITES){const road=safeRoad(site),yard=findWorkshopYard(site,safeRoad,terrain,(x,z,y,r)=>!collides(x,z,r,collision,y));
  result.push({id:site.id,road:yard?.road.kind||road?.road?.k||road?.segment?.road?.k,distance:yard?Math.round(Math.hypot(yard.road.x-site.x,yard.road.z-site.z)):null,ready:!!yard,side:yard?.side});
