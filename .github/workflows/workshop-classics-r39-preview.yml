@@ -52,7 +52,7 @@ jobs:
           node --check dist/villa-mandria-hangar.js
           node tools/verify-vehicle-silhouettes-r33.mjs
           node tools/verify-vehicle-finish-r35.mjs
-          node tools/verify-road-workshop-r39.mjs
+          node tools/verify-road-fleet-r36.mjs
           node tools/verify-workshop-ownership-r37.mjs
           node tools/verify-workshop-classics-r39.mjs
           node --max-old-space-size=3072 tools/verify-workshop-yards-r38.mjs
@@ -95,7 +95,7 @@ jobs:
           tar -xf "$ARCHIVE" -C site
           test -f site/index.html
 
-      - name: Add isolated R36 preview without changing production
+      - name: Add isolated R39 preview without changing production
         shell: bash
         run: |
           set -euo pipefail
@@ -115,7 +115,7 @@ jobs:
         id: deployment
         uses: actions/deploy-pages@v4
 
-      - name: Verify public R36 link
+      - name: Verify public R39 link
         shell: bash
         run: |
           set -euo pipefail
