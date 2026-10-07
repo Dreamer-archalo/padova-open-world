@@ -49,7 +49,11 @@ export function createItalianClassic(id,s,color=s.color,finish='standard'){
  for(const side of [-1,1]){
   const x=side*w*(spider?.29:.32),at=coachSurface(g,[x,.60,l],[0,0,-1]),front=at?.z||l*.46;
   if(spider){const bezel=add(disk,'alloy','#c3c6c6',x,.60,front+.014,.108,.026,.108);bezel.rotation.x=Math.PI/2;const lens=add(disk,'glass','#ede4c9',x,.60,front+.032,.087,.018,.087);lens.rotation.x=Math.PI/2;}
-  else{bulb('trim','#343d42',x,.72,l*.352,.19,.045,.30);bulb('glass','#607981',x,.745,l*.35,.179,.024,.28);for(const z of [l*.33,l*.37]){const lamp=add(disk,'glass','#e6dfc5',x,.756,z,.069,.015,.069);lamp.rotation.x=.25;}}
+  else{
+   // Elliptical covers follow the wing surface; fixed heights buried the lamps.
+   const skin=(kind,c,factor,offset)=>{const points=[];for(let i=12;i>=0;i--){const a=i*Math.PI*2/12,px=x+Math.cos(a)*.17*factor,pz=l*.35+Math.sin(a)*.24*factor,y=coachSurface(g,[px,h+1,pz],[0,-1,0])?.y||.75;points.push([px,y+offset,pz]);}const y=coachSurface(g,[x,h+1,l*.35],[0,-1,0])?.y||.75;poly(kind,c,[[x,y+offset,l*.35],...points]);};skin('trim','#343d42',1,.005);skin('glass','#607981',.91,.009);
+   for(const z of [l*.32,l*.37]){const y=coachSurface(g,[x,h+1,z],[0,-1,0])?.y||.75,lamp=add(disk,'glass','#e6dfc5',x,y+.020,z,.060,.014,.060);lamp.rotation.x=.35;}
+  }
   const rear=coachSurface(g,[side*w*.29,.55,-l],[0,0,1])?.z||-l*.46;
   if(spider)box('glass','#9c3433',side*w*.29,.56,rear-.012,.16,.07,.025);else for(const xOffset of [-.045,.045]){const lamp=add(disk,'glass','#a93b33',side*w*.29+xOffset,.56,rear-.018,.041,.025,.041);lamp.rotation.x=Math.PI/2;}
   box('alloy','#c1c7c9',side*w*.17,.50,front-.01,w*.22,.029,.031);
