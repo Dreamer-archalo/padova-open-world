@@ -1,10 +1,10 @@
-import * as THREE from './vendor/three.module.js';
 import {project,dist} from './core.js';
 import {VEHICLES} from './vehicles.js';
 import {DEALER_COLORS} from './dealerships.js';
 import {dealerCapabilities,normalizeDealerOptions,dealerBuildSpec,protectionCapacity} from './dealer-customization.js';
 import {mountDealerPreview} from './dealer-configurator-preview.js';
 import {groundVehicle} from './vehicle-ownership.js';
+import {findWorkshopYard,createWorkshopYard,animateWorkshopYard,registerWorkshopWalls} from './workshop-yard.js';
 
 export const WORKSHOP_SITES=[
  ['padova','Officina Padova ZIP',45.4132272,11.9343780],
@@ -27,19 +27,24 @@ export function workshopQuote(car,options={}){
 export class VehicleWorkshops{
  constructor(env){Object.assign(this,env);this.active=new Map();this.prompt=null;}
  update(){if(!this.state.started||typeof document==='undefined')return;
-  for(const site of WORKSHOP_SITES){if(this.active.has(site.id)||dist(site,this.state)>850)continue;const road=this.safeRoad(site,VEHICLES.mito);if(!road||dist(road,site)>650||road.road&&(/steps|footway|path|cycleway|motorway|trunk/.test(road.road.k)||road.road.w<3.5))continue;
-   const at={x:road.x,z:road.z,y:road.y??this.terrain.height(road.x,road.z),yaw:road.yaw||0},group=new THREE.Group();group.position.set(at.x,at.y+.035,at.z);
-   const mat=new THREE.MeshBasicMaterial({color:'#f0b34e',transparent:true,opacity:.65,depthWrite:false}),ring=new THREE.Mesh(new THREE.RingGeometry(4.5,4.7,32),mat);ring.rotation.x=-Math.PI/2;group.add(ring);
-   // Place the workshop sign off the carriageway; the service zone occupies
-   // existing driveable pavement, without a new obstacle across traffic lanes.
-   const canvas=document.createElement('canvas');canvas.width=512;canvas.height=128;const ctx=canvas.getContext('2d');ctx.fillStyle='#153745';ctx.fillRect(0,0,512,128);ctx.fillStyle='#f6c56e';ctx.font='bold 34px sans-serif';ctx.textAlign='center';ctx.fillText('OFFICINA · E',256,53);ctx.font='22px sans-serif';ctx.fillText(site.name,256,92,490);
-   const sign=new THREE.Mesh(new THREE.PlaneGeometry(4,1),new THREE.MeshBasicMaterial({map:new THREE.CanvasTexture(canvas),side:THREE.DoubleSide}));sign.position.set(Math.cos(at.yaw)*6,2,-Math.sin(at.yaw)*6);sign.rotation.y=at.yaw;group.add(sign);this.scene.add(group);this.active.set(site.id,{site,at,group});
+  for(const site of WORKSHOP_SITES){
+   const existing=this.active.get(site.id);if(existing){existing.visible=dist(existing.at,this.state)<440;if(existing.display?.workshopDisplay&&!existing.display.permanentlyDestroyed)existing.display.mesh.visible=existing.visible;continue;}
+   if(dist(site,this.state)>850)continue;
+   const layout=findWorkshopYard(site,this.safeRoad,this.terrain,this.clearYard||(()=>true));if(!layout)continue;
+   const yard=createWorkshopYard(layout,this.scene,this.terrain,this.createPerson,site),at=layout.service;
+   registerWorkshopWalls(layout,this.collision);
+   const entry={...yard,site,at,visible:true};this.active.set(site.id,entry);
+   // A real parked vehicle occupies one marked bay; the other is kept open
+   // for the player's arrival and the repair interaction.
+   if(this.addCar){const p=layout.display,car=this.addCar(p.x,p.z,layout.road.yaw,false,true,'compact');car.fixedSpawn=true;car.workshopDisplay=site.id;car.home={...p,yaw:layout.road.yaw};car.y=p.y;this.pose?.(car);entry.display=car;}
   }
   const near=this.nearest();if(!this.prompt){this.prompt=document.createElement('button');this.prompt.id='workshopPrompt';this.prompt.className='workshop-prompt';this.prompt.onclick=()=>this.open();document.getElementById('playingUI')?.append(this.prompt);}
   this.prompt.hidden=!near||this.state.paused;this.prompt.textContent=near?'E · '+near.site.name+' · modifica / ripara':'';
  }
+ animate(){for(const entry of this.active.values())animateWorkshopYard(entry,this.state.elapsed,this.terrain);}
+ access(site){return this.active.get(site.id)?.layout.road||findWorkshopYard(site,this.safeRoad,this.terrain,this.clearYard||(()=>true))?.road||this.safeRoad(site)||site;}
  nearest(range=13){if(this.state.mode!=='car'||!groundVehicle(this.state.car)||Math.abs(this.state.speed)>1||this.state.car.health<=0)return null;
-  return [...this.active.values()].find(e=>dist(e.at,this.state)<range&&Math.abs(e.at.y-this.state.y)<3);
+  return [...this.active.values()].find(e=>e.visible!==false&&dist(e.at,this.state)<range&&Math.abs(e.at.y-this.state.y)<3);
  }
  purchase(car,options){if(!this.nearest()||this.state.car!==car)return null;const q=workshopQuote(car,options);if(!q||this.state.money<q.amountDue)return null;
   this.state.money-=q.amountDue;this.applyBuild(car,q);if(this.garage){this.garage.register(car,car.requestedByPlayer?'purchase':'street');this.garage.sync();}this.save();return q;

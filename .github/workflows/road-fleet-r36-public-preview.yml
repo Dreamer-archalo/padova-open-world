@@ -54,6 +54,7 @@ jobs:
           node tools/verify-vehicle-finish-r35.mjs
           node tools/verify-road-fleet-r36.mjs
           node tools/verify-workshop-ownership-r37.mjs
+          node --max-old-space-size=3072 tools/verify-workshop-yards-r38.mjs
           npm test
           npm run test:npc-traffic
           npm run test:performance
