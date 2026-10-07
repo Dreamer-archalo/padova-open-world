@@ -136,7 +136,7 @@ function createInBay(g,id,color){
   g.scene.add(c.mesh);installVehicleDamage(c);
  }
  c.style=id;c.spec=c.spec?.max?c.spec:s;c.name=g.dealerships?.builds.get(id)?.name||s.name;c.fixedSpawn=true; // Hold staged object; never recycle as ambient traffic.
- c.testingVehicle=!!inventory&&TEST_VEHICLES.includes(id);if(record&&!c.testingVehicle)inventory.attach(c,record);c.hangarInventory=true;c.parked=true;c.speed=0;if(!record||c.testingVehicle)c.health=100;c.y=g.terrain.height(p.x,p.z);
+ c.testingVehicle=!!inventory&&TEST_VEHICLES.includes(id)&&!record;if(record&&!c.testingVehicle)inventory.attach(c,record);c.hangarInventory=true;c.parked=true;c.speed=0;if(!record||c.testingVehicle)c.health=100;c.y=g.terrain.height(p.x,p.z);
  paintHangarVehicle(c.mesh,color);g.pose(c);g.forget?.(c);g.mandriaHangar.staged=c;
  teleportFoot(g,s);return c;
 }

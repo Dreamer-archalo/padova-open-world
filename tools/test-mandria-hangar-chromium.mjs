@@ -28,6 +28,9 @@ try{
  assert.equal(await page.evaluate(()=>document.documentElement.dataset.initialWorldReady),'true');
  await page.locator('#confirmCharacter').click({timeout:20000});
  await page.waitForFunction(()=>!!globalThis.__hangarTest&&!!globalThis.__hangarTest.mandriaHangar&&document.getElementById('mandriaHangarButton')&&!document.getElementById('mandriaHangarButton').hidden,null,{timeout:45000});
+ // This interaction trial starts with two genuinely stored ordinary vehicles.
+ // Acquisition and the physical parking requirement have their own R37 trial.
+ await page.evaluate(()=>{const garage=globalThis.__hangarTest.vehicleGarage;for(const style of ['bicycle','kick-scooter']){const token='browser-stored-'+style;garage.records.set(token,{token,style,health:73,build:null,everStored:true,status:'stored',source:'street'});}garage.persist();});
  phase='open menu';await page.locator('#mandriaHangarButton').click();
  await page.waitForFunction(()=>document.getElementById('mandriaHangarDialog')?.open,null,{timeout:10000});
  const menu=await page.evaluate(()=>({cards:document.querySelectorAll('#hangarGrid [data-hangar-id]').length,
@@ -60,6 +63,7 @@ try{
  await enterSection('urban');await page.locator('#hangarDeliver').click();
  const bike=await state();console.log('BIKE_DELIVERED '+JSON.stringify(bike));
  assert(bike.playerStyle==='bicycle'&&bike.staged===null&&!bike.paused,'delivered bicycle must be rideable and leave hangar');
+ assert.equal(await page.evaluate(()=>globalThis.__hangarTest.state.health),73,'hangar delivery must preserve damage');
  phase='new selection keeps departed bicycle';await page.locator('#mandriaHangarButton').click();
  await enterSection('urban');
  await page.locator('#hangarSearch').fill('monopattino');await page.locator('[data-hangar-id="kick-scooter"]').click();
@@ -77,6 +81,12 @@ try{
  retainedBike:g.cars.some(c=>c.style==='bicycle'),paused:g.state.paused};});
  console.log('AIRCRAFT_DELIVERED '+JSON.stringify(flight));
  assert(flight.style==='libellula'&&flight.staged===null&&flight.fromVilla<160&&flight.heightOverRoof>5&&flight.retainedBike&&!flight.paused,'aircraft must launch above the hangar without deleting departed vehicles');
+ phase='restore purchased MiTo without promoting it to a testing vehicle';
+ await page.evaluate(()=>{const g=globalThis.__hangarTest,token='browser-purchased-mito';g.state.car.parked=true;Object.assign(g.state,{mode:'foot',car:null,speed:0,health:100,paused:false});g.vehicleGarage.records.set(token,{token,style:'mito',health:37,build:null,everStored:true,status:'stored',source:'purchase'});g.vehicleGarage.persist();});
+ await page.locator('#mandriaHangarButton').click();await enterSection('land');await page.locator('#hangarSearch').fill('mito');await page.locator('[data-hangar-id="mito"]').first().click();
+ await page.waitForFunction(()=>globalThis.__hangarTest?.mandriaHangar?.staged?.garageToken==='browser-purchased-mito'&&!globalThis.__hangarTest.mandriaHangar.busy,null,{timeout:30000});
+ const restored=await page.evaluate(()=>{const c=globalThis.__hangarTest.mandriaHangar.staged;return {health:c.health,testing:c.testingVehicle};});
+ assert.equal(restored.health,37);assert.equal(restored.testing,false,'a purchased MiTo cannot become a free testing instance');
  assert.equal(errors.length,0,'Browser page errors: '+errors.join(' | '));
  console.log('PASS Chromium: illustrated catalogue, category-first navigation, color control, in-hangar replacement, bicycle and scooter, departed vehicle retained, aircraft above hangar');
 }catch(e){console.error('HANGAR_WEBGL_FAIL '+phase+' '+(e.stack||e));console.error('JS_ERRORS '+JSON.stringify(errors.slice(-15)));try{await page.screenshot({path:'test-artifacts/mandria-hangar-failure.png',timeout:15000});}catch{}process.exitCode=1;}
