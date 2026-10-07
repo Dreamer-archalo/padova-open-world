@@ -19,14 +19,14 @@ export function applyWheelDesign(root,build){
  removeOptionPart(root,1);
  for(const {x,y,z,r,width,sides} of mounts)for(const side of sides){
   const face=x+side*(width*.52+.008),ring=add(root,new THREE.TorusGeometry(r*.68,.015,6,20),'alloy',color,face,y,z,1,1,1,1);ring.rotation.y=Math.PI/2;ring.geometry.userData.coachTransient=true;
-  const disc=add(root,cylinder,'trim','#22292e',face-side*.017,y,z,r*.64,.010,r*.64,1);disc.rotation.z=Math.PI/2;
+  const disc=add(root,cylinder,'trim','#22292e',face-side*(build.wheelDesign==='dish'?.065:.017),y,z,r*.64,.010,r*.64,1);disc.rotation.z=Math.PI/2;
   const design=build.wheelDesign,count={mesh:12,sport:5,split:5,six:6,turbine:9,dish:5,aero:0,steel:8,wire:24,rally:4}[design]??5;
   if(['aero','steel'].includes(design)){
    const cover=add(root,cylinder,'alloy',color,face+side*.007,y,z,r*.62,.014,r*.62,1);cover.rotation.z=Math.PI/2;
    for(let i=0;i<(design==='aero'?5:8);i++){const a=i*Math.PI*2/(design==='aero'?5:8),hole=add(root,cylinder,'trim','#22292e',face+side*.018,y+Math.cos(a)*r*.43,z+Math.sin(a)*r*.43,r*(design==='aero'?.09:.07),.006,r*(design==='aero'?.09:.07),1);hole.rotation.z=Math.PI/2;}
   }
   for(let i=0;i<count;i++)for(const split of design==='split'?[-1,1]:[0]){
-   const a=i*Math.PI*2/count+split*.075,skew=design==='turbine'?.32:design==='wire'?(i%2?-.22:.22):0;
+   const a=i*Math.PI*2/count+split*.12,skew=design==='turbine'?.32:design==='wire'?(i%2?-.22:.22):0;
    const o=add(root,cube,'alloy',color,face+side*(design==='dish'?-.028:.008),y+Math.cos(a)*r*.34,z+Math.sin(a)*r*.34,.021,r*(design==='wire'?.62:.59),r*({mesh:.045,sport:.14,split:.065,six:.16,turbine:.21,dish:.19,wire:.022,rally:.24}[design]||.1),1);o.rotation.x=a+skew;
   }
   if(design==='dish'){const lip=add(root,new THREE.TorusGeometry(r*.60,r*.07,6,24),'alloy',color,face+side*.01,y,z,1,1,1,1);lip.rotation.y=Math.PI/2;lip.geometry.userData.coachTransient=true;}
