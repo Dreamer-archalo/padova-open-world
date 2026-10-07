@@ -105,6 +105,7 @@ export function chooseRoadFinish(spec,random=Math.random){
 }
 function normalFinish(s,finish){const f=typeof finish==='string'?{wheels:finish}:finish||{};return {wheels:f.wheels||'standard',livery:f.livery||'plain',roof:f.roof||null};}
 function detailedWheel(g,x,z,r,finish,family,variant){
+ const from=g.children.length;g.userData.wheelMounts??=[];g.userData.wheelMounts.push({x,y:r,z,r,width:r*.38,sides:[Math.sign(x)]});
  const side=Math.sign(x),kind=finish.wheels,c=WHEEL_COLOURS[kind]||chrome,style=kind==='gold'||kind==='white'?10:kind==='bronze'?6:family==='classic'?12:family==='van'?8:5+(variant%2);
  const t=mesh(g,tyre,'trim','#171b1e',x,r,z,r,r,r);t.rotation.y=Math.PI/2;
  const face=x+side*r*.19;
@@ -112,6 +113,7 @@ function detailedWheel(g,x,z,r,finish,family,variant){
  const recess=mesh(g,disk,'trim',black,face+side*.021,r,z,r*.54,.038,r*.54);recess.rotation.z=Math.PI/2;
  for(let j=0;j<style;j++){const a=j*Math.PI*2/style,o=box(g,'alloy',c,face+side*.048,r+Math.cos(a)*r*.33,z+Math.sin(a)*r*.33,.025,r*.61,r*(style>8?.06:.11));o.rotation.x=a;}
  const hub=mesh(g,disk,'alloy',c,face+side*.065,r,z,r*.19,.022,r*.19);hub.rotation.z=Math.PI/2;
+ for(const o of g.children.slice(from))if(o.material.userData.coachBucket!=='trim')o.userData.optionPart=1;
  // Shallow tread ribs are geometry, so they survive vertex batching and mipmapping.
  for(let j=0;j<12;j++){const a=j*Math.PI*2/12,o=box(g,'trim','#252a2c',x,r+Math.cos(a)*r*.994,z+Math.sin(a)*r*.994,r*.22,.007,r*.035);o.rotation.x=a;}
 }
@@ -158,7 +160,7 @@ function lampsAndTrim(g,s,p,paint,finish){
  const w=s.width,l=s.length,b=p[4],front=p[5],classic=s.family==='classic',low=['sport','supercar','convertible'].includes(s.family),lamp=p[8],r=radius(s);
  const noseZ=l*.5,noseWidth=w*.36;
  box(g,'trim',black,0,front-.17,noseZ,noseWidth,.12,.032);
- if(classic||s.family==='luxury')for(let i=-2;i<=2;i++)box(g,'alloy',chrome,i*w*.065,front-.15,noseZ+.019,.022,.14,.02);
+ if(classic||s.family==='luxury')for(let i=-2;i<=2;i++)box(g,'alloy',chrome,i*w*.065,front-.15,noseZ+.019,.022,.14,.02).userData.optionPart=3;else box(g,'alloy','#59656c',0,front-.17,noseZ+.020,noseWidth*.8,.022,.014).userData.optionPart=3;
  for(const side of [-1,1]){
   const x=side*w*(lamp==='round'?.255:.23),y=front-.035;
   if(lamp==='round'){
@@ -172,7 +174,7 @@ function lampsAndTrim(g,s,p,paint,finish){
   box(g,'trim',black,side*w*.27,b-.08,-l*.493,w*.19,.105,.04);
   box(g,'glass','#a73130',side*w*.27,b-.066,-l*.499,w*.17,.038,.025);
   box(g,'glass','#d66b42',side*w*.27,b-.097,-l*.501,w*.065,.023,.025);
-  const mirror=box(g,'paint',paint,side*w*.475,b+.22,p[3]*l-.13,.10,.075,.16);mirror.rotation.y=side*.12;
+  const mirror=box(g,'paint',paint,side*w*.475,b+.22,p[3]*l-.13,.10,.075,.16);mirror.rotation.y=side*.12;mirror.userData.optionPart=2;
   box(g,'glass',glass,side*w*.478,b+.224,p[3]*l-.205,.082,.044,.014);
   // Handles and panel seams follow the actual side, below the shoulder.
   const doors=['sport','supercar','convertible','classic','city'].includes(s.family)?1:2;
@@ -208,7 +210,7 @@ export function createCoachwork(type,s,paint='#738493',requested=null){
   box(g,'paint',paint,0,p[4]+.08,-s.length*.45,s.width*.85,.23,.075);
  }
  for(const side of [-1,1])for(const z of [-s.wheelbase/2,s.wheelbase/2])detailedWheel(g,side*s.width*.428,z,radius(s),finish,s.family,s.variant||0);
- lampsAndTrim(g,s,p,paint,finish);g.userData={vehicleType:type,modelRevision:35,roadFinish:finish};return g;
+ lampsAndTrim(g,s,p,paint,finish);g.userData={...g.userData,vehicleType:type,modelRevision:35,roadFinish:finish};return g;
 }
 
 // Preserve the four surface classes, UVs, authored vertex colour and the paint mask.
@@ -218,15 +220,15 @@ export function compactCoachwork(group){
  const buckets=new Map(),remove=[],v=new THREE.Vector3(),n=new THREE.Vector3();group.updateMatrixWorld(true);const inverse=group.matrixWorld.clone().invert();
  group.traverse(o=>{
   if(!o.isMesh||o.material.transparent)return;const geo=o.geometry,kind=o.material.userData.coachBucket||'trim';
-  if(!buckets.has(kind))buckets.set(kind,{p:[],n:[],c:[],uv:[],mask:[]});const a=buckets.get(kind),m=new THREE.Matrix4().multiplyMatrices(inverse,o.matrixWorld),nm=new THREE.Matrix3().getNormalMatrix(m),ix=geo.index?.array,p=geo.attributes.position,normal=geo.attributes.normal,col=geo.attributes.color,mask=geo.attributes.collectorPaint;
+  if(!buckets.has(kind))buckets.set(kind,{p:[],n:[],c:[],uv:[],mask:[],parts:[]});const a=buckets.get(kind),m=new THREE.Matrix4().multiplyMatrices(inverse,o.matrixWorld),nm=new THREE.Matrix3().getNormalMatrix(m),ix=geo.index?.array,p=geo.attributes.position,normal=geo.attributes.normal,col=geo.attributes.color,mask=geo.attributes.collectorPaint;
   for(let j=0;j<(ix?.length||p.count);j++){
    const i=ix?ix[j]:j;v.fromBufferAttribute(p,i).applyMatrix4(m);n.fromBufferAttribute(normal,i).applyMatrix3(nm).normalize();a.p.push(v.x,v.y,v.z);a.n.push(n.x,n.y,n.z);
-   a.c.push(col?col.getX(i):o.material.color.r,col?col.getY(i):o.material.color.g,col?col.getZ(i):o.material.color.b);a.uv.push(geo.attributes.uv?.getX(i)||0,geo.attributes.uv?.getY(i)||0);a.mask.push(mask?mask.getX(i):kind==='paint'&&o.userData.coachPaint!==false?1:0);
+   a.c.push(col?col.getX(i):o.material.color.r,col?col.getY(i):o.material.color.g,col?col.getZ(i):o.material.color.b);a.uv.push(geo.attributes.uv?.getX(i)||0,geo.attributes.uv?.getY(i)||0);a.mask.push(mask?mask.getX(i):kind==='paint'&&o.userData.coachPaint!==false?1:0);a.parts.push(geo.attributes.optionPart?.getX(i)||o.userData.optionPart||0);
   }remove.push(o);
  });
  for(const o of remove){o.parent?.remove(o);if(o.geometry.userData.coachTransient)o.geometry.dispose();}
  for(const [kind,a] of buckets){
-  const geo=new THREE.BufferGeometry();for(const [key,data,size] of [['position',a.p,3],['normal',a.n,3],['color',a.c,3],['uv',a.uv,2],['collectorPaint',a.mask,1]])geo.setAttribute(key,new THREE.Float32BufferAttribute(data,size));
+  const geo=new THREE.BufferGeometry();for(const [key,data,size] of [['position',a.p,3],['normal',a.n,3],['color',a.c,3],['uv',a.uv,2],['collectorPaint',a.mask,1],['optionPart',a.parts,1]])geo.setAttribute(key,new THREE.Float32BufferAttribute(data,size));
   if(!batchMaterials.has(kind)){const m=coachMaterial(kind,'#ffffff').clone();m.vertexColors=true;batchMaterials.set(kind,m);}const out=new THREE.Mesh(geo,batchMaterials.get(kind));out.castShadow=out.receiveShadow=true;out.name='coachwork-'+kind;group.add(out);
  }
  const finish=group.userData.paintFinish;if(finish&&finish!=='standard')for(const mesh of group.children)if(mesh.isMesh&&mesh.material.userData.coachBucket==='paint'){mesh.material=mesh.material.clone();mesh.material.roughness=finish==='matte'?.9:finish==='pearl'?.18:.25;mesh.material.metalness=finish==='matte'?.06:finish==='pearl'?.65:.7;mesh.material.userData.privateFinish=true;}

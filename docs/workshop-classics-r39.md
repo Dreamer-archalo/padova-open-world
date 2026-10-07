@@ -1,0 +1,9 @@
+# Workshop R39 and Italian classics
+
+The customization dialog now keeps the rotating live 3D preview, price and purchase controls visible. The right column scrolls independently; on narrow screens the preview stays above the scrolling controls. Dealership packages disclose their compatible option changes and can be undone before buying. The selected build summary also identifies visible safety bars and grille choices.
+
+Rim designs replace the original rims at the actual wheel centres, including bikes, the three-wheel Ape and multi-axle trucks. A part attribute survives batching so mirror/grille/exhaust finishes modify existing equipment. Rear tailpipes mount to the model's actual underbody edge rather than a fixed percentage of the car length. A separate grille design selector controls vertical bars or mesh explicitly.
+
+The saved `collector-nebula` ID now uses Duetto Spider 66, an open two-seat car inspired by the original Alfa Romeo Spider. Existing saves retain that ID. `collector-stradale33` adds Stradale 33 · 1967, inspired by the historic Alfa Romeo 33 Stradale, with an independent painted roof and framed glass surfaces. Both are purchasable in prestige dealerships and Stati Uniti GT and use the existing driving, garage and damage systems. The Stradale costs 250,000 game euros, higher than every other base catalogue price. Collector count rises from 15 to 16 without increasing total rare traffic chance.
+
+Validation: the R39 acceptance suite covers nine vehicle families, distinct wheel geometry at real mounts, unchanged mirror placement, exhaust equipment, repeated-installation pricing and actual Stradale purchase. Existing R35/R36, collector, workshop, dealership and hangar checks are retained. The preview workflow runs browser review at desktop and mobile sizes and exercises the full game workshop, purchase and garage flow before publishing the isolated `preview/workshop-r39/` path. Production files are preserved.

@@ -1,0 +1,134 @@
+name: Workshop R39 · classics and fixed configurator
+
+on:
+  push:
+    branches: [fix/workshop-classics-r39]
+
+permissions:
+  actions: read
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  deploy-preview:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Recover regional data for the playtest
+        shell: bash
+        run: |
+          set -euo pipefail
+          for name in venice.json region-padova-venice.json world-padova-venice.json world-terrain.json map-hd-extras.json; do
+            found=false
+            for label in vehicles-r35 solo-cars-r26 road-fixes-r25 taxi-r22 road-levels-r21 padova-npc-r17 dealerships unified; do
+              url="https://dreamer-archalo.github.io/padova-open-world/preview/$label/data/$name"
+              if curl --fail --silent --show-error --location --max-time 60 "$url" -o "dist/data/$name"; then
+                echo "Recovered $name from $label"
+                found=true
+                break
+              fi
+            done
+            if test "$found" != true && test "$name" != map-hd-extras.json; then
+              echo "Missing required regional file: $name" >&2
+              exit 1
+            fi
+          done
+          for name in venice.json region-padova-venice.json world-padova-venice.json world-terrain.json; do test -s "dist/data/$name"; done
+
+      - name: Verify R36 vehicle update
+        run: |
+          node --check dist/modern-vehicles.js
+          node --check dist/world.js
+          node --check dist/villa-mandria-hangar.js
+          node tools/verify-vehicle-silhouettes-r33.mjs
+          node tools/verify-vehicle-finish-r35.mjs
+          node tools/verify-road-workshop-r39.mjs
+          node tools/verify-workshop-ownership-r37.mjs
+          node tools/verify-workshop-classics-r39.mjs
+          node --max-old-space-size=3072 tools/verify-workshop-yards-r38.mjs
+          npm test
+          npm run test:npc-traffic
+          npm run test:performance
+          node verify-collector-cars-r26.mjs
+          node verify-dealerships.mjs
+          node tools/verify-mandria-hangar.mjs
+          npm run test:biker-club
+          npm run test:vehicle-damage
+          npm run test:taxi
+          npm run test:boats-collisions
+
+      - name: Chromium visual review
+        run: |
+          npm install --no-save playwright@1.55.1
+          npx playwright install --with-deps chromium
+          node tools/test-workshop-classics-r39-browser.mjs
+          node tools/test-workshop-ownership-r37-browser.mjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: workshop-r39-review
+          path: |
+            test-artifacts/r39
+            test-artifacts/r37
+      - name: Download currently published Pages artifact
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          RUN_ID="$(gh api "repos/$GITHUB_REPOSITORY/actions/artifacts?name=github-pages&per_page=100" --jq '[.artifacts[] | select(.expired==false)][0].workflow_run.id')"
+          test -n "$RUN_ID"
+          mkdir -p /tmp/current-pages site
+          gh run download "$RUN_ID" --repo "$GITHUB_REPOSITORY" --name github-pages --dir /tmp/current-pages
+          ARCHIVE="$(find /tmp/current-pages -type f -name '*.tar' | head -n 1)"
+          test -n "$ARCHIVE"
+          tar -xf "$ARCHIVE" -C site
+          test -f site/index.html
+
+      - name: Add isolated R36 preview without changing production
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p site/preview/workshop-r39
+          rm -rf site/preview/workshop-r39/*
+          cp -a dist/. site/preview/workshop-r39/
+          touch site/.nojekyll
+          test -f site/preview/workshop-r39/index.html
+          test -s site/preview/workshop-r39/data/region-padova-venice.json
+          test -s site/preview/workshop-r39/data/world-terrain.json
+
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v4
+        with:
+          path: site
+      - name: Deploy isolated public preview
+        id: deployment
+        uses: actions/deploy-pages@v4
+
+      - name: Verify public R36 link
+        shell: bash
+        run: |
+          set -euo pipefail
+          base='https://dreamer-archalo.github.io/padova-open-world/preview/workshop-r39'
+          for attempt in 1 2 3 4 5 6; do
+            if curl --fail --silent --show-error --location "$base/index.html" -o /tmp/r36.html &&
+               curl --fail --silent --show-error --location "$base/modern-vehicles.js" -o /tmp/r36-vehicles.js &&
+               grep -q 'createCoachwork' /tmp/r36-vehicles.js &&
+               grep -q 'Targa Aperta' /tmp/r36-vehicles.js &&
+               curl --fail --silent --show-error --location "$base/road-fleet-coachwork.js" -o /tmp/r36-fleet.js &&
+               grep -q 'createRoadFleet' /tmp/r36-fleet.js; then
+              exit 0
+            fi
+            sleep 5
+          done
+          exit 1

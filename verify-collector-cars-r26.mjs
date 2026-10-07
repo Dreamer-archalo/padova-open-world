@@ -13,7 +13,7 @@ import {actorDetail} from './dist/quality.js';
 import {RegionalWorld} from './dist/regional-world.js';
 import {SpatialIndex} from './dist/core.js';
 
-assert.equal(COLLECTOR_IDS.length,15);
+assert.equal(COLLECTOR_IDS.length,16);
 const hashes=new Set(),counts={};let maxTriangles=0;
 for(const id of COLLECTOR_IDS){
  const s=COLLECTOR_CARS[id];assert.equal(VEHICLES[id],s);assert.equal(hangarSection(id),'collector');
@@ -36,11 +36,11 @@ assert.equal(hangarPreviewModel(id).userData.collectorCar,id);
  actorDetail({mesh:g,spec:s},true);assert(mesh.visible,id+': retain special silhouette in hyper performance');assert(!g.children.some(o=>o.userData.sharedRenderProxy));
  counts[id]=0;
 }
-assert.equal(hashes.size,15,'all 15 cars have different 3-D geometry');
+assert.equal(hashes.size,16,'all 16 cars have different 3-D geometry');
 let seed=261026,total=0;const random=()=>{seed=(Math.imul(seed,1664525)+1013904223)>>>0;return seed/4294967296;};
 for(let i=0;i<100000;i++){const style=chooseTrafficStyle('urban',random,{k:'secondary',w:9});if(COLLECTOR_CARS[style]){counts[style]++;total++;}}
 assert(Math.abs(total/100000-COLLECTOR_CHANCE)<.002,'special traffic remains rare');
-assert(Object.values(counts).every(v=>v>65&&v<150),'all 15 models available with comparable chance');
+assert(Object.values(counts).every(v=>v>65&&v<150),'all 16 models available with comparable chance');
 assert.equal(rareCollectorStyle(()=>0,{k:'footway',w:10}),null);
 assert.equal(rareCollectorStyle(()=>0,{k:'secondary',w:2}),null);
 assert.equal(rareCollectorStyle(()=>0,{k:'secondary',w:10,access:'private'}),null);
@@ -67,4 +67,4 @@ function visit(file){
 }
 for(const m of html.matchAll(/<script[^>]+src="([^"]+)"/g))visit(path.resolve('dist',m[1].split('?')[0]));
 assert(![...seen].some(file=>/\/(?:multiplayer|online-race)[^/]*\.js$/.test(file)),'solo startup must not import multiplayer or online race hooks');
-console.log('PASS R26 collector fleet / solo entry',JSON.stringify({models:15,maxTriangles,trafficFraction:total/100000,counts,regional,loadedModules:seen.size}));
+console.log('PASS R26 collector fleet / solo entry',JSON.stringify({models:COLLECTOR_IDS.length,maxTriangles,trafficFraction:total/100000,counts,regional,loadedModules:seen.size}));

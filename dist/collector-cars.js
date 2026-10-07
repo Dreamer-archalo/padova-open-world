@@ -1,11 +1,12 @@
 import * as THREE from './vendor/three.module.js';
+import {createItalianClassic} from './italian-classics.js';
 import {coachMaterial} from './car-coachwork.js';
 
 // Fictional collector cars. Metres and m/s, using the ordinary ground controller.
 const catalogue=[
  ['ametista','Ametista 01','Coupé a cuneo · viola e ciano','wedge',2.08,4.65,1.22,2.74,72,'#8246cc','#3ce8dd'],
  ['ruggine','Ruggine 32','Hot rod · rame, motore a vista','hotrod',1.91,4.32,1.56,2.72,53,'#bd6435','#ead7aa'],
- ['nebula','Nebula','Canopy panoramico · fucsia e blu notte','canopy',2.16,4.92,1.3,2.89,77,'#e24c9a','#172346'],
+ ['nebula','Duetto Spider 66','Spider classica · ispirata alla Alfa Romeo Spider','spider66',1.68,4.25,1.29,2.25,49,'#aa302c','#b8bec1'],
  ['zebra','Zebra Safari','Fuoristrada rialzato · bianco e nero','safari',2.23,4.68,2.16,2.8,43,'#e8e5d8','#24272d'],
  ['mandarino','Mandarino R','Rally largo · arancio, fari supplementari','rally',2.12,4.12,1.61,2.48,59,'#f58a21','#f5edda'],
  ['azzurra','Azzurra Barchetta','Spider aperta · turchese e avorio','barchetta',1.88,4.18,1.18,2.53,61,'#32bdb9','#f5e0b4'],
@@ -17,6 +18,7 @@ const catalogue=[
  ['bruma','Bruma Rat','Rat rod · grigio, ruggine, scarichi esterni','rat',2.01,4.67,1.36,2.95,54,'#6e7977','#a35c3e'],
  ['fiamma','Fiamma Drag','Muso lungo · rosso, compressore e spoiler','drag',2.16,5.56,1.31,3.54,81,'#d93a32','#252730'],
  ['perla','Perla Imperiale','Limousine a sei ruote · perla e ottone','limo',2.17,6.54,1.75,4.27,50,'#ece4d4','#bd914a'],
+ ['stradale33','Stradale 33 · 1967','Coupé da collezione · ispirata alla Alfa Romeo 33 Stradale storica','stradale67',1.71,3.97,1.00,2.35,72,'#af2929','#b8bec1'],
  ['magnete','Magnete Mono','Monoposto da circuito · lime e carbonio','mono',2.02,4.42,1.09,2.74,75,'#bce43c','#293039']
 ];
 export const COLLECTOR_CARS=Object.fromEntries(catalogue.map(([key,name,description,shape,width,length,height,wheelbase,max,color,accent])=>[
@@ -37,14 +39,15 @@ const cube=new THREE.BoxGeometry(),sphere=new THREE.SphereGeometry(1,12,8),cylin
 const material=new THREE.MeshStandardMaterial({vertexColors:true,roughness:.47,metalness:.24});
 function model(id,finish='standard'){
  const s=COLLECTOR_CARS[id],w=s.width,l=s.length,h=s.height,C=s.color,A=s.accent,
-  p=[],n=[],colors=[],paint=[],buckets=[],uv=[],v=new THREE.Vector3(),normal=new THREE.Vector3();
+  p=[],n=[],colors=[],paint=[],buckets=[],uv=[],parts=[],mounts=[],v=new THREE.Vector3(),normal=new THREE.Vector3();
+ let optionPart=0;
  function geometry(g,color,matrix,paintable=false){
   const col=new THREE.Color(color),nm=new THREE.Matrix3().getNormalMatrix(matrix),indices=g.index?.array;
   for(let j=0;j<(indices?.length||g.attributes.position.count);j++){
    const i=indices?indices[j]:j;v.fromBufferAttribute(g.attributes.position,i).applyMatrix4(matrix);
    normal.fromBufferAttribute(g.attributes.normal,i).applyMatrix3(nm).normalize();
-   p.push(v.x,v.y,v.z);n.push(normal.x,normal.y,normal.z);colors.push(col.r,col.g,col.b);paint.push(paintable?1:0);uv.push(g.attributes.uv?.getX(i)||v.x,g.attributes.uv?.getY(i)||v.z);
-   buckets.push(paintable?'paint':(/^#(?:26|21|29|33|46|2d|24|3b)/.test(color)||['#fff0ca','#e3f5ed','#ffefd1','#da414d'].includes(color))?'glass':col.r+col.g+col.b>.50?'alloy':'trim');
+   p.push(v.x,v.y,v.z);n.push(normal.x,normal.y,normal.z);colors.push(col.r,col.g,col.b);paint.push(paintable?1:0);parts.push(optionPart);uv.push(g.attributes.uv?.getX(i)||v.x,g.attributes.uv?.getY(i)||v.z);
+   buckets.push(paintable?'paint':optionPart?'alloy':(/^#(?:26|21|29|33|46|2d|24|3b)/.test(color)||['#fff0ca','#e3f5ed','#ffefd1','#da414d'].includes(color))?'glass':col.r+col.g+col.b>.50?'alloy':'trim');
   }
  }
  function part(g,color,x,y,z,sx,sy,sz,rx=0,ry=0,rz=0,paintable=false){
@@ -62,12 +65,13 @@ function model(id,finish='standard'){
   const alloy=({bronze:'#997743',gold:'#b79b54',white:'#d8dbd5',black:'#343d43',graphite:'#606d76'})[finish]||(s.shape==='deco'||s.shape==='limo'?A:'#aebbc3');
   const torus=new THREE.TorusGeometry(.80,.20,6,18),ring=new THREE.TorusGeometry(radius*.70,.016,4,12);
   for(const z of axles)for(const side of [-1,1]){
-   const x=side*w*.425,depth=wide?.28:.20;
+   const x=side*w*.425,depth=wide?.28:.20;mounts.push({x,y:radius,z,r:radius,width:depth,sides:[side]});
    part(torus,'#20272c',x,radius,z,radius,radius,depth/.4,0,Math.PI/2);
-   part(cylinder,'#727f86',x,radius,z,radius*.62,depth*.92,radius*.62,0,0,Math.PI/2);
+   optionPart=1;part(cylinder,'#727f86',x,radius,z,radius*.62,depth*.92,radius*.62,0,0,Math.PI/2);
    part(ring,alloy,x+side*depth*.51,radius,z,1,1,1,0,Math.PI/2);
    part(cylinder,alloy,x+side*depth*.53,radius,z,radius*.17,.026,radius*.17,0,0,Math.PI/2);
    for(let i=0;i<7;i++){const a=i*Math.PI*2/7;box(alloy,x+side*depth*.52,radius+Math.cos(a)*radius*.40,z+Math.sin(a)*radius*.40,.022,radius*.55,.024,false,a,0,0);}
+   optionPart=0;
   }torus.dispose();ring.dispose();
  }
  function lamps(y=.64,roundLamp=false){
@@ -153,24 +157,30 @@ function model(id,finish='standard'){
   round('#24394a',0,.78,-.28,.28,.23,.55);for(const side of [-1,1]){box(A,side*w*.28,.47,-.10,w*.22,.29,l*.43);box('#48555c',side*w*.30,.29,0,w*.55,.065,l*.65);}
   box(C,0,.33,l*.38,w*.92,.065,.39,true);box(C,0,.86,-l*.39,w*.88,.08,.30,true);wheels(.31,[-s.wheelbase/2,s.wheelbase/2],true);lamps(.39);break;
  }
+ // Place the original mirror housings against the authored side bodywork.
+ const mirrorGeo=new THREE.BufferGeometry(),bodyVertices=[];for(let i=0;i<paint.length;i+=3)if(paint[i]&&paint[i+1]&&paint[i+2])bodyVertices.push(...p.slice(i*3,i*3+9));mirrorGeo.setAttribute('position',new THREE.Float32BufferAttribute(bodyVertices,3));const mirrorMat=new THREE.MeshBasicMaterial({side:THREE.DoubleSide}),mirrorBody=new THREE.Mesh(mirrorGeo,mirrorMat);mirrorBody.updateMatrixWorld(true);
+ for(const side of [-1,1]){const ray=new THREE.Raycaster();let hit=null;for(let y=h*.64;y>.5&&!hit;y-=.04){ray.set(new THREE.Vector3(side*w,y,l*.1),new THREE.Vector3(-side,0,0));hit=ray.intersectObject(mirrorBody,false)[0];}if(hit){const x=hit.point.x+side*.035,y=hit.point.y+.055;optionPart=2;box('#aeb9bd',x,y-.030,l*.1,.023,.060,.020);round('#aeb9bd',x+side*.025,y,l*.1,.050,.031,.062);optionPart=0;box('#263f50',x+side*.025,y,l*.1-.048,.07,.045,.012);}}
+ mirrorGeo.dispose();mirrorMat.dispose();
  const geometryOut=new THREE.BufferGeometry();geometryOut.setAttribute('position',new THREE.Float32BufferAttribute(p,3));geometryOut.setAttribute('normal',new THREE.Float32BufferAttribute(n,3));geometryOut.setAttribute('color',new THREE.Float32BufferAttribute(colors,3));geometryOut.setAttribute('collectorPaint',new THREE.Float32BufferAttribute(paint,1));
  geometryOut.computeBoundingBox();
  // Declared physics bounds enclose every lamp, spoiler and wheel.
  const b=geometryOut.boundingBox,size=b.getSize(new THREE.Vector3());
  geometryOut.translate(-(b.min.x+b.max.x)*.5,-b.min.y,-(b.min.z+b.max.z)*.5);
  geometryOut.scale(Math.min(1,w/size.x),Math.min(1,h/size.y),Math.min(1,l/size.z));geometryOut.computeBoundingBox();geometryOut.computeBoundingSphere();
+ for(const mount of mounts){mount.x=(mount.x-(b.min.x+b.max.x)*.5)*Math.min(1,w/size.x);mount.y=(mount.y-b.min.y)*Math.min(1,h/size.y);mount.z=(mount.z-(b.min.z+b.max.z)*.5)*Math.min(1,l/size.z);}
  const root=new THREE.Group(),positions=geometryOut.attributes.position.array,normals=geometryOut.attributes.normal.array;
  for(const kind of ['paint','glass','alloy','trim']){
-  const data={position:[],normal:[],color:[],collectorPaint:[],uv:[]};
-  for(let i=0;i<buckets.length;i++)if(buckets[i]===kind){data.position.push(...positions.slice(i*3,i*3+3));data.normal.push(...normals.slice(i*3,i*3+3));data.color.push(...colors.slice(i*3,i*3+3));data.collectorPaint.push(paint[i]);data.uv.push(...uv.slice(i*2,i*2+2));}
+  const data={position:[],normal:[],color:[],collectorPaint:[],uv:[],optionPart:[]};
+  for(let i=0;i<buckets.length;i++)if(buckets[i]===kind){data.position.push(...positions.slice(i*3,i*3+3));data.normal.push(...normals.slice(i*3,i*3+3));data.color.push(...colors.slice(i*3,i*3+3));data.collectorPaint.push(paint[i]);data.optionPart.push(parts[i]);data.uv.push(...uv.slice(i*2,i*2+2));}
   if(!data.position.length)continue;
-  const geo=new THREE.BufferGeometry();for(const [key,array] of Object.entries(data))geo.setAttribute(key,new THREE.Float32BufferAttribute(array,key==='collectorPaint'?1:key==='uv'?2:3));
+  const geo=new THREE.BufferGeometry();for(const [key,array] of Object.entries(data))geo.setAttribute(key,new THREE.Float32BufferAttribute(array,['collectorPaint','optionPart'].includes(key)?1:key==='uv'?2:3));
   const mat=coachMaterial(kind,'#ffffff').clone();mat.vertexColors=true;const mesh=new THREE.Mesh(geo,mat);mesh.name='coachwork-'+kind;mesh.castShadow=mesh.receiveShadow=true;root.add(mesh);
  }geometryOut.dispose();
- root.name=s.name;root.userData={collectorCar:id,signatureColor:C,modelRevision:36,roadFinish:{wheels:finish},wheelCount:['limo','sixwheel'].includes(s.shape)?6:4};return root;
+ root.name=s.name;root.userData={wheelMounts:mounts,collectorCar:id,signatureColor:C,modelRevision:36,roadFinish:{wheels:finish},wheelCount:['limo','sixwheel'].includes(s.shape)?6:4};return root;
 }
 export function createCollectorCar(id,color=null,finish='standard'){
  if(!COLLECTOR_CARS[id])throw new Error('Unknown collector car: '+id);
+ if(['spider66','stradale67'].includes(COLLECTOR_CARS[id].shape))return createItalianClassic(id,COLLECTOR_CARS[id],color||COLLECTOR_CARS[id].color,finish);
  const key=id+'/'+finish;if(!templates.has(key))templates.set(key,model(id,finish));const root=templates.get(key).clone(true);
  if(color){const paint=new THREE.Color(color);root.traverse(o=>{if(!o.isMesh)return;const mask=o.geometry.attributes.collectorPaint;if(!mask?.array.some(v=>v))return;o.geometry=o.geometry.clone();const a=o.geometry.attributes.color;for(let i=0;i<mask.count;i++)if(mask.getX(i))a.setXYZ(i,paint.r,paint.g,paint.b);});}
  return root;

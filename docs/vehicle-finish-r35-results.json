@@ -2,7 +2,7 @@
   "models": [
     {
       "id": "nido",
-      "triangles": 4496,
+      "triangles": 4508,
       "width": 1.6859347820281982,
       "length": 3.1476000547409058,
       "draws": 4,
@@ -10,7 +10,7 @@
     },
     {
       "id": "tessera",
-      "triangles": 3928,
+      "triangles": 3940,
       "width": 1.7524348497390747,
       "length": 3.497949957847595,
       "draws": 4,
@@ -18,7 +18,7 @@
     },
     {
       "id": "rondine",
-      "triangles": 3952,
+      "triangles": 3964,
       "width": 1.8284348249435425,
       "length": 3.8483000993728638,
       "draws": 4,
@@ -26,7 +26,7 @@
     },
     {
       "id": "botanica",
-      "triangles": 4320,
+      "triangles": 4332,
       "width": 1.8569347858428955,
       "length": 4.048500061035156,
       "draws": 4,
@@ -50,7 +50,7 @@
     },
     {
       "id": "argine",
-      "triangles": 3976,
+      "triangles": 3988,
       "width": 1.923434853553772,
       "length": 4.751199960708618,
       "draws": 4,
@@ -58,7 +58,7 @@
     },
     {
       "id": "meridiana",
-      "triangles": 4312,
+      "triangles": 4324,
       "width": 1.9614348411560059,
       "length": 4.949400186538696,
       "draws": 4,
@@ -66,7 +66,7 @@
     },
     {
       "id": "viaggio",
-      "triangles": 4072,
+      "triangles": 4084,
       "width": 1.9139348268508911,
       "length": 4.801249980926514,
       "draws": 4,
@@ -74,7 +74,7 @@
     },
     {
       "id": "familia",
-      "triangles": 4072,
+      "triangles": 4084,
       "width": 1.980434775352478,
       "length": 5.051499843597412,
       "draws": 4,
@@ -82,7 +82,7 @@
     },
     {
       "id": "selva",
-      "triangles": 4936,
+      "triangles": 4948,
       "width": 1.980434775352478,
       "length": 4.601049900054932,
       "draws": 4,
@@ -90,7 +90,7 @@
     },
     {
       "id": "altavia",
-      "triangles": 4584,
+      "triangles": 4596,
       "width": 2.0564348697662354,
       "length": 5.001450061798096,
       "draws": 4,
@@ -98,7 +98,7 @@
     },
     {
       "id": "officina",
-      "triangles": 4048,
+      "triangles": 4060,
       "width": 2.0374348163604736,
       "length": 5.051499843597412,
       "draws": 4,
@@ -106,7 +106,7 @@
     },
     {
       "id": "corriere",
-      "triangles": 4048,
+      "triangles": 4060,
       "width": 2.151434898376465,
       "length": 5.852299928665161,
       "draws": 4,
@@ -114,7 +114,7 @@
     },
     {
       "id": "comitiva",
-      "triangles": 4344,
+      "triangles": 4356,
       "width": 1.9709348678588867,
       "length": 4.849299907684326,
       "draws": 4,
@@ -122,7 +122,7 @@
     },
     {
       "id": "campo",
-      "triangles": 4536,
+      "triangles": 4548,
       "width": 2.0469348430633545,
       "length": 5.30174994468689,
       "draws": 4,
@@ -130,7 +130,7 @@
     },
     {
       "id": "saetta",
-      "triangles": 4160,
+      "triangles": 4172,
       "width": 1.923434853553772,
       "length": 4.198650121688843,
       "draws": 4,
@@ -138,7 +138,7 @@
     },
     {
       "id": "vortice",
-      "triangles": 4288,
+      "triangles": 4300,
       "width": 1.9994348287582397,
       "length": 4.699150085449219,
       "draws": 4,
@@ -146,7 +146,7 @@
     },
     {
       "id": "fulmine",
-      "triangles": 3952,
+      "triangles": 3964,
       "width": 2.0564348697662354,
       "length": 4.549000024795532,
       "draws": 4,
@@ -154,7 +154,7 @@
     },
     {
       "id": "zenit",
-      "triangles": 4304,
+      "triangles": 4316,
       "width": 2.1134347915649414,
       "length": 4.899349927902222,
       "draws": 4,
@@ -178,7 +178,7 @@
     },
     {
       "id": "lido",
-      "triangles": 4168,
+      "triangles": 4180,
       "width": 1.8759348392486572,
       "length": 4.148600101470947,
       "draws": 4,
@@ -194,7 +194,7 @@
     },
     {
       "id": "goccia",
-      "triangles": 4488,
+      "triangles": 4500,
       "width": 1.7144348621368408,
       "length": 3.3978500366210938,
       "draws": 4,
@@ -202,7 +202,7 @@
     },
     {
       "id": "cortile",
-      "triangles": 3952,
+      "triangles": 3964,
       "width": 1.8189347982406616,
       "length": 3.7682199478149414,
       "draws": 4,
@@ -210,7 +210,7 @@
     },
     {
       "id": "linea",
-      "triangles": 4312,
+      "triangles": 4324,
       "width": 1.9424347877502441,
       "length": 4.829279899597168,
       "draws": 4,
@@ -218,7 +218,7 @@
     },
     {
       "id": "brina",
-      "triangles": 4392,
+      "triangles": 4404,
       "width": 1.923434853553772,
       "length": 4.6691200733184814,
       "draws": 4,
@@ -226,7 +226,7 @@
     },
     {
       "id": "roccia",
-      "triangles": 4896,
+      "triangles": 4908,
       "width": 2.018434762954712,
       "length": 4.6791298389434814,
       "draws": 4,
@@ -234,7 +234,7 @@
     },
     {
       "id": "targa",
-      "triangles": 3996,
+      "triangles": 4008,
       "width": 1.9044348001480103,
       "length": 4.268719911575317,
       "draws": 4,
