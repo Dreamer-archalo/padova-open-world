@@ -32,6 +32,8 @@ for(const site of WORKSHOP_SITES){const road=safeRoad(site),yard=findWorkshopYar
 // The four people stand on the sampled surface, walk/talk and remain visible.
 globalThis.document={createElement:()=>({width:512,height:128,getContext:()=>({fillRect(){},fillText(){},set fillStyle(v){},set textAlign(v){},set font(v){}})})};
 const scene=new THREE.Scene(),sample=WORKSHOP_SITES[0],yard=findWorkshopYard(sample,safeRoad,terrain,(x,z,y,r)=>!collides(x,z,r,collision,y)),entry=createWorkshopYard(yard,scene,terrain,createPerson,sample);
+entry.group.updateMatrixWorld(true);const front=entry.group.children.find(o=>o.isMesh&&o.geometry.type==='PlaneGeometry'&&o.geometry.parameters.width>5),facing=front.getWorldDirection(new THREE.Vector3());
+assert(facing.dot(new THREE.Vector3(-Math.cos(yard.road.yaw)*yard.side,0,Math.sin(yard.road.yaw)*yard.side))>.99,'workshop sign reads from the street');
 registerWorkshopWalls(yard,collision);const rear=yard.surface(0,28);
 assert(collides(rear.x,rear.z,.4,collision,rear.y),'garage back wall stops the car');
 assert(!collides(yard.parking.x,yard.parking.z,1,collision,yard.parking.y),'player parking remains open');

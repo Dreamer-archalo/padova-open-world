@@ -64,7 +64,7 @@ export function createWorkshopYard(layout,scene,terrain,createPerson,site){
  }
  for(const o of [8,15]){const p=layout.surface(0,o);box(group,line,.08,.014,10,o*side,p.y-road.y+.08,0);}
  const arrow=layout.surface(0,width/2+1.8);box(group,line,.14,.02,1.8,(width/2+1.8)*side,arrow.y-road.y+.09,0);
- const signTexture=label(site.name),sign=new THREE.Mesh(new THREE.PlaneGeometry(5.8,1.45),new THREE.MeshBasicMaterial({map:signTexture,side:THREE.DoubleSide}));sign.position.set(19*side,floor+5.55,0);sign.rotation.y=side>0?Math.PI/2:-Math.PI/2;group.add(sign);group.userData.signTexture=signTexture;
+ const signTexture=label(site.name),sign=new THREE.Mesh(new THREE.PlaneGeometry(5.8,1.45),new THREE.MeshBasicMaterial({map:signTexture,side:THREE.DoubleSide}));sign.position.set(19*side,floor+5.55,0);sign.rotation.y=side>0?-Math.PI/2:Math.PI/2;group.add(sign);group.userData.signTexture=signTexture;
  const way=layout.surface(-8,width/2+3),roadside=new THREE.Mesh(new THREE.PlaneGeometry(3.1,.78),new THREE.MeshBasicMaterial({map:signTexture,side:THREE.DoubleSide}));roadside.position.set((width/2+3)*side,way.y-road.y+3.1,-8);roadside.rotation.y=sign.rotation.y;group.add(roadside);
  box(group,trim,.13,3,.13,(width/2+3)*side,way.y-road.y+1.5,-8);
  for(const a of [-5.2,5.2]){const p=layout.surface(a,25),y=p.y-road.y;
