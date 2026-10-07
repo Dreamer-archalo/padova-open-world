@@ -1,3 +1,4 @@
+import {createShowroomLife} from './dealer-showroom-life.js';
 import {SPECIAL_VEHICLES,createSpecialVehicle} from './special-vehicles.js';
 import * as THREE from './vendor/three.module.js';
 import {project,dist,pointInside,nearestOnSegment} from './core.js';
@@ -206,12 +207,11 @@ export class Dealerships{
  locate(site){return this.buildings.get(site.id)||null;}
  load(site,b){if(!b?.dealerSlots?.length)return;
   const structure=showroom(site,b),units=[];this.scene.add(structure);
-  const person=this.employees.get(site.id)||this.createPerson?.('#c5a682');if(person){this.employees.set(site.id,person);person.position.set(b.dealerDoor.inside.x,b.minY,b.dealerDoor.inside.z);person.rotation.y=Math.atan2(b.dealerDoor.outside.x-b.dealerDoor.inside.x,b.dealerDoor.outside.z-b.dealerDoor.inside.z);this.scene.add(person);}
   dealerDisplayLayout(b,this.stock(site)).forEach(({id,x,z,yaw},i)=>{const token=site.id+':'+i;if(this.consumed.has(token)||this.purchased.has(token))return;
    const car=this.addCar(x,z,yaw,false,true,id);Object.assign(car,{dealershipStock:token,dealerPrice:DEALER_CATALOG[id].price,dealerSite:site.id,fixedSpawn:true,missionUnit:true});car.mesh.visible=i<(profiles[this.state.quality]||4);this.pose(car);units.push(car);
-  });this.active.set(site.id,{site,at:{x:b.cx,z:b.cz},building:b,structure,person,units});
+  });const entry={site,at:{x:b.cx,z:b.cz},building:b,structure,units};entry.life=createShowroomLife(entry,this.createPerson,this.scene);entry.person=entry.life?.actors.find(a=>a.role==='staff')?.mesh||null;this.active.set(site.id,entry);
  }
- unload(entry){this.scene.remove(entry.structure);entry.structure.userData.signTexture.dispose();entry.structure.traverse(o=>{if(!o.isMesh)return;o.geometry.dispose();if(o.material!==floorMat&&o.material!==frameMat&&o.material!==windowMat)o.material.dispose();});if(entry.person)this.scene.remove(entry.person);
+ unload(entry){this.scene.remove(entry.structure);entry.structure.userData.signTexture.dispose();entry.structure.traverse(o=>{if(!o.isMesh)return;o.geometry.dispose();if(o.material!==floorMat&&o.material!==frameMat&&o.material!==windowMat)o.material.dispose();});entry.life?.dispose();
   for(const car of entry.units)if(car.dealershipStock){this.scene.remove(car.mesh);car.mesh.traverse(o=>{if(o.isMesh&&o.geometry?.attributes?.color){o.geometry.dispose();}});const j=this.cars.indexOf(car);if(j>=0)this.cars.splice(j,1);}this.active.delete(entry.site.id);
  }
  update(){if(!this.state.started)return;
@@ -221,8 +221,10 @@ export class Dealerships{
    else if(entry){const count=profiles[this.state.quality]||4;entry.units.filter(c=>c.dealershipStock).forEach((c,i)=>c.mesh.visible=i<count);}
   }
  }
+ animate(){for(const entry of this.active.values())entry.life?.animate(this.state.elapsed,this.state);}
  nearest(range=8){if(this.state.mode!=='foot')return null;let found=null,nearest=range;
   for(const entry of this.active.values()){const door=entry.building.dealerDoor,d=dist(door.outside,this.state);if(d<nearest){found={dealerSite:entry.site.id,employee:true};nearest=d;}
+   for(const a of entry.life?.actors||[]){const ad=dist(a,this.state);if(a.role==='staff'&&ad<nearest){found={dealerSite:entry.site.id,employee:true};nearest=ad;}}
    for(const car of entry.units){const cd=dist(car,this.state);if(car.dealershipStock&&car.mesh.visible&&cd<nearest){found=car;nearest=cd;}}}
   return found;
  }
@@ -238,6 +240,31 @@ export class Dealerships{
   this.state.money-=quote.amountDue;this.owned.add(id);this.builds.set(id,quote);this.persist();
   for(const car of this.cars.filter(c=>c.style===id&&c.requestedByPlayer))this.applyBuild(car,{...car.mesh.userData.dealerBuild,...quote});
   return quote;
+ }
+ deliveryPlan(site,id){
+  const entry=this.active.get(site.id),spec=VEHICLES[id];if(!entry?.building||!spec)return null;
+  const b=entry.building;if(spec.height>(b.h||4)+.05)return null;
+  const player={x:this.state.x,z:this.state.z},inside=(x,z,yaw)=>vehicleFootprint(x,z,yaw,spec.width+.65,spec.length+.65).every(p=>pointInside(...p,b.p));
+  const clear=(x,z,yaw,ignore=null)=>{const footprint=vehicleFootprint(x,z,yaw,spec.width+.6,spec.length+.6);return dist({x,z},player)>spec.width/2+1&&!this.cars.some(c=>c!==ignore&&(c.mesh.visible||c.dealershipStock)&&dist(c,{x,z})<spec.length+c.spec.length&&polygonsOverlap(footprint,vehicleFootprint(c.x,c.z,c.yaw,c.spec.width+.6,c.spec.length+.6)));};
+  const matching=entry.units.find(c=>c.style===id&&c.dealershipStock&&inside(c.x,c.z,c.yaw)&&clear(c.x,c.z,c.yaw,c));if(matching)return {entry,x:matching.x,z:matching.z,yaw:matching.yaw,reuse:matching};
+  const points=[...b.dealerSlots];for(let z=b.minZ+3;z<b.maxZ-3;z+=2.5)for(let x=b.minX+3;x<b.maxX-3;x+=2.5)points.push({x,z});points.sort((a,c)=>dist(a,b.dealerDoor.inside)-dist(c,b.dealerDoor.inside));
+  for(const p of points)for(const yaw of [0,Math.PI/2])if(inside(p.x,p.z,yaw)&&clear(p.x,p.z,yaw))return {entry,...p,yaw};
+  for(const c of entry.units.filter(c=>c.dealershipStock))for(const yaw of [c.yaw,Math.PI/2-c.yaw])if(inside(c.x,c.z,yaw)&&clear(c.x,c.z,yaw,c))return {entry,x:c.x,z:c.z,yaw,replace:c};
+  return null;
+ }
+ purchaseAndDeliver(site,id,options={}){
+  const existing=this.cars.find(c=>c.style===id&&c.requestedByPlayer&&c.health>0&&!c.permanentlyDestroyed&&!c.testingVehicle);
+  if(this.owned.has(id)&&(!existing||dist(existing,this.state)>50))return null;
+  const plan=existing?null:this.deliveryPlan(site,id);if(!existing&&!plan)return null;
+  const quote=this.purchase(site,id,options);if(!quote)return null;let car=existing;
+  if(plan){const {entry,replace,reuse}=plan;
+   if(replace){this.scene.remove(replace.mesh);this.forget?.(replace);replace.mesh.traverse(o=>{if(o.isMesh&&o.geometry?.attributes?.color)o.geometry.dispose();if(o.material?.userData.privateFinish)o.material.dispose();});const index=this.cars.indexOf(replace);if(index>=0)this.cars.splice(index,1);entry.units=entry.units.filter(c=>c!==replace);}
+   car=reuse||this.addCar(plan.x,plan.z,plan.yaw,false,true,id,quote);
+   if(reuse){this.purchased.add(car.dealershipStock);this.consumed.add(car.dealershipStock);this.applyBuild(car,quote);}
+   Object.assign(car,{dealershipStock:null,missionUnit:false,requestedByPlayer:true,fixedSpawn:true,parked:true,budgetSleeping:false,speed:0,x:plan.x,z:plan.z,y:entry.building.minY+.08,yaw:plan.yaw});car.mesh.visible=true;this.pose(car);car.y=entry.building.minY+.08;car.mesh.position.y=car.y;
+   if(!entry.units.includes(car))entry.units.push(car);this.garage?.register(car,'purchase');this.garage?.sync();this.persist();
+  }
+  this.active.get(site.id)?.life?.greet(car,this.state.elapsed);return {quote,car};
  }
  buy(car,options={}){if(!car?.dealershipStock)return false;const quote=dealerQuote(car.style,options);if(!quote||this.state.money<quote.total)return false;
   this.state.money-=quote.total;this.owned.add(car.style);this.builds.set(car.style,quote);this.purchased.add(car.dealershipStock);this.consumed.add(car.dealershipStock);this.persist();this.applyBuild(car,quote);car.dealershipStock=null;car.missionUnit=false;car.requestedByPlayer=true;return true;

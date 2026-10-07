@@ -41,7 +41,8 @@ for(const site of localSites){
  state.x=site.x+900;state.z=site.z+900;shops.update();assert(!shops.active.has(site.id));
 }
 const quote=dealerQuote('salone_6',{color:'#aa3442',speed:2,wheels:'bronze',interior:'premium',name:'La mia GT'});
-assert.equal(quote.total,DEALER_CATALOG.salone_6.price+220+2200+340+490+120);
+assert.equal(quote.total,DEALER_CATALOG.salone_6.price+220+2200+340+120);
+assert.equal(quote.interior,undefined,'Invisible interior is omitted and not charged');
 assert.equal(quote.max,VEHICLES.salone_6.max+12);
 state.x=localSites[0].x;state.z=localSites[0].z;shops.update();state.money=50000;
 const before=state.money,payable=shops.quote('salone_6',quote);assert(shops.purchase(localSites[0],'salone_6',quote));assert.equal(state.money,before-payable.amountDue,'New purchase or owned-car upgrade deducted once');assert.equal(shops.builds.get('salone_6').name,'La mia GT');

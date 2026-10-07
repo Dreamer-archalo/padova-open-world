@@ -16,6 +16,7 @@ export const DEALER_OPTIONS={
  cargo:{label:'Attrezzatura',values:[['standard','Di serie',0],['rails','Barre e scaletta',330],['toolbox','Cassette porta attrezzi',290]]}
 };
 export const WORKSHOP_OPTIONS={
+ protectionVisibility:{label:'Aspetto delle protezioni',section:'Sicurezza',values:[['visible','Visibili',0],['hidden','Invisibili · stessa vita e protezione',0]]},
  tune:{label:'Preparazione officina',section:'Prestazioni',values:[['standard','Di serie',0],['stage1','Stage 1 · +36 km/h',3500],['stage2','Stage 2 · +79 km/h',8000],['stage3','Stage 3 · +130 km/h',16000]]},
  frontGuard:{label:'Protezione anteriore',section:'Sicurezza',values:[['standard','Di serie',0],['reinforced','Traversa rinforzata · +35 vita',1200],['pushbar','Push bar · +75 vita',3200],['heavy','Push bar pesante · +120 vita',6500]]},
  rearGuard:{label:'Protezione posteriore',section:'Sicurezza',values:[['standard','Di serie',0],['reinforced','Paraurti rinforzato · +30 vita',1100],['heavy','Protezione pesante · +70 vita',3000]]},
@@ -32,7 +33,7 @@ Object.assign(DEALER_OPTIONS,{
  paintFinish:{label:'Finitura vernice',values:[['standard','Di serie',0],['metallic','Metallizzata',450],['pearl','Perlata',850],['matte','Opaca',650]]},
  chromeMirrors:{label:'Cromatura specchietti',values:CHROME_VALUES},chromeGrille:{label:'Finitura griglia',values:CHROME_VALUES},chromeExhaust:{label:'Cromatura scarico',values:CHROME_VALUES},
  grille:{label:'Disegno griglia anteriore',values:[['standard','Griglia originale',0],['classic','Listelli verticali',350],['mesh','Rete Sport',550]]},
- wheelDesign:{label:'Disegno cerchi',values:[['standard','Di serie',0],['mesh','Multirazza',450],['sport','Sport',650]]},
+ wheelDesign:{label:'Disegno cerchi',values:[['standard','Di serie',0],['mesh','Multirazza',450],['sport','Sport · 5 razze',650],['split','Doppie razze',750],['six','Sei razze',600],['turbine','Turbina',900],['dish','Canale profondo',1100],['aero','Disco Aero',850],['steel','Acciaio classico',300],['wire','Raggi vintage',1250],['rally','Rally · 4 razze',700]]},
  tyres:{label:'Pneumatici',values:[['standard','Stradali',0],['sport','Sportivi',650],['offroad','Fuoristrada',800]]},
  upholstery:{label:'Colore selleria',values:[['standard','Di serie',0],['tan','Cuoio',350],['red','Rosso',400],['cream','Avorio',450]]},
  steering:{label:'Volante',values:[['standard','Di serie',0],['sport','Sportivo',450]]},
@@ -46,8 +47,8 @@ export function protectionCapacity(build={}){
 }
 export function dealerCapabilities(spec,{workshop=false}={}){
  const bike=!!spec.bike||spec.width<1.15,work=['work','freight','van'].includes(spec.family)||['truck','ape','portavalori'].includes(spec.vehicleType),open=spec.family==='convertible'||['barchetta','mono','spider66'].includes(spec.shape);
- const keys=['wheels','wheelDesign','tyres','paintFinish','chromeMirrors','chromeExhaust',...(!bike?['grille','chromeGrille','steering']:['windscreen','saddlebags']),'upholstery',...(work?['cabVisor','auxiliaryLights']:[]),'livery',...(!bike&&!work&&!open?['roof']:[]),...(!bike&&!work?['bodykit']:[]),...(!work?['exhaust']:[]),'interior',...(!bike?['suspension']:[]),'brakes','response',...(work?['cargo']:[])];
- const all={...DEALER_OPTIONS,...WORKSHOP_OPTIONS};if(workshop)keys.push('tune','frontGuard','rearGuard','tyreGuard','chassis',...(!bike?['safetyGlass','skirts','bumper','spoiler','arches']:[]));
+ const keys=['wheels','wheelDesign','tyres','paintFinish','chromeMirrors','chromeExhaust',...(!bike?['grille','chromeGrille',...(open?['steering']:[])]:['windscreen','saddlebags']),...(bike||open?['upholstery','interior']:[]),...(work?['cabVisor','auxiliaryLights']:[]),'livery',...(!bike&&!work&&!open?['roof']:[]),...(!bike&&!work?['bodykit']:[]),...(!work?['exhaust']:[]),...(!bike?['suspension']:[]),'brakes','response',...(work?['cargo']:[])];
+ const all={...DEALER_OPTIONS,...WORKSHOP_OPTIONS};if(workshop)keys.push('tune','frontGuard','rearGuard','tyreGuard','chassis','protectionVisibility',...(!bike?['safetyGlass','skirts','bumper','spoiler','arches']:[]));
  return Object.fromEntries(keys.map(key=>{let values=all[key].values;if(key==='bodykit'&&!workshop)values=values.filter(v=>v[0]!=='sport');if(key==='tyres'&&!['suv','pickup','work','freight'].includes(spec.family)&&!bike)values=values.filter(v=>v[0]!=='offroad');if(key==='livery'&&open)values=values.filter(v=>v[0]!=='two-tone');if(key==='livery'&&(bike||work))values=values.filter(v=>['plain','coach-stripe'].includes(v[0]));if(key==='cargo'&&['cisterna','betoniera','soccorso'].includes(spec.vehicleType))values=values.filter(v=>v[0]!=='rails');if(key==='suspension'&&!['suv','pickup','work','freight','van'].includes(spec.family)&&!['safari','sixwheel'].includes(spec.shape))values=values.filter(v=>v[0]!=='raised');return [key,{...all[key],values}];}));
 }
 export function normalizeDealerOptions(spec,options={},workshop=true){
@@ -121,16 +122,18 @@ function applyExtraEquipment(g,s,b){
  const w=s.width,l=s.length,h=s.height,bike=!!s.bike||w<1.15,work=['work','freight','van'].includes(s.family)||l>7,c={polished:'#dbe4e8',satin:'#9ca9ad',black:'#28333b',bronze:'#aa8555'};
  applyWheelDesign(g,b);applyMountedTrim(g,s,b);
  if(b.tyres==='offroad')for(const side of bike?[0]:[-1,1])for(const z of [-s.wheelbase/2,s.wheelbase/2])for(let n=0;n<14;n++){const a=n*Math.PI*2/14,o=box(g,'trim','#263039',side*(bike?0:w*.46),.34+Math.sin(a)*.32,z+Math.cos(a)*.32,bike?.13:.20,.065,.05);o.rotation.x=-a;}
- if(b.upholstery!=='standard'&&!recolorOptionPart(g,5,{tan:'#a76e49',red:'#8e3540',cream:'#e3d3b7'}[b.upholstery]))for(const side of bike?[0]:[-1,1])box(g,'trim',{tan:'#a76e49',red:'#8e3540',cream:'#e3d3b7'}[b.upholstery],side*w*.20,bike?(g.userData.riderSeat?.y||.88)+.04:h*.53,work?l*.5-1.50:-l*.07,bike?w*.44:w*.22,.055,l*.16);
+ if(b.upholstery&&b.upholstery!=='standard'&&!recolorOptionPart(g,5,{tan:'#a76e49',red:'#8e3540',cream:'#e3d3b7'}[b.upholstery]))for(const side of bike?[0]:[-1,1])box(g,'trim',{tan:'#a76e49',red:'#8e3540',cream:'#e3d3b7'}[b.upholstery],side*w*.20,bike?(g.userData.riderSeat?.y||.88)+.04:h*.53,work?l*.5-1.50:-l*.07,bike?w*.44:w*.22,.055,l*.16);
  if(b.steering==='sport'){const o=add(g,new THREE.TorusGeometry(.13,.023,6,12),'trim','#35424b',-w*.20,h*.65,l*.06,1,1,1);o.rotation.x=-.45;}
  if(b.windscreen&&b.windscreen!=='standard'){const o=box(g,'glass','#517784',0,h*.86,l*.19,w*.50,b.windscreen==='touring'?.35:.20,.025);o.rotation.x=-.2;}
  if(b.saddlebags&&b.saddlebags!=='standard')for(const side of [-1,1])box(g,b.saddlebags==='hard'?'paint':'trim','#3d4f55',side*w*.35,h*.51,-l*.23,w*.20,.25,l*.20);
  if(b.cabVisor==='touring')box(g,'trim','#35444c',0,h*.91,l*.36,w*.77,.055,.22);
  if(b.auxiliaryLights==='pair')for(const side of [-1,1])box(g,'alloy','#fff0c8',side*w*.24,h*.8,l*.43,.15,.11,.07);
+ if(b.protectionVisibility!=='hidden'){
  const guard=(value,front)=>{if(value==='standard'||!value)return;const z=(front?1:-1)*l*.49,y=h*(work?.28:.30),heavy=['pushbar','heavy'].includes(value),width=w*(bike?.45:.77);box(g,'alloy','#43515a',0,y,z,width,heavy?.11:.07,.075);if(heavy){box(g,'alloy','#43515a',0,y+.26,z,width*.75,.075,.075);for(const side of [-1,1])box(g,'alloy','#43515a',side*width*.30,y+.13,z,.065,.38,.07);}};guard(b.frontGuard,true);guard(b.rearGuard,false);
  if(b.chassis&&b.chassis!=='standard')for(const side of [-1,1])box(g,'alloy','#52616b',side*w*.455,.38,0,.065,b.chassis==='armored'?.20:.08,l*.65);
  if(b.tyreGuard&&b.tyreGuard!=='standard')for(const side of bike?[0]:[-1,1])for(const z of [-s.wheelbase/2,s.wheelbase/2])box(g,'alloy','#65767e',side*(bike?.11:w*.465),.35,z,.02,.18,.18);
  if(b.safetyGlass&&b.safetyGlass!=='standard')for(const side of [-1,1])box(g,'alloy','#687b84',side*w*.37,h*.78,0,.018,.025,l*.32);
+ }
  if(b.skirts&&b.skirts!=='standard')for(const side of [-1,1])box(g,'trim','#35414a',side*w*.45,.28,0,b.skirts==='wide'?.09:.04,.075,l*.66);
  if(b.bumper&&b.bumper!=='standard')for(const sign of [-1,1]){box(g,'trim','#36464e',0,.30,sign*l*.483,w*.75,b.bumper==='sport'?.14:.07,.075);if(b.bumper==='sport')for(const side of [-1,1])box(g,'trim','#1d262e',side*w*.24,.39,sign*l*.49,w*.17,.06,.023);}
  if(b.spoiler&&b.spoiler!=='standard'){const z=-l*.40,deck=coachSurface(g,[0,h+1,z],[0,-1,0])?.y||h*.50,y=deck+(b.spoiler==='wing'?.19:.04);box(g,'trim','#35444d',0,y,z,w*.78,.05,.14);if(b.spoiler==='wing')for(const side of [-1,1])box(g,'alloy','#7d8d96',side*w*.25,(deck+y)/2,z,.035,y-deck,.07);}
