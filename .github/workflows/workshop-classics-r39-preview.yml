@@ -68,6 +68,7 @@ jobs:
           npm run test:boats-collisions
 
       - name: Chromium visual review
+        if: ${{ !cancelled() }}
         run: |
           npm install --no-save playwright@1.55.1
           npx playwright install --with-deps chromium

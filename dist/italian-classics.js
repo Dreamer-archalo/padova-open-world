@@ -25,7 +25,7 @@ export function createItalianClassic(id,s,color=s.color,finish='standard'){
   return [[-half*.94,.20,t*l],[-half,low,t*l],[-half,top-.10,t*l],[-half*.85,top+.01,t*l],[-halfCockpit,top+crown,t*l],[-halfCockpit,floor,t*l],[halfCockpit,floor,t*l],[halfCockpit,top+crown,t*l],[half*.85,top+.01,t*l],[half,top-.10,t*l],[half,low,t*l],[half*.94,.20,t*l]];
  });
  for(let i=1;i<rings.length;i++)for(let j=0;j<12;j++){const k=(j+1)%12;poly('paint',color,[rings[i-1][j],rings[i][j],rings[i][k],rings[i-1][k]]);}
- poly('paint',color,[...rings[0]].reverse());poly('paint',color,rings.at(-1));
+ poly('paint',color,rings[0]);poly('paint',color,[...rings.at(-1)].reverse());
  const seatY=.53,seatZ=-l*.095;
  for(const side of [-1,1]){box('trim','#24272a',side*w*.19,seatY,seatZ,w*.25,.11,.43);const back=box('trim','#24272a',side*w*.19,.72,seatZ-.20,w*.25,.40,.10);back.rotation.x=-.14;for(let i=-3;i<=3;i++)box('trim','#41403b',side*w*.19+i*.038,.73,seatZ-.143,.012,.30,.012);}
  box('trim','#24292d',0,.70,l*(cockpitFront-.012),w*.61,.12,.10);
