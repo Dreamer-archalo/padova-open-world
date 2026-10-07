@@ -85,7 +85,8 @@ try{
  console.log('AIRCRAFT_DELIVERED '+JSON.stringify(flight));
  assert(flight.style==='libellula'&&flight.staged===null&&flight.fromVilla<160&&flight.heightOverRoof>5&&flight.retainedBike&&!flight.paused,'aircraft must launch above the hangar without deleting departed vehicles');
  phase='restore purchased MiTo without promoting it to a testing vehicle';
- await page.evaluate(()=>{const g=globalThis.__hangarTest,token='browser-purchased-mito';g.state.car.parked=true;Object.assign(g.state,{mode:'foot',car:null,speed:0,health:100,paused:false});g.vehicleGarage.records.set(token,{token,style:'mito',health:37,build:null,everStored:true,status:'stored',source:'purchase'});g.vehicleGarage.persist();});
+ await page.evaluate(async()=>{const g=globalThis.__hangarTest,token='browser-purchased-mito',{VILLA,areaPoint}=await import('./gameplay-areas.js'),p=areaPoint(VILLA,18,25);g.state.car.parked=true;Object.assign(g.state,{mode:'foot',car:null,x:p.x,z:p.z,y:g.terrain.height(p.x,p.z),vy:0,speed:0,health:100,paused:false,freefall:false,parachuting:false});g.vehicleGarage.records.set(token,{token,style:'mito',health:37,build:null,everStored:true,status:'stored',source:'purchase'});g.vehicleGarage.persist();});
+ await page.waitForFunction(()=>!document.getElementById('mandriaHangarButton').hidden,null,{timeout:15000});
  await page.locator('#mandriaHangarButton').click();await enterSection('land');await page.locator('#hangarSearch').fill('mito');await page.locator('[data-hangar-id="mito"]').first().click();
  await page.waitForFunction(()=>globalThis.__hangarTest?.mandriaHangar?.staged?.garageToken==='browser-purchased-mito'&&!globalThis.__hangarTest.mandriaHangar.busy,null,{timeout:30000});
  const restored=await page.evaluate(()=>{const c=globalThis.__hangarTest.mandriaHangar.staged;return {health:c.health,testing:c.testingVehicle};});
