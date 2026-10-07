@@ -122,7 +122,7 @@ function cabin(g,s,p,paint,finish){
  const points=[[p[0],b+.02,w*.405],[p[1],h-.065,w*.345],[p[2],h-.075,w*.343],[p[3],b+.035,w*.397]];
  if(open){
   box(g,'trim','#283033',0,b-.045,-.15,w*.67,.07,l*.23);
-  for(const side of [-1,1]){box(g,'trim','#a28b6d',side*w*.20,b+.15,-.15,w*.23,.35,.16);box(g,'trim','#a28b6d',side*w*.20,b+.015,.00,w*.23,.10,.35);}
+  for(const side of [-1,1]){box(g,'trim','#a28b6d',side*w*.20,b+.15,-.15,w*.23,.35,.16).userData.optionPart=5;box(g,'trim','#a28b6d',side*w*.20,b+.015,.00,w*.23,.10,.35).userData.optionPart=5;}
  }else{
   const a=points[1],c=points[2];polygon(g,finish.roof?'trim':'paint',finish.roof||paint,[[-a[2],a[1],a[0]*l],[-c[2],c[1],c[0]*l],[c[2],c[1],c[0]*l],[a[2],a[1],a[0]*l]]);
   for(const side of [-1,1])for(let i=0;i<3;i++){

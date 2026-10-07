@@ -1,5 +1,5 @@
 import * as THREE from './vendor/three.module.js';
-import {applyWheelDesign,applyMountedTrim} from './vehicle-option-geometry.js';
+import {applyWheelDesign,applyMountedTrim,recolorOptionPart} from './vehicle-option-geometry.js';
 import {coachMaterial,compactCoachwork,coachSurface} from './car-coachwork.js';
 
 // A single catalogue drives compatibility, prices, saved builds and the UI.
@@ -48,7 +48,7 @@ export function dealerCapabilities(spec,{workshop=false}={}){
  const bike=!!spec.bike||spec.width<1.15,work=['work','freight','van'].includes(spec.family)||['truck','ape','portavalori'].includes(spec.vehicleType),open=spec.family==='convertible'||['barchetta','mono','spider66'].includes(spec.shape);
  const keys=['wheels','wheelDesign','tyres','paintFinish','chromeMirrors','chromeExhaust',...(!bike?['grille','chromeGrille','steering']:['windscreen','saddlebags']),'upholstery',...(work?['cabVisor','auxiliaryLights']:[]),'livery',...(!bike&&!work&&!open?['roof']:[]),...(!bike&&!work?['bodykit']:[]),...(!work?['exhaust']:[]),'interior',...(!bike?['suspension']:[]),'brakes','response',...(work?['cargo']:[])];
  const all={...DEALER_OPTIONS,...WORKSHOP_OPTIONS};if(workshop)keys.push('tune','frontGuard','rearGuard','tyreGuard','chassis',...(!bike?['safetyGlass','skirts','bumper','spoiler','arches']:[]));
- return Object.fromEntries(keys.map(key=>{let values=all[key].values;if(key==='bodykit'&&!workshop)values=values.filter(v=>v[0]!=='sport');if(key==='tyres'&&!['suv','pickup','work','freight'].includes(spec.family)&&!bike)values=values.filter(v=>v[0]!=='offroad');if(key==='livery'&&(bike||work))values=values.filter(v=>['plain','coach-stripe'].includes(v[0]));if(key==='cargo'&&['cisterna','betoniera','soccorso'].includes(spec.vehicleType))values=values.filter(v=>v[0]!=='rails');if(key==='suspension'&&!['suv','pickup','work','freight','van'].includes(spec.family)&&!['safari','sixwheel'].includes(spec.shape))values=values.filter(v=>v[0]!=='raised');return [key,{...all[key],values}];}));
+ return Object.fromEntries(keys.map(key=>{let values=all[key].values;if(key==='bodykit'&&!workshop)values=values.filter(v=>v[0]!=='sport');if(key==='tyres'&&!['suv','pickup','work','freight'].includes(spec.family)&&!bike)values=values.filter(v=>v[0]!=='offroad');if(key==='livery'&&open)values=values.filter(v=>v[0]!=='two-tone');if(key==='livery'&&(bike||work))values=values.filter(v=>['plain','coach-stripe'].includes(v[0]));if(key==='cargo'&&['cisterna','betoniera','soccorso'].includes(spec.vehicleType))values=values.filter(v=>v[0]!=='rails');if(key==='suspension'&&!['suv','pickup','work','freight','van'].includes(spec.family)&&!['safari','sixwheel'].includes(spec.shape))values=values.filter(v=>v[0]!=='raised');return [key,{...all[key],values}];}));
 }
 export function normalizeDealerOptions(spec,options={},workshop=true){
  const definitions=dealerCapabilities(spec,{workshop}),selected={},prices={};
@@ -92,7 +92,7 @@ export function applyDealerUpgrades(root,s,build={}){
   box(root,'trim','#303a41',0,wing,-l*.41,w*.82,.056,.19);
   for(const side of [-1,1]){const mount=coachSurface(root,[side*w*.30,h+1,-l*.41],[0,-1,0])?.y||deck;box(root,'alloy','#6e7e87',side*w*.30,(mount+wing)/2,-l*.41,.025,wing-mount,.035);}
  }
- if(selected.interior==='premium'){
+ if(selected.interior==='premium'&&!recolorOptionPart(root,5,'#9b6746')){
   // Open cars and motorcycles visibly show their upholstery. Closed cars keep
   // real seat geometry inside the cabin, with the same finish when viewed close.
   const seatZ=ape?.61:work?l*.5-1.50:-l*.07,seatLength=work?.45:l*.13;
@@ -121,7 +121,7 @@ function applyExtraEquipment(g,s,b){
  const w=s.width,l=s.length,h=s.height,bike=!!s.bike||w<1.15,work=['work','freight','van'].includes(s.family)||l>7,c={polished:'#dbe4e8',satin:'#9ca9ad',black:'#28333b',bronze:'#aa8555'};
  applyWheelDesign(g,b);applyMountedTrim(g,s,b);
  if(b.tyres==='offroad')for(const side of bike?[0]:[-1,1])for(const z of [-s.wheelbase/2,s.wheelbase/2])for(let n=0;n<14;n++){const a=n*Math.PI*2/14,o=box(g,'trim','#263039',side*(bike?0:w*.46),.34+Math.sin(a)*.32,z+Math.cos(a)*.32,bike?.13:.20,.065,.05);o.rotation.x=-a;}
- if(b.upholstery!=='standard')for(const side of bike?[0]:[-1,1])box(g,'trim',{tan:'#a76e49',red:'#8e3540',cream:'#e3d3b7'}[b.upholstery],side*w*.20,bike?(g.userData.riderSeat?.y||.88)+.04:h*.53,work?l*.5-1.50:-l*.07,bike?w*.44:w*.22,.055,l*.16);
+ if(b.upholstery!=='standard'&&!recolorOptionPart(g,5,{tan:'#a76e49',red:'#8e3540',cream:'#e3d3b7'}[b.upholstery]))for(const side of bike?[0]:[-1,1])box(g,'trim',{tan:'#a76e49',red:'#8e3540',cream:'#e3d3b7'}[b.upholstery],side*w*.20,bike?(g.userData.riderSeat?.y||.88)+.04:h*.53,work?l*.5-1.50:-l*.07,bike?w*.44:w*.22,.055,l*.16);
  if(b.steering==='sport'){const o=add(g,new THREE.TorusGeometry(.13,.023,6,12),'trim','#35424b',-w*.20,h*.65,l*.06,1,1,1);o.rotation.x=-.45;}
  if(b.windscreen&&b.windscreen!=='standard'){const o=box(g,'glass','#517784',0,h*.86,l*.19,w*.50,b.windscreen==='touring'?.35:.20,.025);o.rotation.x=-.2;}
  if(b.saddlebags&&b.saddlebags!=='standard')for(const side of [-1,1])box(g,b.saddlebags==='hard'?'paint':'trim','#3d4f55',side*w*.35,h*.51,-l*.23,w*.20,.25,l*.20);

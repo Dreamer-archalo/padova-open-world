@@ -86,7 +86,7 @@ function bike(g,id,s,c,finish){
   loft(g,base+'/tail','paint',c,[[rear-.10,w*.18,seat-.17,seat-.06],[rear+.16,w*.45,seat-.12,seat+.10],[-.18,w*.40,seat-.09,seat+.04]]);
   bulb(g,'paint',c,0,r+.21,front,w*.18,.055,offroad?.29:.20);
  }
- bulb(g,'trim','#272e32',0,seat,-.32,w*.27,.057,l*.18,false);
+ bulb(g,'trim','#272e32',0,seat,-.32,w*.27,.057,l*.18,false).userData.optionPart=5;
  const barY=scooter?1.12:classic?1.09:offroad?1.21:sport?1.00:1.13,barZ=front-.16;
  rod(g,'alloy',metal,[-w*.39,barY,barZ],[w*.39,barY,barZ],.022);
  for(const side of [-1,1]){box(g,'trim',rubber,side*w*.40,barY,barZ,.13,.038,.048,false);rod(g,'alloy',metal,[side*w*.34,barY,barZ],[side*w*.37,barY+.13,barZ-.05],.012);bulb(g,'glass',glass,side*w*.37,barY+.14,barZ-.06,.062,.035,.024,false);bulb(g,'alloy',metal,side*w*.37,barY+.14,barZ-.045,.063,.036,.016,false).userData.optionPart=2;}
@@ -230,6 +230,7 @@ export function createRoadFleet(id,s,paint=null,requested=null){
  else if(id==='ape')ape(g,s,color,finish);
  else if(id==='tank')tank(g,s,color);
  else commercial(g,id,s,color,finish);
+ if(id==='ape'){const at=coachSurface(g,[0,.61,s.length],[0,0,-1]);if(at)box(g,'alloy',metal,0,.61,at.z+.014,s.width*.30,.030,.016,false).userData.optionPart=3;}
  // The turret stays independently movable; all other surfaces fit four draws.
  const moving=g.userData.turret;if(moving)g.remove(moving);compactCoachwork(g);if(moving)g.add(moving);
  return g;

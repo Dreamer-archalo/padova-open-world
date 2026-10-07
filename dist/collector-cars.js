@@ -47,7 +47,7 @@ function model(id,finish='standard'){
    const i=indices?indices[j]:j;v.fromBufferAttribute(g.attributes.position,i).applyMatrix4(matrix);
    normal.fromBufferAttribute(g.attributes.normal,i).applyMatrix3(nm).normalize();
    p.push(v.x,v.y,v.z);n.push(normal.x,normal.y,normal.z);colors.push(col.r,col.g,col.b);paint.push(paintable?1:0);parts.push(optionPart);uv.push(g.attributes.uv?.getX(i)||v.x,g.attributes.uv?.getY(i)||v.z);
-   buckets.push(paintable?'paint':optionPart?'alloy':(/^#(?:26|21|29|33|46|2d|24|3b)/.test(color)||['#fff0ca','#e3f5ed','#ffefd1','#da414d'].includes(color))?'glass':col.r+col.g+col.b>.50?'alloy':'trim');
+   buckets.push(paintable?'paint':optionPart===5?'trim':optionPart?'alloy':(/^#(?:26|21|29|33|46|2d|24|3b)/.test(color)||['#fff0ca','#e3f5ed','#ffefd1','#da414d'].includes(color))?'glass':col.r+col.g+col.b>.50?'alloy':'trim');
   }
  }
  function part(g,color,x,y,z,sx,sy,sz,rx=0,ry=0,rz=0,paintable=false){
@@ -122,7 +122,7 @@ function model(id,finish='standard'){
   box('#222b33',0,h-.12,-l*.43,w*.9,.08,.26);for(const side of [-1,1])box('#414c56',side*w*.26,(h-.12+.85)/2,-l*.43,.045,h-.12-.85,.09);wheels(.33);lamps(.75);break;
  case 'barchetta':
   round(C,0,.51,0,w*.48,.33,l*.49,true);box('#252b30',0,.80,-.22,w*.68,.04,l*.43);
-  for(const side of [-1,1]){box(A,side*w*.2,.91,-.25,.36,.28,.42);round(C,side*w*.19,.83,-l*.26,w*.2,.19,.52,true);}
+  for(const side of [-1,1]){optionPart=5;box(A,side*w*.2,.91,-.25,.36,.28,.42);optionPart=0;round(C,side*w*.19,.83,-l*.26,w*.2,.19,.52,true);}
   box('#466779',0,1.01,l*.12,w*.65,.31,.035,false,.28);box(A,0,.74,l*.34,.25,.045,l*.21);wheels(.30);lamps(.61,true);break;
  case 'sixwheel':
   shell(C,[[-l*.46,w*.40,.59,.57],[-l*.38,w*.43,.59,.63],[l*.34,w*.43,.59,.58],[l*.46,w*.35,.65,.43]]);box('#334d60',0,1.44,l*.18,w*.70,.56,l*.30);box(C,0,1.80,l*.18,w*.74,.14,l*.3,true);
@@ -160,6 +160,8 @@ function model(id,finish='standard'){
  // Place the original mirror housings against the authored side bodywork.
  const mirrorGeo=new THREE.BufferGeometry(),bodyVertices=[];for(let i=0;i<paint.length;i+=3)if(paint[i]&&paint[i+1]&&paint[i+2])bodyVertices.push(...p.slice(i*3,i*3+9));mirrorGeo.setAttribute('position',new THREE.Float32BufferAttribute(bodyVertices,3));const mirrorMat=new THREE.MeshBasicMaterial({side:THREE.DoubleSide}),mirrorBody=new THREE.Mesh(mirrorGeo,mirrorMat);mirrorBody.updateMatrixWorld(true);
  for(const side of [-1,1]){const ray=new THREE.Raycaster();let hit=null;for(let y=h*.64;y>.5&&!hit;y-=.04){ray.set(new THREE.Vector3(side*w,y,l*.1),new THREE.Vector3(-side,0,0));hit=ray.intersectObject(mirrorBody,false)[0];}if(hit){const x=hit.point.x+side*.035,y=hit.point.y+.055;optionPart=2;box('#aeb9bd',x,y-.030,l*.1,.023,.060,.020);round('#aeb9bd',x+side*.025,y,l*.1,.050,.031,.062);optionPart=0;box('#263f50',x+side*.025,y,l*.1-.048,.07,.045,.012);}}
+ // A small original grille gives every compatible collector a real finish target.
+ const grilleRay=new THREE.Raycaster(new THREE.Vector3(0,Math.min(.58,h*.46),l),new THREE.Vector3(0,0,-1)),grilleHit=grilleRay.intersectObject(mirrorBody,false)[0];if(grilleHit){optionPart=3;box('#aeb9bd',0,grilleHit.point.y,grilleHit.point.z+.013,w*.30,.018,.015);for(const x of [-w*.08,0,w*.08])box('#aeb9bd',x,grilleHit.point.y,grilleHit.point.z+.013,.014,.08,.015);optionPart=0;}
  mirrorGeo.dispose();mirrorMat.dispose();
  const geometryOut=new THREE.BufferGeometry();geometryOut.setAttribute('position',new THREE.Float32BufferAttribute(p,3));geometryOut.setAttribute('normal',new THREE.Float32BufferAttribute(n,3));geometryOut.setAttribute('color',new THREE.Float32BufferAttribute(colors,3));geometryOut.setAttribute('collectorPaint',new THREE.Float32BufferAttribute(paint,1));
  geometryOut.computeBoundingBox();
