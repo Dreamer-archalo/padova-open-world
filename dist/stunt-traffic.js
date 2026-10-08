@@ -1,5 +1,6 @@
 import {markVehicleWreck} from './vehicle-damage.js';
 import {clamp,dist,angleDiff} from './core.js';
+import {TRUCK_RAMP} from './truck-ramp.js';
 
 export function updateWheelie(car,held,dt){
  const allowed=(car.spec.bike||car.spec.family==='motorcycle'||['scooter','motorcycle'].includes(car.style))&&
@@ -15,15 +16,19 @@ export function wheeliePose(car){
 }
 export function mobileRamp(car){
  if(!car.spec.rampTruck||!car.mesh?.visible||car.health<=0)return null;
- const length=5.2,centre=-1.0,base=car.y||0;
+ const {width,rear,front,low,high}=TRUCK_RAMP,length=front-rear,centre=(front+rear)/2,base=car.y||0;
  return {kind:'mobile-ramp',car,x:car.x+Math.sin(car.yaw)*centre,z:car.z+Math.cos(car.yaw)*centre,
-  yaw:car.yaw,width:2.24,length,topY:[base+.12,base+.12,base+3.05,base+3.05]};
+  yaw:car.yaw,width,length,topY:[base+low,base+low,base+high,base+high]};
 }
 export function onTruckRamp(actor,truck){
  const r=mobileRamp(truck);if(!r)return false;
  const dx=actor.x-r.x,dz=actor.z-r.z,u=dx*Math.cos(r.yaw)-dz*Math.sin(r.yaw),v=dx*Math.sin(r.yaw)+dz*Math.cos(r.yaw);
- return Math.abs(u)<r.width/2-.08&&v>=-r.length/2-.6&&v<=r.length/2+.1&&
-  Math.abs(angleDiff(actor.yaw,r.yaw))<.55&&actor.y>=r.topY[0]-.25;
+ const halfLength=(actor.spec||actor.car?.spec)?.length/2||2.2;
+ const deck=r.topY[0]+(r.topY[2]-r.topY[0])*clamp(v/r.length+.5,0,1);
+ // The nose meets the rear before the car's centre reaches the deck. Keep
+ // that approach open, then also let an airborne car clear the cab at the lip.
+ return Math.abs(u)<r.width/2-.15&&v>=-r.length/2-halfLength-.3&&v<=r.length/2+halfLength+.3&&
+  (actor.speed??0)>=0&&Math.abs(angleDiff(actor.yaw,r.yaw))<.6&&actor.y>=deck-.4;
 }
 export function fuelImpact(a,b){
  if(!a?.spec||!b?.spec||!(a.spec.fuelTank||b.spec.fuelTank)||a.health<=0||b.health<=0)return null;

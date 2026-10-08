@@ -18,6 +18,7 @@ export function commandSet(state,water={}){
   name=race?'Gara':spec.watercraft||spec.boat?'Barca':spec.tracked?'Carro armato':/motorcycle|scooter|bike/.test(car.style)?'Moto':'Auto';
   add('W / S','Accelera / retro');add('A / D','Sterza');add('SPAZIO','Frena');
   add('SHIFT',race?'Turbo gara':'Boost');add('H','Clacson');
+  if(!spec.watercraft&&!spec.boat)add('9','Salto 50 m · atterraggio −1 vita');
   if(spec.tracked)add('TAB','Cannone');
   else if(car.style==='cinquecento'&&!race)add('TAB','Turbo · max 6 s');
   if(!race){add('E',water.vehicle?'Esci e nuota':'Scendi');if(!spec.watercraft&&!spec.boat)add('K','Cruise control');}

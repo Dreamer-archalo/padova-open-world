@@ -1,5 +1,6 @@
 import * as THREE from './vendor/three.module.js';
 import {coachMaterial,compactCoachwork,createCoachwork,coachSurface} from './car-coachwork.js';
+import {TRUCK_RAMP} from './truck-ramp.js';
 
 // All dimensions remain inside the existing handling/collision footprint.
 // +Z is forward. The wheel, chassis and cabin are built independently: a bike
@@ -147,9 +148,15 @@ function commercial(g,id,s,c,finish){
   for(const z of [-1.65,.02])box(g,'alloy','#74858a',0,1.0,z,w*.64,.30,.19,false);
   rod(g,'alloy','#a2aca7',[0,1.1,rear+.1],[0,1.65,rear+.88],.20);
  }else if(id==='camionrampa'){
-  // These four vertices match the established drivable ramp surface exactly.
-  panel(g,'alloy','#637b89',[[-1.12,.12,-3.6],[-1.12,3.05,1.6],[1.12,3.05,1.6],[1.12,.12,-3.6]],false);
-  for(const side of [-1,1])rod(g,'trim','#d6b956',[side*.91,.16,-3.6],[side*.91,3.09,1.6],.025);
+  const {width,rear,front,low,high}=TRUCK_RAMP,half=width/2;
+  panel(g,'alloy','#637b89',[[-half,low,rear],[-half,high,front],[half,high,front],[half,low,rear]],false);
+  for(const side of [-1,1]){
+   rod(g,'trim','#edc44c',[side*(half-.05),low+.035,rear],[side*(half-.05),high+.035,front],.035);
+   panel(g,'trim','#36434c',[[side*half,low,rear],[side*half,high,front],[side*half,.58,front]],false);
+   for(let i=0;i<9;i++){const z=rear+.35+i*.57,y=low+(high-low)*(z-rear)/(front-rear);rod(g,'alloy','#edc44c',[side*(half-.24),y+.025,z],[side*(half-.06),y+.065,z+.07],.024);}
+   box(g,'glass','#f09f39',side*(half-.06),low+.08,rear+.08,.09,.065,.09,false);
+  }
+  for(const z of [-2.6,-1.0,.6]){const y=low+(high-low)*(z-rear)/(front-rear)+.025;for(const side of [-1,1])rod(g,'alloy','#edf0da',[side*.42,y-.18,z-.33],[0,y+.18,z+.33],.038);}
  }else if(id==='soccorso'){
   bed(g,id,w,.85,1.01,rear,cargoFront,'#707f86');
   rod(g,'paint',c,[0,1.05,rear+.85],[0,2.3,rear+1.15],.13);

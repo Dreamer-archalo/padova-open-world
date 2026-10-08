@@ -56,6 +56,8 @@ jobs:
           node tools/verify-workshop-ownership-r37.mjs
           node tools/verify-workshop-classics-r39.mjs
           node tools/verify-map-home-services-r41.mjs
+          node tools/verify-truck-jumps-r41.mjs
+          node verify-vehicle-jumps.mjs
           node --max-old-space-size=3072 tools/verify-workshop-yards-r38.mjs
           npm test
           node verify-dealerships.mjs
@@ -125,7 +127,11 @@ jobs:
                curl --fail --silent --show-error --location "$base/home-vehicle-services.js" -o /tmp/r41-home.js &&
                cmp -s dist/home-vehicle-services.js /tmp/r41-home.js &&
                curl --fail --silent --show-error --location "$base/game.js" -o /tmp/r41-game.js &&
-               cmp -s dist/game.js /tmp/r41-game.js; then
+               cmp -s dist/game.js /tmp/r41-game.js &&
+               curl --fail --silent --show-error --location "$base/vehicle-dynamics.js" -o /tmp/r41-dynamics.js &&
+               cmp -s dist/vehicle-dynamics.js /tmp/r41-dynamics.js &&
+               curl --fail --silent --show-error --location "$base/truck-ramp.js" -o /tmp/r41-ramp.js &&
+               cmp -s dist/truck-ramp.js /tmp/r41-ramp.js; then
               exit 0
             fi
             sleep 5

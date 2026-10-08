@@ -53,6 +53,7 @@
     "test:workshop-dealer": "node tools/verify-workshop-dealer-r40.mjs",
     "test:workshop-classics": "node tools/verify-workshop-classics-r39.mjs",
     "test:workshops": "node tools/verify-workshop-ownership-r37.mjs",
-    "test:map-home-services": "node tools/verify-map-home-services-r41.mjs"
+    "test:map-home-services": "node tools/verify-map-home-services-r41.mjs",
+    "test:truck-jumps": "node tools/verify-truck-jumps-r41.mjs"
   }
 }
