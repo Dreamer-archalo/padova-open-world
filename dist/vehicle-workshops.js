@@ -26,7 +26,7 @@ export function workshopQuote(car,options={}){
  const spec=dealerBuildSpec(VEHICLES[car.style],build);return {...build,amountDue,effectiveMax:spec.max,capacity:protectionCapacity(build),definitions};
 }
 export class VehicleWorkshops{
- constructor(env){Object.assign(this,env);this.active=new Map();this.prompt=null;}
+ constructor(env){Object.assign(this,env);this.active=new Map();this.mapAccess=new Map();this.prompt=null;}
  update(){if(!this.state.started||typeof document==='undefined')return;
   for(const site of WORKSHOP_SITES){
    const existing=this.active.get(site.id);if(existing){existing.visible=dist(existing.at,this.state)<440;if(existing.display?.workshopDisplay&&!existing.display.permanentlyDestroyed)existing.display.mesh.visible=existing.visible;continue;}
@@ -43,7 +43,7 @@ export class VehicleWorkshops{
   this.prompt.hidden=!near||this.state.paused;this.prompt.textContent=near?'E · '+near.site.name+' · modifica / ripara':'';
  }
  animate(){for(const entry of this.active.values())animateWorkshopYard(entry,this.state.elapsed,this.terrain);}
- access(site){return this.active.get(site.id)?.layout.road||findWorkshopYard(site,this.safeRoad,this.terrain,this.clearYard||(()=>true))?.road||this.safeRoad(site)||site;}
+ access(site){const active=this.active.get(site.id)?.layout.road;if(active)return active;if(!this.mapAccess.has(site.id))this.mapAccess.set(site.id,findWorkshopYard(site,this.safeRoad,this.terrain,this.clearYard||(()=>true))?.road||this.safeRoad(site)||site);return this.mapAccess.get(site.id);}
  nearest(range=13){if(this.state.mode!=='car'||!groundVehicle(this.state.car)||Math.abs(this.state.speed)>1||this.state.car.health<=0)return null;
   return [...this.active.values()].find(e=>e.visible!==false&&dist(e.at,this.state)<range&&Math.abs(e.at.y-this.state.y)<3);
  }

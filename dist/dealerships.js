@@ -1,4 +1,5 @@
 import {createShowroomLife} from './dealer-showroom-life.js';
+import {HOME_DELIVERY_PRICE} from './home-vehicle-services.js';
 import {SPECIAL_VEHICLES,createSpecialVehicle} from './special-vehicles.js';
 import * as THREE from './vendor/three.module.js';
 import {project,dist,pointInside,nearestOnSegment} from './core.js';
@@ -252,9 +253,17 @@ export class Dealerships{
   for(const c of entry.units.filter(c=>c.dealershipStock))for(const yaw of [c.yaw,Math.PI/2-c.yaw])if(inside(c.x,c.z,yaw)&&clear(c.x,c.z,yaw,c))return {entry,x:c.x,z:c.z,yaw,replace:c};
   return null;
  }
- purchaseAndDeliver(site,id,options={}){
+ purchaseAndDeliver(site,id,options={},destination='showroom'){
   const existing=this.cars.find(c=>c.style===id&&c.requestedByPlayer&&c.health>0&&!c.permanentlyDestroyed&&!c.testingVehicle);
   if(this.owned.has(id)&&(!existing||dist(existing,this.state)>50))return null;
+  if(destination==='home'){
+   if(existing||this.owned.has(id)||!this.homeServices)return null;
+   const home=this.homeServices.parkingPlan(id),q=this.quote(id,options);if(!home||!q||this.state.money<q.amountDue+HOME_DELIVERY_PRICE)return null;
+   const quote=this.purchase(site,id,options);if(!quote)return null;
+   this.state.money-=HOME_DELIVERY_PRICE;
+   const car=this.addCar(home.x,home.z,home.yaw,false,true,id,quote);Object.assign(car,{dealershipStock:null,missionUnit:false});
+   this.homeServices.receive(car,home);return {quote:{...quote,amountDue:quote.amountDue+HOME_DELIVERY_PRICE,transportFee:HOME_DELIVERY_PRICE},car,destination:'home'};
+  }
   const plan=existing?null:this.deliveryPlan(site,id);if(!existing&&!plan)return null;
   const quote=this.purchase(site,id,options);if(!quote)return null;let car=existing;
   if(plan){const {entry,replace,reuse}=plan;

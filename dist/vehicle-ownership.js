@@ -5,7 +5,7 @@ export const TEST_VEHICLES=Object.freeze(['mito','cinquecento','motorcycle','sco
 export const isTestVehicle=car=>!!car?.testingVehicle;
 export const groundVehicle=car=>!!car?.spec&&!car.spec.aircraft&&!car.spec.watercraft&&!car.spec.tracked&&!car.raceOneRules&&!car.tangenzialeRace;
 export const garageParkingPoint=car=>{const p=areaLocal(VILLA,car.x,car.z);return p.u>-38&&p.u<48&&p.v>3&&p.v<57;};
-export const OWNERSHIP_NOTICE='Porta il mezzo a casa e parcheggialo nella zona garage per conservarlo tra i tuoi veicoli. Prima del parcheggio non viene salvato. Danni e modifiche restano sul mezzo; se viene distrutto lo perdi. R non ripara né ricrea le auto normali.';
+export const OWNERSHIP_NOTICE='Porta il mezzo a casa e parcheggialo nella zona garage per conservarlo, oppure scegli la consegna privata a casa durante l’acquisto. Danni e modifiche restano sul mezzo; puoi ripararlo a pagamento in officina o nel garage di casa. Se viene distrutto lo perdi. R non ripara né ricrea le auto normali.';
 export class VehicleGarage{
  constructor({state,cars,dealerships,toast=()=>{},save=()=>{},storage=globalThis.localStorage}){Object.assign(this,{state,cars,dealerships,toast,save,storage});this.records=new Map();this.lastSync=-Infinity;
   try{for(const r of JSON.parse(this.storage.getItem('padova-physical-garage-v1')||'[]'))if(VEHICLES[r.style]&&r.health>0)this.records.set(r.token,{...r,everStored:true,status:'stored'});}catch{}
