@@ -1,6 +1,6 @@
-import {registerDealerSurface} from './dealer-surfaces.js?v=dealer-handover-r41';
-import {dealerNeedsOutdoor,planDealerDelivery} from './dealer-delivery.js?v=dealer-handover-r41';
-import {createShowroomLife} from './dealer-showroom-life.js?v=dealer-handover-r41';
+import {registerDealerSurface} from './dealer-surfaces.js?v=dealer-handover-r41-2';
+import {dealerNeedsOutdoor,planDealerDelivery} from './dealer-delivery.js?v=dealer-handover-r41-2';
+import {createShowroomLife} from './dealer-showroom-life.js?v=dealer-handover-r41-2';
 import {HOME_DELIVERY_PRICE} from './home-vehicle-services.js';
 import {SPECIAL_VEHICLES,createSpecialVehicle} from './special-vehicles.js';
 import * as THREE from './vendor/three.module.js';

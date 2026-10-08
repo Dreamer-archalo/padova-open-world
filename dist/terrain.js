@@ -1,4 +1,4 @@
-import {dealerSurfaceHeight} from './dealer-surfaces.js?v=dealer-handover-r41';
+import {dealerSurfaceHeight} from './dealer-surfaces.js?v=dealer-handover-r41-2';
 import {RoadSurfaces} from './road-surfaces.js';
 import {SpatialIndex, nearestOnSegment, pointInside, clamp, safeRoadPoint} from './core.js';
 import {vehicleBlocked} from './movement.js';

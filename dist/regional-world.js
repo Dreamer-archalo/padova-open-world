@@ -1,8 +1,8 @@
-import {dealerSurfaceHeight} from './dealer-surfaces.js?v=dealer-handover-r41';
+import {dealerSurfaceHeight} from './dealer-surfaces.js?v=dealer-handover-r41-2';
 import {markVehicleWreck} from './vehicle-damage.js';
 import {compactCoachwork} from './car-coachwork.js';
 import {pedestrianRoadAllowed} from './npc-spawn-policy.js';
-import {DEALER_SITES,reserveDealerBuildings,dealerWallParts} from './dealerships.js?v=dealer-handover-r41';
+import {DEALER_SITES,reserveDealerBuildings,dealerWallParts} from './dealerships.js?v=dealer-handover-r41-2';
 // Region streaming runs alongside (not instead of) Padova's original CityWorld.
 // Padova keeps its existing meshes/physics/traffic; only its eastern border
 // gains access to the OSM corridor and high-detail destination zones.

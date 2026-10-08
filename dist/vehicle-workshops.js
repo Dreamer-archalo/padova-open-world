@@ -1,9 +1,9 @@
 import {mountConfiguratorLayout,updateConfigurationSummary} from './configurator-layout.js';
 import {project,dist} from './core.js';
 import {VEHICLES} from './vehicles.js';
-import {DEALER_COLORS} from './dealerships.js?v=dealer-handover-r41';
+import {DEALER_COLORS} from './dealerships.js?v=dealer-handover-r41-2';
 import {dealerCapabilities,normalizeDealerOptions,dealerBuildSpec,protectionCapacity} from './dealer-customization.js';
-import {mountDealerPreview} from './dealer-configurator-preview.js?v=dealer-handover-r41';
+import {mountDealerPreview} from './dealer-configurator-preview.js?v=dealer-handover-r41-2';
 import {groundVehicle} from './vehicle-ownership.js';
 import {findWorkshopYard,createWorkshopYard,animateWorkshopYard,registerWorkshopWalls} from './workshop-yard.js';
 
