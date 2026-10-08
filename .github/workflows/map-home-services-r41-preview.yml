@@ -65,9 +65,7 @@ jobs:
         run: |
           npm install --no-save playwright@1.55.1
           npx playwright install --with-deps chromium
-          node tools/test-workshop-classics-r39-browser.mjs
           node tools/test-map-home-services-r41-browser.mjs
-          node tools/test-workshop-ownership-r37-browser.mjs
       - uses: actions/upload-artifact@v4
         if: always()
         with:

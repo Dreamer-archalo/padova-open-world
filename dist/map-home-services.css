@@ -4,7 +4,7 @@
 #mapDialog .map-category button{display:block;width:calc(100% - 12px);margin:3px 6px 7px}
 #mapDialog #mapHudToggle{min-height:44px;padding:8px 12px;border-radius:5px;white-space:nowrap}
 #mapDialog[data-map-hud="less"] .map-layout{grid-template-columns:1fr}
-#mapDialog[data-map-hud="less"] #mapPlaces,#mapDialog[data-map-hud="less"] #mapPoiLegend{display:none}
+#mapDialog[data-map-hud="less"] #mapPlaces,#mapDialog[data-map-hud="less"] #mapPoiLegend{display:none!important}
 #mapPoiLegend{display:flex;flex-wrap:wrap;gap:14px;padding-top:12px;font-size:13px}
 #mapPoiLegend span{display:flex;align-items:center;gap:5px}
 .home-repair-list{display:grid;gap:9px;margin:16px 0}.home-repair-list button{padding:14px;text-align:left;border-radius:5px}
