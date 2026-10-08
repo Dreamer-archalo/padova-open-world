@@ -1,3 +1,4 @@
+import {dealerSurfaceHeight} from './dealer-surfaces.js?v=dealer-handover-r41';
 import {RoadSurfaces} from './road-surfaces.js';
 import {SpatialIndex, nearestOnSegment, pointInside, clamp, safeRoadPoint} from './core.js';
 import {vehicleBlocked} from './movement.js';
@@ -81,6 +82,7 @@ export class Terrain {
     const d=this.waterDistance(x,z);if(d>10)return raw;const water=this.waterHeight(x,z),channel=safeTerrainHeight(water-1.5,natural),bank=safeTerrainHeight(Math.max(raw,water+.8),natural);return safeTerrainHeight(channel+(bank-channel)*smooth((d+1)/11),natural);
   }
   height(x,z,referenceY=null){
+    const dealer=dealerSurfaceHeight(this,x,z);if(dealer!==null)return dealer;
     const base=this.rawElevation(x,z),platform=this.platformAt(x,z);
     if(platform){const road=this.roads?.at(x,z,referenceY),roadY=road?safeTerrainHeight(road.height+.05,platform.height+.05):SAFE_MIN_Y;return safeTerrainHeight(Math.max(platform.height+.05,roadY),base);}
     if(this.modern){

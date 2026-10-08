@@ -2,7 +2,7 @@ import {VEHICLES,createVehicle} from './vehicles.js';
 import {SPECIAL_VEHICLES,createSpecialVehicle} from './special-vehicles.js';
 import {applyDealerUpgrades} from './dealer-customization.js';
 import * as THREE from './vendor/three.module.js';
-import {DEALER_CATALOG,createDealerVehicle} from './dealerships.js';
+import {DEALER_CATALOG,createDealerVehicle} from './dealerships.js?v=dealer-handover-r41';
 
 let active=null;
 export function disposeDealerPreview(){if(active){active.dispose();active=null;}}

@@ -1,7 +1,8 @@
+import {dealerSurfaceHeight} from './dealer-surfaces.js?v=dealer-handover-r41';
 import {markVehicleWreck} from './vehicle-damage.js';
 import {compactCoachwork} from './car-coachwork.js';
 import {pedestrianRoadAllowed} from './npc-spawn-policy.js';
-import {DEALER_SITES,reserveDealerBuildings,dealerWallParts} from './dealerships.js';
+import {DEALER_SITES,reserveDealerBuildings,dealerWallParts} from './dealerships.js?v=dealer-handover-r41';
 // Region streaming runs alongside (not instead of) Padova's original CityWorld.
 // Padova keeps its existing meshes/physics/traffic; only its eastern border
 // gains access to the OSM corridor and high-detail destination zones.
@@ -359,7 +360,7 @@ export class RegionalWorld{
   terrain.rawElevation=(x,z)=>active(x,z)?this.raw(x,z):original.raw(x,z);
   terrain.elevation=(x,z)=>active(x,z)?this.raw(x,z):original.elevation(x,z);
   terrain.groundHeight=(x,z)=>active(x,z)?this.ground(x,z):original.ground(x,z);
-  terrain.height=(x,z,ref=null)=>active(x,z)?this.height(x,z,ref):original.height(x,z,ref);
+  terrain.height=(x,z,ref=null)=>dealerSurfaceHeight(terrain,x,z)??(active(x,z)?this.height(x,z,ref):original.height(x,z,ref));
   terrain.waterAt=(x,z,margin=0,ref=null)=>active(x,z)?this.waterAt(x,z,margin,ref):original.water(x,z,margin,ref);
   terrain.waterHeight=(x,z)=>active(x,z)?this.waterSurface(x,z):original.waterHeight(x,z);
   terrain.waterSample=(x,z)=>active(x,z)?this.waterSample(x,z):original.waterSample(x,z);
