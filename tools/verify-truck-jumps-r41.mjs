@@ -25,6 +25,19 @@ for(const hz of [20,30,60,120])for(const speed of [0,4,12])for(const yaw of [0,1
 }
 flat.mobileRamps=[];
 assert(Math.max(...results.map(r=>r.peak))-Math.min(...results.map(r=>r.peak))<.3,'moving ramp launch is consistent across frame rates and truck speeds');
+for(const hz of [30,60])for(const speed of [4,12,14,18]){
+ const truck={x:0,z:0,y:0,yaw:0,speed,health:100,spec:VEHICLES.camionrampa,lodSpan:.1,mesh:{visible:true}},car={x:0,z:-11,y:0,yaw:0,speed:speed+15,spec:VEHICLES.mito};
+ let launched=false,landed=false;
+ for(let i=0;i<hz*8;i++){
+  if(i%(hz/10)===0)truck.z+=speed*.1;
+  flat.mobileRamps=[mobileRamp(truck)];const m=groundVehicleStep(car,car,input,1/hz,flat,empty);
+  assert.equal(m.hitSpeed,0,'10 Hz traffic deck does not block entry');
+  if(m.launched){assert(car.z-truck.z>1.5,'launch clears the lip, not the middle of the moving deck');launched=true;}
+  if(m.landed&&launched){landed=true;break;}
+ }
+ assert(launched&&landed,'jump works with Iper Performance traffic updates');
+}
+flat.mobileRamps=[];
 for(const hz of [20,30,60,120])for(const capacity of [100,525])for(const speed of [0,22]){
  const car={spec:{...VEHICLES.sedan,maxHealth:capacity},health:80},actor={x:0,z:0,y:7,yaw:0,speed,health:80};
  const terrain={...flat,height:()=>7};assert(startArcadeJump(actor,car));assert(!startArcadeJump(actor,car),'no stacking in the air');let peak=actor.y,damage=0,landed=false;
@@ -49,4 +62,4 @@ assert(!car.jump.airborne);assert(Math.abs(t.state.health-(80-100/525))<1e-9,'co
 manager.onKeyDown({code:'Numpad9',repeat:false});assert(car.jump.airborne,'numeric keypad works');resetGroundMotion(car);
 Object.assign(t.terrain,{height:saved.height,slope:saved.slope,waterAt:saved.waterAt});t.world.collision.near=saved.near;
 assert.equal(t.cars.filter(c=>c.encounterStyle==='camionrampa').length,3,'three persistent ramp trucks across quality levels');
-console.log('PASS R41 truck ramps: 24 moving/stationary approaches, collision clearance, 16 fifty-metre jumps, one life point, repeat guards and actual keyboard/controller integration.',results);
+console.log('PASS R41 truck ramps: 32 moving/stationary approaches including 10 Hz traffic, collision clearance, 16 fifty-metre jumps, one life point, repeat guards and actual keyboard/controller integration.',results);

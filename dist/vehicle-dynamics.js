@@ -102,7 +102,7 @@ export function groundVehicleStep(actor,car,input,dt,terrain,collision){
     &&j.groundVy-(next.y-old.y)/step>JUMP_GRAVITY*step*1.2;
    // Any genuine ledge is ballistic. Previously slow vehicles could be snapped
    // downward by half a metre or more in one fixed tick.
-   const drops=drop>.48&&Math.abs(actor.speed)>1.5;
+   const drops=drop>.48&&Math.abs(actor.speed)>1.5&&next.ramp?.kind!=='mobile-ramp';
    if(leavesRamp||drops||crests){
     // A moving deck must launch at the car's speed relative to the truck.
     // The last substep's world-space slope velocity otherwise varies with FPS.
@@ -114,7 +114,11 @@ export function groundVehicleStep(actor,car,input,dt,terrain,collision){
     // terrain (the old test only caught a transition into/out of a ramp).
     const rampGrade=next.ramp?.kind==='mobile-ramp'?.7:.22;const allowedRise=Math.max(MAX_CONTACT_RISE,horizontal*rampGrade);
     if(rise>allowedRise){hitSpeed=Math.abs(actor.speed);actor.speed*=-.15;break;}
-    const supportTolerance=old.ramp?.kind==='mobile-ramp'?Math.max(.15,Math.abs(old.ramp.car.speed||0)*dt*.7+.05):.15;
+    // Traffic advances less often than the player on low graphics settings.
+    // A deck that moved forward can leave the previous support sample outside
+    // its rear edge; still follow the next legal grade instead of sinking into it.
+    const movingDeck=[old.ramp,next.ramp].find(r=>r?.kind==='mobile-ramp');
+    const supportTolerance=movingDeck?Math.max(.15,Math.abs(movingDeck.car.speed||0)*Math.max(dt,movingDeck.car.lodSpan||.1)*.7+.05):.15;
     const followsGrade=Math.abs(next.y-old.y)<=Math.max(.025,horizontal*(next.ramp?.kind==='mobile-ramp'?.7:.24))&&Math.abs(actor.y-old.y)<supportTolerance;
     ny=followsGrade?next.y:smoothGroundY(actor.y,next.y,step,actor.speed);j.groundVy=(ny-actor.y)/step;j.ramp=next.ramp;
     j.climbDistance=next.y-old.y>horizontal*.015?(j.climbDistance||0)+horizontal:0;
