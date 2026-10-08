@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 export async function verifyTruckJumps(page){
  await page.evaluate(()=>{
-  const q=__r41;q.closeDialogs();q.state.paused=true;q.keys.clear();
+  const q=__r41;q.closeDialogs();q.setPaused(true);q.keys.clear();
   const c=q.cars.find(c=>c.style==='mito'),base=q.terrain.height(c.x,c.z,c.y);
   q.terrain.height=()=>base;q.terrain.slope=()=>0;q.terrain.waterAt=()=>null;q.collision.near=()=>[];
   for(const other of q.cars)other.mesh.visible=false;q.player.visible=false;
@@ -12,12 +12,12 @@ export async function verifyTruckJumps(page){
  await page.keyboard.press('9');
  assert(await page.evaluate(()=>__r41.state.car.jump?.airborne),'actual numeric key starts jump');
  const jump=await page.evaluate(()=>{
-  const q=__r41;q.state.paused=true;const c=q.state.car;let peak=q.state.y;
+  const q=__r41;q.setPaused(true);const c=q.state.car;let peak=q.state.y;
   for(let i=0;i<600&&c.jump.airborne;i++){
    q.movePlayer(1/60);peak=Math.max(peak,q.state.y);
    if(c.jump.vy<=0)break;
   }
-  q.poseVehicle(c);for(let i=0;i<120;i++)q.updateCamera(1/60);q.renderer.render(q.scene,q.camera);
+  q.poseVehicle(c);q.updateUI();for(let i=0;i<120;i++)q.updateCamera(1/60);q.renderer.render(q.scene,q.camera);
   return {height:peak-__jumpBase,health:q.state.health};
  });
  assert(Math.abs(jump.height-50)<.01);assert.equal(jump.health,100);
@@ -29,13 +29,13 @@ export async function verifyTruckJumps(page){
   const q=__r41,c=q.state.car;q.resetGroundMotion(c);q.state.paused=false;
  });await page.keyboard.press('Numpad9');assert(await page.evaluate(()=>__r41.state.car.jump?.airborne),'numeric keypad starts jump');
  await page.evaluate(()=>{
-  const q=__r41,c=q.state.car;q.state.paused=true;q.resetGroundMotion(c);q.keys.clear();
+  const q=__r41,c=q.state.car;q.setPaused(true);q.resetGroundMotion(c);q.keys.clear();
   const yaw=q.state.yaw,truck=q.addCar(q.state.x+Math.sin(yaw)*11,q.state.z+Math.cos(yaw)*11,yaw,false,false,'camionrampa');
   truck.y=__jumpBase;truck.speed=4;truck.health=100;q.poseVehicle(truck);globalThis.__rampTruck=truck;
   Object.assign(q.state,{y:__jumpBase,speed:24,health:100});c.health=100;q.keys.add('KeyW');
  });
  // Snapshot the approach with the redesigned deck visible.
- await page.evaluate(()=>{const q=__r41;for(let i=0;i<120;i++)q.updateCamera(1/60);q.renderer.render(q.scene,q.camera);});
+ await page.evaluate(()=>{const q=__r41;q.poseVehicle(q.state.car);q.updateUI();for(let i=0;i<120;i++)q.updateCamera(1/60);q.renderer.render(q.scene,q.camera);});
  await page.screenshot({path:'test-artifacts/r41/truck-ramp-approach.png'});
  const ramp=await page.evaluate(()=>{
   const q=__r41,truck=__rampTruck,c=q.state.car;let launched=false,landed=false,peak=__jumpBase,entryHealth=null;
