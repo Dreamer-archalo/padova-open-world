@@ -1,5 +1,5 @@
-import {CityWorld} from './world.js';
-import {Terrain} from './terrain.js';
+import {CityWorld} from './world.js?v=dealer-handover-r41-2';
+import {Terrain} from './terrain.js?v=dealer-handover-r41-2';
 import {modernFootprints} from './modern-map.js';
 import {HOME} from './gameplay-areas.js';
 

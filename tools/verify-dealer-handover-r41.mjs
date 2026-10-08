@@ -1,3 +1,4 @@
+import fs from 'node:fs';
 import {groundContact} from '../dist/vehicle-dynamics.js';
 import assert from 'node:assert/strict';
 import vm from 'node:vm';
@@ -7,6 +8,10 @@ import {VEHICLES} from '../dist/vehicles.js';
 import {pointInside,dist} from '../dist/core.js';
 import {vehicleFootprint,polygonsOverlap,vehicleBlocked} from '../dist/movement.js';
 import {showroomWalkable} from '../dist/dealer-showroom-life.js';
+// The initial loader patches these exact classes; a different import query
+// creates an unpatched second class and leaves the startup gate at 30%.
+const gameSource=fs.readFileSync(new URL('../dist/game.js',import.meta.url),'utf8'),loaderSource=fs.readFileSync(new URL('../dist/initial-loader.js',import.meta.url),'utf8');
+for(const name of ['world','terrain']){const pattern=new RegExp("from '(\\./"+name+"\\.js[^']*)'");assert.equal(gameSource.match(pattern)?.[1],loaderSource.match(pattern)?.[1],name+' loader and game share one module');}
 const shops=vm.runInContext('dealerships',ctx),sites=DEALER_SITES.filter(s=>s.city.startsWith('Padova')),results=[];
 for(const site of sites){
  const b=shops.locate(site);Object.assign(t.state,{mode:'foot',car:null,paused:false,x:b.dealerDoor.outside.x,z:b.dealerDoor.outside.z,y:t.terrain.height(b.dealerDoor.outside.x,b.dealerDoor.outside.z),money:1e8,speed:0});shops.update();const entry=shops.active.get(site.id);

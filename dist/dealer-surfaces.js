@@ -3,7 +3,7 @@ import {pointInside} from './core.js';
 // Foundations follow the lowest ground sample. The occupied floor must instead
 // clear the terrain, with one surface shared by rendering and both controllers.
 export function registerDealerSurface(terrain,b){
- if(!terrain||!b?.dealerDoor)return;
+ if(!terrain||!b?.dealerDoor||globalThis.__padovaFastStartup===true)return;
  terrain.dealerSurfaces??=new Map();
  if(terrain.dealerSurfaces.has(b.dealerSite)){b.dealerFloorY=terrain.dealerSurfaces.get(b.dealerSite).dealerFloorY;return;}
  const height=(x,z)=>terrain.height?.(x,z)??b.minY??0,samples=[height(b.cx,b.cz),...b.p.map(p=>height(...p))];
