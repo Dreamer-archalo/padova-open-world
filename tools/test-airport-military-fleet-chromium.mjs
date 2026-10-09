@@ -62,9 +62,9 @@ try{
  await page.evaluate(()=>{const g=__militaryTest,c=g.militaryFleetParking.find(c=>c.style==='mil-tank-heavy');globalThis.__parkedHeavy=c;globalThis.__villaState={x:g.state.x,y:g.state.y,z:g.state.z,yaw:g.state.yaw};Object.assign(g.state,{x:c.x+Math.cos(c.yaw)*(c.spec.width/2+.6),z:c.z-Math.sin(c.yaw)*(c.spec.width/2+.6),y:c.y,yaw:c.yaw,mode:'foot',car:null,speed:0,paused:false});});
  await page.keyboard.press('e');
  await page.waitForFunction(()=>__militaryTest.state.car===__parkedHeavy,null,{timeout:10000});
- const origin=await page.evaluate(()=>({x:__militaryTest.state.x,z:__militaryTest.state.z}));await page.keyboard.down('w');await page.waitForTimeout(1200);await page.keyboard.up('w');
+ const origin=await page.evaluate(()=>({x:__militaryTest.state.x,z:__militaryTest.state.z}));await page.keyboard.down('w');try{await page.waitForFunction(p=>Math.hypot(__militaryTest.state.x-p.x,__militaryTest.state.z-p.z)>1,origin,{timeout:20000});}finally{await page.keyboard.up('w');}
  const heavy=await page.evaluate(()=>{const g=__militaryTest,c=g.state.car;return {style:c.style,turret:!!c.mesh.userData.turret,tracked:c.spec.tracked,inScene:g.scene.children.includes(c.mesh),meshCount:c.mesh.children.filter(m=>m.isMesh).length,units:g.militaryFleetParking.length,x:g.state.x,z:g.state.z};});
- console.log('MILITARY_HEAVY '+JSON.stringify(heavy));assert(heavy.turret&&heavy.tracked&&heavy.inScene&&heavy.meshCount>=2&&heavy.units===7);assert(Math.hypot(heavy.x-origin.x,heavy.z-origin.z)>.4,'actual airport tank must drive');
+ console.log('MILITARY_HEAVY '+JSON.stringify({origin,...heavy}));assert(heavy.turret&&heavy.tracked&&heavy.inScene&&heavy.meshCount>=2&&heavy.units===7);assert(Math.hypot(heavy.x-origin.x,heavy.z-origin.z)>.4,'actual airport tank must drive');
  await page.screenshot({path:'test-artifacts/military-heavy-tank.png',timeout:25000});
  stage='stored military truck preview preserves damage and physical inventory';
  await page.evaluate(()=>{const g=__militaryTest,c=g.state.car;c.parked=true;c.speed=0;Object.assign(g.state,{...__villaState,mode:'foot',car:null,speed:0,health:100,paused:false});
