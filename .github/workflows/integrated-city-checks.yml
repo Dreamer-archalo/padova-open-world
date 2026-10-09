@@ -1,5 +1,7 @@
 name: Integrated Mandria and city acceptance
 on:
+  pull_request:
+    branches: [main]
   push:
     branches: [fix/integrated-mandria-continuity-20260921, fix/shared-street-surface-20260922]
   workflow_call:
@@ -47,13 +49,22 @@ jobs:
           node --max-old-space-size=3072 verify-streaming.mjs
           npm run test:initial-world
           node verify-feature-preservation.mjs
+          node tools/verify-vehicle-finish-r35.mjs
+          node tools/verify-road-fleet-r36.mjs
+          node tools/verify-workshop-ownership-r37.mjs
+          node tools/verify-workshop-yards-r38.mjs
+          node tools/verify-workshop-classics-r39.mjs
+          node tools/verify-workshop-dealer-r40.mjs
+          node tools/verify-map-home-services-r41.mjs
+          node tools/verify-dealer-handover-r41.mjs
+          node tools/verify-truck-jumps-r41.mjs
   browser:
     runs-on: ubuntu-latest
     timeout-minutes: 25
     strategy:
       fail-fast: false
       matrix:
-        test: [race-two-r30-browser, race-immersion-r28-browser, shared-streets-browser, mandria-estate-v2-chromium, mandria-estate-v3-chromium, mandria-v5-chromium, mandria-v5-estate-chromium, mandria-v6-browser, mandria-v7-browser, mandria-v8-browser, mandria-v11-browser, mandria-hangar-chromium, airport-military-fleet-chromium, air-hunt-chromium, monoblocco-chromium]
+        test: [map-home-services-r41-browser, race-two-r30-browser, race-immersion-r28-browser, shared-streets-browser, mandria-estate-v2-chromium, mandria-estate-v3-chromium, mandria-v5-chromium, mandria-v5-estate-chromium, mandria-v6-browser, mandria-v7-browser, mandria-v8-browser, mandria-v11-browser, mandria-hangar-chromium, airport-military-fleet-chromium, air-hunt-chromium, monoblocco-chromium]
     steps:
       - uses: actions/checkout@v6
       - uses: actions/setup-node@v4

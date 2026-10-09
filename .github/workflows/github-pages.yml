@@ -170,7 +170,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          for item in 'hud-commands-r34 85f520e4f7b93288a6a2c634825f03abb5c6fb13' 'npc-traffic-r31 feat/npc-traffic-stunts-r31' 'race-two-r30 feat/race-two-advanced-r30' 'race-selection-r29 feat/race-selection-turbo-r29' 'race-one-r27 c28f0244cbeceaf741ab5f8451cbeb4a37b1739b' 'race-immersion-r28 feat/race-immersion-r28' 'solo-cars-r26 08872df934e5118b3efa7b69811de9aa3843925c' 'road-fixes-r25 7ad45f1332c3b95a79518336ddd9a9929d56857d' 'road-stunts-r23 1a053682b054087a4d36638c459b6afc5295f92d' 'taxi-r22 fix/taxi-confirm-map-r22' 'road-levels-r21 feat/padova-road-levels-r21' 'padova-npc-r17 feat/padova-intelligent-npc-r17' 'dealerships feat/dealerships-urban-showrooms' 'unified fix/regional-taxi-20260928' 'continuous feat/padova-venice-continuous-20260925' 'venice feat/venice-world-20260924' 'pr-57 feat/monoblocco-elevators-20260924'; do
+          for item in 'vehicles-r35 20d1175af1c7a62bfb8dcd27a088e50020a61856' 'fleet-r36 6ed5ee085a883e60f247fa9e00819a1690883e21' 'workshop-r39 e98d6066bd55330ec5ec3e9f54939ecd51305fd2' 'workshop-dealer-r40 42f8f27ee72f3b64a76df88dd794f7a57aecd6d9' 'map-home-services-r41 fedad1c799744c114cbb4b8d027e75a03fba5e26' 'r41-truck-jump-fix 8abc08206d7c6c4fd39ce6b45552bff0652fc6d6' 'hud-commands-r34 85f520e4f7b93288a6a2c634825f03abb5c6fb13' 'npc-traffic-r31 feat/npc-traffic-stunts-r31' 'race-two-r30 feat/race-two-advanced-r30' 'race-selection-r29 feat/race-selection-turbo-r29' 'race-one-r27 c28f0244cbeceaf741ab5f8451cbeb4a37b1739b' 'race-immersion-r28 feat/race-immersion-r28' 'solo-cars-r26 08872df934e5118b3efa7b69811de9aa3843925c' 'road-fixes-r25 7ad45f1332c3b95a79518336ddd9a9929d56857d' 'road-stunts-r23 1a053682b054087a4d36638c459b6afc5295f92d' 'taxi-r22 fix/taxi-confirm-map-r22' 'road-levels-r21 feat/padova-road-levels-r21' 'padova-npc-r17 feat/padova-intelligent-npc-r17' 'dealerships feat/dealerships-urban-showrooms' 'unified fix/regional-taxi-20260928' 'continuous feat/padova-venice-continuous-20260925' 'venice feat/venice-world-20260924' 'pr-57 feat/monoblocco-elevators-20260924'; do
             read -r label ref <<< "$item"
             git fetch --no-tags --depth=1 origin "$ref"
             source="${RUNNER_TEMP}/retained-$label"
@@ -194,5 +194,22 @@ jobs:
       - name: Deploy definitive version to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
+      - name: Verify definitive R41 files after publication
+        shell: bash
+        run: |
+          set -euo pipefail
+          base='https://dreamer-archalo.github.io/padova-open-world'
+          for attempt in 1 2 3 4 5 6; do
+            verified=true
+            for name in index.html game.js car-coachwork.js road-fleet-coachwork.js dealer-conversation.js dealer-delivery.js dealer-showroom-life.js vehicle-workshops.js home-vehicle-services.js vehicle-dynamics.js truck-ramp.js stunt-traffic.js; do
+              if ! curl --fail --silent --show-error --location "$base/$name?v=$GITHUB_SHA" -o "/tmp/release-$name" || ! cmp -s "dist/$name" "/tmp/release-$name"; then
+                verified=false
+                break
+              fi
+            done
+            if test "$verified" = true; then exit 0; fi
+            sleep 5
+          done
+          exit 1
       - name: Show definitive link
         run: echo "${{ steps.deployment.outputs.page_url }}"
