@@ -27,8 +27,11 @@ export async function verifyTruckJumps(page){
  assert((await page.locator('#commandGuide').textContent()).includes('Salto 50 m'));
  await page.evaluate(()=>{
   const q=__r41,c=q.state.car;q.resetGroundMotion(c);q.state.paused=false;
+  const field=document.createElement('input');field.id='r41-key-capture-test';document.body.append(field);
+  field.addEventListener('keydown',event=>event.stopPropagation());field.focus();
  });await page.keyboard.press('Numpad9');assert(await page.evaluate(()=>__r41.state.car.jump?.airborne),'numeric keypad starts jump');
  await page.evaluate(()=>{
+  document.getElementById('r41-key-capture-test')?.remove();
   const q=__r41,c=q.state.car;q.setPaused(true);q.resetGroundMotion(c);q.keys.clear();
   const yaw=q.state.yaw,truck=q.addCar(q.state.x+Math.sin(yaw)*11,q.state.z+Math.cos(yaw)*11,yaw,false,false,'camionrampa');
   truck.y=__jumpBase;truck.speed=4;truck.health=100;q.poseVehicle(truck);globalThis.__rampTruck=truck;

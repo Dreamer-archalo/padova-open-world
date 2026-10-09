@@ -2,7 +2,7 @@ name: Workshop R41 · map categories, home repairs and private delivery
 
 on:
   push:
-    branches: [feat/map-home-services-r41]
+    branches: [fix/r41-ramps-jump-controls-20261009]
 
 permissions:
   actions: read
@@ -98,13 +98,13 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          mkdir -p site/preview/map-home-services-r41
-          rm -rf site/preview/map-home-services-r41/*
-          cp -a dist/. site/preview/map-home-services-r41/
+          mkdir -p site/preview/r41-truck-jump-fix
+          rm -rf site/preview/r41-truck-jump-fix/*
+          cp -a dist/. site/preview/r41-truck-jump-fix/
           touch site/.nojekyll
-          test -f site/preview/map-home-services-r41/index.html
-          test -s site/preview/map-home-services-r41/data/region-padova-venice.json
-          test -s site/preview/map-home-services-r41/data/world-terrain.json
+          test -f site/preview/r41-truck-jump-fix/index.html
+          test -s site/preview/r41-truck-jump-fix/data/region-padova-venice.json
+          test -s site/preview/r41-truck-jump-fix/data/world-terrain.json
 
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v4
@@ -118,7 +118,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          base='https://dreamer-archalo.github.io/padova-open-world/preview/map-home-services-r41'
+          base='https://dreamer-archalo.github.io/padova-open-world/preview/r41-truck-jump-fix'
           for attempt in 1 2 3 4 5 6; do
             if curl --fail --silent --show-error --location "$base/index.html" -o /tmp/r36.html &&
                curl --fail --silent --show-error --location "$base/modern-vehicles.js" -o /tmp/r36-vehicles.js &&

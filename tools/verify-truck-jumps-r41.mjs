@@ -20,6 +20,9 @@ for(const hz of [20,30,60,120])for(const speed of [0,4,12])for(const yaw of [0,1
   if(landed)break;
  }
  assert(launched&&landed&&peak>3.5,`real moving-truck jump at ${hz} Hz / ${speed} m/s`);results.push({hz,truckSpeed:speed,peak});
+ const approach={...car,x:truck.x+Math.cos(yaw)*.42-Math.sin(yaw)*6.1,
+ z:truck.z-Math.sin(yaw)*.42-Math.cos(yaw)*6.1,y:truck.y,yaw:yaw+.15,speed:20};
+ assert(onTruckRamp(approach,truck),'offset rear-bumper approach is collision free');
  assert(!onTruckRamp({...car,x:truck.x+Math.cos(yaw)*2,z:truck.z-Math.sin(yaw)*2,y:0},truck),'sides still collide');
  assert(!onTruckRamp({...truck,spec:VEHICLES.sedan,yaw:yaw+Math.PI,y:0},truck),'head-on collisions still work');
 }

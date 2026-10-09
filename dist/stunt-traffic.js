@@ -22,13 +22,16 @@ export function mobileRamp(car){
 }
 export function onTruckRamp(actor,truck){
  const r=mobileRamp(truck);if(!r)return false;
+ // R41_FIX_RAMP_APPROACH: check the front bumper, not just the vehicle centre.
  const dx=actor.x-r.x,dz=actor.z-r.z,u=dx*Math.cos(r.yaw)-dz*Math.sin(r.yaw),v=dx*Math.sin(r.yaw)+dz*Math.cos(r.yaw);
- const halfLength=(actor.spec||actor.car?.spec)?.length/2||2.2;
+ const spec=actor.spec||actor.car?.spec||{},halfLength=(spec.length||4.4)/2;
+ const nose=v+halfLength,tail=v-halfLength,relativeYaw=Math.abs(angleDiff(actor.yaw,r.yaw));
+ if((actor.speed??0)<0||relativeYaw>.78||Math.abs(u)>r.width/2-.08)return false;
+ if(nose< -r.length/2-.65||tail>r.length/2+.65)return false;
  const deck=r.topY[0]+(r.topY[2]-r.topY[0])*clamp(v/r.length+.5,0,1);
- // The nose meets the rear before the car's centre reaches the deck. Keep
- // that approach open, then also let an airborne car clear the cab at the lip.
- return Math.abs(u)<r.width/2-.15&&v>=-r.length/2-halfLength-.3&&v<=r.length/2+halfLength+.3&&
-  (actor.speed??0)>=0&&Math.abs(angleDiff(actor.yaw,r.yaw))<.6&&actor.y>=deck-.4;
+ // During the rear approach the car's centre remains at road height.
+ const entry=v< -r.length/2+Math.min(halfLength,1.25);
+ return (actor.y??r.topY[0])>=(entry?r.topY[0]-1:deck-.85);
 }
 export function fuelImpact(a,b){
  if(!a?.spec||!b?.spec||!(a.spec.fuelTank||b.spec.fuelTank)||a.health<=0||b.health<=0)return null;
