@@ -1,6 +1,7 @@
 // High-resolution unified geographical map. The same spatially indexed
 // vectors drive detailed Padova, the Brenta towns, Mestre and Venice.
 import {REGIONAL_ZONES} from './unified-regions.js';
+import {drawMapPoint} from './map-poi.js';
 import {VectorMapDetail} from './unified-map-detail.js?v=carto-r10';
 import {VisibleMapTiles} from './map-live-tiles.js?v=hd-water-r4';
 
@@ -56,7 +57,7 @@ export class UnifiedMap {
   // City tile is inserted last to prevent oversimplified corridor artefacts
   // from painting over existing Padova details and its road markings.
  }
- draw({position,places=[],target=null,route=[]}){
+ draw({position,places=[],target=null,route=[],showHud=true}){
   const c=this.canvas.getContext('2d'),w=this.canvas.width,h=this.canvas.height,pixelRatio=this.uiScale,
    unit=n=>n*pixelRatio;
   c.setTransform(1,0,0,1,0,0);c.clearRect(0,0,w,h);
@@ -64,7 +65,7 @@ export class UnifiedMap {
   this.detail.draw(c,this.center,w,h,this.scale,{pixelRatio,labels:this.zoomLevel>=3});
     this.lastTileStats={ready:0,pending:0,vector:true};
   
-  if(route.length){
+  if(showHud&&route.length){
    c.beginPath();route.forEach((p,i)=>{const a=this.toScreen(p);i?c.lineTo(a.x,a.y):c.moveTo(a.x,a.y);});
    c.lineWidth=unit(2.4);c.strokeStyle='#f7ca74';c.stroke();
   }
@@ -76,15 +77,15 @@ export class UnifiedMap {
    ['Dolo','Mira Porte','Oriago','Marghera','Piazzale Roma','Venezia - San Marco'].includes(p.name));
   c.font='650 '+Math.round(unit(13))+'px system-ui';
   c.textAlign='left';c.textBaseline='alphabetic';
-  for(const p of labels){
-   if(!this.isVisible(p))continue;dot(p,4,p.lod==='detailed'?'#ffc778':'#9ed5d4');
+  for(const p of showHud?labels:[]){
+   if(!this.isVisible(p))continue;if(!places.some(q=>q.category==='towns'))dot(p,4,'#85caff');
    const q=this.toScreen(p);c.lineWidth=unit(2.7);c.strokeStyle='#243f48';
    c.strokeText?.(p.name,q.x+unit(8),q.y-unit(7));c.fillStyle='#fff6e5';
    c.fillText(p.name,q.x+unit(8),q.y-unit(7));
   }
-  if(this.zoomLevel>=5)for(const p of this.region.places||[]){
+  if(showHud&&this.zoomLevel>=5)for(const p of this.region.places||[]){
    if(!this.isVisible(p)||REGIONAL_ZONES.some(z=>Math.hypot(z.x-p.x,z.z-p.z)<65))continue;
-   dot(p,2.6,'#f5ca90');
+   dot(p,2.6,'#f5d971');
    if(this.zoomLevel>=9){
     const q=this.toScreen(p);
     c.font='600 '+Math.round(unit(11.5))+'px system-ui';
@@ -93,12 +94,12 @@ export class UnifiedMap {
     c.fillStyle='#f3e6c8';c.fillText(p.name,q.x+unit(6),q.y+unit(10));
    }
   }
-  if(this.zoomLevel>=3)for(const p of places)dot(p,2.8,'#ffce84');
-  if(target&&this.isVisible(target)){
+  if(showHud)for(const p of places)if(this.isVisible(p)){if(p.category)drawMapPoint(c,this.toScreen(p),p,pixelRatio);else if(this.zoomLevel>=3)dot(p,2.8,'#ffce84');}
+  if(showHud&&target&&this.isVisible(target)){
    dot(target,6,'#ffc56a');const q=this.toScreen(target);c.strokeStyle='#ffc56a';c.lineWidth=unit(2);
    c.beginPath();c.arc(q.x,q.y,unit(11),0,Math.PI*2);c.stroke();
   }
-  if(this.isVisible(position)){
+  if(showHud&&this.isVisible(position)){
    const q=this.toScreen(position);
    c.strokeStyle='#152f3d';c.lineWidth=unit(3);c.fillStyle='#fff';
    c.beginPath();c.arc(q.x,q.y,unit(8),0,Math.PI*2);c.fill();c.stroke();

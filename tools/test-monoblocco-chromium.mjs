@@ -61,7 +61,15 @@ try{
  const after=await page.evaluate(async()=>{const g=globalThis.__monobloccoTest,s=g.state,{pointInside}=await import('./core.js'),b=[...g.collision.near(s.x,s.z,260)].find(o=>o.n==='Ospedale Civile - Monoblocco - Casse - Prenotazioni');return {x:s.x,y:s.y,z:s.z,speed:s.speed,mode:s.mode,roofInside:!!b&&pointInside(s.x,s.z,b.p),vehicle:g.state.car?.hospitalRoofBike===true};});
  const metres=Math.hypot(after.x-before.x,after.z-before.z);console.log('ROOF_BROWSER_RIDE '+JSON.stringify({before,after,metres,roofY:rooftop.roofY}));
  assert(after.vehicle&&after.mode==='car','Roof bike failed to remain driveable');assert(metres>.4,'W input did not physically move trial bike');assert(after.roofInside,'Test bike fell outside the real Monoblocco polygon');assert(after.y>=rooftop.roofY-.8,'Bike fell through the roof');
- phase='disabled rooftop motorcycle recovers on rooftop with R';
+ phase='ordinary rooftop motorcycle refuses R';
+ const ordinary=await page.evaluate(()=>{const s=globalThis.__monobloccoTest.state;s.health=s.car.health=57;return {x:s.x,y:s.y,z:s.z};});
+ await page.keyboard.press('r');await page.waitForTimeout(300);
+ assert.equal(await page.evaluate(()=>globalThis.__monobloccoTest.state.health),57,'ordinary roof bike must not be healed by R');
+ assert(Math.abs(await page.evaluate(()=>globalThis.__monobloccoTest.state.y)-ordinary.y)<.3,'ordinary roof bike must not respawn');
+ // Exercise the existing roof recovery path with an explicitly designated
+ // testing fixture; ordinary paddock motorcycles retain permanent damage.
+ await page.evaluate(()=>{globalThis.__monobloccoTest.state.car.testingVehicle=true;});
+ phase='disabled testing motorcycle recovers on rooftop with R';
  await page.evaluate(()=>{const g=globalThis.__monobloccoTest,s=g.state;s.wanted=0;s.health=0;if(s.car)s.car.health=0;});
  await page.waitForTimeout(350);await page.keyboard.press('r');
  await page.waitForFunction(()=>{const g=globalThis.__monobloccoTest,s=g?.state,e=g?.hospitalElevators?.elevators?.[0];return !!e&&s?.mode==='car'&&s.health===100&&s.car?.mesh?.visible&&Math.abs(s.y-e.roofY)<1.5&&s.respawnHospitalRoof===null;},null,{timeout:9000});
@@ -72,8 +80,13 @@ try{
  assert(roofRespawn.nearestLanding<3,'Roof respawn must use a safe elevator landing');
  assert.equal(roofRespawn.mode,'car');assert.equal(roofRespawn.health,100);assert.equal(roofRespawn.bikeHealth,100);assert.equal(roofRespawn.visible,true);
  phase='disabled ground motorcycle recovers at ground level with R';
- await page.evaluate(()=>{const g=globalThis.__monobloccoTest,e=g.hospitalElevators.elevators[0],s=g.state,c=s.car;Object.assign(s,{x:e.exit.x,z:e.exit.z,y:e.groundY+.2,yaw:e.yaw,speed:0,vy:0,health:100,wanted:0,respawnHospitalRoof:null});Object.assign(c,{x:s.x,z:s.z,y:s.y,yaw:s.yaw,speed:0,health:100});c.mesh.visible=true;g.pose(c);});
- await page.waitForTimeout(300);
+ await page.evaluate(async()=>{const g=globalThis.__monobloccoTest,e=g.hospitalElevators.elevators[0],s=g.state,c=s.car,{nearestOnSegment}=await import('./core.js');
+  const road=g.terrain.roads.rawCandidates(e.exit.x,e.exit.z,100).filter(r=>r.road.w>=6&&!/footway|path|steps|tram|cycleway/.test(r.road.k)).sort((a,b)=>a.d-b.d)[0];if(!road)throw Error('No drivable ground road near hospital');
+  const p=nearestOnSegment(e.exit.x,e.exit.z,road.segment.a,road.segment.b),y=g.terrain.height(p.x,p.z);if(y>=e.roofY-8)throw Error('Ground fixture must be below roof');
+  Object.assign(s,{x:p.x,z:p.z,y,yaw:e.yaw,speed:0,vy:0,health:100,wanted:0,respawnHospitalRoof:null});Object.assign(c,{x:s.x,z:s.z,y:s.y,yaw:s.yaw,speed:0,health:100});c.mesh.visible=true;g.pose(c);
+ });
+ // Let the controller remember a real supported ground checkpoint.
+ await page.waitForTimeout(1000);
  await page.evaluate(()=>{const s=globalThis.__monobloccoTest.state;s.health=0;if(s.car)s.car.health=0;});
  await page.waitForTimeout(350);await page.keyboard.press('r');
  await page.waitForFunction(()=>{const g=globalThis.__monobloccoTest,s=g?.state,e=g?.hospitalElevators?.elevators?.[0];return !!e&&s?.mode==='car'&&s.health===100&&s.car?.mesh?.visible&&s.y<e.roofY-8&&s.respawnHospitalRoof===null;},null,{timeout:9000});

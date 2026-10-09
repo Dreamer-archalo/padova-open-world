@@ -1,4 +1,6 @@
+import {markVehicleWreck} from './vehicle-damage.js';
 import {clamp,dist,angleDiff} from './core.js';
+import {TRUCK_RAMP} from './truck-ramp.js';
 
 export function updateWheelie(car,held,dt){
  const allowed=(car.spec.bike||car.spec.family==='motorcycle'||['scooter','motorcycle'].includes(car.style))&&
@@ -14,28 +16,35 @@ export function wheeliePose(car){
 }
 export function mobileRamp(car){
  if(!car.spec.rampTruck||!car.mesh?.visible||car.health<=0)return null;
- const length=5.2,centre=-1.0,base=car.y||0;
+ const {width,rear,front,low,high}=TRUCK_RAMP,length=front-rear,centre=(front+rear)/2,base=car.y||0;
  return {kind:'mobile-ramp',car,x:car.x+Math.sin(car.yaw)*centre,z:car.z+Math.cos(car.yaw)*centre,
-  yaw:car.yaw,width:2.24,length,topY:[base+.12,base+.12,base+3.05,base+3.05]};
+  yaw:car.yaw,width,length,topY:[base+low,base+low,base+high,base+high]};
 }
 export function onTruckRamp(actor,truck){
  const r=mobileRamp(truck);if(!r)return false;
+ // R41_FIX_RAMP_APPROACH: check the front bumper, not just the vehicle centre.
  const dx=actor.x-r.x,dz=actor.z-r.z,u=dx*Math.cos(r.yaw)-dz*Math.sin(r.yaw),v=dx*Math.sin(r.yaw)+dz*Math.cos(r.yaw);
- return Math.abs(u)<r.width/2-.08&&v>=-r.length/2-.6&&v<=r.length/2+.1&&
-  Math.abs(angleDiff(actor.yaw,r.yaw))<.55&&actor.y>=r.topY[0]-.25;
+ const spec=actor.spec||actor.car?.spec||{},halfLength=(spec.length||4.4)/2;
+ const nose=v+halfLength,tail=v-halfLength,relativeYaw=Math.abs(angleDiff(actor.yaw,r.yaw));
+ if((actor.speed??0)<0||relativeYaw>.78||Math.abs(u)>r.width/2-.08)return false;
+ if(nose< -r.length/2-.65||tail>r.length/2+.65)return false;
+ const deck=r.topY[0]+(r.topY[2]-r.topY[0])*clamp(v/r.length+.5,0,1);
+ // During the rear approach the car's centre remains at road height.
+ const entry=v< -r.length/2+Math.min(halfLength,1.25);
+ return (actor.y??r.topY[0])>=(entry?r.topY[0]-1:deck-.85);
 }
 export function fuelImpact(a,b){
  if(!a?.spec||!b?.spec||!(a.spec.fuelTank||b.spec.fuelTank)||a.health<=0||b.health<=0)return null;
  const relative=Math.hypot(Math.sin(a.yaw)*(a.speed||0)-Math.sin(b.yaw)*(b.speed||0),
   Math.cos(a.yaw)*(a.speed||0)-Math.cos(b.yaw)*(b.speed||0));
- return relative>=2?(a.spec.fuelTank?a:b):null;
+ return relative>=12?(a.spec.fuelTank?a:b):null;
 }
 export function explodeFuelTruck(truck,{cars,state,time,blast}){
  if(truck.fuelExploded)return false;truck.fuelExploded=true;if(truck.regionalTraffic)truck.exploded=true;truck.health=0;truck.speed=0;
- truck.mesh.visible=false;truck.destroyedUntil=time+35;blast?.(truck,time);
+ markVehicleWreck(truck,time,true);truck.destroyedUntil=0;blast?.(truck,time);
  for(const c of cars){if(c===truck||!c.mesh?.visible||!c.spec||Math.abs((c.y||0)-(truck.y||0))>7)continue;
-  const d=dist(c,truck);if(d>16)continue;c.health=Math.max(0,c.health-(1-d/16)*95*(c.spec.armor||1));
-  if(c===state?.car)state.health=c.health;
+  const d=dist(c,truck);if(d>16)continue;c.health=Math.max(0,c.health-(1-d/16)*180*(c.spec.armor||1));
+  if(c.health<=0)markVehicleWreck(c,time,true);if(c===state?.car)state.health=c.health;
  }
  if(state?.mode==='foot'&&Math.abs(state.y-(truck.y||0))<7&&dist(state,truck)<16)
   state.health=Math.max(0,state.health-(1-dist(state,truck)/16)*95);

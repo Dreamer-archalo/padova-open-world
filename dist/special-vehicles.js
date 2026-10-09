@@ -1,5 +1,6 @@
 import * as THREE from './vendor/three.module.js';
 import {VEHICLES} from './vehicles.js';
+import {createRoadFleet,ROAD_FLEET_IDS} from './road-fleet-coachwork.js';
 import {COLLECTOR_CARS,createCollectorCar} from './collector-cars.js';
 import {clamp,pointInside} from './core.js';
 import {vehicleBlocked,slideMove} from './movement.js';
@@ -11,9 +12,10 @@ export const SPECIAL_VEHICLES={
  albatros:{name:'Albatros · bimotore',width:13.2,length:10.4,height:3.4,wheelbase:4.1,accel:6.5,brake:10,max:96,boost:96,reverse:3,steer:.5,aircraft:true,plane:true},
  tank:{name:'Bastione · carro cingolato',width:3.25,length:7.8,height:3.1,wheelbase:4.5,accel:4.7,brake:14,max:16,boost:16,reverse:7,steer:.65,mass:12,armor:.18,tracked:true},
  libellula:{name:'Libellula · aereo leggero',width:9.2,length:7.8,height:2.8,wheelbase:3.1,accel:7,brake:8,max:76,boost:76,reverse:3,steer:.6,aircraft:true,plane:true},
- portavalori:{name:'Portavalori · Fortezza',width:2.55,length:6,height:3,wheelbase:3.6,accel:12,brake:24,max:46,boost:50,reverse:8,steer:1.2,mass:3.5,armor:.35}
+ portavalori:{name:'Portavalori · Fortezza',family:'work',width:2.55,length:6,height:3,wheelbase:3.6,accel:12,brake:24,max:46,boost:50,reverse:8,steer:1.2,mass:3.5,armor:.35}
 };
 export const EXTRA_TRAFFIC={
+ ape:{...VEHICLES.ape},
  cisterna:{name:'Brenta Fuel · cisterna',family:'freight',width:2.55,length:8.2,height:3.3,wheelbase:5.0,accel:4.5,brake:17,max:27,boost:30,reverse:5,steer:.65,mass:4,fuelTank:true,npcOnly:true},
  camionrampa:{name:'Salto · camion rampa',family:'work',width:2.55,length:8.0,height:3.2,wheelbase:4.9,accel:5,brake:18,max:26,boost:29,reverse:5,steer:.7,mass:4,rampTruck:true,npcOnly:true},
  supersport:{name:'Saetta 1000 · supersport',family:'motorcycle',width:.88,length:2.18,height:1.3,wheelbase:1.46,accel:19,brake:27,max:59,boost:65,reverse:3,steer:1.5,mass:.55,bike:true,npcOnly:true},
@@ -98,7 +100,7 @@ function template(style){const g=new THREE.Group(),parts=[];
  }
  g.add(batch(parts));return g;
 }
-export function createSpecialVehicle(style){if(SPECIAL_MODEL_FACTORIES.has(style)){const model=SPECIAL_MODEL_FACTORIES.get(style)();model.userData.vehicleType=style;for(const name of ['turret','propeller','rotor','tailRotor'])model.userData[name]=model.getObjectByName(name);return model;}if(COLLECTOR_CARS[style])return createCollectorCar(style);if(!templates.has(style))templates.set(style,template(style));const g=templates.get(style).clone(true);g.userData.vehicleType=style;g.userData.turret=g.getObjectByName('turret');g.userData.propeller=g.getObjectByName('propeller');g.userData.rotor=g.getObjectByName('rotor');g.userData.tailRotor=g.getObjectByName('tailRotor');return g;}
+export function createSpecialVehicle(style,paint=null,finish=null){if(SPECIAL_MODEL_FACTORIES.has(style)){const model=SPECIAL_MODEL_FACTORIES.get(style)();model.userData.vehicleType=style;for(const name of ['turret','propeller','rotor','tailRotor'])model.userData[name]=model.getObjectByName(name);return model;}if(COLLECTOR_CARS[style])return createCollectorCar(style,paint,typeof finish==='string'?finish:finish?.wheels);const revised=ROAD_FLEET_IDS.includes(style);if(revised&&(paint||finish))return createRoadFleet(style,SPECIAL_VEHICLES[style],paint,finish);if(!templates.has(style))templates.set(style,revised?createRoadFleet(style,SPECIAL_VEHICLES[style]):template(style));const g=templates.get(style).clone(true);g.userData.vehicleType=style;g.userData.turret=g.getObjectByName('turret');g.userData.propeller=g.getObjectByName('propeller');g.userData.rotor=g.getObjectByName('rotor');g.userData.tailRotor=g.getObjectByName('tailRotor');return g;}
 export function createParachute(){const g=new THREE.Group(),parts=[[0,5,0,6,.35,3.2,'#cf9d51']];for(const x of [-2.4,2.4])for(const z of [-1.1,1.1])parts.push([x/2,3.5,z/2,.035,3,.035,'#e3ded0']);g.add(batch(parts));g.visible=false;return g;}
 export function footSurface(x,z,referenceY,terrain,collision){let height=terrain.height(x,z,referenceY);for(const b of collision.near(x,z,.5)){const top=(b.minY||0)+b.h;if(top<=height||referenceY<top-.25)continue;if([[0,0],[.3,0],[-.3,0],[0,.3],[0,-.3]].every(([dx,dz])=>pointInside(x+dx,z+dz,b.p)))height=top;}return height;}
 export function planeStep(actor,input,dt,terrain,collision){

@@ -1,0 +1,145 @@
+name: Workshop R41 · map categories, home repairs and private delivery
+
+on:
+  push:
+    branches: [fix/r41-ramps-jump-controls-20261009]
+
+permissions:
+  actions: read
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  deploy-preview:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Recover regional data for the playtest
+        shell: bash
+        run: |
+          set -euo pipefail
+          for name in venice.json region-padova-venice.json world-padova-venice.json world-terrain.json map-hd-extras.json; do
+            found=false
+            for label in vehicles-r35 solo-cars-r26 road-fixes-r25 taxi-r22 road-levels-r21 padova-npc-r17 dealerships unified; do
+              url="https://dreamer-archalo.github.io/padova-open-world/preview/$label/data/$name"
+              if curl --fail --silent --show-error --location --max-time 60 "$url" -o "dist/data/$name"; then
+                echo "Recovered $name from $label"
+                found=true
+                break
+              fi
+            done
+            if test "$found" != true && test "$name" != map-hd-extras.json; then
+              echo "Missing required regional file: $name" >&2
+              exit 1
+            fi
+          done
+          for name in venice.json region-padova-venice.json world-padova-venice.json world-terrain.json; do test -s "dist/data/$name"; done
+
+      - name: Verify workshop, fleet and showroom behaviour
+        run: |
+          node --check dist/modern-vehicles.js
+          node --check dist/world.js
+          node --check dist/villa-mandria-hangar.js
+          node tools/verify-vehicle-silhouettes-r33.mjs
+          node tools/verify-vehicle-finish-r35.mjs
+          node tools/verify-road-fleet-r36.mjs
+          node tools/verify-workshop-ownership-r37.mjs
+          node tools/verify-workshop-classics-r39.mjs
+          node tools/verify-map-home-services-r41.mjs
+          node tools/verify-truck-jumps-r41.mjs
+          node tools/verify-dealer-handover-r41.mjs
+          node tools/verify-workshop-dealer-r40.mjs
+          node verify-vehicle-jumps.mjs
+          node --max-old-space-size=3072 tools/verify-workshop-yards-r38.mjs
+          npm test
+          node verify-dealerships.mjs
+
+      - name: Chromium visual review
+        if: ${{ !cancelled() }}
+        run: |
+          npm install --no-save playwright@1.55.1
+          npx playwright install --with-deps chromium
+          node tools/test-map-home-services-r41-browser.mjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: map-home-services-r41-review
+          path: |
+            test-artifacts/r41
+            test-artifacts/r40
+            test-artifacts/r39
+            test-artifacts/r37
+      - name: Download currently published Pages artifact
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          RUN_ID="$(gh api "repos/$GITHUB_REPOSITORY/actions/artifacts?name=github-pages&per_page=100" --jq '[.artifacts[] | select(.expired==false)][0].workflow_run.id')"
+          test -n "$RUN_ID"
+          mkdir -p /tmp/current-pages site
+          gh run download "$RUN_ID" --repo "$GITHUB_REPOSITORY" --name github-pages --dir /tmp/current-pages
+          ARCHIVE="$(find /tmp/current-pages -type f -name '*.tar' | head -n 1)"
+          test -n "$ARCHIVE"
+          tar -xf "$ARCHIVE" -C site
+          test -f site/index.html
+
+      - name: Add isolated R41 preview without changing production
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p site/preview/r41-truck-jump-fix
+          rm -rf site/preview/r41-truck-jump-fix/*
+          cp -a dist/. site/preview/r41-truck-jump-fix/
+          touch site/.nojekyll
+          test -f site/preview/r41-truck-jump-fix/index.html
+          test -s site/preview/r41-truck-jump-fix/data/region-padova-venice.json
+          test -s site/preview/r41-truck-jump-fix/data/world-terrain.json
+
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v4
+        with:
+          path: site
+      - name: Deploy isolated public preview
+        id: deployment
+        uses: actions/deploy-pages@v4
+
+      - name: Verify public R41 link
+        shell: bash
+        run: |
+          set -euo pipefail
+          base='https://dreamer-archalo.github.io/padova-open-world/preview/r41-truck-jump-fix'
+          for attempt in 1 2 3 4 5 6; do
+            if curl --fail --silent --show-error --location "$base/index.html" -o /tmp/r36.html &&
+               curl --fail --silent --show-error --location "$base/modern-vehicles.js" -o /tmp/r36-vehicles.js &&
+               grep -q 'createCoachwork' /tmp/r36-vehicles.js &&
+               grep -q 'Targa Aperta' /tmp/r36-vehicles.js &&
+               curl --fail --silent --show-error --location "$base/road-fleet-coachwork.js" -o /tmp/r36-fleet.js &&
+               grep -q 'createRoadFleet' /tmp/r36-fleet.js &&
+               curl --fail --silent --show-error --location "$base/home-vehicle-services.js" -o /tmp/r41-home.js &&
+               cmp -s dist/home-vehicle-services.js /tmp/r41-home.js &&
+               curl --fail --silent --show-error --location "$base/game.js" -o /tmp/r41-game.js &&
+               cmp -s dist/game.js /tmp/r41-game.js &&
+               curl --fail --silent --show-error --location "$base/vehicle-dynamics.js" -o /tmp/r41-dynamics.js &&
+               cmp -s dist/vehicle-dynamics.js /tmp/r41-dynamics.js &&
+               curl --fail --silent --show-error --location "$base/truck-ramp.js" -o /tmp/r41-ramp.js &&
+               cmp -s dist/truck-ramp.js /tmp/r41-ramp.js &&
+               curl --fail --silent --show-error --location "$base/dealer-conversation.js" -o /tmp/r41-conversation.js &&
+               cmp -s dist/dealer-conversation.js /tmp/r41-conversation.js &&
+               curl --fail --silent --show-error --location "$base/dealerships.js" -o /tmp/r41-dealers.js &&
+               cmp -s dist/dealerships.js /tmp/r41-dealers.js; then
+              exit 0
+            fi
+            sleep 5
+          done
+          exit 1

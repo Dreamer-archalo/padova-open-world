@@ -6,7 +6,7 @@ import {VEHICLES} from './dist/vehicles.js';
 import {ModernGameplay} from './dist/modern-gameplay.js';
 import {DEALER_SITES,DEALER_CATALOG,Dealerships,createDealerVehicle,reserveDealerBuildings,dealerWallParts,dealerQuote} from './dist/dealerships.js';
 
-const luxury=Object.values(DEALER_CATALOG).filter(c=>c.luxury),ordinary=Object.values(DEALER_CATALOG).filter(c=>!c.luxury);
+const luxury=Object.values(DEALER_CATALOG).filter(c=>c.luxury&&!c.collector),ordinary=Object.values(DEALER_CATALOG).filter(c=>!c.luxury);
 assert.equal(DEALER_SITES.length,10);assert(luxury.length>=13);assert(ordinary.length>=10);
 assert.equal(Object.values(DEALER_CATALOG).filter(c=>c.custom).length,4,'Only four new industrial models');
 assert.equal(new Set(luxury.map(c=>c.base)).size,luxury.length,'Luxury silhouettes must be different');
@@ -32,7 +32,7 @@ for(const site of localSites){
  assert(p.dealerSlots.every(q=>pointInside(q.x,q.z,p.p)&&!collides(q.x,q.z,.5,collision,0)),'Displayed cars must fit inside the original building and away from walls');
  assert(!collides(p.dealerDoor.outside.x,p.dealerDoor.outside.z,.35,collision,0),'Showroom entrance must open to the street');
  state.x=site.x;state.z=site.z;for(let i=0;i<40&&!shops.active.has(site.id);i++)shops.update();
- const entry=shops.active.get(site.id);assert(entry);assert.equal(entry.units.length,p.dealerSlots.length);
+ const entry=shops.active.get(site.id);assert(entry);assert(entry.units.length>=4&&entry.units.length<=p.dealerSlots.length,'Display count adapts to physical vehicle dimensions');
  state.money=50000;
  const car=entry.units[0],money=state.money;assert(shops.buy(car));assert.equal(state.money,money-car.dealerPrice);assert(shops.owned.has(car.style));
  assert(!shops.buy(car),'An already purchased display car cannot be charged twice');assert.equal(state.money,money-car.dealerPrice);
@@ -41,10 +41,11 @@ for(const site of localSites){
  state.x=site.x+900;state.z=site.z+900;shops.update();assert(!shops.active.has(site.id));
 }
 const quote=dealerQuote('salone_6',{color:'#aa3442',speed:2,wheels:'bronze',interior:'premium',name:'La mia GT'});
-assert.equal(quote.total,DEALER_CATALOG.salone_6.price+220+2200+340+490+120);
+assert.equal(quote.total,DEALER_CATALOG.salone_6.price+220+2200+340+120);
+assert.equal(quote.interior,undefined,'Invisible interior is omitted and not charged');
 assert.equal(quote.max,VEHICLES.salone_6.max+12);
 state.x=localSites[0].x;state.z=localSites[0].z;shops.update();state.money=50000;
-const before=state.money;assert(shops.purchase(localSites[0],'salone_6',quote));assert.equal(state.money,before-quote.total,'Configured total deducted once');assert.equal(shops.builds.get('salone_6').name,'La mia GT');
+const before=state.money,payable=shops.quote('salone_6',quote);assert(shops.purchase(localSites[0],'salone_6',quote));assert.equal(state.money,before-payable.amountDue,'New purchase or owned-car upgrade deducted once');assert.equal(shops.builds.get('salone_6').name,'La mia GT');
 const restarted=new Dealerships({scene,terrain:{},collision,cars,state,regionalWorld:()=>null,roadAt:()=>null,pose:()=>{}});
 assert(restarted.owned.has('salone_0')&&restarted.purchased.has('padova-lusso:0'),'Purchase must survive reload');
 assert.equal(restarted.builds.get('salone_6').wheels,'bronze','Configured vehicle must survive reload');

@@ -14,7 +14,7 @@ assert.deepEqual(HANGAR_SECTIONS.map(s=>s.id),['collector','air','land','urban',
 assert(HANGAR_SECTIONS.find(s=>s.id==='water')?.enabled===true,'playable boats keep their hangar category');
 assert(ids.length>=52,'do not lose the existing vehicle registry');
 assert(ids.every(id=>['collector','air','land','urban','water'].includes(hangarSection(id,VEHICLES[id]))),'every existing vehicle in one available top-level category');
-assert.equal(ids.filter(id=>hangarSection(id)==='collector').length,15,'15 collector cars in a dedicated section');
+assert.equal(ids.filter(id=>hangarSection(id)==='collector').length,16,'16 collector cars in a dedicated section');
 assert(ids.filter(id=>hangarSection(id)==='water').length>=10,'registered watercraft remain available');
 assert.equal(hangarSection('bicycle'),'urban');
 assert.equal(hangarSection('kick-scooter'),'urban');

@@ -4,6 +4,19 @@ import {vehicleBlocked} from './movement.js';
 
 export const JUMP_GRAVITY=18;
 export const MAX_CONTACT_RISE=.28;
+export const ARCADE_JUMP_HEIGHT=50;
+export function startArcadeJump(actor,car){
+ if(!car||car.spec.aircraft||car.spec.watercraft||car.spec.boat||(actor.health??car.health??0)<=0||car.jump?.airborne)return false;
+ car.jump={airborne:true,vx:Math.sin(actor.yaw)*actor.speed+(car.slideX||0),vz:Math.cos(actor.yaw)*actor.speed+(car.slideZ||0),
+  vy:Math.sqrt(2*JUMP_GRAVITY*ARCADE_JUMP_HEIGHT),ramp:null,groundVy:0,arcadeJump:true,lastX:actor.x,lastZ:actor.z};
+ car.wheelie=0;return true;
+}
+// Health is stored as a percentage even when protections add life capacity.
+export function landingDamage(motion,car){
+ if(!motion.landed)return 0;
+ if(motion.arcadeLanding)return 100/(car.spec.maxHealth||100);
+ return Math.max(0,motion.landingSpeed-12)*3*(car.raceOneRules?car.spec.raceDamageFactor:car.spec.armor||1);
+}
 export function resetGroundMotion(car){if(car){car.jump=null;car.steerInput=0;car.pitch=0;car.wheelie=0;car.wheelieAt=null;car.slideX=car.slideZ=0;}}
 
 // Ground height is authoritative for physics, but a noisy height lookup must not
@@ -61,7 +74,7 @@ export function groundVehicleStep(actor,car,input,dt,terrain,collision){
  const yaw=actor.yaw+car.steerInput*steeringRate(spec,actor.speed,input.handbrake)*dt*direction*(j.airborne?.28:1);
  if(!vehicleBlocked(actor.x,actor.z,yaw,collision,spec,actor.y))actor.yaw=yaw;
  car.slideX=(car.slideX||0)*Math.exp(-dt*2.5);car.slideZ=(car.slideZ||0)*Math.exp(-dt*2.5);
- let contact=null,hitSpeed=0,landingSpeed=0,launched=false,landed=false;
+ let contact=null,hitSpeed=0,landingSpeed=0,launched=false,landed=false,arcadeLanding=false;
  const count=Math.max(1,Math.ceil(Math.max(Math.hypot(Math.sin(actor.yaw)*actor.speed+(car.slideX||0),Math.cos(actor.yaw)*actor.speed+(car.slideZ||0)),(j.airborne?Math.hypot(j.vx,j.vz):0))*dt/.65)),step=dt/count;
  for(let i=0;i<count;i++){
   const old=groundContact(terrain,actor.x,actor.z,actor.y,car);
@@ -89,20 +102,29 @@ export function groundVehicleStep(actor,car,input,dt,terrain,collision){
     &&j.groundVy-(next.y-old.y)/step>JUMP_GRAVITY*step*1.2;
    // Any genuine ledge is ballistic. Previously slow vehicles could be snapped
    // downward by half a metre or more in one fixed tick.
-   const drops=drop>.48&&Math.abs(actor.speed)>1.5;
+   const drops=drop>.48&&Math.abs(actor.speed)>1.5&&next.ramp?.kind!=='mobile-ramp';
    if(leavesRamp||drops||crests){
-    j.airborne=true;j.climbDistance=0;j.vx=vx;j.vz=vz;j.vy=leavesRamp?Math.max(2,j.groundVy):clamp(j.groundVy,-4,12);ny=actor.y+j.vy*step-.5*JUMP_GRAVITY*step*step;j.vy-=JUMP_GRAVITY*step;launched=true;
+    // A moving deck must launch at the car's speed relative to the truck.
+    // The last substep's world-space slope velocity otherwise varies with FPS.
+    const rampVy=old.ramp?.kind==='mobile-ramp'?(old.ramp.topY[2]-old.ramp.topY[0])/old.ramp.length*
+     (vx*Math.sin(old.ramp.yaw)+vz*Math.cos(old.ramp.yaw)-(old.ramp.car.speed||0)):j.groundVy;
+    j.airborne=true;j.climbDistance=0;j.vx=vx;j.vz=vz;j.vy=leavesRamp?Math.max(2,rampVy):clamp(j.groundVy,-4,12);ny=actor.y+j.vy*step-.5*JUMP_GRAVITY*step*step;j.vy-=JUMP_GRAVITY*step;launched=true;
    }else{
     // Reject impossible vertical elevators even when both contacts are ordinary
     // terrain (the old test only caught a transition into/out of a ramp).
     const rampGrade=next.ramp?.kind==='mobile-ramp'?.7:.22;const allowedRise=Math.max(MAX_CONTACT_RISE,horizontal*rampGrade);
     if(rise>allowedRise){hitSpeed=Math.abs(actor.speed);actor.speed*=-.15;break;}
-    const followsGrade=Math.abs(next.y-old.y)<=Math.max(.025,horizontal*(next.ramp?.kind==='mobile-ramp'?.7:.24))&&Math.abs(actor.y-old.y)<.15;
+    // Traffic advances less often than the player on low graphics settings.
+    // A deck that moved forward can leave the previous support sample outside
+    // its rear edge; still follow the next legal grade instead of sinking into it.
+    const movingDeck=[old.ramp,next.ramp].find(r=>r?.kind==='mobile-ramp');
+    const supportTolerance=movingDeck?Math.max(.15,Math.abs(movingDeck.car.speed||0)*Math.max(dt,movingDeck.car.lodSpan||.1)*.7+.05):.15;
+    const followsGrade=Math.abs(next.y-old.y)<=Math.max(.025,horizontal*(next.ramp?.kind==='mobile-ramp'?.7:.24))&&Math.abs(actor.y-old.y)<supportTolerance;
     ny=followsGrade?next.y:smoothGroundY(actor.y,next.y,step,actor.speed);j.groundVy=(ny-actor.y)/step;j.ramp=next.ramp;
     j.climbDistance=next.y-old.y>horizontal*.015?(j.climbDistance||0)+horizontal:0;
    }
   }
-  if(j.airborne&&ny<=next.y&&j.vy<=0){landingSpeed=Math.max(landingSpeed,-j.vy);j.airborne=false;landed=true;ny=next.y;j.vy=0;j.ramp=next.ramp;}
+  if(j.airborne&&ny<=next.y&&j.vy<=0){landingSpeed=Math.max(landingSpeed,-j.vy);arcadeLanding||=!!j.arcadeJump;j.arcadeJump=false;j.airborne=false;landed=true;ny=next.y;j.vy=0;j.ramp=next.ramp;}
   const wall=vehicleContact(nx,nz,actor.yaw,collision,spec,ny);
   if(wall){
    const safe=safeVehicleFraction(actor,{x:nx,z:nz,y:ny},collision,spec),response=wallResponse(vx,vz,wall.normal,step);
@@ -119,8 +141,8 @@ export function groundVehicleStep(actor,car,input,dt,terrain,collision){
   if(!j.airborne&&terrain.waterAt?.(nx,nz,0,ny)!==null&&terrain.waterAt?.(nx,nz,0,ny)!==undefined)break;
  }
  const support=groundContact(terrain,actor.x,actor.z,actor.y,car);
- const pitch=j.airborne?-Math.atan2(j.vy,Math.max(8,Math.hypot(j.vx,j.vz))):support.pitch===null?terrain.slope(actor.x,actor.z,actor.yaw,spec.wheelbase,actor.y):support.pitch*Math.cos(actor.yaw-support.ramp.yaw);
+ const pitch=j.arcadeJump?0:j.airborne?-Math.atan2(j.vy,Math.max(8,Math.hypot(j.vx,j.vz))):support.pitch===null?terrain.slope(actor.x,actor.z,actor.yaw,spec.wheelbase,actor.y):support.pitch*Math.cos(actor.yaw-support.ramp.yaw);
  car.pitch=(car.pitch||0)+(pitch-(car.pitch||0))*(1-Math.exp(-dt*12));
  j.lastX=actor.x;j.lastZ=actor.z;
- return {hitSpeed,landingSpeed,launched,landed,airborne:j.airborne,contact};
+ return {hitSpeed,landingSpeed,launched,landed,arcadeLanding,airborne:j.airborne,contact};
 }

@@ -1,3 +1,4 @@
+import {coachworkLOD} from './car-coachwork.js';
 import * as THREE from './vendor/three.module.js';
 
 export const QUALITY={
@@ -18,7 +19,7 @@ export function actorDetail(actor,simple,visible=true){
  if(!entry){entry={children:[...root.children],materials:[],mode:null};root.traverse(o=>{if(o.isMesh)entry.materials.push([o,o.material]);});proxies.set(root,entry);}
  const mode=visible?(simple?'simple':'detail'):'hidden';if(entry.mode===mode)return;entry.mode=mode;
  const proxyAllowed=!actor.spec?.aircraft&&!actor.spec?.tracked&&!actor.spec?.collector&&!actor.spec?.bike&&!actor.spec?.fuelTank&&!actor.spec?.rampTruck;
- if(simple&&proxyAllowed&&!entry.proxy){const color=actor.spec?'#879394':'#729181',m=new THREE.Mesh(simpleBody,new THREE.MeshBasicMaterial({color}));if(actor.spec){m.geometry=cube;m.scale.set(actor.spec.width*.9,actor.spec.height*.8,actor.spec.length*.95);m.position.y=actor.spec.height*.45;}else m.userData.clothing=true;m.userData.sharedRenderProxy=true;entry.proxy=m;root.add(m);}
+ if(simple&&proxyAllowed&&!entry.proxy){const color=actor.spec?'#879394':'#729181',m=new THREE.Mesh(simpleBody,new THREE.MeshBasicMaterial({color}));if(actor.spec&&root.userData.modelRevision>=35){const lod=coachworkLOD(root);m.geometry=lod.geometry;m.material=lod.material;}else if(actor.spec){m.geometry=cube;m.scale.set(actor.spec.width*.9,actor.spec.height*.8,actor.spec.length*.95);m.position.y=actor.spec.height*.45;}else m.userData.clothing=true;m.userData.sharedRenderProxy=true;entry.proxy=m;root.add(m);}
  for(const child of entry.children)child.visible=visible&&(!simple||!proxyAllowed)&&!child.userData.roleHidden;
  if(entry.proxy)entry.proxy.visible=visible&&simple&&proxyAllowed;
  for(const [mesh,material] of entry.materials)mesh.material=simple&&!proxyAllowed&&!Array.isArray(material)?flat(material):material;

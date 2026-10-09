@@ -35,10 +35,10 @@ const curb=curbParkingTarget(park,{x:park.x,z:100},flat,collision,[]);
 assert(curb&&Math.abs(curb.x+(urban.w/2+park.spec.width/2+.5))<1e-9,'right parking offset measured from road centre, not current lane');
 
 const tank=makeCar('cisterna',right,3);tank.speed=0;tank.regionalTraffic=true;
-const hitter=makeCar('sedan');hitter.regionalTraffic=true;
+const hitter=makeCar('sedan');hitter.speed=20;hitter.regionalTraffic=true;
 const viewer={mode:'foot',x:100,z:100,y:5,health:100};let blasts=0;
 regionalNpcStep(hitter,[tank],viewer,1/60,{...flat,npcBlast:()=>blasts++},collision,4);
-assert(tank.fuelExploded&&!tank.mesh.visible&&hitter.health<40,'regional tanker blast includes the car that struck it');
+assert(tank.fuelExploded&&tank.mesh.visible&&tank.permanentlyDestroyed&&tank.burning&&hitter.health<40,'regional tanker blast includes the car that struck it');
 assert.equal(blasts,1);
 reviveRegionalCar(tank,0,20,0,flat);
 assert.equal(tank.x,right,'regional respawn restores physical lane position');

@@ -1,0 +1,15 @@
+# R37 · Concessionari, officine e garage fisico
+
+Estensione cumulativa della R36 (base 3b4c33f), sulla stessa anteprima `/preview/fleet-r36/`. Nessun merge definitivo.
+
+Il concessionario offre finiture vernice, cromature indipendenti, cerchi, pneumatici, colori interni, cupolini e borse moto, accessori cabine, tre preset e schede Estetica/Prestazioni/Attrezzatura. Il livello Preparazione estrema costa €4.400 e raggiunge il 12% oltre il livello Pista. Minigonne, paraurti Sport e protezioni sono nell'officina.
+
+Sette officine accessibili con E a mezzo fermo su strade di Padova ZIP, Padova Sud, Dolo, Mira, Mirano, Mestre e Marghera, con destinazioni nel menu M. Stage 1/2/3: +36/+79/+130 km/h sulla configurazione acquistata, €3.500/8.000/16.000. Push bar anteriori, protezioni posteriori, gomme, vetri laminati/antiproiettile e telaio aumentano la capacità da 100 fino a 525. Danni normalizzati al 100%: l'armatura consuma meno integrità a pari urto; HUD e preventivo mostrano vita effettiva. Una riparazione in officina è pagata e possibile solo prima della distruzione.
+
+Un acquisto viene consegnato come istanza fisica. Il parcheggio nella zona garage della villa, a veicolo fermo e dopo essere scesi, ne abilita il salvataggio; acquisti mai riportati a casa non entrano nell'inventario persistente. Anche i veicoli raccolti nella mappa si possono conservare. Danni e configurazione sono associati a un token della singola istanza. Richiamare un mezzo già nella mappa indica la sua posizione, senza duplicarlo. La distruzione elimina il token dal garage e l'eventuale possesso nel concessionario. Migrazione una tantum degli acquisti R36 già salvati.
+
+R non recupera o ripara mezzi ordinari; il recupero del personaggio dopo acqua/morte lascia il mezzo e i suoi danni nel mondo. Solo le quattro istanze di testing create da V (MiTo, Cinquecento, moto stradale, scooter) possono essere ricreate/riparate all'infinito. Le gare mantengono i propri mezzi e regole. Il nuovo budget di €400.000 viene assegnato una sola volta e conservato ai successivi accessi, senza reintegrare continuamente la spesa.
+
+Raggiungere zero dopo urti comuni crea un relitto fuori uso. Fuoco e fumo accompagnano soltanto urti catastrofici, grandi cadute e cause esplicite come carburante/armi/turbo. La cisterna si incendia per contatti significativi (velocità relativa almeno 43 km/h), non per piccoli urti di parcheggio. Struttura visibile dopo esplosione; fiamme per 75 secondi, relitto conservato. Il danno severo dipende dalla velocità contro la superficie, non dal solo tachimetro.
+
+Verifiche nuove: quattro mezzi testing; livello estremo e prezzi; separazione concessionario/officina; capacità 525; upgrade incrementali; riparazione pagata; acquisto non persistente prima del parcheggio; danni e token persistenti; distruzione permanente; cisterna visibile e nessuna esplosione per urti lenti. La prova Chromium conserva la revisione R36 dei 42 modelli e verifica acquisto/consegna, R bloccato, assenza di duplicazioni, parcheggio, officina, protezioni, perdita dal garage, testing e posizionamento delle sette officine.

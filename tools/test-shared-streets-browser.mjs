@@ -14,9 +14,7 @@ try {
  await page.waitForFunction(()=>!document.getElementById('playBtn')?.disabled,null,{timeout:45000});
  await page.evaluate(async()=>{
   const {ModernGameplay}=await import('./modern-gameplay.js'),old=ModernGameplay.prototype.populate;
-  ModernGameplay.prototype.populate=function(...args){globalThis.__streetGame=this;return old.apply(this,args);};
-  const {CityWorld}=await import('./world.js'),update=CityWorld.prototype.update;
-  CityWorld.prototype.update=function(...args){globalThis.__streetWorld=this;return update.apply(this,args);};
+  ModernGameplay.prototype.populate=function(...args){globalThis.__streetGame=this;globalThis.__streetWorld=this.world;return old.apply(this,args);};
  });
  await page.locator('#initialQuality').selectOption('medium');await page.locator('#playBtn').click();
  await page.waitForFunction(()=>document.documentElement.dataset.initialWorldReady==='true',null,{timeout:240000});

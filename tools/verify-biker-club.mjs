@@ -8,7 +8,7 @@ import {TRAFFIC_VEHICLES,fleetFor} from '../dist/modern-vehicles.js';
 import {angleDiff,dist} from '../dist/core.js';
 import {resetGroundMotion} from '../dist/vehicle-dynamics.js';
 const values=new Map(),storage={getItem:k=>values.get(k)||null,setItem:(k,v)=>values.set(k,v)};
-const messages=[],results=[],s=t.state;let club;
+const messages=[],results=[],s=t.state,moneyBeforeClub=t.state.money;let club;
 const remove=c=>{t.scene.remove(c.mesh);const i=t.cars.indexOf(c);if(i>=0)t.cars.splice(i,1);};
 club=new BikerClub({state:s,graph:t.graph,terrain:t.terrain,collision:t.world.collision,cars:t.cars,scene:t.scene,keys:t.keys,addCar:t.addCar,pose:t.poseVehicle,remove,storage,toast:m=>messages.push(m),routeTo:p=>s.route=[p],closeDialogs(){},cancelMission(){club.cancel();s.mission=null;s.route=[];},finishMission(cash,message){s.money+=cash;s.jobs++;s.mission=null;s.route=[];messages.push(message);}});
 for(const trial of CLUB_TRIALS){assert(!TRAFFIC_VEHICLES[trial.reward]);assert(!fleetFor('industrial').includes(trial.reward));}
@@ -28,7 +28,7 @@ for(const hz of [30,60])for(const id of ['formation','wheelie','jumps']){
  }
  assert.equal(s.mission,null);assert(club.progress.completed.includes(id),id+' actual controller completion at '+hz+'Hz: '+messages.slice(-2));assert.equal(club.crew.length,0);assert.equal(t.terrain.arcadeRamps.filter(r=>r.bikerClub).length,0);assert(t.cars.length<=initialCars,'managed actors removed');if(id==='jumps')assert(airborne>0&&maxY-startY>1.5);if(id==='wheelie')assert(crewWheelies>0,'crew demonstrates real wheelies');results.push({hz,id,airborne,maxHeight:maxY-startY,crewWheelies,record:club.progress.best[id]});
 }
-assert.equal(s.money,1100,'cash only for first completion of each trial');assert.equal(readClubProgress(storage).completed.length,3);for(const trial of CLUB_TRIALS){assert(clubVehicleUnlocked(trial.reward,storage));assert(VEHICLES[trial.reward].bike&&VEHICLES[trial.reward].clubReward);}
+assert.equal(s.money-moneyBeforeClub,1100,'cash only for first completion of each trial');assert.equal(readClubProgress(storage).completed.length,3);for(const trial of CLUB_TRIALS){assert(clubVehicleUnlocked(trial.reward,storage));assert(VEHICLES[trial.reward].bike&&VEHICLES[trial.reward].clubReward);}
 assert.equal(new BikerClub({...club,storage}).unlocked().length,3,'unlocks survive a fresh mission manager');
 // No automatic progress from driving through the gates with both wheels down.
 values.clear();prepare('wheelie');for(let i=0;i<60*25&&club.run;i++)tick(1/60,()=>{if(club.run.mission.phase==='running')drive(18,1/60);});assert(!club.progress.completed.includes('wheelie'));assert.equal(readClubProgress(storage).completed.length,0);

@@ -1,3 +1,4 @@
+import {TEST_VEHICLES} from './vehicle-ownership.js';
 import {boatLaunchPoint} from './nautical-catalog.js';
 import {createSpecialVehicle} from './special-vehicles.js';
 import {clubVehicleUnlocked} from './biker-club-progress.js';
@@ -35,14 +36,25 @@ export function hangarCatalogue(){return Object.entries(VEHICLES).filter(([id,s]
  .sort((a,b)=>Object.keys(CAT).indexOf(a.category)-Object.keys(CAT).indexOf(b.category)||a.name.localeCompare(b.name,'it'));
 }
 // All thumbnails are locally generated SVG images, not external/stock photos.
-export function hangarThumbnail(category,color){
- const ink='#172532',stroke='#91a3af';let silhouette='';
+export function hangarThumbnail(category,color,spec={}){
+ const ink='#172532',stroke='#91a3af',family=spec.family||'',shape=spec.shape||'';let silhouette='';
  if(category==='aircraft')silhouette='<path d="M105 10 L117 62 L190 90 L190 103 L121 94 L119 135 L145 154 L145 162 L111 153 L77 162 L77 154 L103 135 L101 94 L32 103 L32 90 L105 62 Z"/>';
  else if(category==='helicopter')silhouette='<path d="M22 86h180v5H22zM107 33h8v50h-8zM60 95q3-29 39-31h27q33 2 38 29l-15 20H83zM160 95h41v7h-42zM73 121h82v5H73z"/>';
  else if(category==='bicycle'||category==='motorcycle')silhouette='<circle cx="57" cy="116" r="28" fill="none" stroke="'+color+'" stroke-width="7"/><circle cx="163" cy="116" r="28" fill="none" stroke="'+color+'" stroke-width="7"/><path d="M57 116L90 75l36 41H57l32-41h34l40 41M124 75l-10-17h-19M161 116l-20-55" fill="none" stroke="'+color+'" stroke-width="7"/>';
  else if(category==='tracked')silhouette='<rect x="23" y="96" width="174" height="34" rx="16"/><path d="M48 95L69 68h91l19 27zM108 68V45h11v23M115 49l85-11v7l-85 14z"/>';
  else if(category==='freight')silhouette='<path d="M19 65h115v52H19zM134 82h38l28 24v11h-66z"/><circle cx="52" cy="120" r="12" fill="'+ink+'"/><circle cx="169" cy="120" r="12" fill="'+ink+'"/>';
- else silhouette='<path d="M19 98l18-29h44l20-19h67l25 48v26H19z"/><path d="M79 70l16-17h68l18 26H70z" fill="'+ink+'"/><circle cx="54" cy="124" r="15" fill="'+ink+'"/><circle cx="169" cy="124" r="15" fill="'+ink+'"/>';
+ else{
+  const sport=['sport','supercar'].includes(family)||['wedge','mono','drag','canopy'].includes(shape),suv=family==='suv'||shape==='safari',pickup=family==='pickup'||shape==='sixwheel',city=family==='city'||shape==='bubble',wagon=family==='wagon'||shape==='woody',open=family==='convertible'||shape==='barchetta',classic=family==='classic'||['hotrod','rat','deco'].includes(shape),long=family==='luxury'||shape==='limo';
+  if(sport)silhouette='<path d="M18 107l31-16 30-30h68l54 39-8 24H22z"/><path d="M82 63h62l31 28H61z" fill="'+ink+'"/><circle cx="57" cy="123" r="14" fill="'+ink+'"/><circle cx="166" cy="123" r="14" fill="'+ink+'"/>';
+  else if(suv)silhouette='<path d="M20 92l20-35h109l45 35v31H20z"/><path d="M55 60h86l34 30H43z" fill="'+ink+'"/><circle cx="55" cy="124" r="16" fill="'+ink+'"/><circle cx="169" cy="124" r="16" fill="'+ink+'"/>';
+  else if(pickup)silhouette='<path d="M18 93l18-29h70l20 23h72v36H18z"/><path d="M51 66h48l20 22H38z" fill="'+ink+'"/><path d="M130 91h64v9h-64z" fill="'+ink+'"/><circle cx="55" cy="124" r="15" fill="'+ink+'"/><circle cx="170" cy="124" r="15" fill="'+ink+'"/>';
+  else if(city)silhouette='<path d="M30 101q10-52 60-52h30q45 2 67 45l7 29H28z"/><path d="M73 60h48q29 4 45 34H56q4-21 17-34z" fill="'+ink+'"/><circle cx="61" cy="123" r="14" fill="'+ink+'"/><circle cx="161" cy="123" r="14" fill="'+ink+'"/>';
+  else if(wagon)silhouette='<path d="M18 96l22-31h98l42 16 20 42H18z"/><path d="M57 67h77l39 17 13 17H43z" fill="'+ink+'"/><circle cx="55" cy="124" r="15" fill="'+ink+'"/><circle cx="170" cy="124" r="15" fill="'+ink+'"/>';
+  else if(open)silhouette='<path d="M18 105l30-19h37l15-18h48l48 28v27H18z"/><path d="M104 71h35l25 16h-70z" fill="'+ink+'"/><circle cx="55" cy="124" r="15" fill="'+ink+'"/><circle cx="169" cy="124" r="15" fill="'+ink+'"/>';
+  else if(classic)silhouette='<path d="M14 101l21-23h49l16-25h70l29 40v30H14z"/><path d="M106 57h59l21 34H93z" fill="'+ink+'"/><path d="M21 111h171v7H21z" fill="'+ink+'"/><circle cx="52" cy="124" r="15" fill="'+ink+'"/><circle cx="171" cy="124" r="15" fill="'+ink+'"/>';
+  else if(long)silhouette='<path d="M9 101l25-25h50l20-24h69l38 41v30H9z"/><path d="M109 55h59l29 36H92z" fill="'+ink+'"/><circle cx="49" cy="124" r="14" fill="'+ink+'"/><circle cx="178" cy="124" r="14" fill="'+ink+'"/>';
+  else silhouette='<path d="M19 98l18-29h44l20-19h67l25 48v26H19z"/><path d="M79 70l16-17h68l18 26H70z" fill="'+ink+'"/><circle cx="54" cy="124" r="15" fill="'+ink+'"/><circle cx="169" cy="124" r="15" fill="'+ink+'"/>';
+ }
  const svg=`<svg xmlns="http://www.w3.org/2000/svg" width="222" height="174" viewBox="0 0 222 174"><rect width="222" height="174" rx="17" fill="${ink}"/><path d="M16 142h190" stroke="${stroke}" opacity=".7"/> <g fill="${color}" stroke-linejoin="round">${silhouette}</g></svg>`;
  return 'data:image/svg+xml;charset=utf-8,'+encodeURIComponent(svg);
 }
@@ -83,6 +95,7 @@ export function paintHangarVehicle(root,hex){
    if(v>.23&&v<.94&&!glass){const shade=Math.min(1.25,Math.max(.43,v/.56));colors.array[i]=paint.r*shade;colors.array[i+1]=paint.g*shade;colors.array[i+2]=paint.b*shade;}
    else{colors.array[i]=r;colors.array[i+1]=g;colors.array[i+2]=b;}
   }colors.needsUpdate=true;}
+  else if(o.material.color&&o.userData.coachPaint!==undefined){o.material.color.copy(o.userData.coachPaint?paint:baseMaterial.get(o));}
   else if(o.material.color){const base=baseMaterial.get(o),v=(base.r+base.g+base.b)/3,glass=base.b>base.r*1.2&&base.b>base.g*1.04;
    if(v>.23&&v<.94&&!glass)o.material.color.copy(paint).multiplyScalar(Math.min(1.23,Math.max(.5,v/.56)));else o.material.color.copy(base);
   }
@@ -106,21 +119,24 @@ function teleportFoot(g,spec){
 function removeOccupant(g){
  const c=g.mandriaHangar?.staged;if(!c||!hangarInBay(c)){if(g.mandriaHangar)g.mandriaHangar.staged=null;return;}
  if(g.state.car===c)teleportFoot(g,c.spec);
- g.remove(c);g.mandriaHangar.staged=null;
+ if(g.vehicleGarage&&!c.testingVehicle){const p=departurePoint(g,c);if(!p){g.toast?.('Sposta il mezzo dal garage prima di esporne un altro.',4);return false;}Object.assign(c,{x:p.x,z:p.z,yaw:p.yaw,y:g.terrain.height(p.x,p.z),hangarInventory:false});g.pose(c);}else g.remove(c);g.mandriaHangar.staged=null;
 }
 function createInBay(g,id,color){
+ const inventory=g.vehicleGarage,record=inventory?.list().find(r=>r.style===id),existing=record?inventory.live(record.token):null;
+ if(inventory&&!TEST_VEHICLES.includes(id)&&(!record||existing&&Math.hypot(existing.x-g.state.x,existing.z-g.state.z)>100))return null;
  const s=VEHICLES[id];if(!s)return null;
  const p=bay(),yaw=VILLA.yaw-Math.PI/2;
- if(!unobstructed(g,p,s,yaw))return null;
- const micro=id==='bicycle'||id==='kick-scooter',c=g.addCar(p.x,p.z,yaw,false,true,micro?'motorcycle':id);
+ if(!unobstructed(g,p,s,yaw,existing))return null;
+ if(existing){Object.assign(existing,{x:p.x,z:p.z,y:g.terrain.height(p.x,p.z),yaw,speed:0,parked:true,hangarInventory:true});g.pose(existing);g.mandriaHangar.staged=existing;teleportFoot(g,s);return existing;}
+ const micro=id==='bicycle'||id==='kick-scooter',c=g.addCar(p.x,p.z,yaw,false,true,micro?'motorcycle':id,micro?null:record?.build||g.dealerships?.builds.get(id));
  if(micro||id.startsWith('airport-')){
   const old=c.mesh;g.scene.remove(old);c.mesh=micro?microModel(id,color):id==='airport-michelangelo'?createMichelangeloModel():airportModel(id,s,color);
   c.style=id;c.spec=s;c.name=s.name;c.rider=null;
   if(micro&&id==='bicycle'){c.rider=createRider();c.mesh.add(c.rider);}
   g.scene.add(c.mesh);installVehicleDamage(c);
  }
- c.style=id;c.spec=s;c.name=s.name;c.fixedSpawn=true; // Hold staged object; never recycle as ambient traffic.
- c.hangarInventory=true;c.parked=true;c.speed=0;c.health=100;c.y=g.terrain.height(p.x,p.z);
+ c.style=id;c.spec=c.spec?.max?c.spec:s;c.name=g.dealerships?.builds.get(id)?.name||s.name;c.fixedSpawn=true; // Hold staged object; never recycle as ambient traffic.
+ c.testingVehicle=!!inventory&&TEST_VEHICLES.includes(id)&&!record;if(record&&!c.testingVehicle)inventory.attach(c,record);c.hangarInventory=true;c.parked=true;c.speed=0;if(!record||c.testingVehicle)c.health=100;c.y=g.terrain.height(p.x,p.z);
  paintHangarVehicle(c.mesh,color);g.pose(c);g.forget?.(c);g.mandriaHangar.staged=c;
  teleportFoot(g,s);return c;
 }
@@ -165,9 +181,9 @@ function dispatch(g){
  const p=departurePoint(g,c);if(!p){g.toast?.('Uscita occupata. Libera il viale o il piazzale e riprova.',5);return;}
  if(g.state.car&&g.state.car!==c){g.toast?.('Scendi prima dal mezzo attuale.',4);return;}
  const s=g.state,player=character(g);
- Object.assign(c,{x:p.x,z:p.z,y:g.terrain.height(p.x,p.z),yaw:p.yaw,speed:0,health:100,parked:true,fixedSpawn:false,hangarInventory:false});
+ Object.assign(c,{x:p.x,z:p.z,y:g.terrain.height(p.x,p.z),yaw:p.yaw,speed:0,health:c.health,parked:true,fixedSpawn:!!c.claimedByPlayer,hangarInventory:false});
  c.mesh.visible=true;g.pose(c);g.forget?.(c);
- Object.assign(s,{x:c.x,z:c.z,y:c.y,yaw:c.yaw,mode:'car',car:c,health:100,speed:0,vy:0,parachuting:false,waypoint:null,route:[]});
+ Object.assign(s,{x:c.x,z:c.z,y:c.y,yaw:c.yaw,mode:'car',car:c,health:c.health,speed:0,vy:0,parachuting:false,waypoint:null,route:[]});
  if(player)player.visible=false;
  g.mandriaHangar.staged=null;
  g.toast?.(c.spec.aircraft?'Velivolo consegnato in aeroporto: pista e decollo davanti a te.':'Mezzo pronto nel viale della villa. Buona guida.',5);
@@ -192,7 +208,7 @@ function renderCatalogue(g){
  const entries=hangarCatalogue(),selectedColor=$('hangarPaint')?.value||COLORS[0],text=($('hangarSearch')?.value||'').trim().toLocaleLowerCase('it'),cat=$('hangarFilter')?.value||'all';
  const filtered=entries.filter(v=>(cat==='all'||cat===v.category)&&(!text||(v.name+' '+v.id).toLocaleLowerCase('it').includes(text)));
  const grid=$('hangarGrid');if(!grid)return;
- grid.innerHTML=filtered.length?filtered.map(v=>`<button type="button" class="hangar-card" data-hangar-id="${escapeHTML(v.id)}"><img alt="Sagoma indicativa di ${escapeHTML(v.name)}" src="${hangarThumbnail(v.category,v.spec.collector&&hangarPaintFor(v.id)===null?v.spec.color:selectedColor)}"><strong>${escapeHTML(v.name)}</strong><small>${escapeHTML(v.spec.description||CAT[v.category])} · ${Math.round(v.spec.max*3.6)} km/h</small></button>`).join(''):'<p>Nessun mezzo corrispondente alla ricerca.</p>';
+ grid.innerHTML=filtered.length?filtered.map(v=>`<button type="button" class="hangar-card" data-hangar-id="${escapeHTML(v.id)}"><img alt="Sagoma indicativa di ${escapeHTML(v.name)}" src="${hangarThumbnail(v.category,v.spec.collector&&hangarPaintFor(v.id)===null?v.spec.color:selectedColor,v.spec)}"><strong>${escapeHTML(v.name)}</strong><small>${escapeHTML(v.spec.description||CAT[v.category])} · ${Math.round(v.spec.max*3.6)} km/h${g.vehicleGarage&&!TEST_VEHICLES.includes(v.id)&&!v.spec.aircraft&&!v.spec.watercraft?' · '+(g.vehicleGarage.list().some(r=>r.style===v.id)?'nel tuo garage':'da acquisire e parcheggiare'):''}</small></button>`).join(''):'<p>Nessun mezzo corrispondente alla ricerca.</p>';
  grid.querySelectorAll('[data-hangar-id]').forEach(b=>b.onclick=()=>void choose(g,b.dataset.hangarId,hangarPaintFor(b.dataset.hangarId)));
  $('hangarCount').textContent=`${filtered.length} mezzi · ${entries.length} nel catalogo`;
 }
@@ -212,20 +228,23 @@ async function choose(g,id,color){
   if(g.state.car&&g.state.car!==g.mandriaHangar.staged){g.toast?.('Scendi prima dal mezzo attuale.',4);return;}
   if(!roofDeparturePoint(g,s)){g.toast?.('Tetto occupato: libera la piazzola e riprova.',5);return;}
   g.mandriaHangar.busy=true;closeDialog(g);g.state.paused=true;
-  try{removeOccupant(g);deliverAirOnRoof(g,id,color);}
+  try{if(removeOccupant(g)!==false)deliverAirOnRoof(g,id,color);}
   finally{g.mandriaHangar.busy=false;g.state.paused=false;}
   return;
  }
  // Never erase an occupied/mission vehicle; the only replaceable object is our
  // own staged vehicle, and only while it is physically still inside the bay.
- const old=g.mandriaHangar.staged;
+ const inventory=g.vehicleGarage,record=inventory?.list().find(r=>r.style===id),storedCar=record?inventory.live(record.token):null;
+ if(inventory&&!TEST_VEHICLES.includes(id)&&!record){g.toast?.('Acquista o trova il mezzo, poi portalo a casa e parcheggialo. I relitti non possono essere richiamati.',6);return;}
+ if(storedCar&&Math.hypot(storedCar.x-g.state.x,storedCar.z-g.state.z)>100){g.toast?.('Il mezzo è già fuori dal garage. Riportalo a casa; non viene duplicato.',5);return;}
+ const old=storedCar||g.mandriaHangar.staged;
  if(old&&hangarInBay(old)&&old!==g.state.car){/* replaced after shutter closes */}
  const blocked=!unobstructed(g,p,s,VILLA.yaw-Math.PI/2,old&&hangarInBay(old)?old:null);
  if(blocked){g.toast?.('Hangar occupato: sposta altri mezzi dall’area di esposizione.',5);return;}
  g.mandriaHangar.busy=true;closeDialog(g);g.state.paused=true;
  try{
   if(status){status.hidden=false;status.textContent='HANGAR · CHIUSURA E SOSTITUZIONE DEL MEZZO…';}
-  await shutter(g,true);removeOccupant(g);
+  await shutter(g,true);if(g.mandriaHangar.staged!==storedCar&&removeOccupant(g)===false){await shutter(g,false);return;}
   const c=createInBay(g,id,color);
   await shutter(g,false);
   if(c){g.toast?.(s.name+(color?' · Colore applicato.':' · Livrea originale.')+' Avvicinati e premi E; oppure scegli «Porta fuori».',6);}
@@ -237,7 +256,7 @@ function showCatalog(g){
  if(!g?.state?.started||g.mandriaHangar?.busy||document.querySelector('dialog[open]'))return;
  ensureUI();live=g;
  const label=g.mandriaHangar.staged?.name||'nessuno';
- dialog.querySelector('.hangar-current').textContent='Mezzo attualmente nell’hangar: '+label+'. Un nuovo caricamento lo sostituisce soltanto se è ancora all’interno.';
+ dialog.querySelector('.hangar-current').textContent='Mezzo attualmente nell’hangar: '+label+'. I mezzi normali conservano danni e modifiche; riporta a casa quelli già fuori. Solo i quattro mezzi di prova possono essere ricreati.';
  dialog.showModal();g.state.paused=true;
  renderCatalogue(g);$('hangarSearch').focus();
 }
@@ -254,7 +273,7 @@ function ensureUI(){
  openButton.onclick=()=>{if(live)showCatalog(live);};
  status=document.createElement('div');status.id='mandriaHangarStatus';status.hidden=true;status.setAttribute('role','status');document.body.appendChild(status);
  dialog=document.createElement('dialog');dialog.id='mandriaHangarDialog';dialog.setAttribute('aria-label','Catalogo mezzi Villa della Mandria');
- dialog.innerHTML=`<div class="hangar-header"><div><small>VILLA DELLA MANDRIA · HANGAR</small><h2>Scegli qualsiasi mezzo</h2></div><button type="button" class="hangar-close" id="hangarClose">Chiudi ×</button></div><p class="hangar-current"></p><div class="hangar-controls"><input type="search" id="hangarSearch" placeholder="Cerca per nome" aria-label="Cerca mezzo"><select id="hangarFilter" aria-label="Categoria"><option value="all">Tutti i mezzi</option>${Object.entries(CAT).map(([k,v])=>`<option value="${k}">${v}</option>`).join('')}</select><label for="hangarLivery">Auto speciali</label><select id="hangarLivery" aria-label="Livrea auto speciali"><option value="original">Livrea originale</option><option value="custom">Colore personalizzato</option></select><label for="hangarPaint">Colore</label><input type="color" id="hangarPaint" value="${COLORS[0]}"></div><div id="hangarCount" role="status"></div><div id="hangarGrid"></div><div class="hangar-actions"><button type="button" id="hangarDeliver">Porta fuori il mezzo attuale</button><button type="button" id="hangarCloseBottom">Torna al gioco</button></div><p class="hangar-current">I mezzi stradali si preparano nella baia. Gli elicotteri compaiono sul tetto; gli aerei partono già in volo sopra l’hangar, dove non serve una pista.</p>`;
+ dialog.innerHTML=`<div class="hangar-header"><div><small>VILLA DELLA MANDRIA · HANGAR</small><h2>Garage e catalogo mezzi</h2></div><button type="button" class="hangar-close" id="hangarClose">Chiudi ×</button></div><p class="hangar-current"></p><div class="hangar-controls"><input type="search" id="hangarSearch" placeholder="Cerca per nome" aria-label="Cerca mezzo"><select id="hangarFilter" aria-label="Categoria"><option value="all">Tutti i mezzi</option>${Object.entries(CAT).map(([k,v])=>`<option value="${k}">${v}</option>`).join('')}</select><label for="hangarLivery">Auto speciali</label><select id="hangarLivery" aria-label="Livrea auto speciali"><option value="original">Livrea originale</option><option value="custom">Colore personalizzato</option></select><label for="hangarPaint">Colore</label><input type="color" id="hangarPaint" value="${COLORS[0]}"></div><div id="hangarCount" role="status"></div><div id="hangarGrid"></div><div class="hangar-actions"><button type="button" id="hangarDeliver">Porta fuori il mezzo attuale</button><button type="button" id="hangarCloseBottom">Torna al gioco</button></div><p class="hangar-current">I mezzi stradali si preparano nella baia. Gli elicotteri compaiono sul tetto; gli aerei partono già in volo sopra l’hangar, dove non serve una pista.</p>`;
  document.body.appendChild(dialog);
  $('hangarClose').onclick=$('hangarCloseBottom').onclick=()=>closeDialog(live);
  dialog.addEventListener('cancel',()=>{if(live?.state)live.state.paused=false;});

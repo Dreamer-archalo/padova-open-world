@@ -3,7 +3,7 @@ import {clamp} from './core.js';
 // Crash damage follows speed into the contacted surface; healthy cars cannot
 // explode from crossing an arbitrary speed threshold. Fuel and weapons retain
 // their explicit explosions in their own controllers.
-export function impactResponse(speed){const energy=Math.abs(speed);return {damage:clamp(Math.max(0,energy-3)**1.55*.12,0,72),impulse:Math.min(20,energy*.4),spin:Math.min(1.25,energy*.025),destroy:false};}
+export function impactResponse(speed){const energy=Math.abs(speed);return {damage:clamp(Math.max(0,energy-3)**1.55*.12,0,energy>60?140:72),impulse:Math.min(20,energy*.4),spin:Math.min(1.25,energy*.025),destroy:false};}
 export class Incidents{
  constructor(scene){this.scene=scene;this.effects=[];this.recovery=null;}
  explode(pose,time,reason){if(this.recovery)return false;this.recovery={x:pose.x,z:pose.z,yaw:pose.yaw,until:time+1.8,reason};this.blast(pose,time);return true;}

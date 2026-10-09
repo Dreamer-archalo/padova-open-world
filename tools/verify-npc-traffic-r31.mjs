@@ -1,7 +1,6 @@
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import * as THREE from '../dist/vendor/three.module.js';
-import {t,ctx} from './controller-harness.mjs';
 import vm from 'node:vm';
 import {safePedestrianSpot,pedestrianCapacity} from '../dist/npc-spawn-policy.js';
 import {mobileRamp,updateWheelie,wheeliePose,fuelImpact,explodeFuelTruck} from '../dist/stunt-traffic.js';
@@ -13,6 +12,8 @@ import {SpatialIndex,dist} from '../dist/core.js';
 import {Districts} from '../dist/districts.js';
 
 let seed=31006;const random=Math.random;Math.random=()=>{seed=(Math.imul(seed,1664525)+1013904223)>>>0;return seed/4294967296;};
+// Seed before constructing the controller population as well as the simulation.
+const {t,ctx}=await import('./controller-harness.mjs');
 const context={terrain:t.terrain,graph:t.graph,collision:t.world.collision},populations=[];
 try{
  for(const [name,x,z] of [['villa',t.state.x,t.state.z],['center',0,100],['portello',1210,-430],['industrial',4000,0]]){
@@ -55,8 +56,8 @@ try{
   assert(c.wheelie>.4&&wheeliePose(c).lift>.2,style+' front wheel lifts');
   for(let i=0;i<90;i++)updateWheelie(c,false,1/60);assert.equal(c.wheelie,0,'release lowers wheel');
  }
- const tank={style:'cisterna',spec:VEHICLES.cisterna,x:0,z:0,y:0,yaw:0,speed:0,health:100,mesh:new THREE.Group()},other={style:'sedan',spec:VEHICLES.sedan,x:0,z:3,y:0,yaw:0,speed:8,health:100,mesh:new THREE.Group()},player={mode:'car',car:other,health:100};let blasts=0;
- assert.equal(fuelImpact(other,tank),tank);assert(explodeFuelTruck(tank,{cars:[tank,other],state:player,time:4,blast:()=>blasts++}));assert(!tank.mesh.visible&&other.health<100&&player.health===other.health);assert(!explodeFuelTruck(tank,{cars:[],time:5,blast:()=>blasts++}));assert.equal(blasts,1);
+ const tank={style:'cisterna',spec:VEHICLES.cisterna,x:0,z:0,y:0,yaw:0,speed:0,health:100,mesh:new THREE.Group()},other={style:'sedan',spec:VEHICLES.sedan,x:0,z:3,y:0,yaw:0,speed:20,health:100,mesh:new THREE.Group()},player={mode:'car',car:other,health:100};let blasts=0;
+ assert.equal(fuelImpact(other,tank),tank);assert(explodeFuelTruck(tank,{cars:[tank,other],state:player,time:4,blast:()=>blasts++}));assert(tank.mesh.visible&&tank.permanentlyDestroyed&&tank.burning&&other.health<100&&player.health===other.health);assert(!explodeFuelTruck(tank,{cars:[],time:5,blast:()=>blasts++}));assert.equal(blasts,1);
  const plane={spec:VEHICLES.rondone,mesh:new THREE.Group(),speed:40},state={x:0,z:0,y:100,yaw:0,speed:40,health:73,car:plane,mode:'car'};
  leaveAircraft(state,0);assert(state.freefall&&!state.parachuting);for(let i=0;i<60;i++)freefallStep(state,{turn:0},1/60,flat,empty);
  assert(state.y<90&&state.health===73&&!state.parachuting,'E exit falls without automatic chute');assert(openChute(state,flat));assert(state.parachuting&&!state.freefall);

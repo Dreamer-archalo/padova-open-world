@@ -1,5 +1,8 @@
+import {dealerSurfaceHeight} from './dealer-surfaces.js?v=dealer-handover-r41-2';
+import {markVehicleWreck} from './vehicle-damage.js';
+import {compactCoachwork} from './car-coachwork.js';
 import {pedestrianRoadAllowed} from './npc-spawn-policy.js';
-import {DEALER_SITES,reserveDealerBuildings,dealerWallParts} from './dealerships.js';
+import {DEALER_SITES,reserveDealerBuildings,dealerWallParts} from './dealerships.js?v=dealer-handover-r41-2';
 // Region streaming runs alongside (not instead of) Padova's original CityWorld.
 // Padova keeps its existing meshes/physics/traffic; only its eastern border
 // gains access to the OSM corridor and high-detail destination zones.
@@ -36,8 +39,8 @@ const cube=new THREE.BoxGeometry(1,1,1);
 const regionCarTemplates=new Map(),regionPeopleTemplates=new Map();
 function regionalCar(style){
  if(!regionCarTemplates.has(style))regionCarTemplates.set(style,
-  NPC_VEHICLES[style]?createNPCCar(style,
-   ['#a92731','#71858c','#e5ddc4','#566e5c'][regionCarTemplates.size%4]):
+  NPC_VEHICLES[style]?compactCoachwork(createNPCCar(style,
+   ['#a92731','#71858c','#e5ddc4','#566e5c'][regionCarTemplates.size%4])):
    createSpecialVehicle(style));
  const mesh=regionCarTemplates.get(style).clone(true);
  mesh.traverse(o=>{if(o.isMesh)o.userData.regionalAmbientShared=true;});
@@ -233,9 +236,10 @@ export class RegionalWorld{
   }
   this.dataReady=true;
  }
- nearestRoad(x,z,maxDist=24,referenceY=null){
+ nearestRoad(x,z,maxDist=24,referenceY=null,eligible=null){
   let best=null,score=Infinity;
   for(const r of new Set(this.near(this.roads,x,z))){
+   if(eligible&&!eligible(r))continue;
    const vx=r.b[0]-r.a[0],vz=r.b[1]-r.a[1],den=vx*vx+vz*vz;
    const t=den?Math.max(0,Math.min(1,((x-r.a[0])*vx+(z-r.a[1])*vz)/den)):0;
    const px=r.a[0]+vx*t,pz=r.a[1]+vz*t,d=distance(x,z,px,pz);
@@ -356,7 +360,7 @@ export class RegionalWorld{
   terrain.rawElevation=(x,z)=>active(x,z)?this.raw(x,z):original.raw(x,z);
   terrain.elevation=(x,z)=>active(x,z)?this.raw(x,z):original.elevation(x,z);
   terrain.groundHeight=(x,z)=>active(x,z)?this.ground(x,z):original.ground(x,z);
-  terrain.height=(x,z,ref=null)=>active(x,z)?this.height(x,z,ref):original.height(x,z,ref);
+  terrain.height=(x,z,ref=null)=>dealerSurfaceHeight(terrain,x,z)??(active(x,z)?this.height(x,z,ref):original.height(x,z,ref));
   terrain.waterAt=(x,z,margin=0,ref=null)=>active(x,z)?this.waterAt(x,z,margin,ref):original.water(x,z,margin,ref);
   terrain.waterHeight=(x,z)=>active(x,z)?this.waterSurface(x,z):original.waterHeight(x,z);
   terrain.waterSample=(x,z)=>active(x,z)?this.waterSample(x,z):original.waterSample(x,z);
@@ -472,7 +476,7 @@ export class RegionalWorld{
   if(actor.exploded)return;
   actor.exploded=true;actor.parked=true;actor.speed=0;
   actor.destroyedUntil=time+17;
-  actor.mesh.visible=false;
+  markVehicleWreck(actor,time,true);
   const mesh=new THREE.InstancedMesh(
    new THREE.SphereGeometry(1,6,4),
    new THREE.MeshBasicMaterial({color:'#ff893c',transparent:true,opacity:.85,depthWrite:false}),12);
