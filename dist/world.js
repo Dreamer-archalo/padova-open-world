@@ -1,4 +1,4 @@
-import {installRoofSurfaces,cityRoofTriangles,flatRoofTriangles} from './roof-surfaces.js';
+import {installRoofSurfaces,cityRoofTriangles,flatRoofTriangles} from './roof-surfaces.js?v=roof-driving-r42-2';
 import {registerDealerSurface} from './dealer-surfaces.js?v=dealer-handover-r41-2';
 import {createCoachwork} from './car-coachwork.js';
 import {createPoliceCoachwork} from './road-fleet-coachwork.js';

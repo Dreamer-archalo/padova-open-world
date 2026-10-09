@@ -70,7 +70,7 @@ export class RoofSurfaces{
   Object.defineProperty(b,'roofTriangles',{value:triangles,writable:true,configurable:true,enumerable:false});Object.defineProperty(b,'roofAt',{value:(x,z)=>{let best=null;for(const t of b.roofTriangles){const s=sample(t,x,z);if(s&&(!best||s.y>best.y))best=s;}return best;},writable:true,configurable:true});
  }
  mesh(b,root){
-  root.updateMatrixWorld(true);const triangles=[],v=new THREE.Vector3();
+  root.updateWorldMatrix(true,true);const triangles=[],v=new THREE.Vector3();
   root.traverse(o=>{if(!o.isMesh||o.isInstancedMesh)return;const p=o.geometry.attributes.position,indices=o.geometry.index?.array;if(!p)return;
    for(let i=0;i<(indices?.length??p.count);i+=3){const t=[];for(let j=0;j<3;j++){v.fromBufferAttribute(p,indices?indices[i+j]:i+j).applyMatrix4(o.matrixWorld);t.push([v.x,v.y,v.z]);}
     if(Math.abs((t[1][0]-t[0][0])*(t[2][2]-t[0][2])-(t[1][2]-t[0][2])*(t[2][0]-t[0][0]))>1e-6)triangles.push(t);
@@ -99,8 +99,9 @@ export function installRoofSurfaces(terrain){
 }
 export function registerRoofMesh(terrain,root){
  if(!terrain.roofs||root.userData.physicalRoof)return;
+ root.updateWorldMatrix(true,true);
  const bounds=new THREE.Box3().setFromObject(root),a=bounds.min,c=bounds.max;
  if(!Number.isFinite(a.x+c.y)||c.y-a.y<.1)return;
- const b={p:[[a.x,a.z],[c.x,a.z],[c.x,c.z],[a.x,c.z]],minX:a.x,maxX:c.x,minZ:a.z,maxZ:c.z,minY:a.y,h:c.y-a.y,t:'authored-roof',n:root.name};
+ const b={p:[[a.x,a.z],[c.x,a.z],[c.x,c.z],[a.x,c.z]],cx:(a.x+c.x)/2,cz:(a.z+c.z)/2,minX:a.x,maxX:c.x,minZ:a.z,maxZ:c.z,minY:a.y,h:c.y-a.y,t:'authored-roof',n:root.name};
  terrain.roofs.mesh(b,root);root.userData.physicalRoof=true;
 }

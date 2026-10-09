@@ -1,3 +1,4 @@
+import {registerRoofMesh} from './roof-surfaces.js?v=roof-driving-r42-2';
 import * as THREE from './vendor/three.module.js';
 
 const asphalt=new THREE.MeshStandardMaterial({color:'#343f43',roughness:.94}),line=new THREE.MeshBasicMaterial({color:'#f3e8c6'}),wall=new THREE.MeshStandardMaterial({color:'#d9d9cf',roughness:.85}),trim=new THREE.MeshStandardMaterial({color:'#174251',roughness:.65}),glass=new THREE.MeshStandardMaterial({color:'#7997a1',roughness:.3,metalness:.25}),light=new THREE.MeshBasicMaterial({color:'#ffd889'}),rubber=new THREE.MeshStandardMaterial({color:'#202728',roughness:.95}),tools=new THREE.MeshStandardMaterial({color:'#bb533b',roughness:.62});
@@ -55,7 +56,7 @@ export function createWorkshopYard(layout,scene,terrain,createPerson,site){
  const back=layout.surface(0,26),floor=back.y-road.y;
  box(group,wall,.3,4.3,12,28*side,floor+2.15,0);
  for(const a of [-6,6])box(group,trim,10,4.8,.35,23*side,floor+2.4,a);
- box(group,trim,10,.4,12.5,23*side,floor+4.8,0);
+ const roof=box(group,trim,10,.4,12.5,23*side,floor+4.8,0);roof.name=site.name+' · tetto';registerRoofMesh(terrain,roof);
  box(group,glass,.12,.65,11,18*side,floor+4.25,0);
  box(group,light,.12,.10,10,18*side,floor+3.91,0);
  for(const a of [-5,5])for(const o of [8,15]){

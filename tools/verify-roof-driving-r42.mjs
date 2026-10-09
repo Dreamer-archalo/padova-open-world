@@ -1,9 +1,10 @@
 import assert from 'node:assert/strict';
 import vm from 'node:vm';
+import * as THREE from '../dist/vendor/three.module.js';
 import {SpatialIndex,pointInside} from '../dist/core.js';
 import {vehicleBlocked} from '../dist/movement.js';
 import {vehicleContact} from '../dist/vehicle-contact.js';
-import {RoofSurfaces,flatRoofTriangles,regionalRoofTriangles,installRoofSurfaces} from '../dist/roof-surfaces.js';
+import {RoofSurfaces,flatRoofTriangles,regionalRoofTriangles,installRoofSurfaces,registerRoofMesh} from '../dist/roof-surfaces.js';
 import {groundVehicleStep,startArcadeJump,landingDamage,groundContact} from '../dist/vehicle-dynamics.js';
 import {VEHICLES} from '../dist/vehicles.js';
 import {t,ctx} from './controller-harness.mjs';
@@ -40,6 +41,7 @@ for(const b of t.terrain.roofs.buildings){
 }
 assert(buildings>1000&&samples>buildings);
 assert.doesNotThrow(()=>structuredClone({buildings:t.world.chunks.values().next().value.buildings}),'roof callbacks must never break streaming worker messages');
+const workshopTerrain={height:()=>0,slope:()=>0,waterAt:()=>null};installRoofSurfaces(workshopTerrain);const parent=new THREE.Group();parent.position.set(100,7,200);parent.rotation.y=.4;const canopy=new THREE.Mesh(new THREE.BoxGeometry(10,.4,12.5));canopy.position.set(23,4.8,0);parent.add(canopy);registerRoofMesh(workshopTerrain,canopy);const centre=canopy.getWorldPosition(new THREE.Vector3());assert(Math.abs(workshopTerrain.height(centre.x,centre.z,12.1)-12.04)<1e-8,'workshop roof uses its translated/rotated parent before first render');assert.equal(workshopTerrain.height(23,0,12.1),0,'no duplicate roof at local model coordinates');
 
 // A steep continuous roof is legal even when its next sample rises farther
 // than the street-level anti-teleport tolerance in one swept substep.

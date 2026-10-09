@@ -1,6 +1,6 @@
 // Additional estate-only detail after v4; no changes to the airport or public city actors.
 import * as THREE from './vendor/three.module.js';
-import {registerRoofMesh} from './roof-surfaces.js';
+import {registerRoofMesh} from './roof-surfaces.js?v=roof-driving-r42-2';
 import {ModernGameplay} from './modern-gameplay.js';
 import {VILLA,areaPoint} from './gameplay-areas.js';
 import {mandriaFree} from './villa-mandria-placement-fix.js';

@@ -1,6 +1,6 @@
-import {upgradedRoofTriangles} from './roof-surfaces.js';
+import {upgradedRoofTriangles} from './roof-surfaces.js?v=roof-driving-r42-2';
 import * as THREE from './vendor/three.module.js';
-import {CityWorld} from './world.js?v=roof-driving-r42';
+import {CityWorld} from './world.js?v=roof-driving-r42-2';
 
 const palette=['#995f48','#b07553','#9c694d','#a58166','#8d5d49','#b17a58','#a2674d'].map(c=>new THREE.Color(c));
 class RoofBatch{

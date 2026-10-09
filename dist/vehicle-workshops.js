@@ -5,7 +5,7 @@ import {DEALER_COLORS} from './dealerships.js?v=dealer-handover-r41-2';
 import {dealerCapabilities,normalizeDealerOptions,dealerBuildSpec,protectionCapacity} from './dealer-customization.js';
 import {mountDealerPreview} from './dealer-configurator-preview.js?v=dealer-handover-r41-2';
 import {groundVehicle} from './vehicle-ownership.js';
-import {findWorkshopYard,createWorkshopYard,animateWorkshopYard,registerWorkshopWalls} from './workshop-yard.js';
+import {findWorkshopYard,createWorkshopYard,animateWorkshopYard,registerWorkshopWalls} from './workshop-yard.js?v=roof-driving-r42-2';
 
 export const WORKSHOP_SITES=[
  ['padova','Officina Padova ZIP',45.4132272,11.9343780],

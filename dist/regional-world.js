@@ -1,4 +1,4 @@
-import {regionalRoofTriangles,installRoofSurfaces} from './roof-surfaces.js';
+import {regionalRoofTriangles,installRoofSurfaces} from './roof-surfaces.js?v=roof-driving-r42-2';
 import {dealerSurfaceHeight} from './dealer-surfaces.js?v=dealer-handover-r41-2';
 import {markVehicleWreck} from './vehicle-damage.js';
 import {compactCoachwork} from './car-coachwork.js';

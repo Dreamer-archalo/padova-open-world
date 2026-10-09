@@ -1,4 +1,4 @@
-import {cityRoofTriangles} from './roof-surfaces.js';
+import {cityRoofTriangles} from './roof-surfaces.js?v=roof-driving-r42-2';
 import * as THREE from './vendor/three.module.js';
 import {GLTFLoader} from './vendor/GLTFLoader.js';
 

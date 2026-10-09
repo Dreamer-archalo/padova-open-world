@@ -1,4 +1,4 @@
-import {CityWorld} from './world.js?v=roof-driving-r42';
+import {CityWorld} from './world.js?v=roof-driving-r42-2';
 import {Terrain} from './terrain.js?v=dealer-handover-r41-2';
 import {modernFootprints} from './modern-map.js';
 import {HOME} from './gameplay-areas.js';
