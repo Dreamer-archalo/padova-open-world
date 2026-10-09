@@ -7,6 +7,7 @@ import {vehicleContact} from '../dist/vehicle-contact.js';
 import {RoofSurfaces,flatRoofTriangles,regionalRoofTriangles,installRoofSurfaces,registerRoofMesh} from '../dist/roof-surfaces.js';
 import {groundVehicleStep,startArcadeJump,landingDamage,groundContact} from '../dist/vehicle-dynamics.js';
 import {VEHICLES} from '../dist/vehicles.js';
+import {CityWorld} from '../dist/world.js';
 import {t,ctx} from './controller-harness.mjs';
 
 const input={turn:0,handbrake:false};
@@ -32,6 +33,19 @@ for(const {name,b} of shapes)for(const hz of [20,30,60,120]){
  assert(!car.jump.airborne);assert.equal(actor.y,terrain.height(actor.x,actor.z,actor.y));
  assert(vehicleBlocked(0,0,0,collision,car.spec,0),'facade remains solid at street level');
 }
+
+// The basic gable must already be visible in the coarse streaming stage.
+// Otherwise a roof without an upgraded profile would briefly be an invisible platform.
+const renderedBuilding={...building([[-10,-20],[10,-20],[10,20],[-10,20]],12),cx:0,cz:0,c:1,t:'residential'};
+const material=new THREE.MeshBasicMaterial({side:THREE.DoubleSide}),chunk={i:0,j:0,buildings:[renderedBuilding],roads:[],water:[],areas:[],structures:[],trees:[]};
+for(const stage of ['core','detail']){
+ let meshRoot;const rendererWorld={terrain:null,chunks:new Map([['roof-fixture',chunk]]),wallMats:{historic:material,modern:material,industrial:material},roofMat:material,groundMat:material,applyChunkQuality(){},installStage(key,root){meshRoot=root;}};
+ for(const _ of CityWorld.prototype.buildStageSteps.call(rendererWorld,'roof-fixture',stage)){}
+ meshRoot.updateMatrixWorld(true);const ray=new THREE.Raycaster(new THREE.Vector3(0,20,0),new THREE.Vector3(0,-1,0));
+ assert(Math.abs(ray.intersectObject(meshRoot,true)[0].point.y-14)<1e-6,stage+' renders the physical gable height');
+ meshRoot.traverse(o=>o.geometry?.dispose());
+}
+material.dispose();
 
 // Every sample on a real roof has finite support, including irregular polygons.
 let buildings=0,samples=0;
