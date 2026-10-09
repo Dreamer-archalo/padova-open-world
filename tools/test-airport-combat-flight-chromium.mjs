@@ -33,7 +33,7 @@ try{
  await page.keyboard.down('Tab');await page.waitForTimeout(280);
  const shock=await page.evaluate(()=>{const g=globalThis.__flightTest,s=g.state;return {kmh:s.speed*3.6,shockwaves:g.flightShockwaves?.length||0,trails:s.car.mesh.userData.flightTrails?.filter(m=>m.visible).length||0};});
  console.log('BLACKBIRD_SHOCKWAVE '+JSON.stringify(shock));assert(shock.kmh>=560&&shock.kmh<=600.01&&shock.trails===2&&shock.shockwaves>=1,'560 km/h visual shockwave and 600 km/h cap missing');await page.keyboard.up('Tab');
- phase='F parachute and abandoned plane';await page.keyboard.press('f');await page.waitForFunction(()=>globalThis.__flightTest?.state?.parachuting&&globalThis.__flightTest?.flightBlackbird?.flightAbandoned,null,{timeout:12000});
+ phase='0 parachute and abandoned plane';await page.keyboard.press('0');await page.waitForFunction(()=>globalThis.__flightTest?.state?.parachuting&&globalThis.__flightTest?.flightBlackbird?.flightAbandoned,null,{timeout:12000});
  const abandoned=await page.evaluate(()=>{const g=globalThis.__flightTest,c=g.flightBlackbird;return {chute:g.state.parachuting,falling:!!c.flightAbandoned,mesh:c.mesh.visible,initialAltitude:c.flightAbandoned.startAltitude};});
  console.log('BLACKBIRD_ABANDONED '+JSON.stringify(abandoned));assert(abandoned.chute&&abandoned.falling&&abandoned.initialAltitude>10,'parachute does not release live aircraft');
  phase='civilian zero stars';const innocent=await page.evaluate(async()=>{
