@@ -5,7 +5,7 @@ const read=p=>fs.readFileSync(new URL(p,import.meta.url),'utf8');
 const city=read('./dist/phase3-city-systems.js');
 const tram=read('./dist/phase3-tram-fix.js');
 const polish=read('./dist/phase3-polish.js');
-const roofs=read('./dist/roof-upgrades.js');
+const roofs=read('./dist/roof-upgrades.js')+read('./dist/roof-surfaces.js');
 const bikes=read('./dist/phase3-runtime.js');
 const damage=read('./dist/vehicle-damage.js');
 const runtime=read('./dist/phase2-runtime.js');

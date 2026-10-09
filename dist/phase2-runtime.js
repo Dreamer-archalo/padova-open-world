@@ -1,7 +1,7 @@
 import './phase4-terrain-fixes.js';
 import './historic-terrain-level.js';
 import './historic-plaza-alignment.js';
-import './roof-upgrades.js';
+import './roof-upgrades.js?v=roof-driving-r42';
 import './taxi-map-ui.js';
 import './taxi-confirmation-runtime.js';
 import './ambient-pursuits.js';
@@ -16,7 +16,7 @@ import './phase3-polish.js';
 import './geometry-audit-runtime.js';
 import './gameplay-upgrades.js';
 import './city-micromobility.js';
-import './historic-architecture-alignment.js';
+import './historic-architecture-alignment.js?v=roof-driving-r42';
 import './villa-spawn-alignment.js';
 import './airport-operations.js';
 import './airport-traffic-enhancement.js';
@@ -71,7 +71,7 @@ import './villa-mandria-horse-rider.js';
 import './villa-mandria-placement-fix.js';
 // v4 is strictly estate-scoped. The public city and aircraft catalog stay intact.
 import './villa-mandria-v4-grounds.js';
-import './villa-mandria-v4-roof.js';
+import './villa-mandria-v4-roof.js?v=roof-driving-r42';
 import './villa-mandria-v4-vehicles.js';
 import './villa-mandria-v4-range.js';
 import './villa-mandria-v4-polish.js';

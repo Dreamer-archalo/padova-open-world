@@ -1,4 +1,4 @@
-import {CityWorld} from './world.js?v=dealer-handover-r41-2';
+import {CityWorld} from './world.js?v=roof-driving-r42';
 import {Terrain} from './terrain.js?v=dealer-handover-r41-2';
 import {modernFootprints} from './modern-map.js';
 import {HOME} from './gameplay-areas.js';
@@ -30,7 +30,9 @@ if(!CityWorld.prototype.__padovaLazyFootprints){
   const ch=this.chunks.get(key);
   if(this.terrain?.modern&&ch&&!ch.footprintsPrepared){
    debug.mark(`Preparo edifici chunk ${key}…`);
+   const originalBuildings=ch.buildings;
    ch.buildings=modernFootprints(ch.buildings,this.terrain,{force:true});
+   this.terrain.roofs?.clipped(originalBuildings,ch.buildings,this);
    ch.footprintsPrepared=true;
    yield;
   }

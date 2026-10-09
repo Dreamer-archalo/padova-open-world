@@ -3,6 +3,7 @@ export async function verifyTruckJumps(page){
  await page.evaluate(()=>{
   const q=__r41;q.closeDialogs();q.setPaused(true);q.keys.clear();
   const c=q.cars.find(c=>c.style==='mito'),base=q.terrain.height(c.x,c.z,c.y);
+  globalThis.__r41OriginalRoofs=q.terrain.roofs;q.terrain.roofs=null;
   q.terrain.height=()=>base;q.terrain.slope=()=>0;q.terrain.waterAt=()=>null;q.collision.near=()=>[];
   for(const other of q.cars)other.mesh.visible=false;q.player.visible=false;
   q.resetGroundMotion(c);c.mesh.visible=true;c.health=100;c.spec={...c.spec,maxHealth:100};
@@ -51,5 +52,6 @@ export async function verifyTruckJumps(page){
   q.keys.clear();return {launched,landed,peak:peak-__jumpBase,entryHealth};
  });
  assert(ramp.launched&&ramp.landed&&ramp.peak>3.5);assert.equal(ramp.entryHealth,100);
+ await page.evaluate(()=>{__r41.terrain.roofs=__r41OriginalRoofs;});
  console.log('PASS R41 browser: keyboard 9/Numpad9, 50 m apex, exact 99 life landing, redesigned moving truck ramp without approach damage.',{jump,landing,ramp});
 }

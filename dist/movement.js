@@ -1,3 +1,4 @@
+import {roofClearance} from './roof-clearance.js';
 import {collides, nearestOnSegment, pointInside, clamp} from './core.js';
 
 // Rendering may run at any refresh rate. Simulation always advances in 1/60 s steps.
@@ -66,7 +67,7 @@ export function vehicleBlocked(x, z, yaw, index, spec = 1, y=undefined) {
   const width=typeof spec==='number'?1.92*spec:spec.width;
   const length=typeof spec==='number'?4.22*spec:spec.length;
   const footprint=vehicleFootprint(x,z,yaw,width,length);
-  for(const b of index.near(x,z,Math.hypot(width,length)/2))if(!(b.driveTopMin!==undefined&&y!==undefined&&y>=b.driveTopMin-length*.045-.15)&&(y===undefined||y+(spec.height||1.6)>(b.minY||0)&&y<(b.minY||0)+b.h)&&polygonsOverlap(footprint,b.p))return true;
+  for(const b of index.near(x,z,Math.hypot(width,length)/2))if(!roofClearance(b,x,z,y)&&!(b.driveTopMin!==undefined&&y!==undefined&&y>=b.driveTopMin-length*.045-.15)&&(y===undefined||y+(spec.height||1.6)>(b.minY||0)&&y<(b.minY||0)+b.h)&&polygonsOverlap(footprint,b.p))return true;
   return false;
 }
 

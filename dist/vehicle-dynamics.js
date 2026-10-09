@@ -40,8 +40,9 @@ export function steeringRate(spec,speed,handbrake=false){
  const softness=1/(1+(v/(bike?45:38))**1.35);
  return spec.steer*(1.08+(bike?.48:.42)*softness)*Math.min(1,v/5)*(handbrake?1.45:1);
 }
-export function groundContact(terrain,x,z,reference,ignoreCar=null){
- let y=terrain.height(x,z,reference),ramp=null,pitch=null;
+export function groundContact(terrain,x,z,reference,ignoreCar=null,roofBuilding=null){
+ const roof=(roofBuilding&&terrain.roofs?.onRoof(roofBuilding,x,z))||terrain.roofs?.at(x,z,reference)||null;
+ let y=terrain.height(x,z,reference),ramp=null,pitch=null;if(roof)y=Math.max(y,roof.y);
  for(const r of [...(terrain.arcadeRamps||[]),...(terrain.mobileRamps||[])]){
   if(r.car===ignoreCar)continue;
   const dx=x-r.x,dz=z-r.z,u=dx*Math.cos(r.yaw)-dz*Math.sin(r.yaw),v=dx*Math.sin(r.yaw)+dz*Math.cos(r.yaw);
@@ -49,7 +50,7 @@ export function groundContact(terrain,x,z,reference,ignoreCar=null){
   const a=clamp(u/r.width+.5,0,1),b=clamp(v/r.length+.5,0,1),back=r.topY[0]+(r.topY[1]-r.topY[0])*a,front=r.topY[3]+(r.topY[2]-r.topY[3])*a,top=back+(front-back)*b;
   if(top>=y-.03){y=Math.max(y,top);ramp=r;pitch=-Math.atan2(front-back,r.length);}
  }
- return {y,ramp,pitch};
+ return {y,ramp,pitch,roof};
 }
 
 // Swept motion shares the regular height-aware collision index. Only a player
@@ -87,7 +88,7 @@ export function groundVehicleStep(actor,car,input,dt,terrain,collision){
    ny+=j.vy*step-.5*JUMP_GRAVITY*step*step;j.vy-=JUMP_GRAVITY*step;
    actor.speed=magnitude*(actor.speed<0?-1:1);
   }
-  const nx=actor.x+vx*step,nz=actor.z+vz*step,next=groundContact(terrain,nx,nz,actor.y,car),horizontal=Math.hypot(nx-actor.x,nz-actor.z);
+  const nx=actor.x+vx*step,nz=actor.z+vz*step,next=groundContact(terrain,nx,nz,actor.y,car,old.roof?.building),horizontal=Math.hypot(nx-actor.x,nz-actor.z);
   if(!j.airborne){
    const alignment=old.ramp?Math.cos(actor.yaw-old.ramp.yaw)*(actor.speed>=0?1:-1):0;
    const drop=actor.y-next.y,rise=next.y-actor.y;
@@ -102,7 +103,7 @@ export function groundVehicleStep(actor,car,input,dt,terrain,collision){
     &&j.groundVy-(next.y-old.y)/step>JUMP_GRAVITY*step*1.2;
    // Any genuine ledge is ballistic. Previously slow vehicles could be snapped
    // downward by half a metre or more in one fixed tick.
-   const drops=drop>.48&&Math.abs(actor.speed)>1.5&&next.ramp?.kind!=='mobile-ramp';
+   const drops=drop>.48&&(old.roof||Math.abs(actor.speed)>1.5)&&next.ramp?.kind!=='mobile-ramp';
    if(leavesRamp||drops||crests){
     // A moving deck must launch at the car's speed relative to the truck.
     // The last substep's world-space slope velocity otherwise varies with FPS.
@@ -112,19 +113,20 @@ export function groundVehicleStep(actor,car,input,dt,terrain,collision){
    }else{
     // Reject impossible vertical elevators even when both contacts are ordinary
     // terrain (the old test only caught a transition into/out of a ramp).
-    const rampGrade=next.ramp?.kind==='mobile-ramp'?.7:.22;const allowedRise=Math.max(MAX_CONTACT_RISE,horizontal*rampGrade);
+    const roofGrade=old.roof&&next.roof&&old.roof.building===next.roof.building?Math.max(.24,Math.hypot(old.roof.dx,old.roof.dz),Math.hypot(next.roof.dx,next.roof.dz))+.05:null;
+    const rampGrade=roofGrade??(next.ramp?.kind==='mobile-ramp'?.7:.22);const allowedRise=Math.max(MAX_CONTACT_RISE,horizontal*rampGrade);
     if(rise>allowedRise){hitSpeed=Math.abs(actor.speed);actor.speed*=-.15;break;}
     // Traffic advances less often than the player on low graphics settings.
     // A deck that moved forward can leave the previous support sample outside
     // its rear edge; still follow the next legal grade instead of sinking into it.
     const movingDeck=[old.ramp,next.ramp].find(r=>r?.kind==='mobile-ramp');
     const supportTolerance=movingDeck?Math.max(.15,Math.abs(movingDeck.car.speed||0)*Math.max(dt,movingDeck.car.lodSpan||.1)*.7+.05):.15;
-    const followsGrade=Math.abs(next.y-old.y)<=Math.max(.025,horizontal*(next.ramp?.kind==='mobile-ramp'?.7:.24))&&Math.abs(actor.y-old.y)<supportTolerance;
+    const followsGrade=Math.abs(next.y-old.y)<=Math.max(.025,horizontal*(roofGrade??(next.ramp?.kind==='mobile-ramp'?.7:.24)))&&Math.abs(actor.y-old.y)<supportTolerance;
     ny=followsGrade?next.y:smoothGroundY(actor.y,next.y,step,actor.speed);j.groundVy=(ny-actor.y)/step;j.ramp=next.ramp;
     j.climbDistance=next.y-old.y>horizontal*.015?(j.climbDistance||0)+horizontal:0;
    }
   }
-  if(j.airborne&&ny<=next.y&&j.vy<=0){landingSpeed=Math.max(landingSpeed,-j.vy);arcadeLanding||=!!j.arcadeJump;j.arcadeJump=false;j.airborne=false;landed=true;ny=next.y;j.vy=0;j.ramp=next.ramp;}
+  if(j.airborne&&ny<=next.y&&j.vy<=0){landingSpeed=Math.max(landingSpeed,-j.vy);arcadeLanding||=!!j.arcadeJump;j.arcadeJump=false;j.airborne=false;landed=true;ny=next.y;j.vy=0;j.groundVy=0;j.climbDistance=0;j.ramp=next.ramp;}
   const wall=vehicleContact(nx,nz,actor.yaw,collision,spec,ny);
   if(wall){
    const safe=safeVehicleFraction(actor,{x:nx,z:nz,y:ny},collision,spec),response=wallResponse(vx,vz,wall.normal,step);

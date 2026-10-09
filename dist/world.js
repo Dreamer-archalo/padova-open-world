@@ -1,3 +1,4 @@
+import {installRoofSurfaces,cityRoofTriangles,flatRoofTriangles} from './roof-surfaces.js';
 import {registerDealerSurface} from './dealer-surfaces.js?v=dealer-handover-r41-2';
 import {createCoachwork} from './car-coachwork.js';
 import {createPoliceCoachwork} from './road-fleet-coachwork.js';
@@ -98,6 +99,7 @@ export class CityWorld{
   for(const b of data.buildings){b.minX=Math.min(...b.p.map(p=>p[0]));b.maxX=Math.max(...b.p.map(p=>p[0]));b.minZ=Math.min(...b.p.map(p=>p[1]));b.maxZ=Math.max(...b.p.map(p=>p[1]));b.cx=(b.minX+b.maxX)/2;b.cz=(b.minZ+b.maxZ)/2;b.minY=terrain?terrain.elevation(b.cx,b.cz):0;if(terrain?.modern){const bottom=Math.min(b.minY,...b.p.map(p=>terrain.groundHeight(...p)-.25));b.h+=b.minY-bottom;b.minY=bottom;}if(b.dealerSite){registerDealerSurface(terrain,b);b.modelActive=true;for(const wall of dealerWallParts(b))this.collision.add(wall,wall.minX,wall.minZ,wall.maxX,wall.maxZ);}else if(!b.passableGateway)this.collision.add(b,b.minX,b.minZ,b.maxX,b.maxZ);this.chunk(b.cx,b.cz).buildings.push(b);}
   this.landmarks=makeLandmarks(scene,data);
   if(terrain)for(const o of this.landmarks.children){const b=data.buildings.find(b=>b.n===o.userData.buildingName);o.position.y+=b?b.minY:terrain.elevation(o.position.x,o.position.z);}
+  if(terrain){const roofs=installRoofSurfaces(terrain);for(const b of data.buildings)roofs.add(b,cityRoofTriangles(b,this));for(const o of this.landmarks.children){const b=data.buildings.find(b=>b.n===o.userData.buildingName);if(b)roofs.mesh(b,o);}}
   if(terrain?.modern){
    const buckets=new Map();for(const o of [...this.landmarks.children])if(o.isMesh){const key=Math.floor(o.position.x/CHUNK)+','+Math.floor(o.position.z/CHUNK);if(!buckets.has(key))buckets.set(key,new THREE.Group());buckets.get(key).add(o);}
    for(const group of buckets.values())this.landmarks.add(group);
@@ -112,6 +114,7 @@ export class CityWorld{
    // Stone balustrades of the four Prato bridges use the same local frame as the water mask.
    for(const [x,z,yaw,width] of [[0,130.5,0,11],[0,-130.5,0,11],[85.5,0,Math.PI/2,9],[-85.5,0,Math.PI/2,9]])for(const side of [-1,1]){const px=x+Math.cos(yaw)*(width/2+.2)*side,pz=z-Math.sin(yaw)*(width/2+.2)*side,c=Math.cos(PRATO.yaw),s=Math.sin(PRATO.yaw),wx=PRATO.x+c*px+s*pz,wz=PRATO.z-s*px+c*pz,a=yaw+PRATO.yaw,points=[[-.25,-7],[.25,-7],[.25,7],[-.25,7]].map(([u,v])=>[wx+Math.cos(a)*u+Math.sin(a)*v,wz-Math.sin(a)*u+Math.cos(a)*v]),xs=points.map(p=>p[0]),zs=points.map(p=>p[1]),b={p:points,minX:Math.min(...xs),maxX:Math.max(...xs),minZ:Math.min(...zs),maxZ:Math.max(...zs),minY:terrain.pratoHeight+.3,h:1.2};this.collision.add(b,b.minX,b.minZ,b.maxX,b.maxZ);}
    this.structures=[...roadStructures(terrain),...(terrain.modern?motorwayBarriers(terrain):[]),...gameplayStructures(terrain),...(terrain.modern?portelloStructures(terrain):[])];if(terrain.modern)this.structures.push(...arcadeRamps(terrain,this.structures.filter(b=>b.kind==='guardrail'||b.kind==='median'),this.collision,this.structures));for(const b of this.structures){if(b.solid!==false)this.collision.add(b,b.minX,b.minZ,b.maxX,b.maxZ);this.chunk(b.x,b.z).structures.push(b);}this.details=cityDetails(scene,data,terrain);}
+  if(terrain)for(const b of this.structures||[])if(b.kind==='gameplay'&&b.maxX-b.minX>=4&&b.maxZ-b.minZ>=4&&(b.h>=2||b.minY-terrain.elevation(b.x,b.z)>2))terrain.roofs.add(b,flatRoofTriangles(b));
   if(terrain?.modern)installEarthAccess(terrain,this.collision,this.structures);
   for(const tree of gameplayVegetation(terrain))this.chunk(tree.x,tree.z).trees.push(tree);
  }

@@ -1,3 +1,4 @@
+import {cityRoofTriangles} from './roof-surfaces.js';
 import * as THREE from './vendor/three.module.js';
 import {GLTFLoader} from './vendor/GLTFLoader.js';
 
@@ -50,6 +51,7 @@ export class BuildingModels {
       if (!enabled || Math.hypot(item.building.cx - x, item.building.cz - z) > 800) {
         this.scene.remove(item.root); disposeModel(item.root);
         item.building.modelActive = false; item.building.h = item.originalHeight;
+        const authored=item.hidden.find(o=>o.userData.buildingName===item.building.n);if(authored)this.world.terrain?.roofs?.mesh(item.building,authored);else this.world.terrain?.roofs?.add(item.building,cityRoofTriangles(item.building,this.world));
         item.hidden.forEach(o => {o.userData.modelHidden=false;o.visible=true;}); this.world.refreshBuilding(item.building); this.active.delete(name);
       }
     }
@@ -76,7 +78,7 @@ export class BuildingModels {
       b.modelActive = true; b.h = Math.max(b.h, entry.height + (entry.offsetY || 0));
       const hidden = this.world.landmarks.children.filter(o => o.userData.buildingName === b.n);
       hidden.forEach(o => {o.userData.modelHidden=true;o.visible=false;});
-      this.scene.add(root); this.world.refreshBuilding(b);
+      this.scene.add(root); this.world.terrain?.roofs?.mesh(b,root); this.world.refreshBuilding(b);
       this.active.set(entry.name, {root, building:b, originalHeight, hidden});
     } catch (error) {
       if (root) disposeModel(root);
