@@ -19,8 +19,11 @@ function nearPublicStreet(g,u,v,r=5){const q=at(u,v),graph=g.graph;if(!graph?.in
  const a=graph.nodes[segment.a],b=graph.nodes[segment.b];if(!a||!b)continue;
  const n=nearestOnSegment(q.x,q.z,[a.x,a.z],[b.x,b.z]);if(Math.hypot(q.x-n.x,q.z-n.z)<r+(segment.road.w||6)/2)return true;
  }return false;}
-function privateRoads(g){let changed=0;for(const s of g.graph?.segments||[]){if(!/^Accesso Villa della Mandria$|^Viale Villa della Mandria$/.test(s.road?.n||''))continue;
-  if(s.road.access!=='private'){s.road.access='private';changed++;}s.road.estatePrivate=true;
+const privateRoadCache=new WeakMap();
+export function markMandriaPrivateRoads(g){const segments=g.graph?.segments;if(!segments)return 0;
+ let roads=privateRoadCache.get(segments);if(!roads){roads=[...new Set(segments.filter(s=>/^Accesso Villa della Mandria$|^Viale Villa della Mandria$/.test(s.road?.n||'')).map(s=>s.road))];privateRoadCache.set(segments,roads);}
+ let changed=0;for(const road of roads){
+  if(road.access!=='private'){road.access='private';changed++;}road.estatePrivate=true;
  }return changed;}
 function keepPrivate(g){const s=g.state;let cars=0,people=0;
  for(const c of g.cars){if(c===s.car||!c.mesh?.visible||c.fixedSpawn||c.parked||c.mandriaPatrol||c.estateAuthorized||c.hostile||c.missionUnit)continue;
@@ -136,14 +139,14 @@ function conversations(g){const v=g.villaV4,life=g.villaLife,t=g.state.elapsed;i
  if(Math.hypot(a.obj.position.x-b.obj.position.x,a.obj.position.z-b.obj.position.z)<56){speak(a,pair[0],t,2.6);a.v4Hello=t;v.response={person:guards.indexOf(b),text:pair[1],at:t+3};}
  v.nextDialogue=t+24+v.dialogueIndex%4*5;
 }
-function init(g){privateRoads(g);const root=new THREE.Group();root.name='Mandria · verde messicano, fattoria e scuderia';g.villaLife.root.add(root);
+function init(g){markMandriaPrivateRoads(g);const root=new THREE.Group();root.name='Mandria · verde messicano, fattoria e scuderia';g.villaLife.root.add(root);
  const planted=perimeterTrees(root,g),planters=flowers(root,g),farm=farmDetails(root,g),corral=paddock(g,root);dignifySecurity(g);
  return {root,planted,planters,farm,corral,nextDialogue:g.state.elapsed+17,dialogueIndex:0,response:null,trafficRemoved:0,crowdRemoved:0};}
 export function mandriaV4GroundsUpdate(g,dt){if(!g.state?.started||!g.villaV3?.placementFixed||!g.villaLife?.expansion||!Number.isFinite(dt)||dt<=0)return;
  if(!g.villaV4)g.villaV4=init(g);
  const v=g.villaV4,distance=Math.hypot(g.state.x-VILLA.x,g.state.z-VILLA.z);
  v.root.visible=distance<400;if(distance>450)return;
- privateRoads(g);const reduced=keepPrivate(g);v.trafficRemoved+=reduced.cars;v.crowdRemoved+=reduced.people;
+ markMandriaPrivateRoads(g);const reduced=keepPrivate(g);v.trafficRemoved+=reduced.cars;v.crowdRemoved+=reduced.people;
  dignifySecurity(g);conversations(g);
  for(const horse of g.villaV3.patrols.filter(c=>c.estateHorse)){
   if(horse.guardModel)horse.guardModel.visible=false;if(horse.speechActor?.speech)horse.speechActor.speech.visible=false;
@@ -151,7 +154,7 @@ export function mandriaV4GroundsUpdate(g,dt){if(!g.state?.started||!g.villaV3?.p
 }
 const prevPopulate=ModernGameplay.prototype.populate,prevUpdate=ModernGameplay.prototype.update;
 if(!ModernGameplay.prototype.__mandriaV4Grounds){ModernGameplay.prototype.__mandriaV4Grounds=true;
- ModernGameplay.prototype.populate=function(...args){if(this.villaV4){this.villaV4.root.parent?.remove(this.villaV4.root);this.villaV4=null;}const result=prevPopulate.apply(this,args);privateRoads(this);
+ ModernGameplay.prototype.populate=function(...args){if(this.villaV4){this.villaV4.root.parent?.remove(this.villaV4.root);this.villaV4=null;}const result=prevPopulate.apply(this,args);markMandriaPrivateRoads(this);
   if(!this.__mandriaToastWrapped){const original=this.toast;this.toast=(msg,...rest)=>{
     if((msg==='Hola patron'||msg==='Hola signor')&&Math.hypot(this.state.x-VILLA.x,this.state.z-VILLA.z)<330)return;
     return original(msg,...rest);

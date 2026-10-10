@@ -92,6 +92,7 @@ jobs:
           node verify-city-micromobility.mjs
           node verify-feature-preservation.mjs
           node tools/verify-mandria-v11-roads.mjs
+          npm run test:villa-performance
       - name: Full elevation audit — mandatory continuous street geometry
         run: npm run test:geometry-integrity
       - name: Checkout historic PR 51 playtest separately
