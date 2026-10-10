@@ -1,5 +1,6 @@
 // Additional estate-only detail after v4; no changes to the airport or public city actors.
 import * as THREE from './vendor/three.module.js';
+import {registerRoofMesh} from './roof-surfaces.js?v=roof-driving-r42-2';
 import {ModernGameplay} from './modern-gameplay.js';
 import {VILLA,areaPoint} from './gameplay-areas.js';
 import {mandriaFree} from './villa-mandria-placement-fix.js';
@@ -16,7 +17,7 @@ function correctRoofs(g){let corrected=0;
   parent?.traverse(o=>{if(!o.isGroup||o.userData.roofCorrectionDone||!(/casa dei lavoratori agricoli|stalla e fienile/.test(o.name||'')))return;
    for(const p of o.children){if(!p.isMesh)continue;const hex=p.material?.color?.getHexString();
     if(hex==='975d3d'||hex==='574739'){p.rotation.z=-Math.sign(p.position.x)*Math.abs(p.rotation.z);corrected++;}
-   }o.userData.roofCorrectionDone=true;
+   }o.userData.roofCorrectionDone=true;registerRoofMesh(g.terrain,o);
   });
  }return corrected;
 }

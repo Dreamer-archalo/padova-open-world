@@ -1,4 +1,5 @@
 // Raised villa helipads and an interactive wall ladder. No city geometry is edited.
+import {flatRoofTriangles} from './roof-surfaces.js?v=roof-driving-r42-2';
 import * as THREE from './vendor/three.module.js';
 import {ModernGameplay} from './modern-gameplay.js';
 import {VILLA,areaPoint,areaLocal} from './gameplay-areas.js';
@@ -28,7 +29,7 @@ function makeRoof(g){const base=g.terrain.height(VILLA.x,VILLA.z),top=base+18.5,
  for(const du of [-.7,.7])localBox(root,'#e4cf9f',LADDER.u+du,top+.32,-9.6,.14,.72,3.1);
  const corners=[point(-22,-30.5),point(22,-30.5),point(22,-7.5),point(-22,-7.5)],poly=corners.map(p=>[p.x,p.z]);
  if(!g._mandriaRoofCollider){const collider={p:poly,x:VILLA.x,z:point(0,-19).z,minY:top-.28,y:top-.28,h:.28,solid:true,kind:'gameplay',minX:Math.min(...poly.map(p=>p[0])),maxX:Math.max(...poly.map(p=>p[0])),minZ:Math.min(...poly.map(p=>p[1])),maxZ:Math.max(...poly.map(p=>p[1]))};
-  g.collision.add(collider,collider.minX,collider.minZ,collider.maxX,collider.maxZ);g._mandriaRoofCollider=collider;
+  g.collision.add(collider,collider.minX,collider.minZ,collider.maxX,collider.maxZ);g._mandriaRoofCollider=collider;g.terrain.roofs?.add(collider,flatRoofTriangles(collider));
  }
  const helicopters=[];for(const [u,style] of [[-12,'falco'],[12,'levante']]){
   const c=g.cars.find(c=>c.style===style&&c.fixedSpawn&&/Villa della Mandria/.test(c.name||''));if(!c)continue;

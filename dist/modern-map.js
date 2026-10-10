@@ -41,7 +41,7 @@ export function modernFootprints(buildings,terrain,{force=false}={}){const resul
    parts=parts.flatMap(p=>cutCorridor(p,rect));if(!parts.length)break;
   }
   if(parts.length!==1||Math.abs(area(parts[0])-area(building.p))>.05)corrected++;
-  for(const p of parts)if(area(p)>.5)result.push({...building,p});
+  for(const p of parts)if(area(p)>.5){const part={...building,p};Object.defineProperty(part,'roofOriginal',{value:building});result.push(part);}
  }
  terrain.footprintCorrections=(terrain.footprintCorrections||0)+corrected;return result;
 }

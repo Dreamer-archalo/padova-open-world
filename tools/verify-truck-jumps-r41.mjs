@@ -52,8 +52,8 @@ for(const spec of [{aircraft:true},{watercraft:true},{boat:true}])assert(!startA
 assert(!startArcadeJump({health:0},{spec:VEHICLES.sedan}));assert(commandSet({mode:'car',car:{style:'sedan',spec:VEHICLES.sedan}}).commands.some(([key,label])=>key==='9'&&label.includes('50 m')));
 
 // Exercise the actual controller, including its car collision and damage loop.
-const saved={height:t.terrain.height,slope:t.terrain.slope,waterAt:t.terrain.waterAt,near:t.world.collision.near};
-t.terrain.height=()=>0;t.terrain.slope=()=>0;t.terrain.waterAt=()=>null;t.world.collision.near=()=>[];for(const c of t.cars)c.mesh.visible=false;t.keys.clear();
+const saved={roofs:t.terrain.roofs,height:t.terrain.height,slope:t.terrain.slope,waterAt:t.terrain.waterAt,near:t.world.collision.near};
+t.terrain.roofs=null;t.terrain.height=()=>0;t.terrain.slope=()=>0;t.terrain.waterAt=()=>null;t.world.collision.near=()=>[];for(const c of t.cars)c.mesh.visible=false;t.keys.clear();
 const truck=t.addCar(0,0,0,false,false,'camionrampa'),car=t.addCar(0,-11,0,false,false,'sedan');truck.mesh.visible=car.mesh.visible=true;truck.health=car.health=100;truck.speed=4;
 Object.assign(t.state,{mode:'car',car,x:0,z:-11,y:0,yaw:0,speed:24,health:100,paused:false});t.keys.add('KeyW');let launched=false,landed=false;
 for(let i=0;i<600;i++){truck.z+=truck.speed/60;t.poseVehicle(truck);t.movePlayer(1/60);if(!launched)assert.equal(t.state.health,100,'actual traffic collision does not block ramp approach');launched||=!!car.jump?.airborne;if(launched&&!car.jump?.airborne){landed=true;break;}}
@@ -63,6 +63,6 @@ const manager=vm.runInContext('inputManager',ctx);manager.onKeyDown({code:'Digit
 for(let i=0;i<600&&car.jump.airborne;i++)t.movePlayer(1/60);
 assert(!car.jump.airborne);assert(Math.abs(t.state.health-(80-100/525))<1e-9,'controller applies exactly one armored life point');assert(!car.severeCrash&&!car.burning);
 manager.onKeyDown({code:'Numpad9',repeat:false});assert(car.jump.airborne,'numeric keypad works');resetGroundMotion(car);
-Object.assign(t.terrain,{height:saved.height,slope:saved.slope,waterAt:saved.waterAt});t.world.collision.near=saved.near;
+Object.assign(t.terrain,{roofs:saved.roofs,height:saved.height,slope:saved.slope,waterAt:saved.waterAt});t.world.collision.near=saved.near;
 assert.equal(t.cars.filter(c=>c.encounterStyle==='camionrampa').length,3,'three persistent ramp trucks across quality levels');
 console.log('PASS R41 truck ramps: 32 moving/stationary approaches including 10 Hz traffic, collision clearance, 16 fifty-metre jumps, one life point, repeat guards and actual keyboard/controller integration.',results);

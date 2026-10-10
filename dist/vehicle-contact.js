@@ -1,3 +1,4 @@
+import {roofClearance} from './roof-clearance.js';
 import {vehicleFootprint,polygonsOverlap,vehicleBlocked} from './movement.js';
 import {clamp} from './core.js';
 
@@ -15,6 +16,7 @@ export function polygonContact(a,b){
 export function vehicleContact(x,z,yaw,index,spec,y){
  const shape=vehicleFootprint(x,z,yaw,spec.width,spec.length);let best=null;
  for(const b of index.near(x,z,Math.hypot(spec.width,spec.length)/2)){
+  if(roofClearance(b,x,z,y))continue;
   if(b.driveTopMin!==undefined&&y!==undefined&&y>=b.driveTopMin-spec.length*.045-.15)continue;
   if(y!==undefined&&(y+(spec.height||1.6)<=(b.minY||0)||y>=(b.minY||0)+b.h))continue;
   if(!polygonsOverlap(shape,b.p))continue;const hit=polygonContact(shape,b.p);if(hit&&(!best||hit.depth<best.depth))best={...hit,obstacle:b};

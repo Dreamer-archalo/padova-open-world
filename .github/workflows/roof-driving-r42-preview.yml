@@ -1,0 +1,117 @@
+name: Roof driving R42
+
+on:
+  push:
+    branches: [feat/roof-driving-r42]
+
+permissions:
+  actions: read
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  deploy-preview:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Recover regional data for the playtest
+        shell: bash
+        run: |
+          set -euo pipefail
+          for name in venice.json region-padova-venice.json world-padova-venice.json world-terrain.json map-hd-extras.json; do
+            found=false
+            for label in vehicles-r35 solo-cars-r26 road-fixes-r25 taxi-r22 road-levels-r21 padova-npc-r17 dealerships unified; do
+              url="https://dreamer-archalo.github.io/padova-open-world/preview/$label/data/$name"
+              if curl --fail --silent --show-error --location --max-time 60 "$url" -o "dist/data/$name"; then
+                echo "Recovered $name from $label"
+                found=true
+                break
+              fi
+            done
+            if test "$found" != true && test "$name" != map-hd-extras.json; then
+              echo "Missing required regional file: $name" >&2
+              exit 1
+            fi
+          done
+          for name in venice.json region-padova-venice.json world-padova-venice.json world-terrain.json; do test -s "dist/data/$name"; done
+
+      - name: Verify roof physics and preserved driving
+        run: |
+          node tools/verify-roof-driving-r42.mjs
+          node tools/verify-truck-jumps-r41.mjs
+          node verify-vehicle-jumps.mjs
+          node tools/verify-dealer-handover-r41.mjs
+          node verify-hospital-rooftop.mjs
+          node verify-phase3-runtime.mjs
+          node verify-phase3-city-systems.mjs
+          node verify-streaming.mjs
+          npm test
+      - name: Chromium rooftop acceptance
+        run: |
+          npm install --no-save playwright@1.55.1
+          npx playwright install --with-deps chromium
+          node tools/test-roof-driving-r42-browser.mjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: roof-driving-r42-review
+          path: test-artifacts/r42
+      - name: Download currently published Pages artifact
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          RUN_ID="$(gh api "repos/$GITHUB_REPOSITORY/actions/artifacts?name=github-pages&per_page=100" --jq '[.artifacts[] | select(.expired==false)][0].workflow_run.id')"
+          test -n "$RUN_ID"
+          mkdir -p /tmp/current-pages site
+          gh run download "$RUN_ID" --repo "$GITHUB_REPOSITORY" --name github-pages --dir /tmp/current-pages
+          ARCHIVE="$(find /tmp/current-pages -type f -name '*.tar' | head -n 1)"
+          test -n "$ARCHIVE"
+          tar -xf "$ARCHIVE" -C site
+          test -f site/index.html
+
+      - name: Add isolated R42 preview without changing production
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p site/preview/roof-driving-r42
+          rm -rf site/preview/roof-driving-r42/*
+          cp -a dist/. site/preview/roof-driving-r42/
+          touch site/.nojekyll
+          test -f site/preview/roof-driving-r42/index.html
+          test -s site/preview/roof-driving-r42/data/region-padova-venice.json
+          test -s site/preview/roof-driving-r42/data/world-terrain.json
+
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v4
+        with:
+          path: site
+      - name: Deploy isolated public preview
+        id: deployment
+        uses: actions/deploy-pages@v4
+
+      - name: Verify public R42 link
+        shell: bash
+        run: |
+          set -euo pipefail
+          base='https://dreamer-archalo.github.io/padova-open-world/preview/roof-driving-r42'
+          for attempt in 1 2 3 4 5 6; do
+            matched=true
+            for file in index.html game.js roof-surfaces.js roof-clearance.js vehicle-dynamics.js world.js regional-world.js; do
+              if ! curl --fail --silent --show-error --location "$base/$file?v=$GITHUB_SHA" -o "/tmp/r42-$file" || ! cmp -s "dist/$file" "/tmp/r42-$file"; then matched=false; fi
+            done
+            if test "$matched" = true; then exit 0; fi
+            sleep 5
+          done
+          exit 1
