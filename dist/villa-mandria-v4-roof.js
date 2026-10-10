@@ -1,5 +1,5 @@
 // Raised villa helipads and an interactive wall ladder. No city geometry is edited.
-import {flatRoofTriangles} from './roof-surfaces.js?v=roof-driving-r42-2';
+import {flatRoofTriangles} from './roof-surfaces.js?v=villa-performance-r43-1';
 import * as THREE from './vendor/three.module.js';
 import {ModernGameplay} from './modern-gameplay.js';
 import {VILLA,areaPoint,areaLocal} from './gameplay-areas.js';

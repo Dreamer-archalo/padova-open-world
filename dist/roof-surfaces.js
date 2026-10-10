@@ -4,6 +4,10 @@ import {SpatialIndex,pointInside,nearestOnSegment,clamp} from './core.js';
 const clean=p=>p.length>3&&p[0][0]===p.at(-1)[0]&&p[0][1]===p.at(-1)[1]?p.slice(0,-1):p;
 const vertex=(p,y)=>[p[0],y,p[1]];
 const quad=(a,b,c,d)=>[[a,b,c],[a,c,d]];
+// Non-enumerable so worker snapshots neither evaluate nor clone roof data.
+// Replace the accessor on first use, releasing its factory and world closure.
+export function lazyRoofProperty(b,name,create){Object.defineProperty(b,name,{configurable:true,enumerable:false,get(){const value=create();Object.defineProperty(b,name,{value,writable:true,configurable:true,enumerable:false});return value;},set(value){Object.defineProperty(b,name,{value,writable:true,configurable:true,enumerable:false});}});}
+export function prepareCityRoof(b,world){if(!Object.hasOwn(b,'roofUpgrade'))lazyRoofProperty(b,'roofUpgrade',()=>upgradedRoofTriangles(b,world));return ()=>cityRoofTriangles(b,world);}
 export function flatRoofTriangles(b,y=b.minY+b.h){
  const p=clean(b.p),v=p.map(q=>new THREE.Vector2(...q));
  return THREE.ShapeUtils.triangulateShape(v,[]).map(t=>t.map(i=>vertex(p[i],y)));
@@ -67,7 +71,9 @@ export class RoofSurfaces{
  }
  add(b,triangles){
   if(!this.buildings.has(b)){this.index.add(b,b.minX,b.minZ,b.maxX,b.maxZ);this.buildings.add(b);}
-  Object.defineProperty(b,'roofTriangles',{value:triangles,writable:true,configurable:true,enumerable:false});Object.defineProperty(b,'roofAt',{value:(x,z)=>{let best=null;for(const t of b.roofTriangles){const s=sample(t,x,z);if(s&&(!best||s.y>best.y))best=s;}return best;},writable:true,configurable:true});
+  if(typeof triangles==='function')lazyRoofProperty(b,'roofTriangles',triangles);
+  else Object.defineProperty(b,'roofTriangles',{value:triangles,writable:true,configurable:true,enumerable:false});
+  Object.defineProperty(b,'roofAt',{value:(x,z)=>{let best=null;for(const t of b.roofTriangles){const s=sample(t,x,z);if(s&&(!best||s.y>best.y))best=s;}return best;},writable:true,configurable:true});
  }
  mesh(b,root){
   root.updateWorldMatrix(true,true);const triangles=[],v=new THREE.Vector3();
