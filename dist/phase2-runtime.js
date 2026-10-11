@@ -1,7 +1,7 @@
 import './phase4-terrain-fixes.js';
 import './historic-terrain-level.js';
 import './historic-plaza-alignment.js';
-import './roof-upgrades.js?v=roof-driving-r42-2';
+import './roof-upgrades.js?v=villa-performance-r43-1';
 import './taxi-map-ui.js';
 import './taxi-confirmation-runtime.js';
 import './ambient-pursuits.js';
@@ -16,7 +16,7 @@ import './phase3-polish.js';
 import './geometry-audit-runtime.js';
 import './gameplay-upgrades.js';
 import './city-micromobility.js';
-import './historic-architecture-alignment.js?v=roof-driving-r42-2';
+import './historic-architecture-alignment.js?v=villa-performance-r43-1';
 import './villa-spawn-alignment.js';
 import './airport-operations.js';
 import './airport-traffic-enhancement.js';
@@ -71,7 +71,7 @@ import './villa-mandria-horse-rider.js';
 import './villa-mandria-placement-fix.js';
 // v4 is strictly estate-scoped. The public city and aircraft catalog stay intact.
 import './villa-mandria-v4-grounds.js';
-import './villa-mandria-v4-roof.js?v=roof-driving-r42-2';
+import './villa-mandria-v4-roof.js?v=villa-performance-r43-1';
 import './villa-mandria-v4-vehicles.js';
 import './villa-mandria-v4-range.js';
 import './villa-mandria-v4-polish.js';
@@ -79,7 +79,7 @@ import './villa-mandria-v4-polish.js';
 import './villa-mandria-v5-dialogues.js';
 import './villa-mandria-v5-controls.js';
 // Additional collision-aware estate refinements, never modify the airport.
-import './villa-mandria-v5-estate-polish.js?v=roof-driving-r42-2';
+import './villa-mandria-v5-estate-polish.js?v=villa-performance-r43-1';
 import './villa-mandria-v5-greetings.js';
 // Direct user feedback: true first-person scope, estate routes and 25 single-topic dialogues.
 import './villa-mandria-v6-scope.js';
@@ -119,3 +119,4 @@ function showCamera(){
 function updateDamage(){const value=parseFloat(healthValue?.textContent||'100'),inVehicle=(vehicleName?.textContent||'ON FOOT').trim()!=='ON FOOT',damage=inVehicle?Math.max(0,100-value):0;document.body.dataset.vehicleDamage=damage>=65?'critical':damage>=35?'damaged':damage>=8?'scratched':'none';damageEdge.hidden=damage<8;damageEdge.style.setProperty('--damage',String(Math.min(.48,damage/150)));}
 document.addEventListener('keydown',event=>{if(event.code!=='KeyC'||event.repeat||playing?.hidden||document.querySelector('dialog[open]'))return;cameraMode=(cameraMode+1)%3;showCamera();});
 const observer=new MutationObserver(updateDamage);if(healthValue)observer.observe(healthValue,{childList:true,subtree:true,characterData:true});if(vehicleName)observer.observe(vehicleName,{childList:true,subtree:true,characterData:true});updateDamage();
+import './villa-performance.js?v=villa-performance-r43-1';

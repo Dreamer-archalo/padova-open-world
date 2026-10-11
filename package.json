@@ -55,6 +55,8 @@
     "test:workshops": "node tools/verify-workshop-ownership-r37.mjs",
     "test:map-home-services": "node tools/verify-map-home-services-r41.mjs",
     "test:truck-jumps": "node tools/verify-truck-jumps-r41.mjs",
-    "test:roofs": "node tools/verify-roof-driving-r42.mjs"
+    "test:roofs": "node tools/verify-roof-driving-r42.mjs",
+    "test:villa-performance": "node tools/verify-villa-performance-r43.mjs",
+    "test:villa-performance-browser": "node tools/test-villa-performance-r43-browser.mjs"
   }
 }

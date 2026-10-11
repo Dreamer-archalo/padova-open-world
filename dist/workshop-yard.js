@@ -1,4 +1,4 @@
-import {registerRoofMesh} from './roof-surfaces.js?v=roof-driving-r42-2';
+import {registerRoofMesh} from './roof-surfaces.js?v=villa-performance-r43-1';
 import * as THREE from './vendor/three.module.js';
 
 const asphalt=new THREE.MeshStandardMaterial({color:'#343f43',roughness:.94}),line=new THREE.MeshBasicMaterial({color:'#f3e8c6'}),wall=new THREE.MeshStandardMaterial({color:'#d9d9cf',roughness:.85}),trim=new THREE.MeshStandardMaterial({color:'#174251',roughness:.65}),glass=new THREE.MeshStandardMaterial({color:'#7997a1',roughness:.3,metalness:.25}),light=new THREE.MeshBasicMaterial({color:'#ffd889'}),rubber=new THREE.MeshStandardMaterial({color:'#202728',roughness:.95}),tools=new THREE.MeshStandardMaterial({color:'#bb533b',roughness:.62});

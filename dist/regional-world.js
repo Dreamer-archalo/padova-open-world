@@ -1,4 +1,4 @@
-import {regionalRoofTriangles,installRoofSurfaces} from './roof-surfaces.js?v=roof-driving-r42-2';
+import {regionalRoofTriangles,lazyRoofProperty,installRoofSurfaces} from './roof-surfaces.js?v=villa-performance-r43-1';
 import {dealerSurfaceHeight} from './dealer-surfaces.js?v=dealer-handover-r41-2';
 import {markVehicleWreck} from './vehicle-damage.js';
 import {compactCoachwork} from './car-coachwork.js';
@@ -203,7 +203,7 @@ export class RegionalWorld{
    if(x<PADOVA_EAST-180)continue;
    const obj={...b,minX:x0,maxX:x1,minZ:z0,maxZ:z1,cx:x,cz:z,minY:this.raw(x,z),h:Math.max(2.6,Math.min(75,b.h||7))};
    if(b.dealerSite)Object.assign(b,{minX:x0,maxX:x1,minZ:z0,maxZ:z1,cx:x,cz:z,minY:obj.minY,h:obj.h});
-   obj.roofTriangles=regionalRoofTriangles(obj);obj.lod=regionalDetail(x,z);this.bucket(x,z).buildings.push(obj);
+   lazyRoofProperty(obj,'roofTriangles',()=>regionalRoofTriangles(obj));obj.lod=regionalDetail(x,z);this.bucket(x,z).buildings.push(obj);
    if(obj.dealerSite)for(const wall of dealerWallParts(obj))this.collision.add(wall,wall.minX,wall.minZ,wall.maxX,wall.maxZ);
    else this.collision.add(obj,x0,z0,x1,z1);
    // The lagoon's island mask must retain full-size quay buildings.
@@ -355,7 +355,7 @@ export class RegionalWorld{
   return null;
  }
  installTerrainHooks(terrain){
-  const roofs=installRoofSurfaces(terrain);for(const ch of this.chunks.values())for(const b of ch.buildings)roofs.add(b,b.roofTriangles);
+  const roofs=installRoofSurfaces(terrain);for(const ch of this.chunks.values())for(const b of ch.buildings)roofs.add(b,()=>regionalRoofTriangles(b));
   const original={raw:terrain.rawElevation.bind(terrain),elevation:terrain.elevation.bind(terrain),ground:terrain.groundHeight.bind(terrain),height:terrain.height.bind(terrain),water:terrain.waterAt.bind(terrain),waterHeight:terrain.waterHeight.bind(terrain),
    waterSample:terrain.waterSample.bind(terrain),waterDistance:terrain.waterDistance.bind(terrain),bridge:terrain.bridge.bind(terrain)};
   const active=(x,z)=>this.contains(x,z);
