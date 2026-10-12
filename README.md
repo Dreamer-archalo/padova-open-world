@@ -33,6 +33,18 @@ Il manifest tecnico `dist/version.json` mantiene ancora il numero storico **1.2.
 
 **Da perfezionare:** fluidità su hardware diversi, geometria di strade e ponti, alcuni comportamenti dei veicoli e degli NPC, esperienze online e controlli manuali. I problemi aperti sono distinti dalle funzioni già distribuite nella [pagina di stato](docs/PROJECT_STATUS.md).
 
+## Un progetto con una storia
+
+**Padova After Hours non è soltanto un esperimento tecnico:** è un sandbox ispirato a luoghi reali, dove esplorazione, guida e sistemi urbani vengono ampliati versione dopo versione.
+
+Per capire cosa rende diverso questo mondo, conoscere i suoi creatori e scoprire il dietro le quinte: **[entra nella pagina del progetto](https://dreamer-archalo.github.io/padova-open-world/about.html)**. Per chi ama seguire i dettagli ci sono anche il [devlog](https://dreamer-archalo.github.io/padova-open-world/about.html#devlog) e i problemi tecnici ancora aperti, senza promesse di funzionalità inesistenti.
+
+### Collaborazioni creative
+
+**Ricardo Roza Rui** — [profilo creativo](https://dreamer-archalo.github.io/padova-open-world/ricardo-roza-rui.html) · **[Instagram @dreamer_collector](https://www.instagram.com/dreamer_collector/)**
+
+Proposte su modelli 3D, gameplay, veicoli, ambientazioni, design, performance e testing sono benvenute. Per contributi al repository, consulta le [linee guida](CONTRIBUTING.md). **Nessun indirizzo email personale è pubblicato**: il contatto pubblico è Instagram.
+
 ## Per chi vuole seguire lo sviluppo
 
 - [Stato verificato e limiti noti](docs/PROJECT_STATUS.md)
