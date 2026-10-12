@@ -2,6 +2,10 @@ name: Race one difficulty checks
 on:
   pull_request:
     branches: [main]
+    paths-ignore:
+      - '**/*.md'
+      - '.gitignore'
+      - '.github/pull_request_template.md'
   workflow_dispatch:
 permissions:
   contents: read

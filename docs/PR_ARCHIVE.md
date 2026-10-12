@@ -8,23 +8,23 @@ Verifica Git: il branch della PR è antenato di `main` (nessun commit esclusivo 
 
 | PR | Area |
 | --- | --- |
-| [#58](../pull/58) | Venezia, prima mappa |
-| [#59](../pull/59) | Padova–Venezia e mondo continuo |
-| [#61](../pull/61) | Mappa regionale integrata |
-| [#62](../pull/62) | Caricamento Venezia |
-| [#63](../pull/63) | Taxi regionale |
-| [#66](../pull/66) | Concessionari nei fabbricati |
-| [#67](../pull/67) | Quote e raccordi stradali R21 |
+| [#58](https://github.com/Dreamer-archalo/padova-open-world/pull/58) | Venezia, prima mappa |
+| [#59](https://github.com/Dreamer-archalo/padova-open-world/pull/59) | Padova–Venezia e mondo continuo |
+| [#61](https://github.com/Dreamer-archalo/padova-open-world/pull/61) | Mappa regionale integrata |
+| [#62](https://github.com/Dreamer-archalo/padova-open-world/pull/62) | Caricamento Venezia |
+| [#63](https://github.com/Dreamer-archalo/padova-open-world/pull/63) | Taxi regionale |
+| [#66](https://github.com/Dreamer-archalo/padova-open-world/pull/66) | Concessionari nei fabbricati |
+| [#67](https://github.com/Dreamer-archalo/padova-open-world/pull/67) | Quote e raccordi stradali R21 |
 
 ## Sviluppi poi sostituiti da release cumulative
 
 | PR | Area | Motivo chiusura |
 | --- | --- | --- |
-| [#51](../pull/51) | Villa della Mandria v10 | Evoluta in pubblicazioni successive |
-| [#76](../pull/76) | HUD R34 | Superata dall'integrazione corrente |
-| [#77](../pull/77) | Sagome auto R33 | Superata dalla linea veicoli R35–R41 |
-| [#78](../pull/78) | Pacchetto NPC/veicoli R31–R33 | Pubblicazione cumulativa successiva |
-| [#82](../pull/82) | R37 officine e garage | Evoluta nei rilasci R35–R41 |
+| [#51](https://github.com/Dreamer-archalo/padova-open-world/pull/51) | Villa della Mandria v10 | Evoluta in pubblicazioni successive |
+| [#76](https://github.com/Dreamer-archalo/padova-open-world/pull/76) | HUD R34 | Superata dall'integrazione corrente |
+| [#77](https://github.com/Dreamer-archalo/padova-open-world/pull/77) | Sagome auto R33 | Superata dalla linea veicoli R35–R41 |
+| [#78](https://github.com/Dreamer-archalo/padova-open-world/pull/78) | Pacchetto NPC/veicoli R31–R33 | Pubblicazione cumulativa successiva |
+| [#82](https://github.com/Dreamer-archalo/padova-open-world/pull/82) | R37 officine e garage | Evoluta nei rilasci R35–R41 |
 
 **Importante:** questi branch risultavano divergenti rispetto a `main`. La chiusura non certifica l'uguaglianza integrale dei file; eventuali dettagli mancanti vanno riproposti su branch nuovi.
 
@@ -34,14 +34,14 @@ Queste PR conservano sorgenti o idee che **non è corretto unire indiscriminatam
 
 | PR | Tema da valutare | Priorità di analisi |
 | --- | --- | --- |
-| [#13](../pull/13) | Avvio gare moto / chiese | Quando si rivedono le gare |
-| [#33](../pull/33), [#43](../pull/43) | Accessi e viabilità aeroporto | Audit viabilità |
-| [#35](../pull/35), [#45](../pull/45), [#49](../pull/49) | Quote, Bassanello, ponti, marciapiedi | **Alta: geometria e test** |
-| [#38](../pull/38) | Impalcati e piloni | Audit ponti |
-| [#39](../pull/39) | Tetto Monoblocco | Test fisico e collisioni |
-| [#42](../pull/42) | Test browser avvio/taxi | Consolidamento QA |
-| [#60](../pull/60) | Prototipo barche | Revisione navigazione |
-| [#64](../pull/64) | NPC intelligenti Padova R17 | Revisione traffico e pedoni |
+| [#13](https://github.com/Dreamer-archalo/padova-open-world/pull/13) | Avvio gare moto / chiese | Quando si rivedono le gare |
+| [#33](https://github.com/Dreamer-archalo/padova-open-world/pull/33), [#43](https://github.com/Dreamer-archalo/padova-open-world/pull/43) | Accessi e viabilità aeroporto | Audit viabilità |
+| [#35](https://github.com/Dreamer-archalo/padova-open-world/pull/35), [#45](https://github.com/Dreamer-archalo/padova-open-world/pull/45), [#49](https://github.com/Dreamer-archalo/padova-open-world/pull/49) | Quote, Bassanello, ponti, marciapiedi | **Alta: geometria e test** |
+| [#38](https://github.com/Dreamer-archalo/padova-open-world/pull/38) | Impalcati e piloni | Audit ponti |
+| [#39](https://github.com/Dreamer-archalo/padova-open-world/pull/39) | Tetto Monoblocco | Test fisico e collisioni |
+| [#42](https://github.com/Dreamer-archalo/padova-open-world/pull/42) | Test browser avvio/taxi | Consolidamento QA |
+| [#60](https://github.com/Dreamer-archalo/padova-open-world/pull/60) | Prototipo barche | Revisione navigazione |
+| [#64](https://github.com/Dreamer-archalo/padova-open-world/pull/64) | NPC intelligenti Padova R17 | Revisione traffico e pedoni |
 
 Per ciascuna proposta non completamente recuperata: verificare prima la funzionalità in `main`; se manca ancora, creare un ticket nell'eventuale tracker o una **nuova PR piccola, da `main`**, con prove attuali. Nessun branch storico deve essere cancellato come effetto di questo archivio.
 

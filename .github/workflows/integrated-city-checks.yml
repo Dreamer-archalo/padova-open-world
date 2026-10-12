@@ -2,6 +2,10 @@ name: Integrated Mandria and city acceptance
 on:
   pull_request:
     branches: [main]
+    paths-ignore:
+      - '**/*.md'
+      - '.gitignore'
+      - '.github/pull_request_template.md'
   push:
     branches: [fix/integrated-mandria-continuity-20260921, fix/shared-street-surface-20260922]
   workflow_call:
