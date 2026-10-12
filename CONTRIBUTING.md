@@ -25,3 +25,11 @@ Non creare un altro sito per pubblicare questo progetto. Conservare gli identifi
 Il sito distribuisce l'intera cartella `dist/`, comprese dipendenze locali, dati, CSS e moduli. Non mescolare file appartenenti a commit diversi.
 
 Riferimenti: [documento di rilascio 1.2](docs/release-v1.2.md), [inventario delle funzionalità](docs/release-v1.2-completeness-audit.md), [problemi noti](docs/release-v1.2-known-issues.md).
+
+## Politica per le PR e il backlog
+
+- Prima di lavorare su una vecchia PR, leggere [l'archivio delle PR](docs/PR_ARCHIVE.md) e [lo stato corrente](docs/PROJECT_STATUS.md).
+- Tutte le nuove PR partono dall'ultimo `main` e usano il [modello di PR](.github/pull_request_template.md).
+- I branch sperimentali non vanno cancellati o fusi in blocco: riutilizzare soltanto le parti verificate.
+- Le GitHub Issues sono attualmente disabilitate; i difetti ancora da riprodurre e verificare sono tracciati nella documentazione, non dichiarati risolti.
+- Dettagli sul processo: [REPOSITORY_WORKFLOW.md](docs/REPOSITORY_WORKFLOW.md).

@@ -1,37 +1,50 @@
 # PADOVA AFTER HOURS
 
-**Padova Open World · Gioco 3D open world ambientato a Padova**  
-**Versione 1.2.1 · Villa della Mandria v11**
+**Un open world 3D ambientato tra Padova e Venezia.** Un progetto giocabile in continua evoluzione: città, strade, veicoli, esplorazione e attività, con una mappa ispirata alla geografia reale.
 
-[**▶ GIOCA — VERSIONE DEFINITIVA SU GITHUB PAGES**](https://dreamer-archalo.github.io/padova-open-world/) · [Controlla la versione distribuita](https://dreamer-archalo.github.io/padova-open-world/version.json) · [Cronologia](CHANGELOG.md) · [Repository](https://github.com/Dreamer-archalo/padova-open-world)
+[**Gioca su GitHub Pages ↗**](https://dreamer-archalo.github.io/padova-open-world/) · [Stato del progetto](docs/PROJECT_STATUS.md) · [Novità](CHANGELOG.md) · [Come contribuire](CONTRIBUTING.md)
 
-Esplora una reinterpretazione giocabile di Padova contemporanea: centro e quartieri, veicoli, aeroporto, luoghi della città, gare e missioni. La mappa usa strade e sagome OpenStreetMap insieme ad ambienti e modelli 3D originali e stilizzati.
+> **Progetto in sviluppo attivo.** La versione online è un prototipo giocabile, non un prodotto finito. Alcune funzionalità possono avere difetti: i test automatici non sostituiscono la prova nel browser.
 
-**Distribuzione:** il solo indirizzo ufficiale gestito per questa release è GitHub Pages. Il workflow pubblica la cartella `dist` di `main` dopo test automatici; non utilizza né aggiorna Netlify. Controllare il manifest pubblico per distinguere una pubblicazione riuscita da un semplice commit GitHub.
+---
 
-## Contenuto della versione 1.2.1
+## Il gioco
 
-- **Villa della Mandria v11:** villa, hangar con categorie, mezzi e colori, animali, cavalli, lavoratori, pattuglie e consegne già integrati in v10; raccordi esterni della strada verificati rispetto a proprietà e ostacoli, nuove corsie di servizio sterrate solo dove sicure, controllo interferenze con i cavalli, attività dei lavoratori distribuite per zone e ombre alleggerite a distanza.
-- **Viabilità e grafica già presenti in `main`:** primi raccordi strada/terreno/marciapiedi, sei rampe e interventi sui ponti, integrazione della Villa con la mappa; resta incompleto il risanamento dell'intera città. Nessuna revisione grafica del 22 settembre è dichiarata qui come incorporata senza un commit sorgente identificato.
-- **Aeroporto e mezzi:** pista, strutture e mezzi aeroportuali, aerei, elicotteri, carri armati, combattimento e missione Caccia aerea.
-- **Attività:** portavalori, taxi, due gare tangenziali, circuito motociclistico Monoblocco con rampe e ponti.
-- **Città:** traffico, tram, pedoni, bici e monopattini NPC nei quartieri, polizia e modalità di qualità grafica.
-- **Online sperimentale:** personaggi Scando, Mattia, Marchese, Milo, Nico; lobby e gare condivise. La prova sincronizzata completa su due dispositivi resta aperta.
+| Esplora | Guida | Scopri |
+| --- | --- | --- |
+| Padova, Venezia e collegamenti regionali | Auto, moto, taxi, camion e imbarcazioni | Villa della Mandria, aeroporti, concessionari e luoghi urbani |
+| Strade e sagome ispirate a OpenStreetMap | Gare, modifiche ai mezzi e salti | NPC, traffico, missioni e sistemi sperimentali |
 
-I test Villa v11 (geometria e WebGL) sono documentati nella [PR #54](https://github.com/Dreamer-archalo/padova-open-world/pull/54). Il rilascio unificato è soggetto ai controlli GitHub Actions; le verifiche automatiche non equivalgono a un collaudo manuale su ogni dispositivo.
+L'esperienza combina dati cartografici, ambienti stilizzati e sistemi di gioco costruiti progressivamente. L'obiettivo è ampliare la libertà di esplorazione migliorando, release dopo release, **prestazioni, stabilità e interazioni**.
 
-## Stato della geometria e limiti noti
+## Inizia a giocare
 
-I dislivelli della città non sono tutti risolti. L'audit della [PR #53](https://github.com/Dreamer-archalo/padova-open-world/pull/53) riporta 6.505 campioni problematici ai margini delle strade. Non disabilitare o mascherare le verifiche. Le vecchie PR sperimentali di terreno e ponti non devono essere unite alla cieca perché potrebbero sovrascrivere modifiche successive. Persistono limiti da verificare per prestazioni su dispositivi reali, trasferimenti taxi e multiplayer multi-dispositivo.
+Apri la **[versione pubblica](https://dreamer-archalo.github.io/padova-open-world/)** su un browser moderno compatibile con WebGL. Non è necessario installare il gioco.
 
-## Controlli di base
+**Comandi principali:** `WASD` / frecce per movimento e guida; `E` per interagire o salire/scendere; `M` per la mappa; `C` per la telecamera; `9` per il salto speciale quando disponibile; `Esc` per la pausa. Altri comandi sono contestuali al mezzo e all'attività.
 
-`WASD` e frecce per movimento/guida; `E` per entrare e uscire; `M` per la mappa; `J` per le attività; `C` per la telecamera; `Esc` per la pausa. I tasti per volo, armi e mezzi cambiano in base al veicolo. Serve un browser compatibile WebGL. Progressi e impostazioni sono conservati localmente nel browser.
+La partita e alcune impostazioni sono memorizzate localmente nel browser: cancellare i dati del sito può rimuoverle.
 
-Il menu di collaudo F8 della Villa v11 è intenzionalmente accessibile nell'[anteprima di test](https://dreamer-archalo.github.io/padova-open-world/preview/mandria-v11/) o tramite `?estateDebug=1` e non è una funzione del gameplay ordinario.
+## Stato attuale
 
-## Sviluppo, crediti e dati
+L'ultimo aggiornamento pubblicato nella cronologia verificata è **R43 — miglioramenti delle prestazioni della Villa**, dell'**11 ottobre 2026**, preceduto da **R42 — guida sui tetti** e dalla pubblicazione cumulativa **R35–R41 — veicoli, concessionari e officine**. Consulta la [cronologia](CHANGELOG.md) per i dettagli.
 
-La baseline 1.2.0 è conservata nel ramo [`release/v1.2`](https://github.com/Dreamer-archalo/padova-open-world/tree/release/v1.2). Il [CHANGELOG](CHANGELOG.md) documenta le modifiche e l'[audit delle regressioni](docs/regression-and-feature-audit-2026-09-17.md) riporta i limiti precedenti.
+Il manifest tecnico `dist/version.json` mantiene ancora il numero storico **1.2.1**: le sigle **R31–R43** identificano successive fasi di lavoro e non una nuova versione semantica già certificata. Il [manifest pubblico](https://dreamer-archalo.github.io/padova-open-world/version.json) e le [esecuzioni di deploy](https://github.com/Dreamer-archalo/padova-open-world/actions/workflows/github-pages.yml) consentono di verificare la distribuzione.
 
-**Una produzione di Federico Scandolara e Ricardo Roza Rui.** Il progetto deriva da [`scandolo/padova-open-world`](https://github.com/scandolo/padova-open-world), preservandone attribuzione e cronologia. Dati cartografici © [OpenStreetMap contributors](https://www.openstreetmap.org/copyright), ODbL 1.0; fonti del terreno Mapzen / Copernicus EU-DEM / USGS, dettagli in [`docs/mobility-terrain.md`](docs/mobility-terrain.md). Three.js: MIT, vedere [`dist/vendor/THREE-LICENSE.txt`](dist/vendor/THREE-LICENSE.txt). Nessuna licenza generale per il codice originale è dichiarata.
+**Da perfezionare:** fluidità su hardware diversi, geometria di strade e ponti, alcuni comportamenti dei veicoli e degli NPC, esperienze online e controlli manuali. I problemi aperti sono distinti dalle funzioni già distribuite nella [pagina di stato](docs/PROJECT_STATUS.md).
+
+## Per chi vuole seguire lo sviluppo
+
+- [Stato verificato e limiti noti](docs/PROJECT_STATUS.md)
+- [Cronologia delle pubblicazioni](CHANGELOG.md)
+- [Organizzazione del lavoro e delle PR](docs/REPOSITORY_WORKFLOW.md)
+- [Archivio delle vecchie PR e dei lavori da riesaminare](docs/PR_ARCHIVE.md)
+- [Guida per i contributori](CONTRIBUTING.md)
+
+**Branch pubblico:** `main`. Le anteprime dei vecchi branch non sono necessariamente aggiornate; **non** rappresentano automaticamente il gioco pubblicato. Nel repository le *Issues* sono attualmente disabilitate: il backlog è mantenuto nella documentazione.
+
+## Crediti e dati
+
+**Una produzione di Federico Scandolara e Ricardo Roza Rui.** Progetto derivato da [scandolo/padova-open-world](https://github.com/scandolo/padova-open-world), con attribuzione e cronologia conservate.
+
+Dati cartografici © [OpenStreetMap contributors](https://www.openstreetmap.org/copyright), ODbL 1.0. Altre fonti del terreno sono descritte in [mobilità e terreno](docs/mobility-terrain.md). Three.js è distribuito secondo licenza MIT, presente in [THREE-LICENSE.txt](dist/vendor/THREE-LICENSE.txt). **Il codice originale del progetto non ha una licenza generale pubblicata:** non presumere che sia liberamente riutilizzabile.

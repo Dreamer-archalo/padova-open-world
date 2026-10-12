@@ -1,0 +1,17 @@
+# Dependencies and local tooling
+node_modules/
+.npm/
+.env
+.env.*
+!.env.example
+.DS_Store
+Thumbs.db
+*.log
+
+# Generated local reports; keep already tracked historical evidence unchanged
+coverage/
+playwright-report/
+test-results/
+.pytest_cache/
+__pycache__/
+*.pyc

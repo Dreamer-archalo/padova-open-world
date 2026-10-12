@@ -2,6 +2,17 @@
 
 **Repository canonico:** [`Dreamer-archalo/padova-open-world`](https://github.com/Dreamer-archalo/padova-open-world), ramo `main`. **Sito ufficiale:** [GitHub Pages](https://dreamer-archalo.github.io/padova-open-world/). La versione effettivamente pubblicata è indicata nel [manifest del sito](https://dreamer-archalo.github.io/padova-open-world/version.json), non soltanto dal numero in GitHub.
 
+## Aggiornamenti di ottobre 2026 · sviluppo R31–R43
+
+Queste sigle identificano pacchetti di sviluppo pubblicati su `main`; il manifest mantiene temporaneamente il numero tecnico **1.2.1**. Non costituiscono automaticamente nuove release semantiche.
+
+- **11 ottobre · R43:** pubblicate ottimizzazioni del rendering e dell'avvio della Villa della Mandria ([commit](https://github.com/Dreamer-archalo/padova-open-world/commit/bda197a99c8012c76a88952a0169e445a4830c13)).
+- **10 ottobre · R42:** pubblicata la guida sui tetti con atterraggio e salto ripetuto ([commit](https://github.com/Dreamer-archalo/padova-open-world/commit/685f6f1d4b155c64e046949b1ce0dcd333d52c0f)).
+- **9 ottobre · R35–R41:** pubblicazione cumulativa di veicoli, officine, personalizzazioni, concessionari e collegamenti di gameplay ([commit](https://github.com/Dreamer-archalo/padova-open-world/commit/738d43fb3482a6668b0a602d9bd732df8be0870cd)).
+- **6 ottobre e successivi · R31–R34:** integrazioni successive della linea NPC/traffico, nuovi mezzi e HUD. L'archivio delle PR distingue le proposte originali da quanto effettivamente pubblicato.
+
+**Limiti:** la pubblicazione automatica non prova da sola ogni meccanica. Rimangono controlli manuali e problemi tecnici da verificare, dettagliati nello [stato del progetto](docs/PROJECT_STATUS.md). Le PR storiche sono classificate in [PR_ARCHIVE.md](docs/PR_ARCHIVE.md).
+
 ## 1.2.1 — Villa della Mandria v11 · 22 settembre 2026
 
 Pacchetto predisposto per la pubblicazione su GitHub Pages, senza utilizzare Netlify:
