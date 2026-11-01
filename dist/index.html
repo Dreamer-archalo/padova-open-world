@@ -60,6 +60,7 @@
     if(retry)retry.onclick=()=>location.reload();
     mark('Inizializzazione script…');
     window.addEventListener('error',event=>{
+      if(event.target?.dataset?.analyticsOptional==='true')return;
       if(event.target&&event.target!==window){
         const target=event.target;
         const resource=target.src||target.href||target.currentSrc||target.tagName||'risorsa sconosciuta';
@@ -143,7 +144,8 @@
     </div></div>
   </div>
   <div id="taxiLoading" class="taxi-loading" hidden role="status" aria-live="polite"><div id="taxiMeme" class="taxi-meme"><div><span>TAXI ABUSIVO IN TRANSITO…</span><strong>Caricamento destinazione</strong><p id="taxiFact"></p><small id="taxiLoadingStatus">Preparazione di terreno e strade</small><button id="taxiNext" type="button">CLICCA / TOCCA · PROSSIMA CURIOSITÀ</button></div></div></div>
-  <footer id="credits"><a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">© OpenStreetMap contributors</a><a href="https://github.com/tilezen/joerd/blob/master/docs/attribution.md" target="_blank" rel="noopener">Terrain: Copernicus EU-DEM / USGS via Mapzen</a><span id="modelCredits"></span><span id="scaleCredit">Real-world scale · stylised reconstruction</span></footer>
+  <footer id="credits"><a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">© OpenStreetMap contributors</a><a href="https://github.com/tilezen/joerd/blob/master/docs/attribution.md" target="_blank" rel="noopener">Terrain: Copernicus EU-DEM / USGS via Mapzen</a><a href="./privacy.html" target="_blank" rel="noopener">Statistiche e privacy</a><span id="modelCredits"></span><span id="scaleCredit">Real-world scale · stylised reconstruction</span></footer>
+  <script type="module" src="./analytics.js" data-analytics-optional="true"></script>
   <script type="module" src="./initial-loader.js?v=villa-performance-r43-1"></script>
   <script type="module" src="./context-actions.js"></script>\n  <script type="module" src="./game.js?v=villa-performance-r43-1"></script>
   <script type="module" src="./taxi-facts-extra.js"></script>
