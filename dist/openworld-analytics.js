@@ -164,6 +164,8 @@
   }
   function localStorageChoiceExists(){try{return ['yes','no'].includes(localStorage.getItem(CHOICE_KEY));}catch{return false;}}
   function ready(){
+    // Automated browser checks must neither create visitor records nor obstruct gameplay.
+    if (navigator.webdriver === true) return;
     consentPanel();if(allowed())start();
     document.addEventListener('click',click,true);
     document.addEventListener('keydown',key,true);
