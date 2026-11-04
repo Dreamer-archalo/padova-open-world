@@ -64,7 +64,9 @@ jobs:
           node tools/verify-truck-jumps-r41.mjs
           node tools/verify-roof-driving-r42.mjs
   browser:
-    runs-on: ubuntu-latest
+    # Playwright 1.55.1 is certified for Ubuntu 24.04, not the newer 26.04
+    # selected by ubuntu-latest. Keep the full WebGL test matrix enabled.
+    runs-on: ubuntu-24.04
     timeout-minutes: 25
     strategy:
       fail-fast: false
