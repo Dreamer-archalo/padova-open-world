@@ -2,7 +2,7 @@
 
 **Un open world 3D ambientato tra Padova e Venezia.** Un progetto giocabile in continua evoluzione: città, strade, veicoli, esplorazione e attività, con una mappa ispirata alla geografia reale.
 
-[**Gioca su GitHub Pages ↗**](https://dreamer-archalo.github.io/padova-open-world/) · [Stato del progetto](docs/PROJECT_STATUS.md) · [Novità](CHANGELOG.md) · [Come contribuire](CONTRIBUTING.md)
+[**Gioca su GitHub Pages ↗**](https://dreamer-archalo.github.io/padova-open-world/?utm_source=github&utm_medium=repository) · [Stato del progetto](docs/PROJECT_STATUS.md) · [Novità](CHANGELOG.md) · [Come contribuire](CONTRIBUTING.md)
 
 > **Progetto in sviluppo attivo.** La versione online è un prototipo giocabile, non un prodotto finito. Alcune funzionalità possono avere difetti: i test automatici non sostituiscono la prova nel browser.
 
